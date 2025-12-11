@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Heavensy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-light">
+    <div class="container">
+        <div class="row min-vh-100 align-items-center justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card shadow-lg border-0">
+                    <div class="card-body p-5">
+                        <div class="text-center mb-4">
+                            <i class="bi bi-stars" style="font-size: 3rem; background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+                            <h2 class="mt-3 fw-bold">Heavensy</h2>
+                            <p class="text-muted">Panel de Administración</p>
+                        </div>
+                        
+                        <!-- Info Banner -->
+                        <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+                            <i class="bi bi-broadcast me-2"></i>
+                            <small><strong>Versión Producción.</strong> Conectado a backend real de Heavensy.</small>
+                        </div>
+                        
+                        <form id="loginForm" onsubmit="handleLogin(event)">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">
+                                    <i class="bi bi-person"></i> Usuario o Email
+                                </label>
+                                <input type="text" class="form-control form-control-lg" id="email" 
+                                       placeholder="admin" required>
+                                <small class="text-muted">Usa "admin" para el usuario por defecto</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="password" class="form-label">
+                                    <i class="bi bi-lock"></i> Contraseña
+                                </label>
+                                <input type="password" class="form-control form-control-lg" id="password" 
+                                       placeholder="••••••••" required>
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="rememberMe">
+                                <label class="form-check-label" for="rememberMe">
+                                    Recordarme
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+                                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                            </button>
+                        </form>
+                        
+                        <hr>
+                        
+                        <div class="alert alert-warning" role="alert">
+                            <strong><i class="bi bi-exclamation-triangle"></i> Importante:</strong>
+                            <p class="mb-0">Si recibes "Credenciales inválidas", el usuario admin puede no estar creado en MongoDB.</p>
+                            <details class="mt-2">
+                                <summary style="cursor: pointer;">Ver solución</summary>
+                                <p class="mt-2 mb-0">
+                                    <strong>Opción 1:</strong> Ejecuta el script de inicialización del backend<br>
+                                    <strong>Opción 2:</strong> Crea el usuario manualmente en MongoDB<br>
+                                    <strong>Opción 3:</strong> Usa las credenciales de un usuario que YA existe en tu BD
+                                </p>
+                            </details>
+                        </div>
+                        
+                        <div class="text-center">
+                            <p class="text-muted mb-0">Credenciales por defecto:</p>
+                            <small class="text-muted">
+                                Usuario: <code>admin</code><br>
+                                Password: <code>Admin123!</code>
+                            </small>
+                        </div>
+                        
+                        <div class="mt-4 text-center">
+                            <a href="index.html" class="text-decoration-none">
+                                <i class="bi bi-arrow-left"></i> Volver al inicio
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Handle login form submission
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            login(email, password);
+        }
+        
+        // Check if already logged in
+        if (isAuthenticated()) {
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webhook Testing - Heavensy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-heavensy">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="index.html">
+                <i class="bi bi-stars fs-3 me-2"></i>
+                <span class="fw-bold">Heavensy</span>
+            </a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link text-white">
+                            <i class="bi bi-person-circle"></i> <span id="userName">Usuario</span>
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="companies.html"><i class="bi bi-building"></i> Empresas</a></li>
+                        <li class="nav-item"><a class="nav-link" href="users.html"><i class="bi bi-people"></i> Usuarios del Sistema</a></li>
+                        <li class="nav-item"><a class="nav-link" href="whatsapp-users.html"><i class="bi bi-whatsapp"></i> Usuarios WhatsApp</a></li>
+                        <li class="nav-item"><a class="nav-link" href="conversations.html"><i class="bi bi-chat-dots"></i> Conversaciones</a></li>
+                        <li class="nav-item"><a class="nav-link" href="multimedia.html"><i class="bi bi-file-earmark-image"></i> Multimedia</a></li>
+                        <li class="nav-item"><a class="nav-link" href="config.html"><i class="bi bi-gear"></i> Configuración</a></li>
+                        <li class="nav-item"><a class="nav-link active" href="webhook-test.html"><i class="bi bi-broadcast"></i> Webhook Testing</a></li>
+                        <hr>
+                        <li class="nav-item">
+                            <button class="btn btn-success btn-sm w-100" onclick="wakeBackend()">
+                                <i class="bi bi-alarm"></i> Activar Backend
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2"><i class="bi bi-broadcast"></i> Webhook Testing</h1>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Health Check -->
+                    <div class="col-md-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-heart-pulse"></i> Health Check</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">Verificar que el webhook está funcionando correctamente.</p>
+                                <button class="btn btn-primary w-100" onclick="testHealthCheck()">
+                                    <i class="bi bi-play-circle"></i> Ejecutar Health Check
+                                </button>
+                                <div id="healthCheckResponse" class="response-container d-none mt-3"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Webhook Verification -->
+                    <div class="col-md-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-check-circle"></i> Verificación Webhook</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">Verificar configuración de WhatsApp webhook.</p>
+                                <div class="mb-3">
+                                    <label for="verifyToken" class="form-label">Verify Token</label>
+                                    <input type="text" class="form-control" id="verifyToken" value="heavensy_verify_2024">
+                                </div>
+                                <button class="btn btn-primary w-100" onclick="testWebhookVerification()">
+                                    <i class="bi bi-play-circle"></i> Verificar Webhook
+                                </button>
+                                <div id="webhookVerifyResponse" class="response-container d-none mt-3"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Simulate WhatsApp Message -->
+                    <div class="col-md-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-whatsapp"></i> Simular Mensaje de WhatsApp</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">Enviar un mensaje de prueba simulando WhatsApp Business API.</p>
+                                <form id="simulateMessageForm">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="fromPhone" class="form-label">Desde (Número WhatsApp)</label>
+                                            <input type="text" class="form-control" id="fromPhone" value="56998745476" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="fromName" class="form-label">Nombre</label>
+                                            <input type="text" class="form-control" id="fromName" value="Usuario de Prueba" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="messageText" class="form-label">Mensaje</label>
+                                        <textarea class="form-control" id="messageText" rows="3" required>Hola, necesito información sobre sus servicios</textarea>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="phoneNumberId" class="form-label">Phone Number ID</label>
+                                            <input type="text" class="form-control" id="phoneNumberId" value="492838720578038">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="messageType" class="form-label">Tipo de Mensaje</label>
+                                            <select class="form-select" id="messageType">
+                                                <option value="text">Texto</option>
+                                                <option value="image">Imagen</option>
+                                                <option value="audio">Audio</option>
+                                                <option value="video">Video</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-success btn-lg w-100" onclick="simulateWhatsAppMessage()">
+                                        <i class="bi bi-send"></i> Enviar Mensaje de Prueba
+                                    </button>
+                                </form>
+                                <div id="simulateResponse" class="response-container d-none mt-4"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/webhook-test.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+═══════════════════════════════════════════════════════════════
+  HEAVENSY - Solución Rápida para Windows
+═══════════════════════════════════════════════════════════════
+
+ERROR: "Credenciales inválidas" al hacer login
+
+CAUSA: El usuario 'admin' no existe en MongoDB
+
+═══════════════════════════════════════════════════════════════
+  SOLUCIÓN RÁPIDA (1 clic)
+═══════════════════════════════════════════════════════════════
+
+1. Haz doble clic en: crear_admin.bat
+
+2. Espera que termine (verás mensajes en pantalla)
+
+3. Si ves este mensaje:
+   ✅ Usuario admin creado exitosamente!
+   📝 Credenciales de login:
+      Usuario: admin
+      Password: Admin123!
+
+4. Ya puedes hacer login en el panel
+
+═══════════════════════════════════════════════════════════════
+  Si el script BAT no funciona
+═══════════════════════════════════════════════════════════════
+
+Abre CMD (línea de comandos) y ejecuta:
+
+cd "ruta\donde\descomprimiste\heavensy-admin-production"
+
+pip uninstall -y bson pymongo
+pip install pymongo bcrypt
+python crear_admin_simple.py
+
+═══════════════════════════════════════════════════════════════
+  Alternativa: Crear manualmente en MongoDB Atlas
+═══════════════════════════════════════════════════════════════
+
+1. Ve a: https://cloud.mongodb.com
+
+2. Conecta a: LatticeCluster
+
+3. Base de datos: heavensy_prod
+
+4. Colección: system_users
+
+5. Insert Document → Copia este JSON:
+
+{
+  "username": "admin",
+  "email": "admin@heavensy.com",
+  "password_hash": "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5kosgc0q3W.8q",
+  "first_name": "Super",
+  "last_name": "Admin",
+  "full_name": "Super Admin",
+  "rut": "11111111-1",
+  "phone": null,
+  "companies": [
+    {
+      "company_id": "HEAVENSY_001",
+      "roles": ["ADMIN_ROL"],
+      "is_primary": true,
+      "joined_at": { "$date": "2024-12-11T00:00:00.000Z" }
+    }
+  ],
+  "is_active": true,
+  "is_verified": true,
+  "email_verified": true,
+  "created_at": { "$date": "2024-12-11T00:00:00.000Z" },
+  "updated_at": { "$date": "2024-12-11T00:00:00.000Z" },
+  "last_login": null,
+  "login_attempts": 0,
+  "locked_until": null
+}
+
+Nota: password_hash = "Admin123!"
+
+═══════════════════════════════════════════════════════════════
+  Después de crear el usuario
+═══════════════════════════════════════════════════════════════
+
+1. Abre: auth.html (o index.html)
+2. Haz clic en "Activar Backend" (espera 30-60 seg)
+3. Login con:
+   Usuario: admin
+   Password: Admin123!
+
+═══════════════════════════════════════════════════════════════
+
+Para más detalles, lee: SOLUCION-CREDENCIALES-INVALIDAS.md

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Heavensy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-heavensy">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="index.html">
+                <i class="bi bi-stars fs-3 me-2"></i>
+                <span class="fw-bold">Heavensy</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item me-3">
+                        <span id="connectionStatus" class="badge bg-secondary">
+                            <span class="status-dot idle"></span> Conectando...
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link text-white">
+                            <i class="bi bi-person-circle"></i> <span id="userName">Usuario</span>
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="dashboard.html">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="companies.html">
+                                <i class="bi bi-building"></i> Empresas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="users.html">
+                                <i class="bi bi-people"></i> Usuarios del Sistema
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="whatsapp-users.html">
+                                <i class="bi bi-whatsapp"></i> Usuarios WhatsApp
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="conversations.html">
+                                <i class="bi bi-chat-dots"></i> Conversaciones
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="multimedia.html">
+                                <i class="bi bi-file-earmark-image"></i> Multimedia
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="config.html">
+                                <i class="bi bi-gear"></i> Configuración
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="webhook-test.html">
+                                <i class="bi bi-broadcast"></i> Webhook Testing
+                            </a>
+                        </li>
+                        <hr>
+                        <li class="nav-item">
+                            <button class="btn btn-success btn-sm w-100" onclick="wakeBackend()">
+                                <i class="bi bi-alarm"></i> Activar Backend
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <!-- Demo Mode Banner -->
+                <div id="demoBanner" class="alert alert-warning alert-dismissible fade show mt-3 d-none" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Modo Demo:</strong> El backend no está disponible. Los datos mostrados son de ejemplo.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2"><i class="bi bi-speedometer2"></i> Dashboard</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadDashboardStats()">
+                            <i class="bi bi-arrow-clockwise"></i> Actualizar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="card stat-card primary shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2 text-muted">Total Mensajes</h6>
+                                        <h2 class="card-title mb-0" id="totalMessages">0</h2>
+                                    </div>
+                                    <i class="bi bi-chat-dots fs-1 text-primary"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="card stat-card success shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2 text-muted">Usuarios WhatsApp</h6>
+                                        <h2 class="card-title mb-0" id="totalUsers">0</h2>
+                                    </div>
+                                    <i class="bi bi-whatsapp fs-1 text-success"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="card stat-card danger shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2 text-muted">Usuarios Bloqueados</h6>
+                                        <h2 class="card-title mb-0" id="blockedUsers">0</h2>
+                                    </div>
+                                    <i class="bi bi-shield-x fs-1 text-danger"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="card stat-card info shadow-sm h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2 text-muted">Tasa de Respuesta</h6>
+                                        <h2 class="card-title mb-0"><span id="responseRate">0</span>%</h2>
+                                    </div>
+                                    <i class="bi bi-graph-up fs-1 text-info"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages Table -->
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="bi bi-chat-text"></i> Mensajes en Tiempo Real
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="messagesTable">
+                                <thead>
+                                    <tr>
+                                        <th><i class="bi bi-clock"></i> Fecha/Hora</th>
+                                        <th><i class="bi bi-broadcast"></i> Fuente</th>
+                                        <th><i class="bi bi-person"></i> Usuario</th>
+                                        <th><i class="bi bi-file-earmark"></i> Tipo</th>
+                                        <th><i class="bi bi-chat-quote"></i> Mensaje</th>
+                                        <th><i class="bi bi-robot"></i> Origen</th>
+                                        <th><i class="bi bi-gear"></i> Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="messagesTableBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            Esperando mensajes en tiempo real...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.5.4/dist/socket.io.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        // Load initial stats
+        document.addEventListener('DOMContentLoaded', () => {
+            if (isAuthenticated()) {
+                // Check if in demo mode
+                const userInfo = getUserInfo();
+                if (userInfo && userInfo.is_demo) {
+                    document.getElementById('demoBanner').classList.remove('d-none');
+                    // Load demo data
+                    loadDemoData();
+                } else {
+                    loadDashboardStats();
+                }
+            }
+        });
+        
+        // Load demo data for testing
+        function loadDemoData() {
+            // Set demo stats
+            document.getElementById('totalMessages').textContent = '1,234';
+            document.getElementById('totalUsers').textContent = '56';
+            document.getElementById('blockedUsers').textContent = '3';
+            document.getElementById('responseRate').textContent = '94';
+            
+            // Create some demo messages
+            const demoMessages = [
+                {
+                    timestamp: new Date(),
+                    source: 'whatsapp',
+                    from_name: 'Juan Pérez',
+                    from: '56912345678',
+                    message_type: 'text',
+                    message: 'Hola, necesito información sobre sus servicios',
+                    is_bot_response: false
+                },
+                {
+                    timestamp: new Date(Date.now() - 30000),
+                    source: 'whatsapp',
+                    from_name: 'Bot Alicia',
+                    from: 'bot',
+                    message_type: 'text',
+                    message: '¡Hola Juan! Con gusto te ayudo. ¿Qué servicio te interesa?',
+                    is_bot_response: true
+                },
+                {
+                    timestamp: new Date(Date.now() - 60000),
+                    source: 'whatsapp',
+                    from_name: 'María González',
+                    from: '56987654321',
+                    message_type: 'image',
+                    message: '[Imagen enviada]',
+                    is_bot_response: false
+                }
+            ];
+            
+            messagesData = demoMessages;
+            renderMessagesTable();
+        }
+    </script>
+</body>
+</html>
