@@ -119,7 +119,7 @@ function renderMessagesTable() {
                 </span>
             </td>
             <td>
-                ${msg.is_bot_response ? '<span class="badge bg-primary">Bot</span>' : '<span class="badge bg-secondary">Usuario</span>'}
+                ${getBadgeOrigin(msg)}
             </td>
             <td>
                 <button class="btn btn-sm btn-outline-primary" onclick="viewMessage('${msg._id || msg.id}')">
@@ -156,6 +156,30 @@ function getSourceIcon(source) {
     return icons[source.toLowerCase()] || 'bi bi-chat text-muted';
 }
 
+// Get origin badge (Usuario, Bot, Sistema)
+function getBadgeOrigin(msg) {
+    // Verificar múltiples campos que pueden indicar origen
+    const senderType = msg.sender_type || msg.from_number || msg.from;
+    const isAiResponse = msg.is_ai_response || msg.is_bot_response;
+    
+    // Si sender_type es 'assistant' o 'system', es del bot
+    if (senderType === 'assistant' || senderType === 'system') {
+        return '<span class="badge bg-primary"><i class="bi bi-robot"></i> Bot</span>';
+    }
+    
+    // Si from_number es 'assistant', es del bot
+    if (msg.from_number === 'assistant') {
+        return '<span class="badge bg-primary"><i class="bi bi-robot"></i> Bot</span>';
+    }
+    
+    // Si tiene flag de AI response
+    if (isAiResponse === true) {
+        return '<span class="badge bg-primary"><i class="bi bi-robot"></i> Bot</span>';
+    }
+    
+    // Por defecto, es del usuario
+    return '<span class="badge bg-secondary"><i class="bi bi-person"></i> Usuario</span>';
+}
 // View message details
 function viewMessage(messageId) {
     showInfo('Función de vista de mensaje en desarrollo');
