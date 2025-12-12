@@ -91,7 +91,7 @@ async function unblockUser(userId) {
 async function viewWhatsAppUser(userId) {
     showLoading('Cargando mensajes...');
     try {
-        const data = await apiCall(CONFIG.API_ENDPOINTS.WHATSAPP_USER_MESSAGES(userId));
+        const data = await apiCall(CONFIG.API_ENDPOINTS.WHATSAPP_USER(userId));
         hideLoading();
         showUserMessages(data);
     } catch (error) {
