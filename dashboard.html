@@ -15,6 +15,7 @@
             <a class="navbar-brand d-flex align-items-center" href="index.html">
                 <i class="bi bi-stars fs-3 me-2"></i>
                 <span class="fw-bold">Heavensy</span>
+                <span id="companyBadge" class="badge bg-light text-dark ms-2" style="font-size: 0.75rem;"></span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -220,14 +221,45 @@
         // Load initial stats
         document.addEventListener('DOMContentLoaded', () => {
             if (isAuthenticated()) {
-                // Check if in demo mode
+                // Update company badge and user name
                 const userInfo = getUserInfo();
-                if (userInfo && userInfo.is_demo) {
-                    document.getElementById('demoBanner').classList.remove('d-none');
-                    // Load demo data
-                    loadDemoData();
-                } else {
-                    loadDashboardStats();
+                if (userInfo) {
+                    // Actualizar nombre de usuario
+                    const userNameElement = document.getElementById('userName');
+                    if (userNameElement) {
+                        userNameElement.textContent = userInfo.full_name || userInfo.username || 'Usuario';
+                    }
+                    
+                    // Actualizar badge de empresa
+                    const companyBadge = document.getElementById('companyBadge');
+                    if (companyBadge && userInfo.company_id) {
+                        // Formatear el nombre de la empresa
+                        let companyName = userInfo.company_name || userInfo.company_id;
+                        
+                        // Si es LATTICE_001, mostrar solo "Lattice"
+                        if (companyName === 'LATTICE_001') {
+                            companyName = 'Lattice';
+                        } else if (companyName === 'HEAVENSY_001') {
+                            companyName = 'Heavensy Demo';
+                        } else {
+                            // Remover sufijos como _001
+                            companyName = companyName.replace(/_\d+$/, '');
+                            // Capitalizar primera letra
+                            companyName = companyName.charAt(0).toUpperCase() + companyName.slice(1).toLowerCase();
+                        }
+                        
+                        companyBadge.textContent = companyName;
+                        companyBadge.style.display = 'inline-block';
+                    }
+                    
+                    // Check if in demo mode
+                    if (userInfo.is_demo) {
+                        document.getElementById('demoBanner').classList.remove('d-none');
+                        // Load demo data
+                        loadDemoData();
+                    } else {
+                        loadDashboardStats();
+                    }
                 }
             }
         });

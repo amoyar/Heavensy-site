@@ -91,6 +91,7 @@ async function unblockUser(userId) {
 async function viewWhatsAppUser(userId) {
     showLoading('Cargando mensajes...');
     try {
+        // Usar el endpoint /api/whatsapp-users/{phone} que sí existe
         const data = await apiCall(CONFIG.API_ENDPOINTS.WHATSAPP_USER(userId));
         hideLoading();
         showUserMessages(data);
@@ -103,17 +104,22 @@ async function viewWhatsAppUser(userId) {
 function showUserMessages(data) {
     const container = document.getElementById('responseContainer');
     const messages = data.messages || [];
+    const userName = data.profile_name || 'Usuario';
+    const phone = data.phone || data.user_id;
     
     let messagesHtml = messages.map(msg => {
-        const isBot = msg.is_bot_response || msg.role === 'assistant';
+        const isBot = msg.sender_type === 'assistant' || msg.from_number === 'assistant' || msg.is_bot_response;
+        const timestamp = msg.timestamp || msg.created_at;
+        const time = timestamp ? new Date(timestamp).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '';
+        
         return `
             <div class="message-bubble ${isBot ? 'bot' : 'user'} mb-2">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <strong>${isBot ? 'Bot' : 'Usuario'}</strong>
-                        <p class="mb-0 mt-1">${msg.message || msg.text || msg.body}</p>
+                        <strong>${isBot ? '🤖 Bot' : '👤 ' + userName}</strong>
+                        <p class="mb-0 mt-1">${msg.message || msg.text || msg.body || 'Sin contenido'}</p>
                     </div>
-                    <small class="text-muted ms-2">${formatDate(msg.timestamp || msg.created_at)}</small>
+                    <small class="text-muted ms-2">${time}</small>
                 </div>
             </div>
         `;
@@ -121,8 +127,9 @@ function showUserMessages(data) {
     
     container.innerHTML = `
         <div class="card shadow-sm mt-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Conversación con ${formatPhone(data.user_id)}</h5>
+            <div class="card-header bg-heavensy text-white">
+                <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Conversación con ${userName}</h5>
+                <small>${formatPhone(phone)} - ${messages.length} mensajes</small>
             </div>
             <div class="card-body">
                 <div style="max-height: 500px; overflow-y: auto;">

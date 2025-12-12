@@ -3,6 +3,68 @@
 let socket = null;
 let messagesData = [];
 
+// Cargar mensajes desde localStorage al inicio
+function loadMessagesFromStorage() {
+    try {
+        const stored = localStorage.getItem('heavensy_messages');
+        if (stored) {
+            messagesData = JSON.parse(stored);
+            console.log(`📦 ${messagesData.length} mensajes cargados desde localStorage`);
+        }
+    } catch (error) {
+        console.error('Error cargando mensajes:', error);
+        messagesData = [];
+    }
+}
+
+// Guardar mensajes en localStorage
+function saveMessagesToStorage() {
+    try {
+        // Guardar solo los últimos 100 mensajes para no saturar localStorage
+        const messagesToSave = messagesData.slice(0, 100);
+        localStorage.setItem('heavensy_messages', JSON.stringify(messagesToSave));
+    } catch (error) {
+        console.error('Error guardando mensajes:', error);
+    }
+}
+
+// Cargar al inicio
+loadMessagesFromStorage();
+
+// Update navbar with user info
+function updateNavbar() {
+    const userInfo = getUserInfo();
+    if (!userInfo) return;
+    
+    // Actualizar nombre de usuario
+    const userNameElement = document.getElementById('userName');
+    if (userNameElement) {
+        userNameElement.textContent = userInfo.full_name || userInfo.username || 'Usuario';
+    }
+    
+    // Actualizar badge de empresa
+    const companyBadge = document.getElementById('companyBadge');
+    if (companyBadge && userInfo.company_id) {
+        // Formatear el nombre de la empresa
+        let companyName = userInfo.company_name || userInfo.company_id;
+        
+        // Si es LATTICE_001, mostrar solo "Lattice"
+        if (companyName === 'LATTICE_001') {
+            companyName = 'Lattice';
+        } else if (companyName === 'HEAVENSY_001') {
+            companyName = 'Heavensy Demo';
+        } else {
+            // Remover sufijos como _001
+            companyName = companyName.replace(/_\d+$/, '');
+            // Capitalizar primera letra
+            companyName = companyName.charAt(0).toUpperCase() + companyName.slice(1).toLowerCase();
+        }
+        
+        companyBadge.textContent = companyName;
+        companyBadge.style.display = 'inline-block';
+    }
+}
+
 // Initialize Socket.IO connection
 function initSocket() {
     if (!isAuthenticated()) return;
@@ -65,6 +127,9 @@ function handleNewMessage(data) {
     // Add message to array
     messagesData.unshift(data);
     
+    // Guardar en localStorage
+    saveMessagesToStorage();
+    
     // Update messages table if it exists
     const messagesTable = document.getElementById('messagesTable');
     if (messagesTable) {
@@ -73,7 +138,18 @@ function handleNewMessage(data) {
     
     // Update dashboard stats if on dashboard page
     if (window.location.pathname.includes('dashboard.html')) {
-        loadDashboardStats();
+        // Incrementar contador de mensajes localmente
+        const totalMessagesElement = document.getElementById('totalMessages');
+        if (totalMessagesElement) {
+            const currentTotal = parseInt(totalMessagesElement.textContent) || 0;
+            totalMessagesElement.textContent = currentTotal + 1;
+        }
+        
+        // También recargar stats completos del backend (menos frecuente)
+        // Solo cada 5 mensajes para no saturar
+        if (messagesData.length % 5 === 0) {
+            loadDashboardStats();
+        }
     }
     
     // Show notification
@@ -128,7 +204,7 @@ function renderMessagesTable() {
                 ${getBadgeOrigin(msg)}
             </td>
             <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="viewMessage('${msg._id || msg.id}')">
+                <button class="btn btn-sm btn-outline-primary" onclick="viewMessage('${msg.message_id || msg._id || msg.id}')">
                     <i class="bi bi-eye"></i>
                 </button>
             </td>
@@ -189,8 +265,117 @@ function getBadgeOrigin(msg) {
 
 // View message details
 function viewMessage(messageId) {
-    showInfo('Función de vista de mensaje en desarrollo');
-    // TODO: Implement message detail view
+    // Buscar el mensaje en el array
+    const message = messagesData.find(m => (m.message_id === messageId) || (m._id === messageId) || (m.id === messageId));
+    
+    if (!message) {
+        showError('Mensaje no encontrado');
+        return;
+    }
+    
+    // Crear contenido del modal
+    const messageType = message.message_type || message.type || 'text';
+    const senderType = message.sender_type || message.from_number || 'unknown';
+    const isBot = senderType === 'assistant' || senderType === 'system' || message.is_ai_response;
+    
+    const modalContent = `
+        <div class="modal fade" id="messageDetailModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-heavensy text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-envelope-open"></i> Detalle del Mensaje
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-person"></i> Usuario:</strong><br>
+                                <span class="text-muted">${message.profile_name || message.from_name || message.user_name || 'Unknown'}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-telephone"></i> Teléfono:</strong><br>
+                                <span class="text-muted">${formatPhone(message.user_id || message.from || message.from_number || 'N/A')}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-clock"></i> Fecha/Hora:</strong><br>
+                                <span class="text-muted">${formatDate(message.timestamp || message.created_at)}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-tag"></i> Tipo:</strong><br>
+                                ${getMessageTypeIcon(messageType)} <span class="text-muted">${messageType}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-arrow-left-right"></i> Origen:</strong><br>
+                                ${getBadgeOrigin(message)}
+                            </div>
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-hash"></i> Message ID:</strong><br>
+                                <small class="text-muted" style="word-break: break-all;">${message.message_id || message._id || message.id || 'N/A'}</small>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="mb-3">
+                            <strong><i class="bi bi-chat-text"></i> Contenido del Mensaje:</strong>
+                            <div class="card mt-2">
+                                <div class="card-body ${isBot ? 'bg-light' : ''}">
+                                    <p class="mb-0" style="white-space: pre-wrap;">${message.text || message.message || message.body || 'Sin contenido'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${message.media_url ? `
+                        <div class="mb-3">
+                            <strong><i class="bi bi-paperclip"></i> Archivo Adjunto:</strong><br>
+                            <a href="${message.media_url}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
+                                <i class="bi bi-download"></i> Ver/Descargar
+                            </a>
+                        </div>
+                        ` : ''}
+                        
+                        ${message.company_id ? `
+                        <div class="mb-3">
+                            <strong><i class="bi bi-building"></i> Empresa:</strong><br>
+                            <span class="badge bg-info">${message.company_id}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Eliminar modal anterior si existe
+    const existingModal = document.getElementById('messageDetailModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Agregar modal al body
+    document.body.insertAdjacentHTML('beforeend', modalContent);
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('messageDetailModal'));
+    modal.show();
+    
+    // Limpiar modal cuando se cierre
+    document.getElementById('messageDetailModal').addEventListener('hidden.bs.modal', function () {
+        this.remove();
+    });
 }
 
 // Load dashboard statistics
@@ -234,9 +419,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!requireAuth()) return;
     }
     
+    // Update navbar with user info
+    updateNavbar();
+    
     // Initialize Socket.IO if authenticated
     if (isAuthenticated()) {
         initSocket();
+    }
+    
+    // Si estamos en el dashboard, renderizar mensajes guardados
+    if (currentPage === 'dashboard.html') {
+        const messagesTable = document.getElementById('messagesTable');
+        if (messagesTable && messagesData.length > 0) {
+            console.log(`📊 Renderizando ${messagesData.length} mensajes guardados`);
+            renderMessagesTable();
+        }
     }
     
     // Mark active nav link

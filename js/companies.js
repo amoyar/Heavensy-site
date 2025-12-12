@@ -113,12 +113,14 @@ async function viewCompany(companyId) {
 }
 
 // Show company details
-function showCompanyDetails(company) {
-    const container = document.getElementById('responseContainer');
+function showCompanyDetails(data) {
+    const company = data.company || data;
+    const companyName = company.name || company.company_name || company.company_id;
+    
     container.innerHTML = `
         <div class="card shadow-sm mb-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-building"></i> Detalles de ${company.name}</h5>
+            <div class="card-header bg-heavensy text-white">
+                <h5 class="mb-0"><i class="bi bi-building"></i> Detalles de ${companyName}</h5>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -131,7 +133,7 @@ function showCompanyDetails(company) {
                             </tr>
                             <tr>
                                 <th>Nombre:</th>
-                                <td>${company.name}</td>
+                                <td>${companyName}</td>
                             </tr>
                             <tr>
                                 <th>Descripción:</th>
@@ -139,11 +141,11 @@ function showCompanyDetails(company) {
                             </tr>
                             <tr>
                                 <th>Email:</th>
-                                <td><a href="mailto:${company.contact_email}">${company.contact_email}</a></td>
+                                <td>${company.contact_email ? `<a href="mailto:${company.contact_email}">${company.contact_email}</a>` : 'N/A'}</td>
                             </tr>
                             <tr>
                                 <th>Teléfono:</th>
-                                <td>${formatPhone(company.contact_phone)}</td>
+                                <td>${company.contact_phone ? formatPhone(company.contact_phone) : 'N/A'}</td>
                             </tr>
                             <tr>
                                 <th>Dirección:</th>
@@ -215,17 +217,18 @@ async function editCompany(companyId) {
     
     try {
         const data = await apiCall(CONFIG.API_ENDPOINTS.COMPANY_BY_ID(companyId));
-        currentCompany = data;
+        const company = data.company || data;
+        currentCompany = company;
         hideLoading();
         
         // Fill form
         document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil"></i> Editar Empresa';
-        document.getElementById('company_id').value = data.company_id;
+        document.getElementById('company_id').value = company.company_id;
         document.getElementById('company_id').disabled = true;
-        document.getElementById('name').value = data.name;
-        document.getElementById('description').value = data.description || '';
-        document.getElementById('contact_email').value = data.contact_email;
-        document.getElementById('contact_phone').value = data.contact_phone;
+        document.getElementById('name').value = company.name || company.company_name || '';
+        document.getElementById('description').value = company.description || '';
+        document.getElementById('contact_email').value = company.contact_email || '';
+        document.getElementById('contact_phone').value = company.contact_phone || '';
         document.getElementById('address').value = data.address || '';
         document.getElementById('website').value = data.website || '';
         
