@@ -174,12 +174,15 @@ async function loadDashboardStats() {
 
 // Update dashboard statistics
 function updateDashboardStats(data) {
+    // Extract stats from response
+    const stats = data.stats || data;
+    
     // Update stat cards
     const elements = {
-        'totalMessages': data.total_messages || 0,
-        'totalUsers': data.total_users || 0,
-        'blockedUsers': data.blocked_users || 0,
-        'responseRate': data.response_rate || 0
+        'totalMessages': stats.total_messages || 0,
+        'totalUsers': stats.unique_users || 0,
+        'blockedUsers': stats.blocked_users || 0,
+        'responseRate': stats.response_rate || 0
     };
     
     Object.keys(elements).forEach(key => {
