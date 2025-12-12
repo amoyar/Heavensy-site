@@ -159,7 +159,7 @@ function handleNewMessage(data) {
 // Show new message notification
 function showNewMessageNotification(data) {
     const message = data.message || data.text || 'Nuevo mensaje';
-    const from = data.from_name || data.user_name || 'Usuario';
+    const from = data.profile_name || data.from_name || data.user_name || 'Usuario';
     showInfo(`Nuevo mensaje de ${from}: ${message.substring(0, 50)}...`);
 }
 
@@ -188,8 +188,8 @@ function renderMessagesTable() {
                 <span class="ms-1">${source.toUpperCase()}</span>
             </td>
             <td>
-                <strong>${msg.from_name || msg.user_name || 'Usuario'}</strong><br>
-                <small class="text-muted">${formatPhone(msg.from || msg.user_id)}</small>
+                <strong>${msg.profile_name || msg.from_name || msg.user_name || 'Usuario'}</strong><br>
+                <small class="text-muted">${formatPhone(msg.from || msg.user_id || msg.from_number)}</small>
             </td>
             <td>
                 <i class="${messageTypeIcon}"></i>
