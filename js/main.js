@@ -29,6 +29,12 @@ function initSocket() {
         handleNewMessage(data);
     });
     
+    // También escuchar message_saved (evento del backend)
+    socket.on('message_saved', (data) => {
+        console.log('Message saved received:', data);
+        handleNewMessage(data);
+    });
+    
     socket.on(CONFIG.SOCKET_EVENTS.USER_BLOCKED, (data) => {
         console.log('User blocked:', data);
         showInfo(`Usuario ${data.user_id} ha sido bloqueado`);
@@ -180,6 +186,7 @@ function getBadgeOrigin(msg) {
     // Por defecto, es del usuario
     return '<span class="badge bg-secondary"><i class="bi bi-person"></i> Usuario</span>';
 }
+
 // View message details
 function viewMessage(messageId) {
     showInfo('Función de vista de mensaje en desarrollo');
