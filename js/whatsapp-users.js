@@ -40,14 +40,29 @@ function renderWhatsAppUsersTable() {
         const isBlocked = user.blocked || user.is_blocked || false;
         const lastUpdated = user.last_updated || user.last_interaction || user.updated_at || user.last_message_at;
         
+        // DEBUG: Ver estado de bloqueo
+        console.log(`Usuario ${phone}:`, {
+            blocked: user.blocked,
+            is_blocked: user.is_blocked,
+            isBlocked: isBlocked,
+            block_reason: user.block_reason
+        });
+        
         const row = document.createElement('tr');
-        row.className = 'fade-in';
+        row.className = isBlocked ? 'fade-in table-danger' : 'fade-in';  // ✅ Fila roja si está bloqueado
         row.innerHTML = `
             <td><strong>${formatPhone(phone)}</strong></td>
-            <td>${name}</td>
+            <td>
+                ${name}
+                ${isBlocked ? '<br><small class="text-danger"><i class="bi bi-exclamation-triangle"></i> Bloqueado</small>' : ''}
+            </td>
             <td><span class="badge bg-info">${company}</span></td>
             <td><span class="badge bg-primary">${messageCount}</span></td>
-            <td>${isBlocked ? '<span class="badge bg-danger">Bloqueado</span>' : '<span class="badge bg-success">Activo</span>'}</td>
+            <td>
+                ${isBlocked ? 
+                    `<span class="badge bg-danger">🚫 Bloqueado</span><br><small class="text-muted">${user.block_reason || 'Sin razón'}</small>` : 
+                    '<span class="badge bg-success">✅ Activo</span>'}
+            </td>
             <td><small class="text-muted">${formatDate(lastUpdated)}</small></td>
             <td>
                 <div class="btn-group btn-group-sm">
