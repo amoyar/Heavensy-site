@@ -388,6 +388,78 @@ async function loadDashboardStats() {
     }
 }
 
+// Load initial messages from database
+async function loadInitialMessages() {
+    try {
+        // Solo cargar si estamos en el dashboard y no hay mensajes en memoria
+        if (!window.location.pathname.includes('dashboard.html')) return;
+        
+        console.log('📥 Cargando mensajes iniciales desde BD...');
+        
+        const response = await fetch(`${CONFIG.BACKEND_URL}/api/conversations`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Si no hay mensajes en localStorage, cargar desde la BD
+        if (messagesData.length === 0 && data.conversations && data.conversations.length > 0) {
+            // Cargar los últimos 20 mensajes de cada conversación
+            const allMessages = [];
+            
+            // Tomar las primeras 5 conversaciones
+            const topConversations = data.conversations.slice(0, 5);
+            
+            for (const conv of topConversations) {
+                try {
+                    const msgResponse = await fetch(`${CONFIG.BACKEND_URL}/api/conversations/${conv.user_id}`);
+                    if (msgResponse.ok) {
+                        const msgData = await msgResponse.json();
+                        if (msgData.messages && msgData.messages.length > 0) {
+                            // Tomar los últimos 5 mensajes de cada conversación
+                            allMessages.push(...msgData.messages.slice(-5));
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Error cargando mensajes de ${conv.user_id}:`, err);
+                }
+            }
+            
+            // Ordenar por timestamp descendente
+            allMessages.sort((a, b) => {
+                const timeA = new Date(a.timestamp || a.created_at || 0);
+                const timeB = new Date(b.timestamp || b.created_at || 0);
+                return timeB - timeA;
+            });
+            
+            // Tomar solo los últimos 20
+            messagesData = allMessages.slice(0, 20);
+            
+            // Guardar en localStorage
+            saveMessagesToStorage();
+            
+            // Renderizar tabla
+            const messagesTable = document.getElementById('messagesTable');
+            if (messagesTable) {
+                renderMessagesTable();
+                console.log(`✅ ${messagesData.length} mensajes cargados desde BD`);
+            }
+        } else {
+            console.log(`📦 Usando ${messagesData.length} mensajes desde localStorage`);
+        }
+        
+    } catch (error) {
+        console.error('❌ Error cargando mensajes iniciales:', error);
+    }
+}
+
 // Update dashboard statistics
 function updateDashboardStats(data) {
     // Extract stats from response
@@ -427,12 +499,17 @@ document.addEventListener('DOMContentLoaded', () => {
         initSocket();
     }
     
-    // Si estamos en el dashboard, renderizar mensajes guardados
+    // Si estamos en el dashboard, cargar mensajes iniciales
     if (currentPage === 'dashboard.html') {
         const messagesTable = document.getElementById('messagesTable');
-        if (messagesTable && messagesData.length > 0) {
-            console.log(`📊 Renderizando ${messagesData.length} mensajes guardados`);
-            renderMessagesTable();
+        if (messagesTable) {
+            if (messagesData.length > 0) {
+                console.log(`📊 Renderizando ${messagesData.length} mensajes guardados`);
+                renderMessagesTable();
+            } else {
+                // Cargar mensajes desde la BD si no hay en localStorage
+                loadInitialMessages();
+            }
         }
     }
     
@@ -451,3 +528,155 @@ window.addEventListener('beforeunload', () => {
         socket.disconnect();
     }
 });
+
+// ============================================
+// FUNCIONES DE FILTRADO Y LIMPIEZA
+// ============================================
+
+// Variable global para guardar todos los mensajes sin filtrar
+let allMessagesData = [];
+
+// Aplicar filtros a la tabla de mensajes
+function applyFilters() {
+    const filterUser = document.getElementById('filterUser')?.value.toLowerCase() || '';
+    const filterOrigin = document.getElementById('filterOrigin')?.value || '';
+    const filterType = document.getElementById('filterType')?.value || '';
+    
+    // Usar messagesData que ya existe
+    const filteredMessages = messagesData.filter(msg => {
+        // Filtro por usuario
+        const userName = (msg.profile_name || msg.from_name || msg.user_name || '').toLowerCase();
+        const userPhone = (msg.user_id || msg.from || msg.from_number || '').toLowerCase();
+        const userMatch = !filterUser || userName.includes(filterUser) || userPhone.includes(filterUser);
+        
+        // Filtro por origen (bot/usuario)
+        let originMatch = true;
+        if (filterOrigin) {
+            const senderType = msg.sender_type || msg.from_number;
+            const isBot = senderType === 'assistant' || senderType === 'system' || msg.is_ai_response;
+            originMatch = (filterOrigin === 'bot' && isBot) || (filterOrigin === 'user' && !isBot);
+        }
+        
+        // Filtro por tipo
+        const messageType = msg.message_type || msg.type || 'text';
+        const typeMatch = !filterType || messageType === filterType;
+        
+        return userMatch && originMatch && typeMatch;
+    });
+    
+    // Renderizar mensajes filtrados
+    renderFilteredMessages(filteredMessages);
+    
+    // Mostrar contador de resultados
+    const totalCount = messagesData.length;
+    const filteredCount = filteredMessages.length;
+    console.log(`🔍 Filtrado: ${filteredCount} de ${totalCount} mensajes`);
+}
+
+// Renderizar mensajes filtrados
+function renderFilteredMessages(messages) {
+    const tbody = document.getElementById('messagesTableBody');
+    if (!tbody) return;
+    
+    if (messages.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                    <i class="bi bi-search fs-1 d-block mb-2"></i>
+                    No se encontraron mensajes con los filtros aplicados
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    messages.slice(0, 20).forEach(msg => {
+        const row = document.createElement('tr');
+        row.className = 'fade-in';
+        
+        const messageType = msg.message_type || msg.type || 'text';
+        const messageTypeIcon = getMessageTypeIcon(messageType);
+        const source = msg.source || 'whatsapp';
+        const sourceIcon = getSourceIcon(source);
+        
+        row.innerHTML = `
+            <td>
+                <small class="text-muted">${formatDate(msg.timestamp || msg.created_at)}</small>
+            </td>
+            <td>
+                <i class="${sourceIcon}"></i>
+                <span class="ms-1">${source.toUpperCase()}</span>
+            </td>
+            <td>
+                <strong>${msg.profile_name || msg.from_name || msg.user_name || 'Usuario'}</strong><br>
+                <small class="text-muted">${formatPhone(msg.from || msg.user_id || msg.from_number)}</small>
+            </td>
+            <td>
+                <i class="${messageTypeIcon}"></i>
+                <span class="ms-1">${messageType}</span>
+            </td>
+            <td>
+                <span class="text-truncate d-inline-block" style="max-width: 300px;">
+                    ${msg.message || msg.text || msg.body || 'Sin contenido'}
+                </span>
+            </td>
+            <td>
+                ${getBadgeOrigin(msg)}
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewMessage('${msg.message_id || msg._id || msg.id}')">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+// Limpiar filtros
+function resetFilters() {
+    const filterUser = document.getElementById('filterUser');
+    const filterOrigin = document.getElementById('filterOrigin');
+    const filterType = document.getElementById('filterType');
+    
+    if (filterUser) filterUser.value = '';
+    if (filterOrigin) filterOrigin.value = '';
+    if (filterType) filterType.value = '';
+    
+    // Renderizar todos los mensajes
+    renderMessagesTable();
+}
+
+// Limpiar dashboard (eliminar localStorage)
+function clearDashboardMessages() {
+    if (confirm('⚠️ ¿Estás seguro de que quieres limpiar todos los mensajes del dashboard?\n\nEsto NO eliminará los mensajes de la base de datos, solo del dashboard local.')) {
+        // Limpiar localStorage
+        localStorage.removeItem('heavensy_messages');
+        
+        // Limpiar array
+        messagesData = [];
+        
+        // Limpiar tabla
+        const tbody = document.getElementById('messagesTableBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="bi bi-check-circle fs-1 text-success d-block mb-2"></i>
+                        Dashboard limpiado. Los nuevos mensajes aparecerán aquí en tiempo real.
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // Limpiar filtros
+        resetFilters();
+        
+        showSuccess('✅ Dashboard limpiado exitosamente');
+        
+        console.log('🧹 Dashboard limpiado - localStorage y array vaciados');
+    }
+}
