@@ -159,7 +159,7 @@ function handleNewMessage(data) {
 // Show new message notification
 function showNewMessageNotification(data) {
     const message = data.message || data.text || 'Nuevo mensaje';
-    const from = data.profile_name || data.from_name || data.user_name || 'Usuario';
+    const from = getMessageUserName(data);
     showInfo(`Nuevo mensaje de ${from}: ${message.substring(0, 50)}...`);
 }
 
@@ -188,7 +188,7 @@ function renderMessagesTable() {
                 <span class="ms-1">${source.toUpperCase()}</span>
             </td>
             <td>
-                <strong>${msg.profile_name || msg.from_name || msg.user_name || 'Usuario'}</strong><br>
+                <strong>${getMessageUserName(msg)}</strong><br>
                 <small class="text-muted">${formatPhone(msg.from || msg.user_id || msg.from_number)}</small>
             </td>
             <td>
@@ -263,6 +263,27 @@ function getBadgeOrigin(msg) {
     return '<span class="badge bg-secondary"><i class="bi bi-person"></i> Usuario</span>';
 }
 
+// ✅ NUEVA FUNCIÓN: Obtener nombre correcto según si es bot o usuario
+function getMessageUserName(msg) {
+    // Verificar si es mensaje del bot
+    const senderType = msg.sender_type || msg.from_number || msg.from;
+    const isAiResponse = msg.is_ai_response || msg.is_bot_response;
+    const isBot = senderType === 'assistant' || 
+                  senderType === 'system' || 
+                  msg.from_number === 'assistant' ||
+                  msg.role === 'assistant' ||
+                  isAiResponse === true;
+    
+    // Si es bot, retornar "Alicia" o "Asistente IA"
+    if (isBot) {
+        return 'Alicia';
+    }
+    
+    // Si es usuario, retornar su nombre real
+    return msg.profile_name || msg.from_name || msg.user_name || 'Usuario';
+}
+
+
 // View message details
 function viewMessage(messageId) {
     // Buscar el mensaje en el array
@@ -292,7 +313,7 @@ function viewMessage(messageId) {
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <strong><i class="bi bi-person"></i> Usuario:</strong><br>
-                                <span class="text-muted">${message.profile_name || message.from_name || message.user_name || 'Unknown'}</span>
+                                <span class="text-muted">${getMessageUserName(message)}</span>
                             </div>
                             <div class="col-md-6">
                                 <strong><i class="bi bi-telephone"></i> Teléfono:</strong><br>
@@ -545,7 +566,7 @@ function applyFilters() {
     // Usar messagesData que ya existe
     const filteredMessages = messagesData.filter(msg => {
         // Filtro por usuario
-        const userName = (msg.profile_name || msg.from_name || msg.user_name || '').toLowerCase();
+        const userName = (getMessageUserName(msg) || ''
         const userPhone = (msg.user_id || msg.from || msg.from_number || '').toLowerCase();
         const userMatch = !filterUser || userName.includes(filterUser) || userPhone.includes(filterUser);
         
@@ -610,7 +631,7 @@ function renderFilteredMessages(messages) {
                 <span class="ms-1">${source.toUpperCase()}</span>
             </td>
             <td>
-                <strong>${msg.profile_name || msg.from_name || msg.user_name || 'Usuario'}</strong><br>
+                <strong>${getMessageUserName(msg)}</strong><br>
                 <small class="text-muted">${formatPhone(msg.from || msg.user_id || msg.from_number)}</small>
             </td>
             <td>
