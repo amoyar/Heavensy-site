@@ -56,16 +56,15 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th>ID</th>
                                         <th>Usuario</th>
-                                        <th>Empresa</th>
                                         <th>Mensajes</th>
+                                        <th>Último Mensaje</th>
                                         <th>Última Actividad</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="conversationsTableBody">
-                                    <tr><td colspan="6" class="text-center text-muted py-4">Cargando conversaciones...</td></tr>
+                                    <tr><td colspan="5" class="text-center text-muted py-4">Cargando conversaciones...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -85,21 +84,26 @@
             showLoading('Cargando conversaciones...');
             try {
                 const data = await apiCall(CONFIG.API_ENDPOINTS.CONVERSATIONS);
+                console.log('📥 Datos recibidos:', data);
+                
                 const conversations = data.conversations || data || [];
                 const tbody = document.getElementById('conversationsTableBody');
+                
                 if (conversations.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay conversaciones</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No hay conversaciones</td></tr>';
                 } else {
-                    tbody.innerHTML = conversations.map(conv => `
+                    tbody.innerHTML = conversations.map(conv => {
+                        console.log('💬 Conversación:', conv);
+                        return `
                         <tr>
-                            <td><code>${conv.user_id || conv.phone || conv._id || conv.id}</code></td>
-                            <td><strong>${conv.profile_name || conv.user_name || 'Unknown'}</strong><br>
+                            <td>
+                                <strong>${conv.profile_name || 'Usuario'}</strong><br>
                                 <small class="text-muted">${formatPhone(conv.phone || conv.user_id)}</small>
                             </td>
                             <td><span class="badge bg-info">${conv.message_count || 0} mensajes</span></td>
                             <td>
-                                <span class="text-truncate d-inline-block" style="max-width: 300px;">
-                                    ${conv.last_message || 'Sin mensajes'}
+                                <span class="text-truncate d-inline-block" style="max-width: 400px;">
+                                    ${conv.last_message || 'Sin mensajes recientes'}
                                 </span>
                             </td>
                             <td><small>${formatDate(conv.last_timestamp || conv.updated_at)}</small></td>
@@ -109,12 +113,13 @@
                                 </button>
                             </td>
                         </tr>
-                    `).join('');
+                    `}).join('');
                 }
                 hideLoading();
             } catch (error) {
                 hideLoading();
-                showError('Error al cargar conversaciones');
+                console.error('❌ Error:', error);
+                showError('Error al cargar conversaciones: ' + error.message);
             }
         });
         
@@ -123,10 +128,12 @@
             showLoading('Cargando conversación...');
             try {
                 const data = await apiCall(CONFIG.API_ENDPOINTS.CONVERSATION_BY_ID(phone));
+                console.log('📨 Detalle conversación:', data);
                 hideLoading();
                 showConversationModal(data);
             } catch (error) {
                 hideLoading();
+                console.error('❌ Error:', error);
                 showError('Error al cargar conversación: ' + error.message);
             }
         }
@@ -134,19 +141,22 @@
         // Mostrar modal con la conversación
         function showConversationModal(data) {
             const messages = data.messages || [];
-            const userName = data.profile_name || data.user_name || 'Usuario';
+            const userName = data.profile_name || 'Usuario';
             const phone = data.phone || data.user_id;
             
+            console.log(`💬 Mostrando ${messages.length} mensajes`);
+            
             const messagesHtml = messages.map(msg => {
-                const isBot = msg.sender_type === 'assistant' || msg.from_number === 'assistant';
-                const time = new Date(msg.timestamp).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+                const isBot = msg.sender_type === 'assistant' || msg.from_number === 'assistant' || msg.is_ai_response;
+                const timestamp = msg.timestamp || msg.created_at;
+                const time = timestamp ? new Date(timestamp).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '';
                 
                 return `
                     <div class="message-bubble ${isBot ? 'bot' : 'user'} mb-3">
                         <div class="d-flex justify-content-between align-items-start">
-                            <div>
+                            <div style="flex: 1;">
                                 <strong>${isBot ? '🤖 Bot' : '👤 ' + userName}</strong>
-                                <p class="mb-0 mt-1">${msg.text || msg.message || 'Sin contenido'}</p>
+                                <p class="mb-0 mt-1">${msg.text || msg.message || msg.body || 'Sin contenido'}</p>
                             </div>
                             <small class="text-muted ms-2">${time}</small>
                         </div>
@@ -171,7 +181,7 @@
                                 </div>
                                 <hr>
                                 <div class="conversation-container">
-                                    ${messagesHtml || '<p class="text-muted">No hay mensajes</p>'}
+                                    ${messagesHtml || '<p class="text-muted text-center py-4">No hay mensajes en esta conversación</p>'}
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -218,7 +228,7 @@
             margin-left: auto;
         }
     </style>
-    </script>
+    
     <!-- Socket.IO Client -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 </body>
