@@ -32,25 +32,33 @@ function renderWhatsAppUsersTable() {
     
     tbody.innerHTML = '';
     whatsappUsers.forEach(user => {
+        // Extraer campos con prioridades correctas
+        const phone = user.user_id || user.phone || user.phone_number || 'Sin teléfono';
+        const name = user.profile_name || user.name || user.username || 'Sistema';
+        const company = user.company_id || user.company_name || 'N/A';
+        const messageCount = user.message_count || user.total_messages || 0;
+        const isBlocked = user.blocked || user.is_blocked || false;
+        const lastUpdated = user.last_updated || user.last_interaction || user.updated_at || user.last_message_at;
+        
         const row = document.createElement('tr');
         row.className = 'fade-in';
         row.innerHTML = `
-            <td><strong>${formatPhone(user.phone_number || user.user_id)}</strong></td>
-            <td>${user.name || user.username || 'N/A'}</td>
-            <td><span class="badge bg-secondary">${user.company_id || 'N/A'}</span></td>
-            <td><span class="badge bg-info">${user.message_count || 0}</span></td>
-            <td>${user.is_blocked ? '<span class="badge bg-danger">Bloqueado</span>' : '<span class="badge bg-success">Activo</span>'}</td>
-            <td><small class="text-muted">${formatDate(user.last_message_at || user.updated_at)}</small></td>
+            <td><strong>${formatPhone(phone)}</strong></td>
+            <td>${name}</td>
+            <td><span class="badge bg-info">${company}</span></td>
+            <td><span class="badge bg-primary">${messageCount}</span></td>
+            <td>${isBlocked ? '<span class="badge bg-danger">Bloqueado</span>' : '<span class="badge bg-success">Activo</span>'}</td>
+            <td><small class="text-muted">${formatDate(lastUpdated)}</small></td>
             <td>
                 <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" onclick="viewWhatsAppUser('${user.user_id || user.phone_number}')" title="Ver mensajes">
+                    <button class="btn btn-outline-primary" onclick="viewWhatsAppUser('${phone}')" title="Ver mensajes">
                         <i class="bi bi-chat-dots"></i>
                     </button>
-                    ${user.is_blocked ? 
-                        `<button class="btn btn-outline-success" onclick="unblockUser('${user.user_id || user.phone_number}')" title="Desbloquear">
+                    ${isBlocked ? 
+                        `<button class="btn btn-outline-success" onclick="unblockUser('${phone}')" title="Desbloquear">
                             <i class="bi bi-unlock"></i>
                         </button>` :
-                        `<button class="btn btn-outline-danger" onclick="blockUser('${user.user_id || user.phone_number}')" title="Bloquear">
+                        `<button class="btn btn-outline-danger" onclick="blockUser('${phone}')" title="Bloquear">
                             <i class="bi bi-lock"></i>
                         </button>`
                     }
@@ -108,16 +116,19 @@ function showUserMessages(data) {
     const phone = data.phone || data.user_id;
     
     let messagesHtml = messages.map(msg => {
-        const isBot = msg.sender_type === 'assistant' || msg.from_number === 'assistant' || msg.is_bot_response;
+        const isBot = msg.role === 'assistant' || msg.sender_type === 'assistant' || msg.from_number === 'assistant' || msg.is_bot_response;
         const timestamp = msg.timestamp || msg.created_at;
         const time = timestamp ? new Date(timestamp).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '';
+        
+        // CRÍTICO: Leer 'content' primero
+        const messageText = msg.content || msg.message || msg.text || msg.body || 'Sin contenido';
         
         return `
             <div class="message-bubble ${isBot ? 'bot' : 'user'} mb-2">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <strong>${isBot ? '🤖 Bot' : '👤 ' + userName}</strong>
-                        <p class="mb-0 mt-1">${msg.message || msg.text || msg.body || 'Sin contenido'}</p>
+                        <strong>${isBot ? '🤖 Bot Alicia' : '👤 ' + userName}</strong>
+                        <p class="mb-0 mt-1">${messageText}</p>
                     </div>
                     <small class="text-muted ms-2">${time}</small>
                 </div>
