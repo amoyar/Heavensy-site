@@ -566,7 +566,7 @@ function applyFilters() {
     // Usar messagesData que ya existe
     const filteredMessages = messagesData.filter(msg => {
         // Filtro por usuario
-        const userName = (getMessageUserName(msg) || ''
+        const userName = (getMessageUserName(msg) || '').toLowerCase();
         const userPhone = (msg.user_id || msg.from || msg.from_number || '').toLowerCase();
         const userMatch = !filterUser || userName.includes(filterUser) || userPhone.includes(filterUser);
         
