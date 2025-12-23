@@ -39,10 +39,26 @@ function renderUsersTable() {
         const row = document.createElement('tr');
         row.className = 'fade-in';
         
-        // El backend devuelve companies como array, mostrar la primera
-        const companyDisplay = user.companies && user.companies.length > 0 
-            ? user.companies[0] 
-            : (user.company_id || 'Sin empresa');
+        // El backend devuelve companies como array, extraer company_id de la primera
+        let companyDisplay = 'Sin empresa';
+        let roleDisplay = 'Usuario';
+        
+        if (user.companies && user.companies.length > 0) {
+            const firstCompany = user.companies[0];
+            companyDisplay = firstCompany.company_id || firstCompany.company_name || 'Sin empresa';
+            
+            // Extraer el primer rol
+            if (firstCompany.roles && firstCompany.roles.length > 0) {
+                roleDisplay = firstCompany.roles[0];
+            }
+        } else if (user.company_id) {
+            companyDisplay = user.company_id;
+        }
+        
+        // Simplificar nombre del rol para display
+        roleDisplay = roleDisplay.replace('_ROL', '').replace('ADMIN', 'Administrador')
+                                 .replace('OPERATOR', 'Operador')
+                                 .replace('VIEWER', 'Visualizador');
         
         // El backend devuelve status: "A" (Activo) o "I" (Inactivo)
         const isActive = user.status === 'A' || user.is_active === true;
@@ -52,7 +68,7 @@ function renderUsersTable() {
             <td>${user.first_name || ''} ${user.last_name || ''}</td>
             <td>${user.email ? `<a href="mailto:${user.email}">${user.email}</a>` : 'N/A'}</td>
             <td><span class="badge bg-secondary">${companyDisplay}</span></td>
-            <td><span class="badge bg-primary">${user.role || user.roles || 'Usuario'}</span></td>
+            <td><span class="badge bg-primary">${roleDisplay}</span></td>
             <td>${isActive ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>'}</td>
             <td>
                 <div class="btn-group btn-group-sm">
@@ -222,12 +238,18 @@ async function editUser(username) {
         
         // Campos adicionales
         if (user.companies && user.companies.length > 0) {
-            document.getElementById('company_id').value = user.companies[0];
+            const firstCompany = user.companies[0];
+            document.getElementById('company_id').value = firstCompany.company_id || '';
+            
+            // Cargar rol
+            if (firstCompany.roles && firstCompany.roles.length > 0) {
+                document.getElementById('role').value = firstCompany.roles[0];
+            }
         } else if (user.company_id) {
             document.getElementById('company_id').value = user.company_id;
+            document.getElementById('role').value = user.role || '';
         }
         
-        document.getElementById('role').value = user.role || user.roles || '';
         document.getElementById('is_active').checked = user.status === 'A' || user.is_active === true;
         
         // Mostrar el modal
