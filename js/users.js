@@ -81,6 +81,10 @@ async function loadCompaniesForSelect() {
         const data = await apiCall(CONFIG.API_ENDPOINTS.COMPANIES);
         const companies = data.companies || data || [];
         const select = document.getElementById('company_id');
+        if (!select) {
+            console.error('Element company_id not found');
+            return;
+        }
         select.innerHTML = '<option value="">Seleccione una empresa...</option>';
         companies.forEach(company => {
             const option = document.createElement('option');
@@ -97,27 +101,52 @@ function showCreateUserModal() {
     currentUser = null;
     document.getElementById('modalTitle').innerHTML = '<i class="bi bi-person-plus"></i> Nuevo Usuario';
     document.getElementById('userForm').reset();
+    document.getElementById('username').disabled = false;
+    document.getElementById('password').placeholder = 'Contraseña';
+    document.getElementById('password').required = true;
+    document.getElementById('is_active').checked = true;
     userModal.show();
 }
 
 async function saveUser() {
+    console.log('saveUser called'); // Debug
+    
     const form = document.getElementById('userForm');
     if (!form.checkValidity()) {
         form.reportValidity();
         return;
     }
     
+    // CORRECCIÓN: Usar los IDs correctos del HTML (first_name, last_name)
     const userData = {
-        username: document.getElementById('username').value,
-        email: document.getElementById('email').value,
-        first_name: document.getElementById('firstName').value,
-        last_name: document.getElementById('lastName').value,
-        password: document.getElementById('password').value
+        username: document.getElementById('username').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        first_name: document.getElementById('first_name').value.trim(),
+        last_name: document.getElementById('last_name').value.trim(),
+        password: document.getElementById('password').value,
+        company_id: document.getElementById('company_id').value,
+        role: document.getElementById('role').value,
+        is_active: document.getElementById('is_active').checked
     };
+    
+    console.log('User data:', userData); // Debug
+    
+    // Validar campos requeridos
+    if (!userData.username || !userData.email || !userData.first_name || 
+        !userData.last_name || !userData.company_id || !userData.role) {
+        showError('Por favor complete todos los campos requeridos');
+        return;
+    }
     
     // Si está editando y el password está vacío, no enviarlo
     if (currentUser && !userData.password) {
         delete userData.password;
+    }
+    
+    // Validar password si es creación
+    if (!currentUser && (!userData.password || userData.password.length < 8)) {
+        showError('La contraseña debe tener al menos 8 caracteres');
+        return;
     }
     
     const isEditing = currentUser !== null;
@@ -126,17 +155,26 @@ async function saveUser() {
         : CONFIG.API_ENDPOINTS.USERS;
     const method = isEditing ? 'PUT' : 'POST';
     
+    console.log('Endpoint:', endpoint); // Debug
+    console.log('Method:', method); // Debug
+    
     showLoading(isEditing ? 'Actualizando usuario...' : 'Creando usuario...');
     try {
-        await apiCall(endpoint, {
+        const response = await apiCall(endpoint, {
             method: method,
             body: JSON.stringify(userData)
         });
+        
+        console.log('Response:', response); // Debug
+        
         hideLoading();
         userModal.hide();
         showSuccess(isEditing ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente');
-        loadUsers();
+        
+        // Recargar la lista de usuarios
+        await loadUsers();
     } catch (error) {
+        console.error('Error saving user:', error); // Debug
         hideLoading();
         showError('Error al guardar usuario: ' + error.message);
     }
@@ -156,21 +194,6 @@ async function deleteUser(userId) {
     }
 }
 
-function showCreateUserModal() {
-    // Resetear usuario actual
-    currentUser = null;
-    
-    // Limpiar el formulario
-    document.getElementById('modalTitle').textContent = 'Nuevo Usuario';
-    document.getElementById('userForm').reset();
-    document.getElementById('username').disabled = false;
-    document.getElementById('password').placeholder = 'Contraseña';
-    document.getElementById('password').required = true;
-    
-    // Mostrar el modal
-    userModal.show();
-}
-
 async function editUser(username) {
     showLoading('Cargando usuario...');
     try {
@@ -186,16 +209,26 @@ async function editUser(username) {
         // Guardar usuario actual para edición
         currentUser = user;
         
-        // Rellenar el formulario del modal
-        document.getElementById('modalTitle').textContent = 'Editar Usuario';
+        // Rellenar el formulario del modal - USAR IDs CORRECTOS
+        document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil"></i> Editar Usuario';
         document.getElementById('username').value = user.username;
         document.getElementById('username').disabled = true; // No permitir cambiar username
         document.getElementById('email').value = user.email || '';
-        document.getElementById('firstName').value = user.first_name || '';
-        document.getElementById('lastName').value = user.last_name || '';
+        document.getElementById('first_name').value = user.first_name || '';
+        document.getElementById('last_name').value = user.last_name || '';
         document.getElementById('password').value = '';
         document.getElementById('password').placeholder = 'Dejar vacío para no cambiar';
         document.getElementById('password').required = false;
+        
+        // Campos adicionales
+        if (user.companies && user.companies.length > 0) {
+            document.getElementById('company_id').value = user.companies[0];
+        } else if (user.company_id) {
+            document.getElementById('company_id').value = user.company_id;
+        }
+        
+        document.getElementById('role').value = user.role || user.roles || '';
+        document.getElementById('is_active').checked = user.status === 'A' || user.is_active === true;
         
         // Mostrar el modal
         hideLoading();
