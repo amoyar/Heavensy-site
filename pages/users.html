@@ -1,0 +1,211 @@
+<!-- USERS PAGE -->
+<div class="container mx-auto">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">
+        <i class="fas fa-users text-blue-600"></i>
+        Usuarios
+      </h1>
+      <p class="text-gray-600 mt-1">Administración de usuarios del sistema</p>
+    </div>
+
+    <button
+      onclick="openUserModal()"
+      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+    >
+      <i class="fas fa-plus"></i>
+      Nuevo usuario
+    </button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white rounded-lg shadow p-6">
+      <p class="text-sm text-gray-600">Total Usuarios</p>
+      <p class="text-2xl font-bold" id="totalUsers">0</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+      <p class="text-sm text-gray-600">Usuarios Activos</p>
+      <p class="text-2xl font-bold text-green-700" id="activeUsers">0</p>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+      <p class="text-sm text-gray-600">Usuarios Inactivos</p>
+      <p class="text-2xl font-bold text-red-700" id="inactiveUsers">0</p>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b">
+      <h3 class="text-lg font-semibold">Lista de Usuarios</h3>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teléfono</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Empresas</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="usersTable" class="bg-white divide-y">
+          <!-- Usuarios se cargarán aquí -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    <div class="px-6 py-4 border-t bg-gray-50 flex items-center justify-between">
+      <div class="text-sm text-gray-700">
+        Mostrando <span id="showingFrom">0</span> a <span id="showingTo">0</span> de <span id="totalRecords">0</span> usuarios
+      </div>
+      <div class="flex gap-2" id="paginationControls">
+        <!-- Controles de paginación se cargarán aquí -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- USER MODAL -->
+<div id="userModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+  <div class="bg-white w-full max-w-3xl rounded-xl shadow-xl max-h-[90vh] overflow-y-auto mx-4">
+    <!-- Header -->
+    <div class="flex justify-between items-center px-6 py-4 border-b sticky top-0 bg-white z-10">
+      <h2 id="userModalTitle" class="text-lg font-semibold text-gray-800">Nuevo usuario</h2>
+      <button onclick="closeUserModal()" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <form id="userForm" class="px-6 py-5 space-y-6">
+      
+      <!-- Información Básica -->
+      <div>
+        <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <i class="fas fa-user text-blue-600"></i>
+          Información Básica
+        </h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+            <input id="username" class="w-full border rounded-lg px-3 py-2 text-sm" required placeholder="admin" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">User ID</label>
+            <input id="user_id" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Auto-generado si vacío" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+            <input id="first_name" class="w-full border rounded-lg px-3 py-2 text-sm" required placeholder="Juan" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Apellido *</label>
+            <input id="last_name" class="w-full border rounded-lg px-3 py-2 text-sm" required placeholder="Pérez" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <input id="email" type="email" class="w-full border rounded-lg px-3 py-2 text-sm" required placeholder="usuario@empresa.com" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+            <input id="phone" type="tel" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="+56912345678" />
+          </div>
+
+          <div class="col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">RUT</label>
+            <input id="rut" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="12345678-9" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Contraseña (solo al crear) -->
+      <div id="passwordBlock">
+        <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <i class="fas fa-lock text-blue-600"></i>
+          Contraseña
+        </h3>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
+          <input id="password" type="password" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Mínimo 8 caracteres" />
+        </div>
+      </div>
+
+      <!-- Empresas y Roles -->
+      <div class="border-t pt-4">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-md font-semibold text-gray-800 flex items-center gap-2">
+            <i class="fas fa-building text-blue-600"></i>
+            Empresas y Roles
+          </h3>
+          <button
+            type="button"
+            onclick="addCompanyToUser()"
+            class="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+          >
+            <i class="fas fa-plus"></i>
+            Agregar empresa
+          </button>
+        </div>
+        <div id="userCompanies" class="space-y-3">
+          <!-- Empresas del usuario se cargarán aquí -->
+        </div>
+      </div>
+
+      <!-- Estado y Fechas -->
+      <div class="border-t pt-4">
+        <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <i class="fas fa-info-circle text-blue-600"></i>
+          Estado y Fechas
+        </h3>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input id="user_status" type="checkbox" checked class="w-4 h-4 text-blue-600" />
+              <span class="text-sm text-gray-700 font-medium">Usuario activo</span>
+            </label>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-500 mb-1">Fecha de Creación</label>
+            <input id="date_created" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-600" readonly />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-500 mb-1">Última Actualización</label>
+            <input id="date_updated" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-600" readonly />
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <!-- Footer -->
+    <div class="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50 sticky bottom-0">
+      <button
+        type="button"
+        onclick="closeUserModal()"
+        class="px-4 py-2 rounded-lg text-sm border text-gray-600 hover:bg-gray-100"
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        form="userForm"
+        class="px-5 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white"
+      >
+        Guardar
+      </button>
+    </div>
+  </div>
+</div>
