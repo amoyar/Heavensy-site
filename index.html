@@ -10,13 +10,30 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100">
+<body class="bg-gray-100 h-screen overflow-hidden">
 
+  <!-- Navbar fijo arriba -->
   <header id="navbar"></header>
 
-  <div class="flex min-h-screen">
+  <!-- Contenedor principal bajo el navbar -->
+  <div class="flex h-[calc(100vh-64px)]">
     <aside id="sidebar"></aside>
-    <main id="app" class="flex-1 p-6"></main>
+
+    <!-- SOLO este contenedor hace scroll -->
+    <main id="app" class="flex-1 p-6 overflow-y-auto">
+      <div class="flex items-center justify-center h-full">
+        <div class="bg-white rounded-xl px-6 py-4 flex items-center gap-3 shadow-lg">
+          <svg class="animate-spin h-6 w-6 text-blue-600"
+              xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10"
+                    stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8z"></path>
+          </svg>
+          <span class="text-gray-800 text-sm font-medium">Cargando…</span>
+        </div>
+      </div>
+    </main>
   </div>
 
   <!-- CORE -->
@@ -30,30 +47,13 @@
   <script src="./assets/js/users.js"></script>
   <script src="./assets/js/companies.js"></script>
   <script src="./assets/js/roles.js"></script>
-  <script src="./assets/js/conversations.js"></script>
-  <script src="./assets/js/conversaciones.js"></script>
-  <!-- <script src="./assets/js/monitor.js"></script> -->
-  <script src="./assets/js/monitor.js"></script>
-  <script src="./assets/js/historial.js"></script> 
-  <script src="./assets/js/mensajes.js"></script>
-  <script src="./assets/js/logs.js"></script>
   <script src="./assets/js/settings.js"></script>
-  <script src="./assets/js/profile.js"></script>
-
-  <!-- GLOBAL LOADER -->
-  <div id="globalLoader"
-      class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-    <div class="bg-white rounded-xl px-6 py-4 flex items-center gap-3 shadow-lg">
-      <svg class="animate-spin h-6 w-6 text-blue-600"
-          xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10"
-                stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor"
-              d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8z"></path>
-      </svg>
-      <span class="text-gray-800 text-sm font-medium">Cargando…</span>
-    </div>
-  </div>
+  <!-- <script src="./assets/js/conversations.js"></script> -->
+  <script src="./assets/js/monitor.js"></script>
+  <script src="./assets/js/logs.js"></script>
+  <script src="./assets/js/mensajes.js"></script>
+  <script src="./assets/js/historial.js"></script>
+  <script src="./assets/js/conversaciones.js"></script>
 
 </body>
 </html>

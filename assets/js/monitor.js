@@ -8,7 +8,7 @@ let soundEnabled = true;
 let messagesCount = 0;
 let blockedCount = 0;
 let monitorCompanies = [];
-let currentCompanyId = null;
+//let currentCompanyId = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 

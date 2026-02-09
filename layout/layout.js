@@ -23,6 +23,9 @@ async function loadLayout() {
     // Cargar nombre de usuario
     loadTopbarUsername();
 
+    // Inicializar toggle del sidebar
+    initSidebarToggle();
+
   } catch (e) {
     console.error('❌ Error cargando layout', e);
   }
@@ -77,6 +80,35 @@ function openSecurityModal() {
       showTabProfile('security');
     }
   }, 100);
+}
+
+// ================================
+// TOGGLE SIDEBAR
+// ================================
+function initSidebarToggle() {
+  const sidebar = document.getElementById('appSidebar');
+  const toggleBtn = document.getElementById('toggleSidebarBtn');
+
+  if (!sidebar || !toggleBtn) {
+    console.warn('Sidebar o botón toggle no encontrados');
+    return;
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    const isCollapsed = sidebar.classList.contains('w-20');
+
+    if (isCollapsed) {
+      // Expandir
+      sidebar.classList.remove('w-20');
+      sidebar.classList.add('w-64');
+      document.querySelectorAll('.sidebar-text').forEach(el => el.classList.remove('hidden'));
+    } else {
+      // Colapsar
+      sidebar.classList.remove('w-64');
+      sidebar.classList.add('w-20');
+      document.querySelectorAll('.sidebar-text').forEach(el => el.classList.add('hidden'));
+    }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', loadLayout);
