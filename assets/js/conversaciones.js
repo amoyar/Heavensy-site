@@ -838,29 +838,36 @@ function updateChatHeader() {
 function updateContactPanel() {
     if (!currentConversation) return;
 
-    // Actualizar avatar grande
-    const contactAvatar = document.querySelector('.w-70.border-l .w-16.h-16');
+    // Contenedor del panel derecho
+    const panel = document.querySelector('.w-60.border-l');
+    if (!panel) {
+        console.warn('⚠️ No se encontró el panel de contacto');
+        return;
+    }
+
+    // Avatar grande
+    const contactAvatar = panel.querySelector('.w-16.h-16');
     if (contactAvatar) {
         contactAvatar.className = `w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-${currentConversation.color}-300 to-${currentConversation.color}-400 flex items-center justify-center text-white text-xl font-bold mb-3 shadow-sm`;
         contactAvatar.textContent = currentConversation.avatar;
     }
 
-    // Actualizar nombre del contacto
-    const contactName = document.querySelector('.w-70.border-l h3.font-bold');
+    // Nombre
+    const contactName = panel.querySelector('h3.font-bold');
     if (contactName) {
         contactName.textContent = currentConversation.name;
     }
 
-    // Actualizar teléfono del contacto
-    const contactPhones = document.querySelectorAll('.w-70.border-l .text-sm.font-bold');
-    contactPhones.forEach(el => {
-        if (el.textContent.startsWith('+') || el.textContent.match(/^\d/)) {
-            el.textContent = currentConversation.phone;
-        }
-    });
+    // Teléfono
+    const phoneEl = panel.querySelector('.text-sm.font-bold');
+    if (phoneEl) {
+        phoneEl.textContent = currentConversation.phone;
+    }
 
     console.log('📋 Panel de contacto actualizado');
 }
+
+
 
 // ============================================
 // SELECCIONAR MENSAJE PARA RESPONDER
