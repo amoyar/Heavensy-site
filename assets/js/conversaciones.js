@@ -1,4 +1,3 @@
-// ============================================
 // CONVERSACIONES - JAVASCRIPT CON BACKEND REAL
 // Sistema de chat en tiempo real estilo WhatsApp
 // ============================================
@@ -20,7 +19,7 @@ let currentCompanyId = null;
 let allMessages = [];
 let selectedMessageToReply = null;
 let messagesOrderReversed = false;
-
+let isSending = false;
 // ============================================
 // INICIALIZACIÓN
 // ============================================
@@ -54,6 +53,35 @@ async function initConversacionesPage() {
 
     console.log('✅ Página de conversaciones inicializada');
 }
+
+// ============================================
+// UI: ESTADO ENVIANDO (SPINNER + BLOQUEO)
+// ============================================
+function setSendingUI(sending) {
+    const sendButton = document.getElementById('sendButton');
+    const input = document.getElementById('messageInput');
+
+    if (!sendButton) return;
+
+    isSending = sending;
+
+    if (sending) {
+        sendButton.disabled = true;
+        sendButton.innerHTML = `
+            <i class="fas fa-spinner fa-spin mr-2"></i> Enviando...
+        `;
+        sendButton.classList.add('opacity-70', 'cursor-not-allowed');
+        if (input) input.disabled = true;
+    } else {
+        sendButton.disabled = false;
+        sendButton.innerHTML = `
+            <i class="fas fa-paper-plane"></i>
+        `;
+        sendButton.classList.remove('opacity-70', 'cursor-not-allowed');
+        if (input) input.disabled = false;
+    }
+}
+
 
 // ============================================
 // CARGAR EMPRESAS Y CONVERSACIONES
@@ -931,6 +959,11 @@ if (typeof window !== 'undefined') {
 // ENVIAR MENSAJE
 // ============================================
 async function sendMessage() {
+    if (isSending) {
+        console.warn('⏳ Ya se está enviando un mensaje...');
+        return;
+    }
+    setSendingUI(true);
     console.log('🚀 sendMessage() llamada');
     
     const input = document.getElementById('messageInput');
@@ -942,216 +975,90 @@ async function sendMessage() {
         return;
     }
 
-    console.log('✅ Input encontrado');
-
     const message = input.value.trim();
-    console.log('📝 Texto del input:', message);
-    console.log('📎 attachedFile global:', window.conversacionesState.attachedFile);
-    
-    // Validar que haya al menos texto O archivo
+
     if (!message && !window.conversacionesState.attachedFile) {
-        console.warn('⚠️ Se necesita texto o archivo');
         alert('Debes escribir un mensaje o adjuntar un archivo');
         return;
     }
     
-    if (!currentConversation) {
-        console.error('❌ No hay conversación actual');
-        return;
-    }
-    
+    if (!currentConversation) return;
     if (!selectedMessageToReply) {
-        console.warn('⚠️ No hay mensaje seleccionado');
         alert('Por favor, selecciona un mensaje del usuario para responder');
         return;
     }
 
-    console.log('📤 Enviando mensaje:', message);
-
     try {
-        console.log('✅ Mensaje a responder:', selectedMessageToReply.message_id);
-        
+        // 🔒 Activar UI de envío
+        setSendingUI(true);
+
         const adminResponse = {
             text: message,
             sent_at: new Date().toISOString(),
-            sent_by: {
-                user_id: 'current_admin',
-                name: 'Super Admin'
-            }
+            sent_by: { user_id: 'current_admin', name: 'Super Admin' }
         };
-        
-        // Si hay archivo adjunto, agregarlo con estructura completa
-        if (window.conversacionesState.attachedFile) {
-            console.log('📎 Incluyendo archivo adjunto:', window.conversacionesState.attachedFile.name);
-            
-            // Determinar el tipo de archivo
-            const fileType = window.conversacionesState.attachedFile.type.startsWith('image/') ? 'image' :
-                           window.conversacionesState.attachedFile.type.startsWith('video/') ? 'video' :
-                           window.conversacionesState.attachedFile.type.startsWith('audio/') ? 'audio' : 'document';
-            
-            // Estructura similar a los mensajes del usuario
-            adminResponse.type = fileType;
-            adminResponse.mime_type = window.conversacionesState.attachedFile.type;
-            adminResponse.media_id = null; // Se llenará después del upload
-            adminResponse.media_url = null; // Se llenará después del upload
-            adminResponse.cloudinary_url = null; // Se llenará después del upload a Cloudinary
-            adminResponse.cloudinary_id = null; // Se llenará después del upload
-            
-            // Si es documento, incluir el nombre del archivo
-            if (fileType === 'document') {
-                adminResponse.content = `(Documento enviado: ${window.conversacionesState.attachedFile.name})`;
-            } else if (fileType === 'image') {
-                adminResponse.content = '(Imagen enviada)';
-            } else if (fileType === 'video') {
-                adminResponse.content = '(Video enviado)';
-            } else if (fileType === 'audio') {
-                adminResponse.content = '(Audio enviado)';
-            }
-            
-            // TODO: Subir archivo a Cloudinary
-            // const uploadedFile = await uploadToCloudinary(attachedFile);
-            // adminResponse.cloudinary_url = uploadedFile.url;
-            // adminResponse.cloudinary_id = uploadedFile.public_id;
-        }
-        
-        // Buscar el mensaje en currentMessages para actualizarlo
-        const messageToUpdate = currentMessages.find(m => m.message_id === selectedMessageToReply.message_id);
-        
-        if (!messageToUpdate) {
-            console.error('❌ No se encontró el mensaje en currentMessages');
-            return;
-        }
-        
-        if (!messageToUpdate.responses) {
-            messageToUpdate.responses = [];
-        }
-        
-        messageToUpdate.responses.push(adminResponse);
-        
-        console.log('✅ Respuesta agregada. Total respuestas:', messageToUpdate.responses.length);
-        
-        // 🔒 CRÍTICO: Guardar referencia al archivo ANTES de cualquier operación UI
-        // que pueda disparar event listeners que llamen a clearAttachment()
+
         const fileToSend = window.conversacionesState.attachedFile;
-        
-        // Actualizar UI
-        currentConversation.lastMessage = message;
-        currentConversation.time = 'Ahora';
-        
-        // Limpiar selección
+
+        const messageToUpdate = currentMessages.find(m => m.message_id === selectedMessageToReply.message_id);
+        if (!messageToUpdate) throw new Error('Mensaje no encontrado');
+
+        if (!messageToUpdate.responses) messageToUpdate.responses = [];
+        messageToUpdate.responses.push(adminResponse);
+
         selectedMessageToReply = null;
-        
-        // Limpiar y deshabilitar input/botón
         input.value = '';
-        input.placeholder = 'Selecciona un mensaje para responder...';
-        input.disabled = true;
-        
-        // NO limpiar archivo adjunto todavía - lo necesitamos para el backend
-        
-        if (sendButton) {
-            sendButton.disabled = true;
-            sendButton.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-green-600', 'hover:from-green-600', 'hover:to-green-700', 'cursor-pointer', 'hover:shadow-lg');
-            sendButton.classList.add('bg-gradient-to-r', 'from-gray-300', 'to-gray-400', 'cursor-not-allowed');
-            sendButton.title = 'Selecciona un mensaje del usuario para responder';
-        }
-        
         renderMessages();
         renderConversations();
 
-        console.log('✅ Respuesta enviada correctamente a la UI');
-        
         // ENVIAR AL BACKEND
-        try {
-            const formData = new FormData();
-            
-            // Si hay texto, agregarlo; si no, enviar string vacío (el backend lo acepta si hay file)
-            formData.append('text', message || '');
-            
-            // 🔒 USAR VARIABLE TEMPORAL: fileToSend en lugar de window.conversacionesState.attachedFile
-            // porque esta última puede limpiarse por event listeners durante renderMessages()
-            if (fileToSend) {
-                formData.append('file', fileToSend);
-                console.log('📎 Archivo adjunto incluido en el envío:', fileToSend.name);
-                console.log('📎 Tipo:', fileToSend.type);
-                console.log('📎 Tamaño:', fileToSend.size);
-            }
-            
-            // Debugging: mostrar contenido del FormData
-            console.log('📦 Contenido del FormData:');
-            for (let pair of formData.entries()) {
-                if (pair[1] instanceof File) {
-                    console.log(`  ${pair[0]}: File(${pair[1].name}, ${pair[1].size} bytes)`);
-                } else {
-                    console.log(`  ${pair[0]}: "${pair[1]}"`);
-                }
-            }
-            
-            // Construir URL del endpoint
-            const endpoint = `${API_BASE_URL}/api/chat/messages/${messageToUpdate.message_id}/reply`;
-            console.log('🌐 Enviando a:', endpoint);
-            console.log('📋 message_id:', messageToUpdate.message_id);
-            console.log('📝 text:', message);
-            console.log('📎 file:', fileToSend ? fileToSend.name : 'Sin archivo');
-            
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${getToken()}`
-                    // NO incluir 'Content-Type' - FormData lo maneja automáticamente
-                },
-                body: formData
-            });
-            
-            console.log('📡 Response status:', response.status);
-            console.log('📡 Response ok:', response.ok);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('❌ Error del servidor:', errorText);
-                throw new Error(`Error del servidor: ${response.status} - ${errorText}`);
-            }
-            
-            const result = await response.json();
-            console.log('📦 Response data:', result);
-            
-            if (result.success) {
-                console.log('✅ Respuesta guardada en backend correctamente');
-                
-                // Limpiar archivo adjunto DESPUÉS de enviar exitosamente
-                clearAttachment();
-                
-                // Recargar mensajes desde el backend para obtener la respuesta actualizada con Cloudinary URLs
-                console.log('🔄 Recargando mensajes desde el backend...');
-                await cargarConversacionesPorEmpresa(currentCompanyId);
-                
-                // Volver a seleccionar la conversación actual
-                if (currentConversation) {
-                    selectConversation(currentConversation.id);
-                }
-            } else {
-                console.error('❌ Error del backend:', result.error);
-                alert('Error al guardar la respuesta: ' + result.error);
-                // Limpiar archivo incluso si falla
-                clearAttachment();
-            }
-            
-        } catch (backendError) {
-            console.error('❌ Error enviando al backend:', backendError);
-            console.error('Stack:', backendError.stack);
-            alert('Advertencia: El mensaje se mostró localmente pero no se pudo guardar en el servidor. ' + backendError.message);
-            // Limpiar archivo incluso si hay error
-            clearAttachment();
+        const formData = new FormData();
+        formData.append('text', message || '');
+
+        if (fileToSend) {
+            formData.append('file', fileToSend);
         }
+
+        const endpoint = `${API_BASE_URL}/api/chat/messages/${messageToUpdate.message_id}/reply`;
+
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(err);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            clearAttachment();
+
+            const freshMessages = await cargarMensajesDeConversacion(currentConversation.id);
+            currentConversation.messages = freshMessages;
+            loadMessages();
+            await cargarConversacionesPorEmpresa(currentCompanyId);
+            setSendingUI(false);
+        } else {
+            throw new Error(result.error || 'Error desconocido');
+        }
+
+        // ✅ Apagar UI enviando
+        setSendingUI(false);
 
     } catch (error) {
         console.error('❌ Error enviando mensaje:', error);
-        console.error('Stack:', error.stack);
         alert('Error al enviar el mensaje: ' + error.message);
-        // Limpiar archivo incluso si hay error
+        setSendingUI(false);
         clearAttachment();
     }
 }
-
 // ============================================
 // CONFIGURAR EVENT LISTENERS
 // ============================================

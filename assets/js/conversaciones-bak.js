@@ -5,21 +5,36 @@
 
 console.log('✅ conversaciones.js cargado');
 
-// Estado global
+// Estado global (solo se inicializa una vez)
+if (typeof window.conversacionesState === 'undefined') {
+    window.conversacionesState = {
+        attachedFile: null  // Solo usamos el estado global para attachedFile
+    };
+}
+
+// Variables locales
 let currentConversation = null;
 let conversations = [];
 let currentMessages = [];
-//let currentCompanyId = null;
+let currentCompanyId = null;
 let allMessages = [];
-let selectedMessageToReply = null; // ← NUEVO: mensaje seleccionado para responder
-let messagesOrderReversed = false; // ← NUEVO: controlar orden de mensajes (false = WhatsApp normal, true = invertido)
-let attachedFile = null; // ← NUEVO: archivo adjunto
+let selectedMessageToReply = null;
+let messagesOrderReversed = false;
 
 // ============================================
 // INICIALIZACIÓN
 // ============================================
 async function initConversacionesPage() {
     console.log('🚀 Inicializando página de conversaciones');
+    
+    // Prevenir doble inicialización
+    if (window.ConversacionesModuleInitialized) {
+        console.log('⚠️ Página ya inicializada, recargando datos...');
+        if (window.conversacionesState.currentCompanyId) {
+            await cargarConversacionesPorEmpresa(window.conversacionesState.currentCompanyId);
+        }
+        return;
+    }
 
     // Verificar autenticación
     const token = getToken();
@@ -27,6 +42,9 @@ async function initConversacionesPage() {
         window.location.href = 'login.html';
         return;
     }
+
+    // Marcar como inicializado
+    window.ConversacionesModuleInitialized = true;
 
     // Cargar empresas y conversaciones
     await cargarEmpresasYConversaciones();
@@ -109,13 +127,8 @@ async function cargarConversacionesPorEmpresa(companyId) {
     console.log('🔄 Cargando conversaciones para empresa:', companyId);
 
     try {
-        // Construir URL igual que en historial.js
-        const params = new URLSearchParams({
-            company_id: companyId,
-            limit: 500 // Cargar más mensajes para tener historial completo
-        });
-
-        const url = `${API_BASE_URL}/api/chat/messages/history?${params}`;
+        // ENDPOINT CORRECTO: /api/chat/conversations (el que sí existe en Render)
+        const url = `${API_BASE_URL}/api/chat/conversations?company_id=${companyId}`;
         
         const response = await fetch(url, {
             headers: {
@@ -128,19 +141,12 @@ async function cargarConversacionesPorEmpresa(companyId) {
             throw new Error('Error cargando conversaciones');
         }
 
-        const data = await response.json();
-        allMessages = data.messages || [];
-
-        console.log(`✅ ${allMessages.length} mensajes cargados del backend`);
+        const conversations = await response.json();
         
-        // DEBUG: Ver estructura de los primeros mensajes
-        if (allMessages.length > 0) {
-            console.log('📋 Estructura del primer mensaje:', allMessages[0]);
-            console.log('📋 Keys del mensaje:', Object.keys(allMessages[0]));
-        }
-
-        // Procesar mensajes y agrupar por usuario
-        procesarYAgruparMensajes(allMessages);
+        console.log(`✅ ${conversations.length} conversaciones cargadas del backend`);
+        
+        // Procesar conversaciones
+        procesarConversaciones(conversations);
 
     } catch (error) {
         console.error('❌ Error cargando conversaciones:', error);
@@ -149,85 +155,74 @@ async function cargarConversacionesPorEmpresa(companyId) {
 }
 
 // ============================================
-// PROCESAR Y AGRUPAR MENSAJES POR USUARIO
+// PROCESAR CONVERSACIONES
 // ============================================
-function procesarYAgruparMensajes(data) {
-    console.log('🔧 Procesando datos del backend:', data.length, 'items');
+function procesarConversaciones(conversationsData) {
+    console.log('🔧 Procesando conversaciones del backend:', conversationsData.length, 'items');
     
-    // El backend puede devolver:
-    // 1. Array de conversaciones (cada una con messages[])
-    // 2. Array plano de mensajes
-    
-    const conversationsMap = new Map();
-    
-    data.forEach(item => {
-        // Si el item tiene un array 'messages', es una conversación completa
-        if (item.messages && Array.isArray(item.messages)) {
-            const userId = item.user_id;
-            const userName = item.profile_name || userId;
-            
-            conversationsMap.set(userId, {
-                id: userId,
-                name: userName,
-                phone: userId,
-                avatar: getInitials(userName),
-                status: 'offline',
-                lastMessage: '',
-                time: '',
-                unread: 0,
-                messages: item.messages, // Ya vienen los mensajes aquí
-                color: getColorForUser(userId)
-            });
-        } 
-        // Si no, es un mensaje individual
-        else if (item.user_id) {
-            if (!conversationsMap.has(item.user_id)) {
-                conversationsMap.set(item.user_id, {
-                    id: item.user_id,
-                    name: item.profile_name || item.user_id,
-                    phone: item.user_id,
-                    avatar: getInitials(item.profile_name || item.user_id),
-                    status: 'offline',
-                    lastMessage: '',
-                    time: '',
-                    unread: 0,
-                    messages: [],
-                    color: getColorForUser(item.user_id)
-                });
-            }
-            conversationsMap.get(item.user_id).messages.push(item);
-        }
+    conversations = conversationsData.map(conv => {
+        const userName = conv.name || conv.user_id;
+        
+        return {
+            id: conv.user_id,
+            name: userName,
+            phone: conv.user_id,
+            avatar: getInitials(userName),
+            color: getColorForUser(conv.user_id),
+            status: 'offline', // Por defecto offline, se actualiza con Socket.IO
+            lastMessage: conv.last_message || '',
+            time: formatTimestamp(conv.timestamp),
+            unread: conv.unread || 0,
+            blocked: conv.blocked || false,
+            messages: []  // Se cargarán cuando se seleccione
+        };
     });
-
-    // Convertir a array y procesar cada conversación
-    conversations = Array.from(conversationsMap.values()).map(conv => {
-        // NO ORDENAR - Mantener el orden original del backend
-        // Los mensajes ya vienen en el orden correcto del array messages[]
-        
-        console.log(`📝 Conversación ${conv.name}: ${conv.messages.length} mensajes`);
-        
-        // El último mensaje es el más reciente (último del array)
-        const lastMsg = conv.messages[conv.messages.length - 1];
-        const lastText = lastMsg.content || lastMsg.text || '';
-        conv.lastMessage = lastText.length > 50 ? lastText.substring(0, 50) + '...' : lastText;
-        conv.time = formatTime(lastMsg.timestamp);
-        conv.timestamp = lastMsg.timestamp;
-        
-        return conv;
-    });
-
-    // Ordenar conversaciones por último mensaje (más reciente primero)
-    conversations.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
+    
     console.log(`✅ ${conversations.length} conversaciones procesadas`);
-    
     renderConversations();
+}
+
+// ============================================
+// CARGAR MENSAJES DE UNA CONVERSACIÓN ESPECÍFICA
+// ============================================
+async function cargarMensajesDeConversacion(userId) {
+    console.log('📥 Cargando mensajes para usuario:', userId);
     
-    // Seleccionar primera conversación
-    if (conversations.length > 0) {
-        selectConversation(conversations[0].id);
-    } else {
-        mostrarEstadoVacio('No hay conversaciones disponibles');
+    try {
+        const url = `${API_BASE_URL}/api/chat/conversations/${userId}?company_id=${currentCompanyId}`;
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${getToken() || localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Error cargando mensajes');
+        }
+
+        const data = await response.json();
+        const messages = data.messages || [];
+        
+        // Mapear estructura del backend al formato esperado por el frontend
+        return messages.map(msg => ({
+            role: msg.direction === 'inbound' ? 'user' : 'assistant',
+            sender_type: msg.direction === 'inbound' ? 'user' : 'assistant',
+            content: msg.text || msg.content || '',
+            text: msg.text || msg.content || '',
+            timestamp: msg.timestamp,
+            type: msg.type || 'text',
+            cloudinary_url: msg.cloudinary_url || msg.media_url,
+            cloudinary_id: msg.cloudinary_id,
+            mime_type: msg.mime_type,
+            message_id: msg.message_id || msg._id,
+            responses: msg.responses || []
+        }));
+        
+    } catch (error) {
+        console.error('❌ Error cargando mensajes:', error);
+        return [];
     }
 }
 
@@ -284,7 +279,7 @@ function renderConversations() {
 // ============================================
 // SELECCIONAR CONVERSACIÓN
 // ============================================
-function selectConversation(userId) {
+async function selectConversation(userId) {
     console.log('📱 Seleccionando conversación:', userId);
 
     currentConversation = conversations.find(c => c.id === userId);
@@ -294,6 +289,9 @@ function selectConversation(userId) {
         return;
     }
 
+    // Cargar mensajes del backend
+    currentConversation.messages = await cargarMensajesDeConversacion(userId);
+    
     // Actualizar UI
     renderConversations(); // Re-renderizar para actualizar estado activo
     loadMessages();
@@ -313,7 +311,8 @@ function loadMessages() {
     try {
         currentMessages = currentConversation.messages || [];
         console.log(`✅ ${currentMessages.length} mensajes cargados`);
-
+        // ✅ Forzar orden WhatsApp al cargar mensajes
+        messagesOrderReversed = false;
         renderMessages();
         
         // Scroll al final
@@ -481,7 +480,6 @@ function toggleMessageOrder() {
 
 // Hacer la función accesible globalmente
 if (typeof window !== 'undefined') {
-    window.toggleMessageOrder = toggleMessageOrder;
 }
 
 // ============================================
@@ -499,7 +497,7 @@ function handleFileSelect(event) {
         return;
     }
     
-    attachedFile = file;
+    window.conversacionesState.attachedFile = file;
     showAttachmentPreview(file);
 }
 
@@ -591,7 +589,7 @@ function showAttachmentPreview(file) {
 // LIMPIAR ARCHIVO ADJUNTO
 // ============================================
 function clearAttachment() {
-    attachedFile = null;
+    window.conversacionesState.attachedFile = null;
     const preview = document.getElementById('attachmentPreview');
     const fileInput = document.getElementById('fileInput');
     
@@ -840,29 +838,36 @@ function updateChatHeader() {
 function updateContactPanel() {
     if (!currentConversation) return;
 
-    // Actualizar avatar grande
-    const contactAvatar = document.querySelector('.w-70.border-l .w-16.h-16');
+    // Contenedor del panel derecho
+    const panel = document.querySelector('.w-60.border-l');
+    if (!panel) {
+        console.warn('⚠️ No se encontró el panel de contacto');
+        return;
+    }
+
+    // Avatar grande
+    const contactAvatar = panel.querySelector('.w-16.h-16');
     if (contactAvatar) {
         contactAvatar.className = `w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-${currentConversation.color}-300 to-${currentConversation.color}-400 flex items-center justify-center text-white text-xl font-bold mb-3 shadow-sm`;
         contactAvatar.textContent = currentConversation.avatar;
     }
 
-    // Actualizar nombre del contacto
-    const contactName = document.querySelector('.w-70.border-l h3.font-bold');
+    // Nombre
+    const contactName = panel.querySelector('h3.font-bold');
     if (contactName) {
         contactName.textContent = currentConversation.name;
     }
 
-    // Actualizar teléfono del contacto
-    const contactPhones = document.querySelectorAll('.w-70.border-l .text-sm.font-bold');
-    contactPhones.forEach(el => {
-        if (el.textContent.startsWith('+') || el.textContent.match(/^\d/)) {
-            el.textContent = currentConversation.phone;
-        }
-    });
+    // Teléfono
+    const phoneEl = panel.querySelector('.text-sm.font-bold');
+    if (phoneEl) {
+        phoneEl.textContent = currentConversation.phone;
+    }
 
     console.log('📋 Panel de contacto actualizado');
 }
+
+
 
 // ============================================
 // SELECCIONAR MENSAJE PARA RESPONDER
@@ -896,11 +901,6 @@ function selectMessageToReply(message) {
     }
 }
 
-// Hacer la función accesible globalmente
-if (typeof window !== 'undefined') {
-    window.selectMessageToReply = selectMessageToReply;
-}
-
 // ============================================
 // SELECCIONAR MENSAJE POR ÍNDICE (versión simple que funciona)
 // ============================================
@@ -925,7 +925,6 @@ function selectMessageByIndex(index) {
 
 // Hacer la función accesible globalmente
 if (typeof window !== 'undefined') {
-    window.selectMessageByIndex = selectMessageByIndex;
 }
 
 // ============================================
@@ -947,9 +946,10 @@ async function sendMessage() {
 
     const message = input.value.trim();
     console.log('📝 Texto del input:', message);
+    console.log('📎 attachedFile global:', window.conversacionesState.attachedFile);
     
     // Validar que haya al menos texto O archivo
-    if (!message && !attachedFile) {
+    if (!message && !window.conversacionesState.attachedFile) {
         console.warn('⚠️ Se necesita texto o archivo');
         alert('Debes escribir un mensaje o adjuntar un archivo');
         return;
@@ -981,17 +981,17 @@ async function sendMessage() {
         };
         
         // Si hay archivo adjunto, agregarlo con estructura completa
-        if (attachedFile) {
-            console.log('📎 Incluyendo archivo adjunto:', attachedFile.name);
+        if (window.conversacionesState.attachedFile) {
+            console.log('📎 Incluyendo archivo adjunto:', window.conversacionesState.attachedFile.name);
             
             // Determinar el tipo de archivo
-            const fileType = attachedFile.type.startsWith('image/') ? 'image' :
-                           attachedFile.type.startsWith('video/') ? 'video' :
-                           attachedFile.type.startsWith('audio/') ? 'audio' : 'document';
+            const fileType = window.conversacionesState.attachedFile.type.startsWith('image/') ? 'image' :
+                           window.conversacionesState.attachedFile.type.startsWith('video/') ? 'video' :
+                           window.conversacionesState.attachedFile.type.startsWith('audio/') ? 'audio' : 'document';
             
             // Estructura similar a los mensajes del usuario
             adminResponse.type = fileType;
-            adminResponse.mime_type = attachedFile.type;
+            adminResponse.mime_type = window.conversacionesState.attachedFile.type;
             adminResponse.media_id = null; // Se llenará después del upload
             adminResponse.media_url = null; // Se llenará después del upload
             adminResponse.cloudinary_url = null; // Se llenará después del upload a Cloudinary
@@ -999,7 +999,7 @@ async function sendMessage() {
             
             // Si es documento, incluir el nombre del archivo
             if (fileType === 'document') {
-                adminResponse.content = `(Documento enviado: ${attachedFile.name})`;
+                adminResponse.content = `(Documento enviado: ${window.conversacionesState.attachedFile.name})`;
             } else if (fileType === 'image') {
                 adminResponse.content = '(Imagen enviada)';
             } else if (fileType === 'video') {
@@ -1030,6 +1030,10 @@ async function sendMessage() {
         
         console.log('✅ Respuesta agregada. Total respuestas:', messageToUpdate.responses.length);
         
+        // 🔒 CRÍTICO: Guardar referencia al archivo ANTES de cualquier operación UI
+        // que pueda disparar event listeners que llamen a clearAttachment()
+        const fileToSend = window.conversacionesState.attachedFile;
+        
         // Actualizar UI
         currentConversation.lastMessage = message;
         currentConversation.time = 'Ahora';
@@ -1042,8 +1046,7 @@ async function sendMessage() {
         input.placeholder = 'Selecciona un mensaje para responder...';
         input.disabled = true;
         
-        // Limpiar archivo adjunto
-        clearAttachment();
+        // NO limpiar archivo adjunto todavía - lo necesitamos para el backend
         
         if (sendButton) {
             sendButton.disabled = true;
@@ -1064,10 +1067,23 @@ async function sendMessage() {
             // Si hay texto, agregarlo; si no, enviar string vacío (el backend lo acepta si hay file)
             formData.append('text', message || '');
             
-            // Si hay archivo adjunto, agregarlo al FormData
-            if (attachedFile) {
-                formData.append('file', attachedFile);
-                console.log('📎 Archivo adjunto incluido en el envío');
+            // 🔒 USAR VARIABLE TEMPORAL: fileToSend en lugar de window.conversacionesState.attachedFile
+            // porque esta última puede limpiarse por event listeners durante renderMessages()
+            if (fileToSend) {
+                formData.append('file', fileToSend);
+                console.log('📎 Archivo adjunto incluido en el envío:', fileToSend.name);
+                console.log('📎 Tipo:', fileToSend.type);
+                console.log('📎 Tamaño:', fileToSend.size);
+            }
+            
+            // Debugging: mostrar contenido del FormData
+            console.log('📦 Contenido del FormData:');
+            for (let pair of formData.entries()) {
+                if (pair[1] instanceof File) {
+                    console.log(`  ${pair[0]}: File(${pair[1].name}, ${pair[1].size} bytes)`);
+                } else {
+                    console.log(`  ${pair[0]}: "${pair[1]}"`);
+                }
             }
             
             // Construir URL del endpoint
@@ -1075,7 +1091,7 @@ async function sendMessage() {
             console.log('🌐 Enviando a:', endpoint);
             console.log('📋 message_id:', messageToUpdate.message_id);
             console.log('📝 text:', message);
-            console.log('📎 file:', attachedFile ? attachedFile.name : 'Sin archivo');
+            console.log('📎 file:', fileToSend ? fileToSend.name : 'Sin archivo');
             
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -1101,6 +1117,9 @@ async function sendMessage() {
             if (result.success) {
                 console.log('✅ Respuesta guardada en backend correctamente');
                 
+                // Limpiar archivo adjunto DESPUÉS de enviar exitosamente
+                clearAttachment();
+                
                 // Recargar mensajes desde el backend para obtener la respuesta actualizada con Cloudinary URLs
                 console.log('🔄 Recargando mensajes desde el backend...');
                 await cargarConversacionesPorEmpresa(currentCompanyId);
@@ -1112,18 +1131,24 @@ async function sendMessage() {
             } else {
                 console.error('❌ Error del backend:', result.error);
                 alert('Error al guardar la respuesta: ' + result.error);
+                // Limpiar archivo incluso si falla
+                clearAttachment();
             }
             
         } catch (backendError) {
             console.error('❌ Error enviando al backend:', backendError);
             console.error('Stack:', backendError.stack);
             alert('Advertencia: El mensaje se mostró localmente pero no se pudo guardar en el servidor. ' + backendError.message);
+            // Limpiar archivo incluso si hay error
+            clearAttachment();
         }
 
     } catch (error) {
         console.error('❌ Error enviando mensaje:', error);
         console.error('Stack:', error.stack);
         alert('Error al enviar el mensaje: ' + error.message);
+        // Limpiar archivo incluso si hay error
+        clearAttachment();
     }
 }
 
@@ -1191,7 +1216,6 @@ function deselectMessage() {
 
 // Hacer la función accesible globalmente
 if (typeof window !== 'undefined') {
-    window.deselectMessage = deselectMessage;
 }
 
 // ============================================
@@ -1295,6 +1319,16 @@ function getMessagePreview(msg) {
 }
 
 // Auto-inicialización
-if (typeof window !== 'undefined') {
-    console.log('📱 Módulo de conversaciones listo');
-}
+console.log('📱 Módulo de conversaciones listo');
+
+// ============================================
+// EXPONER FUNCIONES GLOBALMENTE
+// ============================================
+window.initConversacionesPage = initConversacionesPage;
+window.sendMessage = sendMessage;
+window.selectMessageByIndex = selectMessageByIndex;
+window.selectMessageToReply = selectMessageToReply;
+window.deselectMessage = deselectMessage;
+window.toggleMessageOrder = toggleMessageOrder;
+window.handleFileSelect = handleFileSelect;
+window.clearAttachment = clearAttachment;
