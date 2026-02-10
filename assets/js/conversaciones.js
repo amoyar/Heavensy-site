@@ -281,7 +281,7 @@ function renderConversations() {
         convDiv.onclick = () => selectConversation(conv.id);
         
         convDiv.innerHTML = `
-            <div class="p-3">
+            <div class="p-2">
                 <div class="flex items-center gap-3">
                     <div class="relative flex-shrink-0">
                         <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-${conv.color}-300 to-${conv.color}-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
@@ -1224,6 +1224,46 @@ function getMessagePreview(msg) {
     if (msg.type === 'video') return '🎥 Video';
     return 'Mensaje';
 }
+function toggleLeftSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const icon = document.getElementById(sectionId + 'Icon');
+
+    if (!section || !icon) return;
+
+    const isHidden = section.classList.contains('hidden');
+
+    if (isHidden) {
+        section.classList.remove('hidden');
+        icon.classList.remove('fa-chevron-right');
+        icon.classList.add('fa-chevron-down');
+    } else {
+        section.classList.add('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-right');
+    }
+}
+function toggleRightSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const icon = document.getElementById(sectionId + 'Icon');
+
+    if (!section || !icon) return;
+
+    const isHidden = section.classList.contains('hidden');
+
+    if (isHidden) {
+        section.classList.remove('hidden');
+        icon.classList.remove('fa-chevron-right');
+        icon.classList.add('fa-chevron-down');
+    } else {
+        section.classList.add('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-right');
+    }
+}
+
+window.toggleRightSection = toggleRightSection;
+
+window.toggleLeftSection = toggleLeftSection;
 
 // Auto-inicialización
 console.log('📱 Módulo de conversaciones listo');

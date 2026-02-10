@@ -38,56 +38,75 @@
       </div>
     </div>
     
-    <!-- Filtros rápidos -->
-    <div class="px-3 py-2.5 border-b border-gray-200 bg-gray-50">
-      <div class="space-y-1 bg-white rounded-xl p-2 shadow-sm">
-        <button class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 text-white font-medium text-xs shadow-sm hover:shadow-md transition-all">
-          <i class="fas fa-check-circle text-sm"></i>
-          <span>Todos</span>
-        </button>
-        <button class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white text-gray-700 text-xs hover:bg-gray-100 border border-gray-200 transition-all">
-          <i class="fas fa-clock text-blue-500 text-sm"></i>
-          <span>No leídos</span>
-        </button>
-        <button class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white text-gray-700 text-xs hover:bg-gray-100 border border-gray-200 transition-all">
-          <i class="fas fa-exclamation-circle text-red-500 text-sm"></i>
-          <span>Urgentes</span>
-        </button>
-      </div>
-    </div>
+<!-- Filtros rápidos (COLAPSABLE) -->
+<div class="px-3 py-2.5 border-b border-gray-200 bg-gray-50">
+  
+  <button 
+    onclick="toggleLeftSection('filtersSection')"
+    class="w-full flex items-center justify-between text-xs font-bold text-gray-600 mb-2"
+  >
+    <span>Filtros</span>
+    <i id="filtersSectionIcon" class="fas fa-chevron-down text-xs"></i>
+  </button>
 
-    <!-- Sección de Tags con bordes redondeados -->
-    <div class="px-3 py-2.5 border-b border-gray-200 bg-white">
-      <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-        <i class="fas fa-tags text-purple-600 text-xs"></i>
-        Tags
-      </h3>
-      <div class="space-y-1 bg-gray-50 rounded-xl p-2 shadow-sm">
-        <button class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-gray-700 text-xs hover:bg-blue-100 transition-all">
-          <div class="flex items-center gap-1.5">
-            <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-            <span class="font-medium">No leídos</span>
-          </div>
-          <span class="bg-blue-500 text-white px-1.5 py-0.5 rounded-full text-xs font-bold shadow-sm">1</span>
-        </button>
-        <button class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-purple-50 border border-purple-100 text-gray-700 text-xs hover:bg-purple-100 transition-all">
-          <div class="flex items-center gap-1.5">
-            <div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
-            <span class="font-medium">No Leídos</span>
-          </div>
-          <span class="bg-green-500 text-white px-1.5 py-0.5 rounded-full text-xs shadow-sm">
-            <i class="fab fa-whatsapp"></i>
-          </span>
-        </button>
+  <div id="filtersSection" class="space-y-1 bg-white rounded-xl p-2 shadow-sm">
+    <button class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 text-white font-medium text-xs shadow-sm hover:shadow-md transition-all">
+      <i class="fas fa-check-circle text-sm"></i>
+      <span>Todos</span>
+    </button>
+    <button class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white text-gray-700 text-xs hover:bg-gray-100 border border-gray-200 transition-all">
+      <i class="fas fa-clock text-blue-500 text-sm"></i>
+      <span>No leídos</span>
+    </button>
+    <button class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white text-gray-700 text-xs hover:bg-gray-100 border border-gray-200 transition-all">
+      <i class="fas fa-exclamation-circle text-red-500 text-sm"></i>
+      <span>Urgentes</span>
+    </button>
+  </div>
+</div>
+
+<!-- Sección de Tags (COLAPSABLE) -->
+<div class="px-3 py-2.5 border-b border-gray-200 bg-white">
+
+  <button 
+    onclick="toggleLeftSection('tagsSection')"
+    class="w-full flex items-center justify-between text-xs font-bold text-gray-500 uppercase tracking-wider mb-2"
+  >
+    <span class="flex items-center gap-1.5">
+      <i class="fas fa-tags text-purple-600 text-xs"></i>
+      Tags
+    </span>
+    <i id="tagsSectionIcon" class="fas fa-chevron-right text-xs"></i>
+  </button>
+
+  <div id="tagsSection" class="space-y-1 bg-gray-50 rounded-xl p-2 shadow-sm hidden">
+    <button class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-gray-700 text-xs hover:bg-blue-100 transition-all">
+      <div class="flex items-center gap-1.5">
+        <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+        <span class="font-medium">No leídos</span>
       </div>
-    </div>
+      <span class="bg-blue-500 text-white px-1.5 py-0.5 rounded-full text-xs font-bold shadow-sm">1</span>
+    </button>
+
+    <button class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-purple-50 border border-purple-100 text-gray-700 text-xs hover:bg-purple-100 transition-all">
+      <div class="flex items-center gap-1.5">
+        <div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+        <span class="font-medium">No Leídos</span>
+      </div>
+      <span class="bg-green-500 text-white px-1.5 py-0.5 rounded-full text-xs shadow-sm">
+        <i class="fab fa-whatsapp"></i>
+      </span>
+    </button>
+  </div>
+</div>
+
 
     <!-- Lista de Conversaciones con scroll -->
     <div class="flex-1 overflow-y-auto bg-white" id="conversationsList">
       
       <!-- Conversación Activa -->
       <div class="border-b border-gray-100 bg-gradient-to-r from-purple-50 to-white hover:from-purple-100 hover:to-purple-50 cursor-pointer transition-all rounded-2xl mx-2 my-0.5">
-        <div class="p-3">
+        <div class="p-2">
           <div class="flex items-center gap-3">
             <div class="relative flex-shrink-0">
               <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-300 to-purple-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
@@ -130,7 +149,7 @@
       </div> -->
 
       <div class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-all rounded-2xl mx-2 my-0.5">
-        <div class="p-3">
+        <div class="p-2">
           <div class="flex items-center gap-3">
             <div class="relative flex-shrink-0">
               <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-green-300 to-green-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
@@ -152,7 +171,7 @@
       </div>
 
       <div class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-all rounded-2xl mx-2 my-0.5">
-        <div class="p-3">
+        <div class="p-2">
           <div class="flex items-center gap-3">
             <div class="relative flex-shrink-0">
               <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-300 to-orange-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
@@ -171,7 +190,7 @@
       </div>
 
       <div class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-all rounded-2xl mx-2 my-0.5">
-        <div class="p-3">
+        <div class="p-2">
           <div class="flex items-center gap-3">
             <div class="relative flex-shrink-0">
               <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-pink-300 to-pink-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
@@ -355,13 +374,23 @@
       </button>
     </div>
 
-    <!-- Información del Contacto con tarjetas -->
+    <!-- Información del Contacto (COLAPSABLE) -->
     <div class="p-4 border-b border-gray-200">
-      <div class="flex items-center gap-2 mb-3">
-        <i class="fas fa-info-circle text-purple-600 text-sm"></i>
-        <h4 class="font-bold text-gray-900 text-xs uppercase tracking-wider">Contacto</h4>
-      </div>
-      
+
+      <button 
+        onclick="toggleRightSection('contactSection')"
+        class="w-full flex items-center justify-between mb-3"      >
+
+        <div class="flex items-center gap-2">
+          <i class="fas fa-info-circle text-purple-600 text-sm"></i>
+          <h4 class="font-bold text-gray-900 text-xs uppercase tracking-wider">Contacto</h4>
+        </div>
+        <i id="contactSectionIcon" class="fas fa-chevron-down text-xs text-gray-400"></i>
+      </button>
+
+      <div id="contactSection">
+        <!-- 👇 AQUÍ VA TU CONTENIDO ACTUAL DE CONTACTO, SIN CAMBIARLO -->
+        <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
       <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
         <div class="bg-white border border-gray-100 rounded-lg p-3 mb-2">
           <div class="flex items-center gap-2.5">
@@ -380,16 +409,29 @@
           <span class="text-green-700 font-semibold">Activo ahora</span>
         </div>
       </div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Tags mejorados -->
-    <div class="p-4 border-b border-gray-200">
-      <div class="flex items-center gap-2 mb-3">
-        <i class="fas fa-tags text-purple-600 text-sm"></i>
-        <h4 class="font-bold text-gray-900 text-xs uppercase tracking-wider">Tags</h4>
-      </div>
-      
-      <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+<!-- Tags (COLAPSABLE) -->
+<div class="p-4 border-b border-gray-200">
+
+  <button 
+    onclick="toggleRightSection('contactTagsSection')"
+    class="w-full flex items-center justify-between mb-3"
+  >
+    <div class="flex items-center gap-2">
+      <i class="fas fa-tags text-purple-600 text-sm"></i>
+      <h4 class="font-bold text-gray-900 text-xs uppercase tracking-wider">Tags</h4>
+    </div>
+    <i id="contactTagsSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
+  </button>
+
+  <div id="contactTagsSection" class="hidden">
+    <!-- 👇 TU CONTENIDO ACTUAL DE TAGS VA AQUÍ -->
+    <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+        
         <div class="flex flex-wrap gap-1.5 mb-2.5">
           <span class="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold">VIP</span>
           <span class="px-2.5 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold">Urgente</span>
@@ -406,20 +448,24 @@
         </button>
       </div>
     </div>
+</div>
+<!-- Notas (COLAPSABLE) -->
+<div class="p-4 border-b border-gray-200">
 
-    <!-- Notas del Contacto mejoradas -->
-    <div class="p-4">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <i class="fas fa-sticky-note text-purple-600 text-sm"></i>
-          <h4 class="font-bold text-gray-900 text-xs uppercase tracking-wider">Notas</h4>
-        </div>
-        <button class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded transition-all">
-          <i class="fas fa-chevron-down text-xs"></i>
-        </button>
-      </div>
-      
-      <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+  <button 
+    onclick="toggleRightSection('notesSection')"
+    class="w-full flex items-center justify-between mb-3"
+  >
+    <div class="flex items-center gap-2">
+      <i class="fas fa-sticky-note text-purple-600 text-sm"></i>
+      <h4 class="font-bold text-gray-900 text-xs uppercase tracking-wider">Notas</h4>
+    </div>
+    <i id="notesSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
+  </button>
+
+  <div id="notesSection" class="hidden">
+    <!-- 👇 TU CONTENIDO ACTUAL DE NOTAS VA AQUÍ -->
+    <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
         <ul class="space-y-2 text-sm text-gray-700">
           <li class="flex items-start gap-1.5">
             <span class="text-purple-600 font-bold">•</span>
@@ -439,4 +485,3 @@
 
   </div>
 
-</div>
