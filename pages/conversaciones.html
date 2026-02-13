@@ -1,118 +1,118 @@
 <!-- CONVERSACIONES PAGE - DISEÑO PROFESIONAL MEJORADO -->
-<div class="h-full flex bg-gray-50">
+<div class="h-screen flex bg-gray-50 overflow-hidden">
 
   <!-- COLUMNA 1: Sidebar de Conversaciones -->
-  <div class="w-72 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col shadow-lg">
-    
+  <div class="w-64 flex-shrink-0 bg-white border-r border-gray-200  flex flex-col shadow-lg">
+
     <!-- Header del Sidebar con título -->
-    <div class="p-4 border-b border-gray-200">
+    <div class="p-4 border-b border-gray-200 ">
       <div class="flex items-center gap-2.5 mb-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-300 to-purple-400 flex items-center justify-center shadow-md">
+        <div
+          class="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-300 to-purple-400 flex items-center justify-center shadow-md">
           <i class="fas fa-comments text-white"></i>
         </div>
         <h2 class="text-lg font-bold text-gray-900">Conversaciones</h2>
       </div>
-      
+
       <!-- Selector de Empresa -->
       <div class="mb-3">
         <label class="block text-xs font-medium text-gray-600 mb-1.5">
           <i class="fas fa-building text-gray-400 text-xs"></i> Empresa
         </label>
-        <select 
-          id="conversacionesCompanyFilter"
-          class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 focus:bg-white transition-all text-sm"
-        >
+        <select id="conversacionesCompanyFilter"
+          class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 focus:bg-white transition-all text-sm">
           <option value="">Cargando empresas...</option>
         </select>
       </div>
-      
+
       <!-- Barra de búsqueda de contactos -->
       <div class="relative">
-        <input 
-          type="text" 
-          id="searchConversations"
-          placeholder="Buscar contacto..." 
-          class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 focus:bg-white transition-all text-sm"
-        />
+        <input type="text" id="searchConversations" placeholder="Buscar contacto..."
+          class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 focus:bg-white transition-all text-sm" />
         <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
       </div>
     </div>
-    
-<!-- Filtros rápidos (COLAPSABLE) -->
-<div class="px-3 py-2.5 border-b border-gray-200 bg-gray-50">
-  
-  <button 
-    onclick="toggleLeftSection('filtersSection')"
-    class="w-full flex items-center justify-between text-xs font-bold text-gray-600 mb-2"
-  >
-    <span>Filtros</span>
-    <i id="filtersSectionIcon" class="fas fa-chevron-down text-xs"></i>
-  </button>
 
-  <div id="filtersSection" class="space-y-1 bg-white rounded-xl p-2 shadow-sm">
-    <button class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 text-white font-medium text-xs shadow-sm hover:shadow-md transition-all">
-      <i class="fas fa-check-circle text-sm"></i>
-      <span>Todos</span>
-    </button>
-    <button class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white text-gray-700 text-xs hover:bg-gray-100 border border-gray-200 transition-all">
-      <i class="fas fa-clock text-blue-500 text-sm"></i>
-      <span>No leídos</span>
-    </button>
-    <button class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white text-gray-700 text-xs hover:bg-gray-100 border border-gray-200 transition-all">
-      <i class="fas fa-exclamation-circle text-red-500 text-sm"></i>
-      <span>Urgentes</span>
-    </button>
-  </div>
-</div>
+    <!-- Filtros rápidos (COLAPSABLE) -->
+    <div class="px-3 py-2.5 border-b border-gray-200 bg-gray-50">
 
-<!-- Sección de Tags (COLAPSABLE) -->
-<div class="px-3 py-2.5 border-b border-gray-200 bg-white">
+      <button onclick="toggleLeftSection('filtersSection')"
+        class="w-full flex items-center justify-between text-xs font-bold text-gray-600 mb-2">
+        <span>Filtros</span>
+        <i id="filtersSectionIcon" class="fas fa-chevron-down text-xs"></i>
+      </button>
 
-  <button 
-    onclick="toggleLeftSection('tagsSection')"
-    class="w-full flex items-center justify-between text-xs font-bold text-gray-500 uppercase tracking-wider mb-2"
-  >
-    <span class="flex items-center gap-1.5">
-      <i class="fas fa-tags text-purple-600 text-xs"></i>
-      Tags
-    </span>
-    <i id="tagsSectionIcon" class="fas fa-chevron-right text-xs"></i>
-  </button>
-
-  <div id="tagsSection" class="space-y-1 bg-gray-50 rounded-xl p-2 shadow-sm hidden">
-    <button class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-gray-700 text-xs hover:bg-blue-100 transition-all">
-      <div class="flex items-center gap-1.5">
-        <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-        <span class="font-medium">No leídos</span>
+      <div id="filtersSection" class="space-y-1 bg-white rounded-xl p-2 shadow-sm">
+        <button
+          class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 text-white font-medium text-xs shadow-sm hover:shadow-md transition-all">
+          <i class="fas fa-check-circle text-sm"></i>
+          <span>Todos</span>
+        </button>
+        <button
+          class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white text-gray-700 text-xs hover:bg-gray-100 border border-gray-200 transition-all">
+          <i class="fas fa-clock text-blue-500 text-sm"></i>
+          <span>No leídos</span>
+        </button>
+        <button
+          class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white text-gray-700 text-xs hover:bg-gray-100 border border-gray-200 transition-all">
+          <i class="fas fa-exclamation-circle text-red-500 text-sm"></i>
+          <span>Urgentes</span>
+        </button>
       </div>
-      <span class="bg-blue-500 text-white px-1.5 py-0.5 rounded-full text-xs font-bold shadow-sm">1</span>
-    </button>
+    </div>
 
-    <button class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-purple-50 border border-purple-100 text-gray-700 text-xs hover:bg-purple-100 transition-all">
-      <div class="flex items-center gap-1.5">
-        <div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
-        <span class="font-medium">No Leídos</span>
+    <!-- Sección de Tags (COLAPSABLE) -->
+    <div class="px-3 py-2.5 border-b border-gray-200 bg-white">
+
+      <button onclick="toggleLeftSection('tagsSection')"
+        class="w-full flex items-center justify-between text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+        <span class="flex items-center gap-1.5">
+          <i class="fas fa-tags text-purple-600 text-xs"></i>
+          Tags
+        </span>
+        <i id="tagsSectionIcon" class="fas fa-chevron-right text-xs"></i>
+      </button>
+
+      <div id="tagsSection" class="space-y-1 bg-gray-50 rounded-xl p-2 shadow-sm hidden">
+        <button
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-gray-700 text-xs hover:bg-blue-100 transition-all">
+          <div class="flex items-center gap-1.5">
+            <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+            <span class="font-medium">No leídos</span>
+          </div>
+          <span class="bg-blue-500 text-white px-1.5 py-0.5 rounded-full text-xs font-bold shadow-sm">1</span>
+        </button>
+
+        <button
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-purple-50 border border-purple-100 text-gray-700 text-xs hover:bg-purple-100 transition-all">
+          <div class="flex items-center gap-1.5">
+            <div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+            <span class="font-medium">No Leídos</span>
+          </div>
+          <span class="bg-green-500 text-white px-1.5 py-0.5 rounded-full text-xs shadow-sm">
+            <i class="fab fa-whatsapp"></i>
+          </span>
+        </button>
       </div>
-      <span class="bg-green-500 text-white px-1.5 py-0.5 rounded-full text-xs shadow-sm">
-        <i class="fab fa-whatsapp"></i>
-      </span>
-    </button>
-  </div>
-</div>
+    </div>
 
 
     <!-- Lista de Conversaciones con scroll -->
     <div class="flex-1 overflow-y-auto bg-white" id="conversationsList">
-      
+
       <!-- Conversación Activa -->
-      <div class="border-b border-gray-100 bg-gradient-to-r from-purple-50 to-white hover:from-purple-100 hover:to-purple-50 cursor-pointer transition-all rounded-2xl mx-2 my-0.5">
+      <div
+        class="border-b border-gray-100 bg-gradient-to-r from-purple-50 to-white hover:from-purple-100 hover:to-purple-50 cursor-pointer transition-all rounded-2xl mx-2 my-0.5">
         <div class="p-2">
           <div class="flex items-center gap-3">
             <div class="relative flex-shrink-0">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-300 to-purple-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
+              <div
+                class="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-300 to-purple-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
                 JG
               </div>
-              <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
+              <div
+                class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-sm">
+              </div>
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between mb-0.5">
@@ -152,7 +152,8 @@
         <div class="p-2">
           <div class="flex items-center gap-3">
             <div class="relative flex-shrink-0">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-green-300 to-green-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
+              <div
+                class="w-11 h-11 rounded-2xl bg-gradient-to-br from-green-300 to-green-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
                 MC
               </div>
             </div>
@@ -174,7 +175,8 @@
         <div class="p-2">
           <div class="flex items-center gap-3">
             <div class="relative flex-shrink-0">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-300 to-orange-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
+              <div
+                class="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-300 to-orange-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
                 MR
               </div>
             </div>
@@ -193,7 +195,8 @@
         <div class="p-2">
           <div class="flex items-center gap-3">
             <div class="relative flex-shrink-0">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-pink-300 to-pink-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
+              <div
+                class="w-11 h-11 rounded-2xl bg-gradient-to-br from-pink-300 to-pink-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
                 LP
               </div>
             </div>
@@ -211,149 +214,122 @@
     </div>
   </div>
 
+
   <!-- COLUMNA 2: Área de Chat Central -->
-  <div class="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
-    
-    <!-- Header del Chat con sombra -->
-    <div class="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+<div class="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col overflow-hidden">
+
+
+
+    <!-- Header del Chat (Altura optimizada) -->
+<!-- Header del Chat -->
+    <div class="bg-white border-b border-gray-200 px-6 py-3 shadow-sm z-10">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
+          
+          <!-- AVATAR DINÁMICO -->
           <div class="relative">
-            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-bold shadow-md">
-              JG
+            <div
+              id="chatHeaderAvatar"
+              class="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-bold shadow-md text-sm">
+              —
             </div>
-            <div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
+            <div
+              class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-sm">
+            </div>
           </div>
+
+          <!-- NOMBRE Y TELÉFONO -->
           <div>
-            <h3 class="font-bold text-gray-900">Jorge Guerrero</h3>
-            <p class="text-xs text-gray-500">+56942531118</p>
+            <h3 id="chatHeaderName" class="font-bold text-gray-900 text-sm">—</h3>
+            <p id="chatHeaderPhone" class="text-[10px] text-gray-500">—</p>
           </div>
         </div>
-        
-        <div class="flex items-center gap-2">
-          <button 
-            id="toggleMessageOrder"
-            onclick="toggleMessageOrder()"
-            class="p-2.5 hover:bg-purple-50 rounded-xl transition-all group"
-            title="Cambiar orden de mensajes"
-          >
-            <i class="fas fa-arrow-down-short-wide text-gray-600 group-hover:text-purple-600"></i>
+
+        <!-- BOTONES DERECHA -->
+        <div class="flex items-center gap-1">
+          <button id="toggleMessageOrder" onclick="toggleMessageOrder()"
+            class="p-2 hover:bg-purple-50 rounded-xl transition-all group" title="Cambiar orden">
+            <i class="fas fa-arrow-down-short-wide text-gray-500 group-hover:text-purple-600 text-sm"></i>
           </button>
-          <button class="p-2.5 hover:bg-gray-100 rounded-xl transition-all">
-            <i class="fas fa-phone text-gray-600"></i>
+          <button class="p-2 hover:bg-gray-100 rounded-xl transition-all">
+            <i class="fas fa-phone text-gray-500 text-sm"></i>
           </button>
-          <button class="p-2.5 hover:bg-gray-100 rounded-xl transition-all">
-            <i class="fas fa-video text-gray-600"></i>
-          </button>
-          <button class="p-2.5 hover:bg-gray-100 rounded-xl transition-all">
-            <i class="fas fa-ellipsis-v text-gray-600"></i>
+          <button class="p-2 hover:bg-gray-100 rounded-xl transition-all">
+            <i class="fas fa-ellipsis-v text-gray-500 text-sm"></i>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Área de Mensajes -->
-    <div class="flex-1 overflow-y-auto p-6" id="chatMessages">
+
+    <!-- Área de Mensajes (Ocupa todo el espacio disponible) -->
+    <div class="flex-1 overflow-y-auto p-4 md:p-6" id="chatMessages">
       <div class="space-y-4 max-w-4xl mx-auto">
-        
         <!-- Mensaje del usuario -->
         <div class="flex justify-end">
-          <div class="bg-purple-100 rounded-3xl rounded-tr-md px-4 py-3 max-w-md shadow-md">
+          <div
+            class="bg-purple-100 rounded-2xl rounded-tr-none px-4 py-2.5 max-w-md shadow-sm border border-purple-200">
             <p class="text-sm text-gray-800">Hola, estoy interesado en obtener más información sobre los planes.</p>
-            <div class="flex items-center justify-end gap-2 mt-2">
-              <span class="text-xs text-gray-500">15:10</span>
-              <i class="fas fa-check-double text-blue-500 text-xs"></i>
+            <div class="flex items-center justify-end gap-2 mt-1">
+              <span class="text-[10px] text-gray-500">15:10</span>
+              <i class="fas fa-check-double text-blue-500 text-[10px]"></i>
             </div>
           </div>
         </div>
 
         <!-- Mensaje del asistente -->
         <div class="flex justify-start">
-          <div class="bg-white rounded-3xl rounded-tl-md px-4 py-3 max-w-md shadow-md border border-gray-100">
-            <p class="text-sm text-gray-800">Buen día Jorge, claro, cuéntame un poco sobre tu empresa y qué tipo de planes te interesan.</p>
-            <span class="text-xs text-gray-500 mt-2 block">15:12</span>
+          <div class="bg-white rounded-2xl rounded-tl-none px-4 py-2.5 max-w-md shadow-sm border border-gray-200">
+            <p class="text-sm text-gray-800">Buen día Jorge, claro, cuéntame un poco sobre tu empresa.</p>
+            <span class="text-[10px] text-gray-500 mt-1 block text-right">15:12</span>
           </div>
         </div>
-
-        <!-- Mensaje del usuario -->
-        <div class="flex justify-end">
-          <div class="bg-purple-100 rounded-3xl rounded-tr-md px-4 py-3 max-w-md shadow-md">
-            <p class="text-sm text-gray-800">Somos una pequeña empresa enfocados en Ecommerce, buscamos planes que me permitan automatizar el soporte por WhatsApp.</p>
-            <div class="flex items-center justify-end gap-2 mt-2">
-              <span class="text-xs text-gray-500">15:15</span>
-              <i class="fas fa-check-double text-blue-500 text-xs"></i>
-            </div>
-          </div>
-        </div>
-
-        <!-- Mensaje del asistente -->
-        <div class="flex justify-start">
-          <div class="bg-white rounded-3xl rounded-tl-md px-4 py-3 max-w-md shadow-md border border-gray-100">
-            <p class="text-sm text-gray-800">Entiendo, veremos cómo podemos ayudarte en optimizar tu atención. ¿Qué objetivo te gustaría alcanzar?</p>
-            <span class="text-xs text-gray-500 mt-2 block">15:21</span>
-          </div>
-        </div>
-
       </div>
     </div>
 
-    <!-- Input de Mensaje mejorado -->
-    <div class="bg-gray-50border-t border-gray-200 p-3">
+    <!-- Input de Mensaje (Pegado a la base y más bajo) -->
+<div class="bg-gray-50 border-t border-gray-200 px-3 py-1 flex-shrink-0">
+
       <div class="max-w-4xl mx-auto">
         <!-- Preview de archivos adjuntos -->
-        <div id="attachmentPreview" class="hidden mb-3 bg-white rounded-2xl p-3 border border-gray-200 shadow-sm">
-          <div class="flex items-start gap-3">
+        <div id="attachmentPreview" class="hidden mb-2 bg-white rounded-xl p-2 border border-gray-200 shadow-sm">
+          <div class="flex items-center gap-1 bg-white border border-gray-300 rounded-full px-3 py-1 focus-within:border-purple-400 transition-all shadow-sm">
+
             <div id="previewContent" class="flex-1"></div>
-            <button onclick="clearAttachment()" class="p-2 hover:bg-gray-100 rounded-lg transition">
+            <button onclick="clearAttachment()" class="p-1 hover:bg-gray-100 rounded-lg transition">
               <i class="fas fa-times text-gray-500"></i>
             </button>
           </div>
         </div>
-        
-        <div class="flex items-center gap-2 bg-white border border-gray-300 rounded-full px-4 py-2.5 focus-within:border-purple-400 transition-all shadow-sm">
-          <button class="p-1 hover:bg-gray-100 rounded-full transition-all flex-shrink-0">
-            <i class="far fa-smile text-gray-500 text-xl"></i>
+
+        <!-- Barra de entrada (Altura reducida py-1.0) -->
+        <div
+          class="flex items-center gap-1 bg-white border border-gray-300 rounded-full px-3 py-1.0 focus-within:border-purple-400 transition-all shadow-sm">
+          <button class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0">
+            <i class="far fa-smile text-gray-400 text-lg"></i>
           </button>
-          
-          <!-- Input file oculto -->
-          <input 
-            type="file" 
-            id="fileInput" 
-            class="hidden" 
-            accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip"
-            onchange="handleFileSelect(event)"
-          />
-          
-          <button 
-            onclick="document.getElementById('fileInput').click()"
-            class="p-1 hover:bg-gray-100 rounded-full transition-all flex-shrink-0"
-            title="Adjuntar archivo"
-          >
-            <i class="fas fa-paperclip text-gray-500 text-xl"></i>
+
+          <input type="file" id="fileInput" class="hidden"
+            accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip" onchange="handleFileSelect(event)" />
+
+          <button onclick="document.getElementById('fileInput').click()"
+            class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0" title="Adjuntar">
+            <i class="fas fa-paperclip text-gray-400 text-lg"></i>
           </button>
-          
-          <input 
-            id="messageInput"
-            type="text" 
-            placeholder="Selecciona un mensaje para responder..."
+
+          <input id="messageInput" type="text" placeholder="Escribe un mensaje..."
             class="flex-1 bg-transparent focus:outline-none text-sm text-gray-900 placeholder-gray-400"
-            onkeypress="if(event.key === 'Enter') sendMessage()"
-            disabled
-          />
-          <button 
-            id="sendButton"
-            onclick="sendMessage()"
-            class="p-2 bg-gradient-to-r from-gray-300 to-gray-400 text-white rounded-full transition-all shadow-md flex-shrink-0 cursor-not-allowed"
-            disabled
-            title="Selecciona un mensaje del usuario para responder"
-          >
-            <i class="fas fa-paper-plane"></i>
+            onkeypress="if(event.key === 'Enter') sendMessage()" />
+
+          <button id="sendButton" onclick="sendMessage()"
+            class="p-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-full transition-all shadow-md flex-shrink-0 active:scale-95">
+            <i class="fas fa-paper-plane text-xs"></i>
           </button>
         </div>
       </div>
     </div>
-
   </div>
+
 
   <div id="sendSpinner" class="hidden ml-2">
     <i class="fas fa-spinner fa-spin text-purple-600"></i>
@@ -361,127 +337,155 @@
 
 
   <!-- COLUMNA 3: Panel de Contacto con bordes mejorados -->
-  <div class="w-60 bg-white border-l border-gray-200 flex flex-col overflow-y-auto shadow-lg">
-    
+  <div class="w-60 bg-white border-l border-gray-200 flex flex-col overflow-y-auto overflow-x-hidden shadow-lg">
+
     <!-- Header del Contacto -->
-    <div class="p-4 border-b border-gray-200 text-center">
-      <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-purple-300 to-purple-400 flex items-center justify-center text-white text-xl font-bold mb-3 shadow-sm">
-        JG
+    <div class="p-2 border-b border-gray-200 text-center"> <!-- Bajado de p-4 a p-3 -->
+      <div id="contactHeaderAvatar"
+        class="w-12 h-12 mx-auto rounded-xl bg-gradient-to-br from-purple-300 to-purple-400 flex items-center justify-center text-white text-lg font-bold mb-2 shadow-sm">
+        <!-- Bajado de w-16 a w-12 y mb-3 a mb-2 -->
+        —
       </div>
-      <h3 class="font-bold text-gray-900 text-base mb-1">Jorge Guerrero</h3>
-      <button class="text-gray-400 hover:text-purple-600 text-sm mt-1 p-1.5 hover:bg-gray-100 rounded-lg transition-all">
+      <h3 id="contactHeaderName" class="font-bold text-gray-900 text-sm mb-0">—</h3>
+      <!-- Bajado de text-base a text-sm y mb-1 a mb-0 -->
+       <div id="contactHeaderMeta" class="flex items-center justify-center gap-2 mt-1 text-xs">
+        <div class="flex items-center gap-1 text-yellow-500">
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <i class="fas fa-star"></i>
+          <span class="text-gray-600 font-semibold ml-1">5</span>
+        </div>
+
+        <span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold text-[10px]">
+           Premium
+        </span>
+</div>
+
+      <button class="text-gray-400 hover:text-purple-600 text-xs mt-1 p-1 hover:bg-gray-100 rounded-lg transition-all">
+        <!-- Bajado de p-1.5 a p-1 y text-sm a text-xs -->
         <i class="fas fa-ellipsis-h"></i>
       </button>
     </div>
 
+
     <!-- Información del Contacto (COLAPSABLE) -->
-    <div class="p-4 border-b border-gray-200">
+    <div class="border-b border-gray-200">
 
-      <button 
-        onclick="toggleRightSection('contactSection')"
-        class="w-full flex items-center justify-between mb-3"      >
 
-        <div class="flex items-center gap-2">
-          <i class="fas fa-info-circle text-purple-600 text-sm"></i>
-          <h4 class="font-bold text-gray-900 text-xs uppercase tracking-wider">Contacto</h4>
-        </div>
-        <i id="contactSectionIcon" class="fas fa-chevron-down text-xs text-gray-400"></i>
-      </button>
+<button
+  onclick="toggleRightSection('contactSection')"
+  class="w-full flex items-center justify-between px-4 py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors group"
+>
+  <div class="flex items-center gap-2">
+    <i class="fas fa-info-circle text-purple-600 text-sm"></i>
+    <span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Contacto</span>
+  </div>
+  <i id="contactSectionIcon" class="fas fa-chevron-right text-xs text-gray-400 group-hover:text-gray-600 transition-colors"></i>
+</button>
+
+
 
       <div id="contactSection">
-        <!-- 👇 AQUÍ VA TU CONTENIDO ACTUAL DE CONTACTO, SIN CAMBIARLO -->
-        <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
-      <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
-        <div class="bg-white border border-gray-100 rounded-lg p-3 mb-2">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-lg bg-green-500 flex items-center justify-center shadow-sm">
-              <i class="fab fa-whatsapp text-white"></i>
-            </div>
-            <div>
-              <p class="text-sm font-bold text-gray-900">+56942531118</p>
-              <p class="text-xs text-gray-500">Principal</p>
+        <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
+
+          <!-- Teléfono principal -->
+          <div class="bg-white border border-gray-100 rounded-lg p-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-lg bg-green-500 flex items-center justify-center shadow-sm">
+                <i class="fab fa-whatsapp text-white"></i>
+              </div>
+              <div>
+                <p id="contactPhone" class="text-sm font-bold text-gray-900">—</p>
+                <p class="text-xs text-gray-500">Principal</p>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div class="flex items-center gap-2 text-xs bg-green-50 border border-green-100 rounded-lg px-2.5 py-1.5">
-          <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-          <span class="text-green-700 font-semibold">Activo ahora</span>
+
+          <!-- Estado -->
+          <div id="contactStatus"
+            class="flex items-center gap-2 text-xs bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1.5">
+            <div class="w-2 h-2 rounded-full bg-gray-400"></div>
+            <span class="text-gray-600 font-semibold">Sin estado</span>
+          </div>
+
         </div>
       </div>
+
+      <!-- Tags (COLAPSABLE) -->
+      <div class="border-b border-gray-200">
+
+
+<button
+  onclick="toggleRightSection('contactTagsSection')"
+  class="w-full flex items-center justify-between px-4 py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors group"
+>
+  <div class="flex items-center gap-2">
+    <i class="fas fa-tags text-purple-600 text-sm"></i>
+    <span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Tags</span>
+  </div>
+  <i id="contactTagsSectionIcon" class="fas fa-chevron-right text-xs text-gray-400 group-hover:text-gray-600 transition-colors"></i>
+</button>
+
+
+
+        <div id="contactTagsSection" class="hidden">
+          <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100 w-full overflow-hidden">
+            <!-- Contenedor dinámico de tags -->
+            <div id="contactTagsContainer" class="flex flex-wrap gap-1.5 mb-2.5 w-full"></div>
+
+            <!-- Input para nuevo tag -->
+            <div class="flex items-center gap-1 w-full">
+              <input id="newTagInput" type="text" placeholder="Nuevo tag..."
+                class="flex-1 min-w-0 px-2 py-1 border border-gray-300 rounded-lg text-xs" />
+
+              <input id="newTagColor" type="color" value="#7c3aed"
+                class="w-8 h-8 p-0 border border-gray-300 rounded-lg cursor-pointer flex-shrink-0"
+                title="Color del tag" />
+
+              <button onclick="addTag()"
+                class="w-8 h-8 flex items-center justify-center bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700 flex-shrink-0">+</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <!-- Notas (COLAPSABLE) -->
+      <div class="border-b border-gray-200">
+
+<button
+  onclick="toggleRightSection('notesSection')"
+  class="w-full flex items-center justify-between px-4 py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors group"
+>
+  <div class="flex items-center gap-2">
+    <i class="fas fa-sticky-note text-purple-600 text-sm"></i>
+    <span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Notas</span>
+  </div>
+  <i id="notesSectionIcon" class="fas fa-chevron-right text-xs text-gray-400 group-hover:text-gray-600 transition-colors"></i>
+</button>
+
+
+
+        <div id="notesSection" class="hidden">
+          <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+
+            <!-- Contenedor dinámico de notas -->
+            <div id="contactNotesContainer" class="space-y-2 mb-2"></div>
+
+            <!-- Input nueva nota -->
+            <textarea id="newNoteInput" placeholder="Escribir nota..."
+              class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs mb-2"></textarea>
+
+            <button onclick="addNote()"
+              class="w-full px-3 py-1 bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700">
+              Agregar nota
+            </button>
+
+          </div>
         </div>
       </div>
 
-    </div>
-
-<!-- Tags (COLAPSABLE) -->
-<div class="p-4 border-b border-gray-200">
-
-  <button 
-    onclick="toggleRightSection('contactTagsSection')"
-    class="w-full flex items-center justify-between mb-3"
-  >
-    <div class="flex items-center gap-2">
-      <i class="fas fa-tags text-purple-600 text-sm"></i>
-      <h4 class="font-bold text-gray-900 text-xs uppercase tracking-wider">Tags</h4>
-    </div>
-    <i id="contactTagsSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
-  </button>
-
-  <div id="contactTagsSection" class="hidden">
-    <!-- 👇 TU CONTENIDO ACTUAL DE TAGS VA AQUÍ -->
-    <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
-        
-        <div class="flex flex-wrap gap-1.5 mb-2.5">
-          <span class="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold">VIP</span>
-          <span class="px-2.5 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold">Urgente</span>
-          <span class="px-2.5 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-bold">Seguim</span>
-          <button class="px-2.5 py-1 bg-white hover:bg-gray-100 text-gray-600 rounded-lg text-xs font-medium transition-all flex items-center gap-1 border border-gray-200">
-            <i class="fas fa-search text-xs"></i>
-            Recilente
-          </button>
-        </div>
-        
-        <button class="text-purple-600 hover:text-purple-700 text-xs font-bold flex items-center gap-1.5 hover:bg-white px-2 py-1.5 rounded-lg transition-all w-full">
-          <i class="fas fa-plus text-xs"></i>
-          Agregar tag
-        </button>
-      </div>
-    </div>
-</div>
-<!-- Notas (COLAPSABLE) -->
-<div class="p-4 border-b border-gray-200">
-
-  <button 
-    onclick="toggleRightSection('notesSection')"
-    class="w-full flex items-center justify-between mb-3"
-  >
-    <div class="flex items-center gap-2">
-      <i class="fas fa-sticky-note text-purple-600 text-sm"></i>
-      <h4 class="font-bold text-gray-900 text-xs uppercase tracking-wider">Notas</h4>
-    </div>
-    <i id="notesSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
-  </button>
-
-  <div id="notesSection" class="hidden">
-    <!-- 👇 TU CONTENIDO ACTUAL DE NOTAS VA AQUÍ -->
-    <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
-        <ul class="space-y-2 text-sm text-gray-700">
-          <li class="flex items-start gap-1.5">
-            <span class="text-purple-600 font-bold">•</span>
-            <span>Prefiere comunicación por WhatsApp</span>
-          </li>
-          <li class="flex items-start gap-1.5">
-            <span class="text-purple-600 font-bold">•</span>
-            <span>Llamar después de las 8 PM</span>
-          </li>
-          <li class="flex items-start gap-1.5">
-            <span class="text-purple-600 font-bold">•</span>
-            <span>Interesado en automatización de soporte</span>
-          </li>
-        </ul>
-      </div>
     </div>
 
   </div>
-

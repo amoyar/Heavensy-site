@@ -191,19 +191,21 @@ function procesarConversaciones(conversationsData) {
     conversations = conversationsData.map(conv => {
         const userName = conv.name || conv.user_id;
         
-        return {
-            id: conv.user_id,
-            name: userName,
-            phone: conv.user_id,
-            avatar: getInitials(userName),
-            color: getColorForUser(conv.user_id),
-            status: 'offline', // Por defecto offline, se actualiza con Socket.IO
-            lastMessage: conv.last_message || '',
-            time: formatTimestamp(conv.timestamp),
-            unread: conv.unread || 0,
-            blocked: conv.blocked || false,
-            messages: []  // Se cargarán cuando se seleccione
-        };
+    return {
+        id: conv.user_id,
+        name: userName,
+        phone: conv.user_id,
+        avatar: getInitials(userName),
+        avatar_url: conv.avatar_url || null,   // 👈 FUTURO: foto real
+        color: getColorForUser(conv.user_id),
+        status: 'offline',
+        lastMessage: conv.last_message || '',
+        time: formatTimestamp(conv.timestamp),
+        unread: conv.unread || 0,
+        blocked: conv.blocked || false,
+        messages: []
+    };
+
     });
     
     console.log(`✅ ${conversations.length} conversaciones procesadas`);
@@ -278,15 +280,21 @@ function renderConversations() {
         
         const convDiv = document.createElement('div');
         convDiv.className = `border-b border-gray-100 ${isActive ? 'bg-gradient-to-r from-purple-50 to-white' : 'hover:bg-gray-50'} cursor-pointer transition-all rounded-2xl mx-2 my-0.5`;
-        convDiv.onclick = () => selectConversation(conv.id);
+        convDiv.onclick = () => selectConversation(conv.id, convDiv);
         
         convDiv.innerHTML = `
             <div class="p-2">
                 <div class="flex items-center gap-3">
                     <div class="relative flex-shrink-0">
-                        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-${conv.color}-300 to-${conv.color}-400 flex items-center justify-center text-white font-bold shadow-md text-sm">
-                            ${escapeHtml(conv.avatar)}
+                        <div class="w-11 h-11 rounded-2xl overflow-hidden flex items-center justify-center shadow-md text-sm
+                                    ${conv.avatar_url ? '' : `bg-gradient-to-br from-${conv.color}-300 to-${conv.color}-400 text-white font-bold`}">
+                            ${
+                            conv.avatar_url
+                                ? `<img src="${conv.avatar_url}" class="w-full h-full object-cover" />`
+                                : escapeHtml(conv.avatar)
+                            }
                         </div>
+
                         ${conv.status === 'online' ? '<div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>' : ''}
                     </div>
                     <div class="flex-1 min-w-0">
@@ -307,16 +315,17 @@ function renderConversations() {
 // ============================================
 // SELECCIONAR CONVERSACIÓN
 // ============================================
-async function selectConversation(userId) {
+async function selectConversation(userId, element) {
     console.log('📱 Seleccionando conversación:', userId);
 
     currentConversation = conversations.find(c => c.id === userId);
+
     
     if (!currentConversation) {
         console.warn('⚠️ Conversación no encontrada');
         return;
     }
-
+    currentConversation._sourceElement = element;
     // Cargar mensajes del backend
     currentConversation.messages = await cargarMensajesDeConversacion(userId);
     
@@ -325,6 +334,16 @@ async function selectConversation(userId) {
     loadMessages();
     updateContactPanel();
     updateChatHeader();
+
+        // 🔗 Notificar al módulo de contactos
+    if (window.onConversationSelectedForContacts) {
+        window.onConversationSelectedForContacts(
+            currentConversation.id,      // wa_id
+            currentConversation.phone,   // phone
+            currentConversation.name,    // profile_name
+            currentCompanyId             // company_id
+        );
+    }
 }
 
 // ============================================
@@ -362,7 +381,7 @@ function renderMessages() {
 
     // Asegurar que el contenedor tiene scroll
     chatContainer.style.overflowY = 'auto';
-    chatContainer.style.maxHeight = 'calc(100vh - 300px)';
+    //chatContainer.style.maxHeight = 'calc(100vh - 300px)';
 
     let messagesDiv = chatContainer.querySelector('.space-y-4');
     if (!messagesDiv) {
@@ -698,14 +717,14 @@ function renderMediaContent(msg) {
             : url;
             
         return `
-            <img 
-                src="${thumbnailUrl}"
-                class="w-full max-w-xs rounded-xl cursor-pointer hover:opacity-90 transition"
-                loading="lazy"
-                onclick="window.open('${url}', '_blank')"
-                alt="Imagen"
-            />
-        `;
+                <img 
+                    src="${thumbnailUrl}"
+                    class="max-w-[180px] max-h-[180px] rounded-xl cursor-pointer hover:opacity-90 transition object-cover"
+                    loading="lazy"
+                    onclick="window.open('${url}', '_blank')"
+                    alt="Imagen"
+                />
+            `;
     }
     
     // AUDIO
@@ -727,7 +746,7 @@ function renderMediaContent(msg) {
     if (type === 'video' || mimeType.startsWith('video/')) {
         return `
             <div class="bg-gray-50 rounded-xl p-2">
-                <video controls class="w-full rounded-lg" style="max-height: 300px;">
+                <video controls class="max-w-[220px] max-h-[180px] rounded-lg">
                     <source src="${url}" type="${mimeType}">
                 </video>
             </div>
@@ -838,27 +857,43 @@ function formatTimestamp(timestamp) {
 function updateChatHeader() {
     if (!currentConversation) return;
 
-    // Buscar y actualizar el avatar del header
-    const headerAvatar = document.querySelector('.flex-1.bg-gradient-to-br .w-11.h-11');
+    const headerAvatar = document.getElementById("chatHeaderAvatar");
+    const headerName = document.getElementById("chatHeaderName");
+    const headerPhone = document.getElementById("chatHeaderPhone");
+
+    const name = currentConversation.name || "—";
+    const phone = currentConversation.phone || "—";
+    const color = currentConversation.color || "purple";
+
+    // Actualizar nombre y teléfono
+    if (headerName) headerName.textContent = name;
+    if (headerPhone) headerPhone.textContent = phone;
+
+    // Actualizar avatar con iniciales y color correcto
     if (headerAvatar) {
-        headerAvatar.className = `w-11 h-11 rounded-2xl bg-gradient-to-br from-${currentConversation.color}-300 to-${currentConversation.color}-400 flex items-center justify-center text-white font-bold shadow-md`;
-        headerAvatar.textContent = currentConversation.avatar;
+        const initials = name
+            .split(" ")
+            .map(p => p[0])
+            .join("")
+            .substring(0, 2)
+            .toUpperCase();
+
+        headerAvatar.textContent = initials || "—";
+
+        // Resetear clases y aplicar color correcto
+        headerAvatar.className = `
+            w-10 h-10 rounded-2xl
+            bg-gradient-to-br from-${color}-300 to-${color}-400
+            flex items-center justify-center
+            text-white font-bold shadow-md text-sm
+        `;
     }
 
-    // Actualizar nombre en el header
-    const headerName = document.querySelector('.flex-1.bg-gradient-to-br h3');
-    if (headerName) {
-        headerName.textContent = currentConversation.name;
-    }
-
-    // Actualizar teléfono en el header
-    const headerPhone = document.querySelector('.flex-1.bg-gradient-to-br h3 + p');
-    if (headerPhone) {
-        headerPhone.textContent = currentConversation.phone;
-    }
-
-    console.log('📋 Header del chat actualizado');
+    console.log("📋 Header del chat actualizado:", name, color);
 }
+
+
+
 
 // ============================================
 // ACTUALIZAR PANEL DE CONTACTO
@@ -866,33 +901,32 @@ function updateChatHeader() {
 function updateContactPanel() {
     if (!currentConversation) return;
 
-    // Contenedor del panel derecho
-    const panel = document.querySelector('.w-60.border-l');
-    if (!panel) {
-        console.warn('⚠️ No se encontró el panel de contacto');
-        return;
-    }
+    // Header del panel de contacto (derecha)
+    const nameEl = document.getElementById("contactHeaderName");
+    const avatarEl = document.getElementById("contactHeaderAvatar");
+    const phoneEl = document.getElementById("contactPhone"); // ya lo tienes en la sección Contacto
 
-    // Avatar grande
-    const contactAvatar = panel.querySelector('.w-16.h-16');
-    if (contactAvatar) {
-        contactAvatar.className = `w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-${currentConversation.color}-300 to-${currentConversation.color}-400 flex items-center justify-center text-white text-xl font-bold mb-3 shadow-sm`;
-        contactAvatar.textContent = currentConversation.avatar;
-    }
+    const name = currentConversation.name || "Sin nombre";
+    const phone = currentConversation.phone || "";
 
-    // Nombre
-    const contactName = panel.querySelector('h3.font-bold');
-    if (contactName) {
-        contactName.textContent = currentConversation.name;
-    }
+        // Ejemplo futuro acá injectar datos reales
+    // const stars = currentConversation.stars || 5;
+    // const plan = currentConversation.plan || "Premium";
 
-    // Teléfono
-    const phoneEl = panel.querySelector('.text-sm.font-bold');
-    if (phoneEl) {
-        phoneEl.textContent = currentConversation.phone;
-    }
+    if (nameEl) nameEl.textContent = name;
+    if (phoneEl) phoneEl.textContent = phone;
 
-    console.log('📋 Panel de contacto actualizado');
+    if (avatarEl) {
+        // Sacar iniciales del nombre
+        const initials = name
+            .split(" ")
+            .map(p => p[0])
+            .join("")
+            .substring(0, 2)
+            .toUpperCase();
+
+        avatarEl.textContent = initials || "—";
+    }
 }
 
 
