@@ -61,6 +61,13 @@ async function loadContactProfile(userId, phone = null, profileName = null, comp
         console.log("✅ Contacto cargado:", currentContactProfile);
 
         renderContactPanel(currentContactProfile);
+        const avatarUrl = currentContactProfile.avatar?.secure_url || currentContactProfile.avatar?.url || "";
+
+        // Solo notificar si realmente cambió
+        if (window.updateConversationAvatar) {
+            window.updateConversationAvatar(currentContactUserId, avatarUrl);
+        }
+
 
     } catch (err) {
         console.error("❌ Error cargando contacto:", err);
@@ -70,9 +77,11 @@ async function loadContactProfile(userId, phone = null, profileName = null, comp
 // Render principal del panel
 // --------------------------------------------
 function renderContactPanel(contact) {
+    renderContactHeader(contact);   // 👈 nuevo
     renderTags(contact.tags || []);
     renderNotes(contact.notes || []);
 }
+
 
 // --------------------------------------------
 // TAGS
@@ -226,6 +235,81 @@ async function deleteNote(noteId) {
     }
 }
 
+//-------------------------------------------------
+// Avatars
+//-------------------------------------------------
+
+function renderContactHeader(contact) {
+    const avatarEl = document.getElementById("contactHeaderAvatar");
+    const nameEl = document.getElementById("contactHeaderName");
+    const phoneEl = document.getElementById("contactPhone");
+
+    if (!contact || !avatarEl) return;
+
+    const name = contact.profile_name || contact.user_id || "—";
+    if (nameEl) nameEl.textContent = name;
+    if (phoneEl) phoneEl.textContent = contact.user_id || "—";
+
+    const avatarUrl = contact.avatar?.secure_url || contact.avatar?.url || "";
+
+    // ⛔ Si es el mismo avatar, NO re-renderizar
+    const currentUrl = avatarEl.getAttribute("data-avatar-url") || "";
+    if (currentUrl === avatarUrl) {
+        return; // evita flicker
+    }
+
+    avatarEl.setAttribute("data-avatar-url", avatarUrl);
+
+    // Render real
+    avatarEl.innerHTML = "";
+
+    if (avatarUrl) {
+        avatarEl.classList.remove("bg-gray-200", "animate-pulse");
+        avatarEl.innerHTML = `
+          <img 
+            src="${avatarUrl}" 
+            class="w-full h-full object-cover rounded-xl" 
+            alt="Avatar"
+          />
+        `;
+    } else {
+        avatarEl.classList.add("bg-gray-200");
+        avatarEl.innerHTML = "";
+    }
+}
+
+async function onAvatarFileSelected(e) {
+    const file = e.target.files[0];
+    if (!file || !currentContactUserId || !currentContactCompanyId) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("company_id", currentContactCompanyId);
+
+    try {
+        await authFetch(`${API_BASE_URL}/api/contacts/${encodeURIComponent(currentContactUserId)}/avatar`, {
+            method: "POST",
+            body: formData
+        });
+
+        // Recargar perfil del contacto
+        await loadContactProfile(
+            currentContactUserId,
+            null,
+            null,
+            currentContactCompanyId
+        );
+    } catch (err) {
+        console.error("❌ Error subiendo avatar:", err);
+        alert("No se pudo subir el avatar");
+    } finally {
+        // Limpiar input para poder subir la misma imagen de nuevo si quieres
+        e.target.value = "";
+    }
+}
+
+
+
 // --------------------------------------------
 // Utils
 // --------------------------------------------
@@ -243,10 +327,21 @@ function escapeHtml(text) {
 // Hook desde conversaciones.js
 // Llama esto cuando cambie el usuario seleccionado userId phone = null, name = null
 // --------------------------------------------
-// window.onConversationSelectedForContacts = function (userId, phone = null, name = null) {
-//     console.log("📇 Hook contacto desde conversaciones:", userId);
-//     loadContactProfile(userId, phone, name);
-// };
+
+document.addEventListener("DOMContentLoaded", () => {
+    const avatarEl = document.getElementById("contactHeaderAvatar");
+    const inputEl = document.getElementById("contactAvatarInput");
+
+    if (avatarEl && inputEl) {
+        avatarEl.style.cursor = "pointer";
+
+        avatarEl.addEventListener("click", () => {
+            inputEl.click();
+        });
+
+        inputEl.addEventListener("change", onAvatarFileSelected);
+    }
+});
 
 window.onConversationSelectedForContacts = function (userId, phone = null, name = null, companyId) {
     console.log("📇 Conversación seleccionada → cargar contacto:", userId, companyId);

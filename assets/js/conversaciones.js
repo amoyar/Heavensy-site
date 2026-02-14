@@ -20,6 +20,55 @@ let allMessages = [];
 let selectedMessageToReply = null;
 let messagesOrderReversed = false;
 let isSending = false;
+
+function renderAvatar(containerEl, { avatar_url, name, roundedClass }) {
+  if (!containerEl) return;
+
+  // ⛔ Si ya está renderizado el mismo avatar, no hacer nada
+  const currentUrl = containerEl.getAttribute("data-avatar-url") || "";
+  const newUrl = avatar_url || "";
+
+  if (currentUrl === newUrl) {
+    return; // 👈 evita repaint y flicker
+  }
+
+  // Guardar el avatar actual
+  containerEl.setAttribute("data-avatar-url", newUrl);
+
+  const initials = name
+    ? name
+        .trim()
+        .split(/\s+/)
+        .map(p => p[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase()
+    : "—";
+
+  // Limpiar
+  containerEl.innerHTML = "";
+
+  if (avatar_url) {
+    containerEl.innerHTML = `
+      <img 
+        src="${avatar_url}" 
+        class="w-full h-full object-cover ${roundedClass}" 
+        alt="Avatar"
+        loading="lazy"
+      />
+    `;
+  } else {
+    containerEl.innerHTML = `
+      <div class="w-full h-full flex items-center justify-center bg-purple-500 text-white font-bold ${roundedClass}">
+        ${initials}
+      </div>
+    `;
+  }
+}
+
+
+
+
 // ============================================
 // INICIALIZACIÓN
 // ============================================
@@ -110,11 +159,7 @@ async function cargarEmpresasYConversaciones() {
         // Poblar selector de empresas
         poblarSelectorEmpresas(companies);
 
-        // Si hay empresas, cargar conversaciones de la primera
-        if (companies.length > 0) {
-            currentCompanyId = companies[0].company_id;
-            await cargarConversacionesPorEmpresa(currentCompanyId);
-        } else {
+        if (companies.length === 0) {
             mostrarEstadoVacio('No hay empresas disponibles');
         }
 
@@ -195,7 +240,6 @@ function procesarConversaciones(conversationsData) {
         id: conv.user_id,
         name: userName,
         phone: conv.user_id,
-        avatar: getInitials(userName),
         avatar_url: conv.avatar_url || null,   // 👈 FUTURO: foto real
         color: getColorForUser(conv.user_id),
         status: 'offline',
@@ -259,6 +303,7 @@ async function cargarMensajesDeConversacion(userId) {
 // ============================================
 // RENDERIZAR LISTA DE CONVERSACIONES
 // ============================================
+
 function renderConversations() {
     const container = document.getElementById('conversationsList');
     if (!container) return;
@@ -275,42 +320,85 @@ function renderConversations() {
         return;
     }
 
-    conversations.forEach((conv) => {
-        const isActive = currentConversation && currentConversation.id === conv.id;
-        
-        const convDiv = document.createElement('div');
-        convDiv.className = `border-b border-gray-100 ${isActive ? 'bg-gradient-to-r from-purple-50 to-white' : 'hover:bg-gray-50'} cursor-pointer transition-all rounded-2xl mx-2 my-0.5`;
-        convDiv.onclick = () => selectConversation(conv.id, convDiv);
-        
-        convDiv.innerHTML = `
-            <div class="p-2">
-                <div class="flex items-center gap-3">
-                    <div class="relative flex-shrink-0">
-                        <div class="w-11 h-11 rounded-2xl overflow-hidden flex items-center justify-center shadow-md text-sm
-                                    ${conv.avatar_url ? '' : `bg-gradient-to-br from-${conv.color}-300 to-${conv.color}-400 text-white font-bold`}">
-                            ${
-                            conv.avatar_url
-                                ? `<img src="${conv.avatar_url}" class="w-full h-full object-cover" />`
-                                : escapeHtml(conv.avatar)
-                            }
-                        </div>
+conversations.forEach((conv) => {
+  const isActive = currentConversation && currentConversation.id === conv.id;
 
-                        ${conv.status === 'online' ? '<div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>' : ''}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between mb-0.5">
-                            <h4 class="font-semibold text-gray-900 text-sm truncate">${escapeHtml(conv.name)}</h4>
-                            <span class="text-xs text-gray-500">${conv.time}</span>
-                        </div>
-                        <p class="text-xs text-gray-600 truncate">${escapeHtml(conv.lastMessage)}</p>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        container.appendChild(convDiv);
-    });
+  const convDiv = document.createElement('div');
+  convDiv.className = `border-b border-gray-100 ${
+    isActive ? 'bg-gradient-to-r from-purple-50 to-white' : 'hover:bg-gray-50'
+  } cursor-pointer transition-all rounded-2xl mx-2 my-0.5`;
+
+  convDiv.onclick = () => selectConversation(conv.id, convDiv);
+
+  convDiv.innerHTML = `
+    <div class="p-2">
+      <div class="flex items-center gap-3">
+        <div class="relative flex-shrink-0">
+          <!-- SOLO contenedor -->
+          <div id="avatar-list-${conv.id}"
+               class="w-11 h-11 rounded-2xl overflow-hidden shadow-md">
+          </div>
+        </div>
+
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between mb-0.5">
+            <h4 class="font-semibold text-gray-900 text-sm truncate">
+              ${escapeHtml(conv.name)}
+            </h4>
+            <span class="text-xs text-gray-500">${conv.time || ''}</span>
+          </div>
+          <p class="text-xs text-gray-600 truncate">
+            ${escapeHtml(conv.lastMessage || '')}
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.appendChild(convDiv);
+
+  // ✅ SIEMPRE renderizar avatar (imagen o letras)
+  const avatarEl = document.getElementById(`avatar-list-${conv.id}`);
+  renderAvatar(avatarEl, {
+    avatar_url: conv.avatar_url,
+    name: conv.name,
+    roundedClass: "rounded-2xl"
+  });
+});
+
 }
+
+// ============================================
+// ACTUALIZAR AVATAR DE UNA CONVERSACIÓN DESDE CONTACTS
+// ============================================
+function updateConversationAvatar(waId, avatarUrl) {
+    if (!avatarUrl) return;
+
+    const conv = conversations.find(c => c.id === waId);
+    if (!conv) return;
+
+    conv.avatar_url = avatarUrl;
+
+    // Si es la conversación actual, actualizar header
+    if (currentConversation && currentConversation.id === waId) {
+        currentConversation.avatar_url = avatarUrl;
+        updateChatHeader();
+    }
+
+    // Re-render lista izquierda
+    //nderConversations();
+    const avatarEl = document.getElementById(`avatar-list-${waId}`);
+    if (avatarEl) {
+    renderAvatar(avatarEl, {
+        avatar_url: avatarUrl,
+        name: conv.name,
+        roundedClass: "rounded-2xl"
+    });
+    }
+}
+
+// Exponer globalmente
+window.updateConversationAvatar = updateConversationAvatar;
 
 // ============================================
 // SELECCIONAR CONVERSACIÓN
@@ -330,7 +418,7 @@ async function selectConversation(userId, element) {
     currentConversation.messages = await cargarMensajesDeConversacion(userId);
     
     // Actualizar UI
-    renderConversations(); // Re-renderizar para actualizar estado activo
+   //enderConversations(); // Re-renderizar para actualizar estado activo
     loadMessages();
     updateContactPanel();
     updateChatHeader();
@@ -855,42 +943,25 @@ function formatTimestamp(timestamp) {
 // ACTUALIZAR HEADER DEL CHAT
 // ============================================
 function updateChatHeader() {
-    if (!currentConversation) return;
+  if (!currentConversation) return;
 
-    const headerAvatar = document.getElementById("chatHeaderAvatar");
-    const headerName = document.getElementById("chatHeaderName");
-    const headerPhone = document.getElementById("chatHeaderPhone");
+  const headerAvatar = document.getElementById("chatHeaderAvatar");
+  const headerName = document.getElementById("chatHeaderName");
+  const headerPhone = document.getElementById("chatHeaderPhone");
 
-    const name = currentConversation.name || "—";
-    const phone = currentConversation.phone || "—";
-    const color = currentConversation.color || "purple";
+  const name = currentConversation.name || "—";
+  const phone = currentConversation.phone || "—";
 
-    // Actualizar nombre y teléfono
-    if (headerName) headerName.textContent = name;
-    if (headerPhone) headerPhone.textContent = phone;
+  if (headerName) headerName.textContent = name;
+  if (headerPhone) headerPhone.textContent = phone;
 
-    // Actualizar avatar con iniciales y color correcto
-    if (headerAvatar) {
-        const initials = name
-            .split(" ")
-            .map(p => p[0])
-            .join("")
-            .substring(0, 2)
-            .toUpperCase();
-
-        headerAvatar.textContent = initials || "—";
-
-        // Resetear clases y aplicar color correcto
-        headerAvatar.className = `
-            w-10 h-10 rounded-2xl
-            bg-gradient-to-br from-${color}-300 to-${color}-400
-            flex items-center justify-center
-            text-white font-bold shadow-md text-sm
-        `;
-    }
-
-    console.log("📋 Header del chat actualizado:", name, color);
+  renderAvatar(headerAvatar, {
+    avatar_url: currentConversation.avatar_url,
+    name: name,
+    roundedClass: "rounded-2xl"
+  });
 }
+
 
 
 
@@ -917,16 +988,14 @@ function updateContactPanel() {
     if (phoneEl) phoneEl.textContent = phone;
 
     if (avatarEl) {
-        // Sacar iniciales del nombre
-        const initials = name
-            .split(" ")
-            .map(p => p[0])
-            .join("")
-            .substring(0, 2)
-            .toUpperCase();
-
-        avatarEl.textContent = initials || "—";
+    renderAvatar(avatarEl, {
+        avatar_url: currentConversation.avatar_url,
+        name: name,
+        roundedClass: "rounded-xl"
+    });
     }
+
+
 }
 
 
@@ -1043,7 +1112,7 @@ async function sendMessage() {
         selectedMessageToReply = null;
         input.value = '';
         renderMessages();
-        renderConversations();
+       //enderConversations();
 
         // ENVIAR AL BACKEND
         const formData = new FormData();
