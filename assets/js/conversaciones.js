@@ -146,29 +146,75 @@ async function cargarEmpresasYConversaciones() {
     }
 }
 
+function mostrarEstadoSinEmpresaSeleccionada() {
+  const chatHeader = document.getElementById("chatHeader");
+  const rightPanel = document.getElementById("contactPanel");
+  const chatContainer = document.getElementById("chatMessages");
+
+  if (chatHeader) chatHeader.classList.add("hidden");
+  if (rightPanel) rightPanel.classList.add("hidden");
+
+  if (chatContainer) {
+    chatContainer.innerHTML = `
+      <div class="flex items-center justify-center h-full text-gray-400 text-lg select-none">
+        No hay empresa seleccionada
+      </div>
+    `;
+  }
+}
+
+function mostrarEstadoSinConversacionSeleccionada() {
+  const chatHeader = document.getElementById("chatHeader");
+  const rightPanel = document.getElementById("contactPanel");
+  const chatContainer = document.getElementById("chatMessages");
+
+  if (chatHeader) chatHeader.classList.add("hidden");
+  if (rightPanel) rightPanel.classList.add("hidden");
+
+  if (chatContainer) {
+    chatContainer.innerHTML = `
+      <div class="flex items-center justify-center h-full text-gray-400 text-lg select-none">
+        Selecciona una conversación para comenzar
+      </div>
+    `;
+  }
+}
+
+function mostrarChatActivo() {
+  const chatHeader = document.getElementById("chatHeader");
+  const rightPanel = document.getElementById("contactPanel");
+
+  if (chatHeader) chatHeader.classList.remove("hidden");
+  if (rightPanel) rightPanel.classList.remove("hidden");
+}
+
+
+
+
+
 // ============================================
 // POBLAR SELECTOR DE EMPRESAS
 // ============================================
 function poblarSelectorEmpresas(companies) {
-    const select = document.getElementById('conversacionesCompanyFilter');
-    if (!select) return;
+  const select = document.getElementById('conversacionesCompanyFilter');
+  if (!select) return;
 
-    select.innerHTML = '<option value="">Selecciona una empresa</option>';
+  // Opción por defecto
+  select.innerHTML = '<option value="">Seleccione una empresa</option>';
 
-    companies.forEach(company => {
-        const option = document.createElement('option');
-        option.value = company.company_id;
-        option.textContent = company.name || company.company_id;
-        select.appendChild(option);
-    });
+  companies.forEach(company => {
+    const option = document.createElement('option');
+    option.value = company.company_id;
+    option.textContent = company.name || company.company_id;
+    select.appendChild(option);
+  });
 
-    // Seleccionar la primera empresa por defecto
-    if (companies.length > 0) {
-        select.value = companies[0].company_id;
-    }
+  console.log(`✅ Selector de empresas poblado con ${companies.length} empresas (sin autoselección)`);
 
-    console.log(`✅ Selector poblado con ${companies.length} empresas`);
+  // Estado inicial: sin empresa
+  mostrarEstadoSinEmpresaSeleccionada();
 }
+
 
 //======================================================
 // FILTROS CHIPS POR TIPO TODOS NO LEIDOS IA
@@ -571,6 +617,7 @@ async function selectConversation(userId, element) {
         console.warn('⚠️ Conversación no encontrada');
         return;
     }
+    mostrarChatActivo(); // 👈 AQUI
     currentConversation._sourceElement = element;
     // Cargar mensajes del backend
     currentConversation.messages = await cargarMensajesDeConversacion(userId);
@@ -1363,31 +1410,49 @@ function hideMessageError() {
 // CONFIGURAR EVENT LISTENERS
 // ============================================
 function setupConversacionesEventListeners() {
-    console.log('🔧 Configurando event listeners...');
+  console.log('🔧 Configurando event listeners...');
 
-    // Cambio de empresa
-    const companySelect = document.getElementById('conversacionesCompanyFilter');
-    if (companySelect) {
-        companySelect.addEventListener('change', async (e) => {
-            const companyId = e.target.value;
-            if (companyId) {
-                currentCompanyId = companyId;
-                await cargarConversacionesPorEmpresa(companyId);
-            }
-        });
-    }
+  // Cambio de empresa
+  const companySelect = document.getElementById('conversacionesCompanyFilter');
+  if (companySelect) {
+    companySelect.addEventListener('change', async (e) => {
+      const companyId = e.target.value;
 
-    // Búsqueda de conversaciones
-    const searchInput = document.getElementById('searchConversations');
-    if (searchInput) {
-        searchInput.addEventListener('input', (e) => {
-            filterConversations(e.target.value);
-        });
-    }
-    setupFilterChips();
-    setupIAToggleChip();
-    console.log('✅ Event listeners configurados');
+      if (!companyId) {
+        console.log("🏢 Ninguna empresa seleccionada");
+        currentCompanyId = null;
+        conversations = [];
+        currentConversation = null;
+
+        renderConversations();
+        mostrarEstadoSinEmpresaSeleccionada();
+        return;
+      }
+
+      console.log("🏢 Empresa seleccionada:", companyId);
+      currentCompanyId = companyId;
+
+      await cargarConversacionesPorEmpresa(companyId);
+
+      // Después de cargar conversaciones, aún no hay chat seleccionado
+      mostrarEstadoSinConversacionSeleccionada();
+    });
+  }
+
+  // Búsqueda de conversaciones
+  const searchInput = document.getElementById('searchConversations');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      filterConversations(e.target.value);
+    });
+  }
+
+  setupFilterChips();
+  setupIAToggleChip();
+
+  console.log('✅ Event listeners configurados');
 }
+
 
 // ============================================
 // DESELECCIONAR MENSAJE
