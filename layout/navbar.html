@@ -1,45 +1,45 @@
-<nav class="bg-white border-b px-6 py-3 flex justify-between items-center shadow-sm sticky top-0 z-50">
-  <div class="flex items-center space-x-3">
+<nav class="bg-[#b2c4fb] border-b px-4 py-1.5 flex justify-between items-center shadow-sm sticky top-0 z-50 h-10">
+  <div class="flex items-center space-x-2">
     
     <!-- Botón toggle sidebar -->
-    <button id="toggleSidebarBtn" class="text-gray-600 hover:text-gray-900 focus:outline-none">
-      <i class="fas fa-bars text-xl"></i>
+    <button id="toggleSidebarBtn" class="text-white hover:text-white/80 focus:outline-none">
+      <i class="fas fa-bars text-lg"></i>
     </button>
 
-    <img src="assets/img/heavensy-logo.png" alt="Heavensy" class="h-8 w-auto" />
-    <span class="text-lg font-semibold text-gray-800">Heavensy</span>
+    <img src="assets/img/heavensy-logo.png" alt="Heavensy" class="h-6 w-auto" />
+    <span class="text-sm font-semibold text-[#193d6d]">Heavensy</span>
   </div>
 
-  <div class="flex items-center space-x-4">
+  <div class="flex items-center space-x-3">
     <!-- Notifications -->
     <button class="relative text-gray-500 hover:text-gray-700">
-      <i class="fas fa-bell text-xl"></i>
+      <i class="fas fa-bell text-lg"></i>
     </button>
 
     <!-- User Menu -->
     <div class="relative">
-      <button id="userMenuBtn" class="flex items-center space-x-2 focus:outline-none">
-        <div class="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center text-white">
+      <button id="userMenuBtn" class="flex items-center space-x-1.5 focus:outline-none">
+        <div class="w-7 h-7 bg-[#92acde] rounded-full flex items-center justify-center text-white text-xs">
           <i class="fas fa-user"></i>
         </div>
-        <span id="topbarUsername" class="text-sm font-medium text-gray-700">
+        <span id="topbarUsername" class="text-xs font-medium text-[#193d6d]">
           Usuario
         </span>
-        <i class="fas fa-chevron-down text-xs text-gray-500"></i>
+        <i class="fas fa-chevron-down text-[10px] text-gray-500"></i>
       </button>
 
       <div
         id="userMenu"
-        class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50"
+        class="hidden absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg border z-50"
       >
-        <button onclick="openProfileModal()" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
+        <button onclick="openProfileModal()" class="block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100">
           Mi perfil
         </button>
-        <button onclick="openSecurityModal()" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">
+        <button onclick="openSecurityModal()" class="block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100">
           Seguridad
         </button>
         <div class="border-t my-1"></div>
-        <button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+        <button onclick="logout()" class="block w-full text-left px-3 py-1.5 text-xs text-red-600 hover:bg-gray-100">
           Cerrar sesión
         </button>
       </div>

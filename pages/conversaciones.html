@@ -2,17 +2,18 @@
 <div class="h-screen flex bg-gray-50 overflow-hidden">
 
   <!-- COLUMNA 1: Sidebar de Conversaciones -->
-  <div class="w-64 flex-shrink-0 bg-white border-r border-gray-200  flex flex-col shadow-lg">
+  <div class="w-60 flex-shrink-0 bg-white border-r border-gray-200  flex flex-col shadow-lg">
 
     <!-- Header del Sidebar con título -->
-    <div class="p-4 border-b border-gray-200 ">
-      <div class="flex items-center gap-2.5 mb-3">
+    <div class="px-3 py-2 border-b border-gray-200">
+      <div class="flex items-center gap-2 mb-2">
         <div
-          class="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-300 to-purple-400 flex items-center justify-center shadow-md">
-          <i class="fas fa-comments text-white"></i>
+          class="w-7 h-7 rounded-lg bg-[#92acde] flex items-center justify-center">
+          <i class="fas fa-message text-[#c9dcef] text-sm"></i>
         </div>
-        <h2 class="text-lg font-bold text-gray-900">Conversaciones</h2>
+        <h2 class="text-sm font-semibold text-gray-800">Conversaciones</h2>
       </div>
+
 
       <!-- Selector de Empresa -->
       <div class="mb-3">
@@ -26,15 +27,34 @@
       </div>
 
       <!-- Barra de búsqueda de contactos -->
-      <div class="relative">
-        <input type="text" id="searchConversations" placeholder="Buscar contacto..."
-          class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 focus:bg-white transition-all text-sm" />
-        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
-      </div>
+<!-- Buscador -->
+<div class="relative">
+  <input
+    type="text"
+    id="searchConversations"
+    placeholder="Buscar contacto..."
+    class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 focus:bg-white transition-all text-sm"
+  />
+  <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+</div>
+
+<!-- Filtros horizontales -->
+<div class="flex gap-2 mt-2">
+  <button class="px-3 py-1 rounded-full text-xs border transition-all filter-chip active" data-filter="all">
+    Todos
+  </button>
+  <button class="px-3 py-1 rounded-full text-xs border transition-all filter-chip" data-filter="unread">
+    No leídos
+  </button>
+  <button class="px-3 py-1 rounded-full text-xs border transition-all filter-chip" id="iaToggleChip" data-ia="on">
+    IA On
+  </button>
+</div>
+
     </div>
 
     <!-- Filtros rápidos (COLAPSABLE) -->
-    <div class="px-3 py-2.5 border-b border-gray-200 bg-gray-50">
+    <!-- <div class="px-3 py-2.5 border-b border-gray-200 bg-gray-50">
 
       <button onclick="toggleLeftSection('filtersSection')"
         class="w-full flex items-center justify-between text-xs font-bold text-gray-600 mb-2">
@@ -59,10 +79,12 @@
           <span>Urgentes</span>
         </button>
       </div>
-    </div>
+    </div> -->
+
+
 
     <!-- Sección de Tags (COLAPSABLE) -->
-    <div class="px-3 py-2.5 border-b border-gray-200 bg-white">
+    <!-- <div class="px-3 py-2.5 border-b border-gray-200 bg-white">
 
       <button onclick="toggleLeftSection('tagsSection')"
         class="w-full flex items-center justify-between text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
@@ -94,7 +116,11 @@
           </span>
         </button>
       </div>
-    </div>
+    </div> -->
+
+
+
+    
     <div class="flex-1 overflow-y-auto bg-white" id="conversationsList">
       <!-- JS inyecta las conversaciones aquí -->
     </div>
@@ -109,48 +135,47 @@
 
     <!-- Header del Chat (Altura optimizada) -->
     <!-- Header del Chat -->
-    <div class="bg-white border-b border-gray-200 px-6 py-3 shadow-sm z-10">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
+<div class="bg-white border-b border-gray-200 px-4 py-1.5 shadow-sm z-10 h-12 flex items-center">
 
-          <!-- AVATAR DINÁMICO -->
-          <div class="relative">
-            <div id="chatHeaderAvatar" class="w-10 h-10 rounded-2xl overflow-hidden"></div>
+  <div class="flex items-center justify-between w-full">
+    <div class="flex items-center gap-2">
 
-            <div
-              class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-sm">
-            </div>
-          </div>
-
-          <!-- NOMBRE Y TELÉFONO -->
-          <div>
-            <h3 id="chatHeaderName" class="font-bold text-gray-900 text-sm">—</h3>
-            <p id="chatHeaderPhone" class="text-[10px] text-gray-500">—</p>
-          </div>
+      <!-- AVATAR DINÁMICO -->
+      <div class="relative">
+        <div id="chatHeaderAvatar" class="w-8 h-8 rounded-full overflow-hidden"></div>
+        <div
+          class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-sm">
         </div>
+      </div>
 
-        <!-- BOTONES DERECHA -->
-        <div class="flex items-center gap-1">
-          <button id="toggleMessageOrder" onclick="toggleMessageOrder()"
-            class="p-2 hover:bg-purple-50 rounded-xl transition-all group" title="Cambiar orden">
-            <i class="fas fa-arrow-down-short-wide text-gray-500 group-hover:text-purple-600 text-sm"></i>
-          </button>
-          <button class="p-2 hover:bg-gray-100 rounded-xl transition-all">
-            <i class="fas fa-phone text-gray-500 text-sm"></i>
-          </button>
-          <button class="p-2 hover:bg-gray-100 rounded-xl transition-all">
-            <i class="fas fa-ellipsis-v text-gray-500 text-sm"></i>
-          </button>
-        </div>
+      <!-- NOMBRE Y TELÉFONO -->
+      <div>
+        <h3 id="chatHeaderName" class="font-bold text-gray-900 text-sm">—</h3>
+        <p id="chatHeaderPhone" class="text-[10px] text-gray-500">—</p>
       </div>
     </div>
 
+    <!-- BOTONES DERECHA -->
+    <div class="flex items-center gap-1">
+      <button id="toggleMessageOrder" onclick="toggleMessageOrder()"
+        class="p-2 hover:bg-purple-50 rounded-xl transition-all group" title="Cambiar orden">
+        <i class="fas fa-arrow-down-short-wide text-gray-500 group-hover:text-purple-600 text-sm"></i>
+      </button>
+      <button class="p-2 hover:bg-gray-100 rounded-xl transition-all">
+        <i class="fas fa-phone text-gray-500 text-sm"></i>
+      </button>
+      <button class="p-2 hover:bg-gray-100 rounded-xl transition-all">
+        <i class="fas fa-ellipsis-v text-gray-500 text-sm"></i>
+      </button>
+    </div>
+
+  </div>
+</div>
+
 
     <!-- Área de Mensajes (Ocupa todo el espacio disponible) -->
-    <div class="flex-1 overflow-y-auto p-4 md:p-6" id="chatMessages">
-      <div class="flex-1 overflow-y-auto p-4 md:p-6" id="chatMessages">
-        <!-- JS renderiza mensajes aquí -->
-      </div>
+  <div class="flex-1 overflow-y-auto p-3 chat-font" id="chatMessages">
+
     </div>
 
     <!-- Input de Mensaje (Pegado a la base y más bajo) -->
@@ -168,7 +193,15 @@
             </button>
           </div>
         </div>
-
+        <div id="messageErrorBubble" class="hidden mb-2">
+          <div class="inline-flex items-center gap-2 bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded-xl shadow-sm">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="messageErrorText">Debes escribir un mensaje o adjuntar un archivo</span>
+            <button onclick="hideMessageError()" class="ml-2 text-red-400 hover:text-red-600">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
         <!-- Barra de entrada (Altura reducida py-1.0) -->
         <div
           class="flex items-center gap-1 bg-white border border-gray-300 rounded-full px-3 py-1.0 focus-within:border-purple-400 transition-all shadow-sm">
@@ -187,6 +220,8 @@
           <input id="messageInput" type="text" placeholder="Escribe un mensaje..."
             class="flex-1 bg-transparent focus:outline-none text-sm text-gray-900 placeholder-gray-400"
             onkeypress="if(event.key === 'Enter') sendMessage()" />
+          
+
 
           <button id="sendButton" onclick="sendMessage()"
             class="p-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-full transition-all shadow-md flex-shrink-0 active:scale-95">
@@ -204,37 +239,38 @@
 
 
   <!-- COLUMNA 3: Panel de Contacto con bordes mejorados -->
-  <div class="w-60 bg-white border-l border-gray-200 flex flex-col overflow-y-auto overflow-x-hidden shadow-lg">
+  <div class="w-56 bg-white border-l border-gray-200 flex flex-col overflow-y-auto overflow-x-hidden shadow-lg">
 
-    <!-- Header del Contacto -->
-    <div class="p-2 border-b border-gray-200 text-center"> <!-- Bajado de p-4 a p-3 -->
-    <div id="contactHeaderAvatar" class="w-10 h-10 rounded-xl overflow-hidden"></div>
+<!-- Header del Contacto -->
+<div class="p-2 border-b border-gray-200 text-center flex flex-col items-center">
+  
+  <div id="contactHeaderAvatar"
+       class="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center mb-2">
+  </div>
 
+  <input type="file" id="contactAvatarInput" class="hidden" accept="image/*" />
 
-      <input type="file" id="contactAvatarInput" class="hidden" accept="image/*" />
-      <h3 id="contactHeaderName" class="font-bold text-gray-900 text-sm mb-0">—</h3>
-      
-      <!-- Bajado de text-base a text-sm y mb-1 a mb-0 -->
-      <div id="contactHeaderMeta" class="flex items-center justify-center gap-2 mt-1 text-xs">
-        <div class="flex items-center gap-1 text-yellow-500">
-          <i class="fas fa-star"></i>
-          <i class="fas fa-star"></i>
-          <i class="fas fa-star"></i>
-          <i class="fas fa-star"></i>
-          <i class="fas fa-star"></i>
-          <span class="text-gray-600 font-semibold ml-1">5</span>
-        </div>
+  <h3 id="contactHeaderName" class="font-bold text-gray-900 text-sm mb-1">—</h3>
 
-        <span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold text-[10px]">
-          Premium
-        </span>
-      </div>
-
-      <button class="text-gray-400 hover:text-purple-600 text-xs mt-1 p-1 hover:bg-gray-100 rounded-lg transition-all">
-        <!-- Bajado de p-1.5 a p-1 y text-sm a text-xs -->
-        <i class="fas fa-ellipsis-h"></i>
-      </button>
+  <div id="contactHeaderMeta" class="flex items-center justify-center gap-2 text-xs">
+    <div class="flex items-center gap-1 text-yellow-500">
+      <i class="fas fa-star"></i>
+      <i class="fas fa-star"></i>
+      <i class="fas fa-star"></i>
+      <i class="fas fa-star"></i>
+      <i class="fas fa-star"></i>
+      <span class="text-gray-600 font-semibold ml-1">5</span>
     </div>
+
+    <span class="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold text-[10px]">
+      Premium
+    </span>
+  </div>
+
+  <button class="text-gray-400 hover:text-purple-600 text-xs mt-1 p-1 hover:bg-gray-100 rounded-lg transition-all">
+    <i class="fas fa-ellipsis-h"></i>
+  </button>
+</div>
 
 
     <!-- Información del Contacto (COLAPSABLE) -->

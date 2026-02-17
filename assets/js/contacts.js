@@ -61,7 +61,13 @@ async function loadContactProfile(userId, phone = null, profileName = null, comp
         console.log("✅ Contacto cargado:", currentContactProfile);
 
         renderContactPanel(currentContactProfile);
-        const avatarUrl = currentContactProfile.avatar?.secure_url || currentContactProfile.avatar?.url || "";
+
+        // ✅ Solo usar avatar real (no generado con iniciales)
+        const avatarObj = currentContactProfile.avatar || {};
+        const isRealAvatar = avatarObj.provider !== "generated" && avatarObj.type !== "initials";
+        const avatarUrl = isRealAvatar
+            ? (avatarObj.secure_url || avatarObj.url || "")
+            : "";
 
         // Solo notificar si realmente cambió
         if (window.updateConversationAvatar) {
@@ -250,32 +256,20 @@ function renderContactHeader(contact) {
     if (nameEl) nameEl.textContent = name;
     if (phoneEl) phoneEl.textContent = contact.user_id || "—";
 
-    const avatarUrl = contact.avatar?.secure_url || contact.avatar?.url || "";
+    // ✅ Solo usar avatar real (no generado con iniciales)
+    const avatarObj = contact.avatar || {};
+    const isRealAvatar = avatarObj.provider !== "generated" && avatarObj.type !== "initials";
+    const avatarUrl = isRealAvatar
+        ? (avatarObj.secure_url || avatarObj.url || "")
+        : "";
 
-    // ⛔ Si es el mismo avatar, NO re-renderizar
-    const currentUrl = avatarEl.getAttribute("data-avatar-url") || "";
-    if (currentUrl === avatarUrl) {
-        return; // evita flicker
-    }
-
-    avatarEl.setAttribute("data-avatar-url", avatarUrl);
-
-    // Render real
-    avatarEl.innerHTML = "";
-
-    if (avatarUrl) {
-        avatarEl.classList.remove("bg-gray-200", "animate-pulse");
-        avatarEl.innerHTML = `
-          <img 
-            src="${avatarUrl}" 
-            class="w-full h-full object-cover rounded-xl" 
-            alt="Avatar"
-          />
-        `;
-    } else {
-        avatarEl.classList.add("bg-gray-200");
-        avatarEl.innerHTML = "";
-    }
+    // ✅ Usar renderAvatar() centralizado (definido en conversaciones.js)
+    avatarEl.classList.remove("bg-gray-200", "animate-pulse");
+    renderAvatar(avatarEl, {
+        avatar_url: avatarUrl,
+        name: name,
+        roundedClass: "rounded-full"
+    });
 }
 
 async function onAvatarFileSelected(e) {
@@ -313,15 +307,7 @@ async function onAvatarFileSelected(e) {
 // --------------------------------------------
 // Utils
 // --------------------------------------------
-function escapeHtml(text) {
-    if (!text) return "";
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
+// escapeHtml ya definida en conversaciones.js
 
 // --------------------------------------------
 // Hook desde conversaciones.js

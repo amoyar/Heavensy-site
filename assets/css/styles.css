@@ -12,7 +12,11 @@ body {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+.chat-font {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
 }
@@ -170,6 +174,12 @@ body {
   background-color: #f3e8ff;
 }
 
+.conversation-user-bubble {
+  background-color: #e7f0fd;
+}
+.conversation-admin-bubble {
+  background-color: #d3f9e3;
+}
 /* Badge de notificación */
 .notification-badge {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -368,4 +378,24 @@ input[type="text"]:focus {
 .conversation-active {
   background: linear-gradient(90deg, #f3e8ff 0%, rgba(243, 232, 255, 0.3) 100%);
   border-left: 3px solid #9333ea;
+}
+
+
+/* estilo filtros busqueda*/
+.filter-chip {
+  background-color: #c9dcef;
+  border-color: #92acde;
+  color: #193d6d;          /* 🔹 Inactivo: texto azul */
+  cursor: pointer;
+}
+
+.filter-chip:hover {
+  background-color: #bcd2f2;
+}
+
+.filter-chip.active {
+  background-color: #92acde;
+  border-color: #92acde;
+  color: #ffffff;          /* 🔹 Activo: texto blanco */
+  font-weight: 600;
 }

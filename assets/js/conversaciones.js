@@ -21,60 +21,41 @@ let selectedMessageToReply = null;
 let messagesOrderReversed = false;
 let isSending = false;
 
-function renderAvatar(containerEl, { avatar_url, name, roundedClass }) {
-  if (!containerEl) return;
-
-  // ⛔ Si ya está renderizado el mismo avatar, no hacer nada
-  const currentUrl = containerEl.getAttribute("data-avatar-url") || "";
-  const newUrl = avatar_url || "";
-
-  if (currentUrl === newUrl) {
-    return; // 👈 evita repaint y flicker
-  }
-
-  // Guardar el avatar actual
-  containerEl.setAttribute("data-avatar-url", newUrl);
-
-  const initials = name
-    ? name
-        .trim()
-        .split(/\s+/)
-        .map(p => p[0])
-        .join("")
-        .substring(0, 2)
-        .toUpperCase()
-    : "—";
-
-  // Limpiar
-  containerEl.innerHTML = "";
-
-  if (avatar_url) {
-    containerEl.innerHTML = `
-      <img 
-        src="${avatar_url}" 
-        class="w-full h-full object-cover ${roundedClass}" 
-        alt="Avatar"
-        loading="lazy"
-      />
-    `;
-  } else {
-    containerEl.innerHTML = `
-      <div class="w-full h-full flex items-center justify-center bg-purple-500 text-white font-bold ${roundedClass}">
-        ${initials}
-      </div>
-    `;
-  }
-}
-
-
-
 
 // ============================================
 // INICIALIZACIÓN
 // ============================================
+function renderAvatar(containerEl, { avatar_url, name, roundedClass }) {
+  if (!containerEl) return;
+
+  const defaultAvatar = "assets/img/Avatar.png";
+  const finalUrl = avatar_url && avatar_url.trim() !== "" ? avatar_url : defaultAvatar;
+
+  // ⛔ Anti-flicker: si la URL es la misma y ya tiene una imagen <img>, no re-renderizar
+  const currentUrl = containerEl.getAttribute("data-avatar-url") || "";
+  if (currentUrl === finalUrl && containerEl.querySelector("img")) {
+    return;
+  }
+
+  // Guardar URL actual
+  containerEl.setAttribute("data-avatar-url", finalUrl);
+
+  // 🔥 SIEMPRE forzar el HTML de imagen (esto borra letras, íconos, etc)
+  containerEl.innerHTML = `
+    <img 
+      src="${finalUrl}" 
+      class="w-full h-full object-cover ${roundedClass}" 
+      alt="Avatar"
+      loading="lazy"
+      onerror="this.src='${defaultAvatar}'"
+    />
+  `;
+}
+
+
 async function initConversacionesPage() {
     console.log('🚀 Inicializando página de conversaciones');
-    
+
     // Prevenir doble inicialización
     if (window.ConversacionesModuleInitialized) {
         console.log('⚠️ Página ya inicializada, recargando datos...');
@@ -177,7 +158,7 @@ function poblarSelectorEmpresas(companies) {
     if (!select) return;
 
     select.innerHTML = '<option value="">Selecciona una empresa</option>';
-    
+
     companies.forEach(company => {
         const option = document.createElement('option');
         option.value = company.company_id;
@@ -193,6 +174,103 @@ function poblarSelectorEmpresas(companies) {
     console.log(`✅ Selector poblado con ${companies.length} empresas`);
 }
 
+//======================================================
+// FILTROS CHIPS POR TIPO TODOS NO LEIDOS IA
+//=======================================
+function setupFilterChips() {
+    const chips = document.querySelectorAll(".filter-chip");
+
+    chips.forEach(chip => {
+        chip.addEventListener("click", () => {
+            // Quitar activo a todos
+            chips.forEach(c => c.classList.remove("active"));
+
+            // Activar el clickeado
+            chip.classList.add("active");
+
+            const filter = chip.dataset.filter;
+            console.log("🔎 Filtro seleccionado:", filter);
+
+            applyConversationFilter(filter);
+        });
+    });
+}
+
+function applyConversationFilter(filter) {
+    if (filter === "all") {
+        renderConversations();
+        return;
+    }
+
+    let filtered = conversations;
+
+    if (filter === "unread") {
+        filtered = conversations.filter(c => (c.unread || 0) > 0);
+    }
+
+    if (filter === "ia_off") {
+        // Ajusta esta condición a tu modelo real
+        filtered = conversations.filter(c => c.ia_off === true);
+    }
+
+    // Render temporal con filtro
+    const original = conversations;
+    conversations = filtered;
+    renderConversations();
+    conversations = original;
+}
+
+let iaEnabledForConversation = true; // estado actual
+
+function setupIAToggleChip() {
+    const chip = document.getElementById("iaToggleChip");
+    if (!chip) return;
+
+    chip.addEventListener("click", () => {
+        iaEnabledForConversation = !iaEnabledForConversation;
+
+        if (iaEnabledForConversation) {
+            chip.textContent = "IA On";
+            chip.dataset.ia = "on";
+            chip.classList.add("active");
+
+            showSystemBubble("🤖 La IA ha sido activada para esta conversación.");
+        } else {
+            chip.textContent = "IA Off";
+            chip.dataset.ia = "off";
+            chip.classList.remove("active");
+
+            showSystemBubble("⚠️ La IA ha sido desactivada para esta conversación. Las respuestas serán manuales.");
+        }
+
+        console.log("IA activa:", iaEnabledForConversation);
+    });
+}
+
+function showSystemBubble(text) {
+    const chatContainer = document.getElementById("chatMessages");
+    if (!chatContainer) return;
+
+    const messagesDiv = chatContainer.querySelector('.space-y-4') || chatContainer;
+
+    const bubble = document.createElement("div");
+    bubble.className = "flex justify-center my-3";
+
+    bubble.innerHTML = `
+    <div class="bg-blue-50 border border-blue-200 text-[#193d6d] text-xs px-4 py-2 rounded-xl shadow-sm">
+      ${escapeHtml(text)}
+    </div>
+  `;
+
+    messagesDiv.appendChild(bubble);
+
+    // Scroll suave al final
+    setTimeout(() => {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }, 50);
+}
+
+
 // ============================================
 // CARGAR CONVERSACIONES POR EMPRESA
 // ============================================
@@ -202,7 +280,7 @@ async function cargarConversacionesPorEmpresa(companyId) {
     try {
         // ENDPOINT CORRECTO: /api/chat/conversations (el que sí existe en Render)
         const url = `${API_BASE_URL}/api/chat/conversations?company_id=${companyId}`;
-        
+
         const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${getToken() || localStorage.getItem('token')}`,
@@ -215,9 +293,9 @@ async function cargarConversacionesPorEmpresa(companyId) {
         }
 
         const conversations = await response.json();
-        
+
         console.log(`✅ ${conversations.length} conversaciones cargadas del backend`);
-        
+
         // Procesar conversaciones
         procesarConversaciones(conversations);
 
@@ -232,26 +310,35 @@ async function cargarConversacionesPorEmpresa(companyId) {
 // ============================================
 function procesarConversaciones(conversationsData) {
     console.log('🔧 Procesando conversaciones del backend:', conversationsData.length, 'items');
-    
+
     conversations = conversationsData.map(conv => {
         const userName = conv.name || conv.user_id;
-        
-    return {
-        id: conv.user_id,
-        name: userName,
-        phone: conv.user_id,
-        avatar_url: conv.avatar_url || null,   // 👈 FUTURO: foto real
-        color: getColorForUser(conv.user_id),
-        status: 'offline',
-        lastMessage: conv.last_message || '',
-        time: formatTimestamp(conv.timestamp),
-        unread: conv.unread || 0,
-        blocked: conv.blocked || false,
-        messages: []
-    };
+
+        return {
+            id: conv.user_id,
+            name: userName,
+            phone: conv.user_id,
+            avatar_url: conv.avatar_url || null,
+
+            // 🔖 Tag visual dummy (color + label opcional)
+            tag: {
+                color: getColorForUser(conv.user_id), // o colores fijos: 'purple', 'green', etc
+                label: 'auto' // por ahora no lo mostramos, solo color
+            },
+
+            // 🔔 Unread dummy
+            unread: Math.floor(Math.random() * 6), // 0 a 5 mensajes no leídos (DUMMY)
+
+            status: 'offline',
+            lastMessage: conv.last_message || '',
+            time: formatTimestamp(conv.timestamp),
+            blocked: conv.blocked || false,
+            messages: []
+        };
+
 
     });
-    
+
     console.log(`✅ ${conversations.length} conversaciones procesadas`);
     renderConversations();
 }
@@ -261,10 +348,10 @@ function procesarConversaciones(conversationsData) {
 // ============================================
 async function cargarMensajesDeConversacion(userId) {
     console.log('📥 Cargando mensajes para usuario:', userId);
-    
+
     try {
         const url = `${API_BASE_URL}/api/chat/conversations/${userId}?company_id=${currentCompanyId}`;
-        
+
         const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${getToken() || localStorage.getItem('token')}`,
@@ -278,7 +365,7 @@ async function cargarMensajesDeConversacion(userId) {
 
         const data = await response.json();
         const messages = data.messages || [];
-        
+
         // Mapear estructura del backend al formato esperado por el frontend
         return messages.map(msg => ({
             role: msg.direction === 'inbound' ? 'user' : 'assistant',
@@ -293,7 +380,7 @@ async function cargarMensajesDeConversacion(userId) {
             message_id: msg.message_id || msg._id,
             responses: msg.responses || []
         }));
-        
+
     } catch (error) {
         console.error('❌ Error cargando mensajes:', error);
         return [];
@@ -320,52 +407,105 @@ function renderConversations() {
         return;
     }
 
-conversations.forEach((conv) => {
-  const isActive = currentConversation && currentConversation.id === conv.id;
+    conversations.forEach((conv) => {
+        const isActive = currentConversation && currentConversation.id === conv.id;
 
-  const convDiv = document.createElement('div');
-  convDiv.className = `border-b border-gray-100 ${
-    isActive ? 'bg-gradient-to-r from-purple-50 to-white' : 'hover:bg-gray-50'
-  } cursor-pointer transition-all rounded-2xl mx-2 my-0.5`;
+        const convDiv = document.createElement('div');
+        convDiv.className = `border-b border-gray-100 ${isActive ? 'bg-gradient-to-r from-purple-50 to-white' : 'hover:bg-gray-50'
+            } cursor-pointer transition-all rounded-2xl mx-2 my-0.5`;
 
-  convDiv.onclick = () => selectConversation(conv.id, convDiv);
+        convDiv.onclick = () => selectConversation(conv.id, convDiv);
 
-  convDiv.innerHTML = `
-    <div class="p-2">
-      <div class="flex items-center gap-3">
-        <div class="relative flex-shrink-0">
-          <!-- SOLO contenedor -->
-          <div id="avatar-list-${conv.id}"
-               class="w-11 h-11 rounded-2xl overflow-hidden shadow-md">
-          </div>
-        </div>
+        // ✅ Pre-calcular avatar HTML para evitar flicker (sin paso vacío intermedio)
+        const defaultAvatar = "assets/img/Avatar.png";
+        const avatarSrc = conv.avatar_url && conv.avatar_url.trim() !== "" ? conv.avatar_url : defaultAvatar;
 
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center justify-between mb-0.5">
-            <h4 class="font-semibold text-gray-900 text-sm truncate">
-              ${escapeHtml(conv.name)}
-            </h4>
-            <span class="text-xs text-gray-500">${conv.time || ''}</span>
-          </div>
-          <p class="text-xs text-gray-600 truncate">
-            ${escapeHtml(conv.lastMessage || '')}
-          </p>
+convDiv.innerHTML = `
+  <div class="p-2">
+    <div class="flex items-center gap-3">
+      <!-- Avatar -->
+      <div class="relative flex-shrink-0">
+        <div id="avatar-list-${conv.id}"
+             class="w-11 h-11 rounded-full overflow-hidden shadow-md"
+             data-avatar-url="${avatarSrc}">
+          <img 
+            src="${avatarSrc}" 
+            class="w-full h-full object-cover rounded-full" 
+            alt="Avatar"
+            loading="lazy"
+            onerror="this.src='${defaultAvatar}'"
+          />
         </div>
       </div>
+
+      <!-- Contenido -->
+      <div class="flex-1 min-w-0">
+        
+        <!-- Fila superior: Nombre + Tag + Hora -->
+            <div class="flex items-center mb-0.5">
+            <!-- Izquierda: nombre + tag -->
+            <div class="flex items-center gap-2 min-w-0">
+                <h4 class="font-semibold text-gray-900 text-sm truncate">
+                ${escapeHtml(conv.name)}
+                </h4>
+
+                <!-- 🏷️ Icono de etiqueta -->
+                <i 
+                class="fas fa-tag text-[11px] flex-shrink-0"
+                style="color: ${mapTagColor(conv.tag?.color)}"
+                title="Etiqueta"
+                ></i>
+            </div>
+
+            <!-- Derecha: hora -->
+            <span class="text-xs text-gray-500 flex-shrink-0 ml-auto pl-2">
+                ${conv.time || ''}
+            </span>
+            </div>
+
+
+        <!-- Fila inferior: Preview del mensaje + Badge -->
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-xs text-gray-600 truncate min-w-0 flex-1">
+            ${escapeHtml(conv.lastMessage || '')}
+          </p>
+
+          ${
+            conv.unread > 0
+              ? `<span class="min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[10px] font-bold text-white bg-purple-500 rounded-full flex-shrink-0">
+                   ${conv.unread}
+                 </span>`
+              : ''
+          }
+        </div>
+
+      </div>
     </div>
-  `;
+  </div>
+`;
 
-  container.appendChild(convDiv);
 
-  // ✅ SIEMPRE renderizar avatar (imagen o letras)
-  const avatarEl = document.getElementById(`avatar-list-${conv.id}`);
-  renderAvatar(avatarEl, {
-    avatar_url: conv.avatar_url,
-    name: conv.name,
-    roundedClass: "rounded-2xl"
-  });
-});
+        container.appendChild(convDiv);
+    });
 
+}
+
+//====================================================
+// COLORES DE LOS TAGS
+//===============================================
+function mapTagColor(colorName) {
+    const map = {
+        purple: '#a855f7',
+        blue: '#3b82f6',
+        green: '#22c55e',
+        orange: '#f97316',
+        pink: '#ec4899',
+        indigo: '#6366f1',
+        red: '#ef4444',
+        yellow: '#eab308'
+    };
+
+    return map[colorName] || '#94a3b8'; // gris por defecto
 }
 
 // ============================================
@@ -385,15 +525,14 @@ function updateConversationAvatar(waId, avatarUrl) {
         updateChatHeader();
     }
 
-    // Re-render lista izquierda
-    //nderConversations();
+    // Re-render avatar en lista izquierda
     const avatarEl = document.getElementById(`avatar-list-${waId}`);
     if (avatarEl) {
-    renderAvatar(avatarEl, {
-        avatar_url: avatarUrl,
-        name: conv.name,
-        roundedClass: "rounded-2xl"
-    });
+        renderAvatar(avatarEl, {
+            avatar_url: avatarUrl,
+            name: conv.name,
+            roundedClass: "rounded-full"
+        });
     }
 }
 
@@ -408,7 +547,7 @@ async function selectConversation(userId, element) {
 
     currentConversation = conversations.find(c => c.id === userId);
 
-    
+
     if (!currentConversation) {
         console.warn('⚠️ Conversación no encontrada');
         return;
@@ -416,14 +555,13 @@ async function selectConversation(userId, element) {
     currentConversation._sourceElement = element;
     // Cargar mensajes del backend
     currentConversation.messages = await cargarMensajesDeConversacion(userId);
-    
+
     // Actualizar UI
-   //enderConversations(); // Re-renderizar para actualizar estado activo
     loadMessages();
     updateContactPanel();
     updateChatHeader();
 
-        // 🔗 Notificar al módulo de contactos
+    // 🔗 Notificar al módulo de contactos
     if (window.onConversationSelectedForContacts) {
         window.onConversationSelectedForContacts(
             currentConversation.id,      // wa_id
@@ -449,7 +587,7 @@ function loadMessages() {
         // ✅ Forzar orden WhatsApp al cargar mensajes
         messagesOrderReversed = false;
         renderMessages();
-        
+
         // Scroll al final
         setTimeout(() => {
             chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -469,7 +607,6 @@ function renderMessages() {
 
     // Asegurar que el contenedor tiene scroll
     chatContainer.style.overflowY = 'auto';
-    //chatContainer.style.maxHeight = 'calc(100vh - 300px)';
 
     let messagesDiv = chatContainer.querySelector('.space-y-4');
     if (!messagesDiv) {
@@ -492,8 +629,8 @@ function renderMessages() {
     }
 
     // Aplicar orden según configuración
-    const messagesToRender = messagesOrderReversed 
-        ? [...currentMessages].reverse() 
+    const messagesToRender = messagesOrderReversed
+        ? [...currentMessages].reverse()
         : currentMessages;
 
     console.log('📊 === DEBUGGING MENSAJES ===');
@@ -510,10 +647,10 @@ function renderMessages() {
     messagesToRender.forEach(msg => {
         const messageDiv = document.createElement('div');
         messageDiv.className = 'mb-3';
-        
+
         const isUser = msg.role === 'user' || msg.sender_type === 'user';
         const messageTime = formatTimestamp(msg.timestamp);
-        
+
         // Contenido multimedia
         let mediaContent = '';
         if (msg.cloudinary_url) {
@@ -527,10 +664,10 @@ function renderMessages() {
             // MENSAJE DEL USUARIO (WhatsApp) - CLICKEABLE PARA RESPONDER
             // ======================================
             const isSelected = selectedMessageToReply && selectedMessageToReply.message_id === msg.message_id;
-            
+
             // Guardar mensaje en un índice temporal para evitar problemas con JSON.stringify
             const msgIndex = messagesToRender.indexOf(msg);
-            
+
             messageDiv.innerHTML = `
                 <!-- Mensaje del usuario con icono - CLICKEABLE -->
                 <div 
@@ -538,7 +675,7 @@ function renderMessages() {
                     onclick="selectMessageByIndex(${msgIndex})"
                     title="Click para responder este mensaje"
                 >
-                    <div class="bg-purple-100 rounded-3xl rounded-tr-md px-4 py-3 max-w-md shadow-md">
+                    <div class="bg-[#e7f0fd] rounded-3xl rounded-tr-md px-4 py-3 max-w-md shadow-md">
                         ${mediaContent}
                         ${messageText ? `<p class="text-sm text-gray-800 whitespace-pre-wrap ${mediaContent ? 'mt-2' : ''}">${escapeHtml(messageText)}</p>` : ''}
                         <div class="flex items-center justify-end gap-2 mt-2">
@@ -546,7 +683,7 @@ function renderMessages() {
                             <i class="fas fa-check-double text-blue-500 text-xs"></i>
                         </div>
                     </div>
-                    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <div class="w-8 h-8 rounded-full bg-[#80b5ec] flex items-center justify-center flex-shrink-0 shadow-sm">
                         <i class="fas fa-user text-white text-xs"></i>
                     </div>
                 </div>
@@ -559,7 +696,7 @@ function renderMessages() {
             // ======================================
             messageDiv.innerHTML = `
                 <div class="flex justify-start items-start gap-2">
-                    <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <div class="w-8 h-8 rounded-full bg-[#b6b2f1] flex items-center justify-center flex-shrink-0 shadow-sm">
                         <i class="fas fa-robot text-white text-xs"></i>
                     </div>
                     <div class="bg-white rounded-3xl rounded-tl-md px-4 py-3 max-w-md shadow-md border border-gray-100">
@@ -570,7 +707,7 @@ function renderMessages() {
                 </div>
             `;
         }
-        
+
         messagesDiv.appendChild(messageDiv);
     });
 
@@ -585,10 +722,10 @@ function renderMessages() {
 // ============================================
 function toggleMessageOrder() {
     messagesOrderReversed = !messagesOrderReversed;
-    
+
     const button = document.getElementById('toggleMessageOrder');
     const icon = button?.querySelector('i');
-    
+
     if (messagesOrderReversed) {
         // Orden invertido (más reciente arriba)
         if (icon) {
@@ -608,7 +745,7 @@ function toggleMessageOrder() {
         }
         console.log('📊 Orden WhatsApp: más recientes abajo');
     }
-    
+
     // Re-renderizar mensajes con nuevo orden
     renderMessages();
 }
@@ -623,15 +760,15 @@ if (typeof window !== 'undefined') {
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     console.log('📎 Archivo seleccionado:', file.name, file.type, file.size);
-    
+
     // Validar tamaño (máximo 10MB)
     if (file.size > 10 * 1024 * 1024) {
         alert('El archivo es demasiado grande. Máximo 10MB.');
         return;
     }
-    
+
     window.conversacionesState.attachedFile = file;
     showAttachmentPreview(file);
 }
@@ -642,15 +779,15 @@ function handleFileSelect(event) {
 function showAttachmentPreview(file) {
     const preview = document.getElementById('attachmentPreview');
     const content = document.getElementById('previewContent');
-    
+
     if (!preview || !content) return;
-    
+
     const type = file.type;
     const name = file.name;
     const size = (file.size / 1024).toFixed(1) + ' KB';
-    
+
     let previewHTML = '';
-    
+
     // IMAGEN
     if (type.startsWith('image/')) {
         const reader = new FileReader();
@@ -697,13 +834,13 @@ function showAttachmentPreview(file) {
     }
     // DOCUMENTO
     else {
-        const icon = type.includes('pdf') ? 'fa-file-pdf' : 
-                     type.includes('word') ? 'fa-file-word' :
-                     type.includes('excel') ? 'fa-file-excel' : 'fa-file';
-        const color = type.includes('pdf') ? 'red' : 
-                      type.includes('word') ? 'blue' :
-                      type.includes('excel') ? 'green' : 'gray';
-        
+        const icon = type.includes('pdf') ? 'fa-file-pdf' :
+            type.includes('word') ? 'fa-file-word' :
+                type.includes('excel') ? 'fa-file-excel' : 'fa-file';
+        const color = type.includes('pdf') ? 'red' :
+            type.includes('word') ? 'blue' :
+                type.includes('excel') ? 'green' : 'gray';
+
         content.innerHTML = `
             <div class="flex items-center gap-3">
                 <div class="w-16 h-16 rounded-lg bg-${color}-100 flex items-center justify-center">
@@ -716,7 +853,7 @@ function showAttachmentPreview(file) {
             </div>
         `;
     }
-    
+
     preview.classList.remove('hidden');
 }
 
@@ -727,10 +864,10 @@ function clearAttachment() {
     window.conversacionesState.attachedFile = null;
     const preview = document.getElementById('attachmentPreview');
     const fileInput = document.getElementById('fileInput');
-    
+
     if (preview) preview.classList.add('hidden');
     if (fileInput) fileInput.value = '';
-    
+
     console.log('🗑️ Archivo eliminado');
 }
 
@@ -751,23 +888,23 @@ function renderResponses(msg) {
     return `
         <div class="space-y-2 mt-2">
             ${msg.responses.map(resp => {
-                const respTime = formatTimestamp(resp.sent_at);
-                const sentBy = resp.sent_by?.name || 'Admin';
-                
-                // Renderizar contenido multimedia si existe
-                let mediaContent = '';
-                if (resp.cloudinary_url) {
-                    mediaContent = renderMediaContent({
-                        cloudinary_url: resp.cloudinary_url,
-                        type: resp.type,
-                        mime_type: resp.mime_type,
-                        content: resp.content || resp.text
-                    });
-                }
-                
-                return `
+        const respTime = formatTimestamp(resp.sent_at);
+        const sentBy = resp.sent_by?.name || 'Admin';
+
+        // Renderizar contenido multimedia si existe
+        let mediaContent = '';
+        if (resp.cloudinary_url) {
+            mediaContent = renderMediaContent({
+                cloudinary_url: resp.cloudinary_url,
+                type: resp.type,
+                mime_type: resp.mime_type,
+                content: resp.content || resp.text
+            });
+        }
+
+        return `
                     <div class="flex justify-end items-start gap-2">
-                        <div class="bg-green-100 rounded-3xl rounded-tr-md px-4 py-3 max-w-md shadow-md">
+                        <div class="bg-[#d3f9e3] rounded-3xl rounded-tr-md px-4 py-3 max-w-md shadow-md">
                             ${mediaContent}
                             ${resp.text ? `<p class="text-sm text-gray-800 whitespace-pre-wrap ${mediaContent ? 'mt-2' : ''}">${escapeHtml(resp.text)}</p>` : ''}
                             <div class="flex items-center justify-end gap-2 mt-2">
@@ -778,12 +915,12 @@ function renderResponses(msg) {
                                 <i class="fas fa-check-double text-green-600 text-xs"></i>
                             </div>
                         </div>
-                        <div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <div class="w-8 h-8 rounded-full bg-[#72d298] flex items-center justify-center flex-shrink-0 shadow-sm">
                             <i class="fas fa-user-shield text-white text-xs"></i>
                         </div>
                     </div>
                 `;
-            }).join('')}
+    }).join('')}
         </div>
     `;
 }
@@ -793,17 +930,17 @@ function renderResponses(msg) {
 // ============================================
 function renderMediaContent(msg) {
     if (!msg.cloudinary_url) return '';
-    
+
     const url = msg.cloudinary_url;
     const type = msg.type || '';
     const mimeType = msg.mime_type || '';
-    
+
     // IMÁGENES
     if (type === 'image' || mimeType.startsWith('image/')) {
-        const thumbnailUrl = url.includes('cloudinary.com') 
+        const thumbnailUrl = url.includes('cloudinary.com')
             ? url.replace('/upload/', '/upload/w_300,h_300,c_fill,q_auto/')
             : url;
-            
+
         return `
                 <img 
                     src="${thumbnailUrl}"
@@ -814,7 +951,7 @@ function renderMediaContent(msg) {
                 />
             `;
     }
-    
+
     // AUDIO
     if (type === 'audio' || mimeType.startsWith('audio/')) {
         return `
@@ -829,7 +966,7 @@ function renderMediaContent(msg) {
             </div>
         `;
     }
-    
+
     // VIDEO
     if (type === 'video' || mimeType.startsWith('video/')) {
         return `
@@ -840,7 +977,7 @@ function renderMediaContent(msg) {
             </div>
         `;
     }
-    
+
     // DOCUMENTOS Y OTROS
     const fileInfo = getFileInfo(type, mimeType);
     return `
@@ -871,7 +1008,7 @@ function getFileInfo(type, mimeType) {
         bgColor: 'bg-gray-100',
         label: 'Documento'
     };
-    
+
     if (type === 'document' || mimeType.includes('pdf')) {
         return {
             icon: 'fas fa-file-pdf',
@@ -880,7 +1017,7 @@ function getFileInfo(type, mimeType) {
             label: 'PDF'
         };
     }
-    
+
     if (mimeType.includes('word') || mimeType.includes('document')) {
         return {
             icon: 'fas fa-file-word',
@@ -889,7 +1026,7 @@ function getFileInfo(type, mimeType) {
             label: 'Word'
         };
     }
-    
+
     if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) {
         return {
             icon: 'fas fa-file-excel',
@@ -898,7 +1035,7 @@ function getFileInfo(type, mimeType) {
             label: 'Excel'
         };
     }
-    
+
     if (mimeType.includes('zip') || mimeType.includes('rar')) {
         return {
             icon: 'fas fa-file-archive',
@@ -907,7 +1044,7 @@ function getFileInfo(type, mimeType) {
             label: 'Archivo'
         };
     }
-    
+
     return defaults;
 }
 
@@ -916,20 +1053,20 @@ function getFileInfo(type, mimeType) {
 // ============================================
 function formatTimestamp(timestamp) {
     if (!timestamp) return '';
-    
+
     try {
         const date = new Date(timestamp);
         const now = new Date();
-        
+
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
-        
+
         // Si es hoy, solo mostrar hora
         const isToday = date.toDateString() === now.toDateString();
         if (isToday) {
             return `${hours}:${minutes}`;
         }
-        
+
         // Si no, mostrar fecha corta
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -943,27 +1080,24 @@ function formatTimestamp(timestamp) {
 // ACTUALIZAR HEADER DEL CHAT
 // ============================================
 function updateChatHeader() {
-  if (!currentConversation) return;
+    if (!currentConversation) return;
 
-  const headerAvatar = document.getElementById("chatHeaderAvatar");
-  const headerName = document.getElementById("chatHeaderName");
-  const headerPhone = document.getElementById("chatHeaderPhone");
+    const headerAvatar = document.getElementById("chatHeaderAvatar");
+    const headerName = document.getElementById("chatHeaderName");
+    const headerPhone = document.getElementById("chatHeaderPhone");
 
-  const name = currentConversation.name || "—";
-  const phone = currentConversation.phone || "—";
+    const name = currentConversation.name || "—";
+    const phone = currentConversation.phone || "—";
 
-  if (headerName) headerName.textContent = name;
-  if (headerPhone) headerPhone.textContent = phone;
+    if (headerName) headerName.textContent = name;
+    if (headerPhone) headerPhone.textContent = phone;
 
-  renderAvatar(headerAvatar, {
-    avatar_url: currentConversation.avatar_url,
-    name: name,
-    roundedClass: "rounded-2xl"
-  });
+    renderAvatar(headerAvatar, {
+        avatar_url: currentConversation.avatar_url,
+        name: name,
+        roundedClass: "rounded-full"
+    });
 }
-
-
-
 
 
 // ============================================
@@ -975,27 +1109,29 @@ function updateContactPanel() {
     // Header del panel de contacto (derecha)
     const nameEl = document.getElementById("contactHeaderName");
     const avatarEl = document.getElementById("contactHeaderAvatar");
-    const phoneEl = document.getElementById("contactPhone"); // ya lo tienes en la sección Contacto
+    const phoneEl = document.getElementById("contactPhone");
 
     const name = currentConversation.name || "Sin nombre";
     const phone = currentConversation.phone || "";
 
-        // Ejemplo futuro acá injectar datos reales
-    // const stars = currentConversation.stars || 5;
-    // const plan = currentConversation.plan || "Premium";
-
     if (nameEl) nameEl.textContent = name;
     if (phoneEl) phoneEl.textContent = phone;
 
+    // ✅ Solo renderizar avatar si contacts.js NO va a hacerlo después
+    // contacts.js se activa vía onConversationSelectedForContacts y trae datos frescos
+    // Aquí solo ponemos avatar provisional si tenemos URL, para evitar flicker
     if (avatarEl) {
-    renderAvatar(avatarEl, {
-        avatar_url: currentConversation.avatar_url,
-        name: name,
-        roundedClass: "rounded-xl"
-    });
+        const currentUrl = avatarEl.getAttribute("data-avatar-url") || "";
+        const targetUrl = currentConversation.avatar_url || "";
+        // Solo actualizar si cambió o si no hay imagen aún
+        if (currentUrl !== targetUrl || !avatarEl.querySelector("img")) {
+            renderAvatar(avatarEl, {
+                avatar_url: currentConversation.avatar_url,
+                name: name,
+                roundedClass: "rounded-full"
+            });
+        }
     }
-
-
 }
 
 
@@ -1007,14 +1143,14 @@ function selectMessageToReply(message) {
     selectedMessageToReply = message;
     console.log('✅ Mensaje seleccionado para responder:', message.message_id);
     console.log('📝 Contenido:', message.content || message.text);
-    
+
     // Re-renderizar para mostrar el mensaje seleccionado
     renderMessages();
-    
+
     // Habilitar input y botón
     const input = document.getElementById('messageInput');
     const sendButton = document.getElementById('sendButton');
-    
+
     if (input) {
         input.disabled = false;
         input.focus();
@@ -1022,7 +1158,7 @@ function selectMessageToReply(message) {
         input.placeholder = `Respondiendo a: "${preview}..."`;
         console.log('✅ Input habilitado');
     }
-    
+
     if (sendButton) {
         sendButton.disabled = false;
         sendButton.classList.remove('bg-gradient-to-r', 'from-gray-300', 'to-gray-400', 'cursor-not-allowed');
@@ -1036,14 +1172,14 @@ function selectMessageToReply(message) {
 // SELECCIONAR MENSAJE POR ÍNDICE (versión simple que funciona)
 // ============================================
 function selectMessageByIndex(index) {
-    const messagesToRender = messagesOrderReversed 
-        ? [...currentMessages].reverse() 
+    const messagesToRender = messagesOrderReversed
+        ? [...currentMessages].reverse()
         : currentMessages;
-    
+
     const message = messagesToRender[index];
-    
+
     if (!message) return;
-    
+
     // TOGGLE: Si el mensaje ya está seleccionado, deseleccionar
     if (selectedMessageToReply && selectedMessageToReply.message_id === message.message_id) {
         console.log('🔄 Mismo mensaje clickeado - deseleccionando');
@@ -1066,35 +1202,42 @@ async function sendMessage() {
         console.warn('⏳ Ya se está enviando un mensaje...');
         return;
     }
-    setSendingUI(true);
+
     console.log('🚀 sendMessage() llamada');
-    
+
     const input = document.getElementById('messageInput');
-    const sendButton = document.getElementById('sendButton');
-    
     if (!input) {
         console.error('❌ No se encontró el input');
-        alert('Error: No se encontró el campo de texto');
         return;
     }
 
     const message = input.value.trim();
+    const hasFile = !!window.conversacionesState.attachedFile;
 
-    if (!message && !window.conversacionesState.attachedFile) {
-        alert('Debes escribir un mensaje o adjuntar un archivo');
+    // ✅ VALIDACIONES ANTES de activar spinner
+    if (!message && !hasFile) {
+        showMessageError('Debes escribir un mensaje o adjuntar un archivo');
         return;
     }
-    
-    if (!currentConversation) return;
+
+    if (!currentConversation) {
+        showMessageError('No hay conversación seleccionada');
+        return;
+    }
+
     if (!selectedMessageToReply) {
-        alert('Por favor, selecciona un mensaje del usuario para responder');
+        showMessageError('Selecciona un mensaje del usuario para responder');
         return;
     }
+
+    // ✅ Limpiar error si todo está OK
+    hideMessageError();
+
+    // ✅ Ahora sí: activar UI de envío
+    isSending = true;
+    setSendingUI(true);
 
     try {
-        // 🔒 Activar UI de envío
-        setSendingUI(true);
-
         const adminResponse = {
             text: message,
             sent_at: new Date().toISOString(),
@@ -1103,7 +1246,9 @@ async function sendMessage() {
 
         const fileToSend = window.conversacionesState.attachedFile;
 
-        const messageToUpdate = currentMessages.find(m => m.message_id === selectedMessageToReply.message_id);
+        const messageToUpdate = currentMessages.find(
+            m => m.message_id === selectedMessageToReply.message_id
+        );
         if (!messageToUpdate) throw new Error('Mensaje no encontrado');
 
         if (!messageToUpdate.responses) messageToUpdate.responses = [];
@@ -1112,7 +1257,6 @@ async function sendMessage() {
         selectedMessageToReply = null;
         input.value = '';
         renderMessages();
-       //enderConversations();
 
         // ENVIAR AL BACKEND
         const formData = new FormData();
@@ -1123,7 +1267,6 @@ async function sendMessage() {
         }
 
         const endpoint = `${API_BASE_URL}/api/chat/messages/${messageToUpdate.message_id}/reply`;
-
 
         const response = await fetch(endpoint, {
             method: 'POST',
@@ -1140,28 +1283,56 @@ async function sendMessage() {
 
         const result = await response.json();
 
-        if (result.success) {
-            clearAttachment();
-
-            const freshMessages = await cargarMensajesDeConversacion(currentConversation.id);
-            currentConversation.messages = freshMessages;
-            loadMessages();
-            await cargarConversacionesPorEmpresa(currentCompanyId);
-            setSendingUI(false);
-        } else {
+        if (!result.success) {
             throw new Error(result.error || 'Error desconocido');
         }
 
-        // ✅ Apagar UI enviando
-        setSendingUI(false);
+        // Refrescar datos
+        clearAttachment();
+        const freshMessages = await cargarMensajesDeConversacion(currentConversation.id);
+        currentConversation.messages = freshMessages;
+        loadMessages();
+        await cargarConversacionesPorEmpresa(currentCompanyId);
 
     } catch (error) {
         console.error('❌ Error enviando mensaje:', error);
-        alert('Error al enviar el mensaje: ' + error.message);
-        setSendingUI(false);
+        showMessageError('Error al enviar el mensaje: ' + error.message);
         clearAttachment();
+    } finally {
+        // ✅ ESTO GARANTIZA que NUNCA quede pegado
+        isSending = false;
+        setSendingUI(false);
     }
 }
+
+
+
+function showMessageError(text) {
+    const bubble = document.getElementById("messageErrorBubble");
+    const textEl = document.getElementById("messageErrorText");
+    const input = document.getElementById("messageInput");
+
+    if (textEl) textEl.textContent = text;
+    if (bubble) bubble.classList.remove("hidden");
+
+    // Resaltar input en rojo
+    if (input) {
+        input.classList.add("border-red-400", "ring-2", "ring-red-200");
+    }
+}
+
+function hideMessageError() {
+    const bubble = document.getElementById("messageErrorBubble");
+    const input = document.getElementById("messageInput");
+
+    if (bubble) bubble.classList.add("hidden");
+
+    if (input) {
+        input.classList.remove("border-red-400", "ring-2", "ring-red-200");
+    }
+}
+
+
 // ============================================
 // CONFIGURAR EVENT LISTENERS
 // ============================================
@@ -1187,7 +1358,8 @@ function setupConversacionesEventListeners() {
             filterConversations(e.target.value);
         });
     }
-
+    setupFilterChips();
+    setupIAToggleChip();
     console.log('✅ Event listeners configurados');
 }
 
@@ -1196,30 +1368,30 @@ function setupConversacionesEventListeners() {
 // ============================================
 function deselectMessage() {
     if (!selectedMessageToReply) return;
-    
+
     selectedMessageToReply = null;
     console.log('❌ Mensaje deseleccionado');
-    
+
     // Deshabilitar input y botón
     const input = document.getElementById('messageInput');
     const sendButton = document.getElementById('sendButton');
-    
+
     if (input) {
         input.disabled = true;
         input.value = '';
         input.placeholder = 'Selecciona un mensaje para responder...';
     }
-    
+
     if (sendButton) {
         sendButton.disabled = true;
         sendButton.classList.remove('bg-gradient-to-r', 'from-green-500', 'to-green-600', 'hover:from-green-600', 'hover:to-green-700', 'cursor-pointer', 'hover:shadow-lg');
         sendButton.classList.add('bg-gradient-to-r', 'from-gray-300', 'to-gray-400', 'cursor-not-allowed');
         sendButton.title = 'Selecciona un mensaje del usuario para responder';
     }
-    
+
     // Limpiar archivo adjunto si hay
     clearAttachment();
-    
+
     // Re-renderizar para quitar el highlight
     renderMessages();
 }
@@ -1233,13 +1405,13 @@ if (typeof window !== 'undefined') {
 // ============================================
 function filterConversations(searchTerm) {
     const term = searchTerm.toLowerCase().trim();
-    
+
     if (!term) {
         renderConversations();
         return;
     }
 
-    const filtered = conversations.filter(conv => 
+    const filtered = conversations.filter(conv =>
         conv.name.toLowerCase().includes(term) ||
         conv.phone.includes(term) ||
         conv.lastMessage.toLowerCase().includes(term)
@@ -1294,23 +1466,23 @@ function getColorForUser(userId) {
 
 function formatTime(timestamp) {
     if (!timestamp) return '';
-    
+
     try {
         const date = new Date(timestamp);
         const now = new Date();
         const diff = now - date;
-        
+
         // Si es hoy, mostrar hora
         if (diff < 24 * 60 * 60 * 1000) {
             return date.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
         }
-        
+
         // Si es esta semana, mostrar día
         if (diff < 7 * 24 * 60 * 60 * 1000) {
             const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
             return days[date.getDay()];
         }
-        
+
         // Si no, mostrar fecha
         return date.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' });
     } catch (e) {
@@ -1364,6 +1536,26 @@ function toggleRightSection(sectionId) {
     }
 }
 
+
+// Mensaje de error del input de respuestas del admin
+function showMessageInputError(text) {
+    const el = document.getElementById('messageError');
+    if (!el) return;
+
+    el.textContent = text;
+    el.classList.remove('hidden');
+
+    // Pequeña animación de atención (opcional)
+    el.classList.add('animate-pulse');
+
+    setTimeout(() => {
+        el.classList.add('hidden');
+        el.classList.remove('animate-pulse');
+    }, 2500);
+}
+
+
+
 window.toggleRightSection = toggleRightSection;
 
 window.toggleLeftSection = toggleLeftSection;
@@ -1382,3 +1574,18 @@ window.deselectMessage = deselectMessage;
 window.toggleMessageOrder = toggleMessageOrder;
 window.handleFileSelect = handleFileSelect;
 window.clearAttachment = clearAttachment;
+
+// 🔌 Exports para módulo realtime.js (chat en tiempo real)
+window.conversacionesAPI = {
+    getState: () => ({
+        currentConversation,
+        conversations,
+        currentMessages,
+        currentCompanyId
+    }),
+    renderConversations,
+    loadMessages,
+    cargarMensajesDeConversacion,
+    cargarConversacionesPorEmpresa,
+    selectConversation
+};

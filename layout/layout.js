@@ -26,10 +26,19 @@ async function loadLayout() {
     // Inicializar toggle del sidebar
     initSidebarToggle();
 
+    // 👇👇👇 AÑADE ESTO AQUÍ 👇👇👇
+    if (typeof updateSidebarCompanyTitle === 'function') {
+      updateSidebarCompanyTitle();
+    }
+
   } catch (e) {
     console.error('❌ Error cargando layout', e);
   }
 }
+
+//Busca la compañia del usuario
+
+
 
 // Inicializar menú desplegable de usuario
 function initUserMenu() {
@@ -95,20 +104,21 @@ function initSidebarToggle() {
   }
 
   toggleBtn.addEventListener('click', () => {
-    const isCollapsed = sidebar.classList.contains('w-20');
+    const isCollapsed = sidebar.classList.contains('w-16');
 
     if (isCollapsed) {
       // Expandir
-      sidebar.classList.remove('w-20');
-      sidebar.classList.add('w-64');
+      sidebar.classList.remove('w-16');
+      sidebar.classList.add('w-48');
       document.querySelectorAll('.sidebar-text').forEach(el => el.classList.remove('hidden'));
     } else {
       // Colapsar
-      sidebar.classList.remove('w-64');
-      sidebar.classList.add('w-20');
+      sidebar.classList.remove('w-48');
+      sidebar.classList.add('w-16');
       document.querySelectorAll('.sidebar-text').forEach(el => el.classList.add('hidden'));
     }
   });
 }
+
 
 document.addEventListener('DOMContentLoaded', loadLayout);

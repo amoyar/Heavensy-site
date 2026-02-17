@@ -33,6 +33,41 @@ function getToken() {
   return localStorage.getItem('token');
 }
 
+function getUserFromToken() {
+  const token = getToken();
+  if (!token) return null;
+
+  try {
+    const payload = token.split('.')[1];
+    const decoded = JSON.parse(atob(payload));
+    return decoded;
+  } catch (e) {
+    console.error("❌ Error decodificando JWT:", e);
+    return null;
+  }
+}
+
+
+function updateSidebarCompanyTitle() {
+  const titleEl = document.getElementById("sidebarTitle");
+  if (!titleEl) return;
+
+  const user = getUserFromToken();
+  if (!user) return;
+
+  // Usar lo que viene directo en el JWT
+  const companyName = user.company_name || user.company_id || "Empresa";
+
+  titleEl.textContent = companyName;
+
+  // Ajuste visual (ya no es "NAVEGACIÓN")
+  titleEl.classList.remove("uppercase", "text-gray-500");
+  titleEl.classList.add("text-gray-700");
+}
+
+
+
+
 // API helper GLOBAL
 async function apiCall(endpoint, options = {}) {
   showLoader(options.loaderMessage);
@@ -173,3 +208,4 @@ function logout() {
     window.location.replace('login.html');
   }, 300);
 }
+
