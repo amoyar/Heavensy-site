@@ -56,15 +56,6 @@ function renderAvatar(containerEl, { avatar_url, name, roundedClass }) {
 async function initConversacionesPage() {
     console.log('🚀 Inicializando página de conversaciones');
 
-    // Prevenir doble inicialización
-    if (window.ConversacionesModuleInitialized) {
-        console.log('⚠️ Página ya inicializada, recargando datos...');
-        if (window.conversacionesState.currentCompanyId) {
-            await cargarConversacionesPorEmpresa(window.conversacionesState.currentCompanyId);
-        }
-        return;
-    }
-
     // Verificar autenticación
     const token = getToken();
     if (!token) {
@@ -72,13 +63,18 @@ async function initConversacionesPage() {
         return;
     }
 
-    // Marcar como inicializado
+    // Si ya se inicializó antes (navegación SPA), solo recargar datos y re-configurar listeners
+    if (window.ConversacionesModuleInitialized) {
+        console.log('🔄 Re-inicializando página (navegación SPA)...');
+        setupConversacionesEventListeners();
+        await cargarEmpresasYConversaciones();
+        return;
+    }
+
+    // Primera vez: inicialización completa
     window.ConversacionesModuleInitialized = true;
 
-    // Cargar empresas y conversaciones
     await cargarEmpresasYConversaciones();
-
-    // Configurar event listeners
     setupConversacionesEventListeners();
 
     console.log('✅ Página de conversaciones inicializada');
@@ -326,8 +322,8 @@ function procesarConversaciones(conversationsData) {
                 label: 'auto' // por ahora no lo mostramos, solo color
             },
 
-            // 🔔 Unread dummy
-            unread: Math.floor(Math.random() * 6), // 0 a 5 mensajes no leídos (DUMMY)
+            // 🔔 Unread real desde el backend
+            unread: conv.unread || 0,
 
             status: 'offline',
             lastMessage: conv.last_message || '',
@@ -341,6 +337,29 @@ function procesarConversaciones(conversationsData) {
 
     console.log(`✅ ${conversations.length} conversaciones procesadas`);
     renderConversations();
+}
+
+// ============================================
+// MARCAR CONVERSACIÓN COMO LEÍDA (BACKEND)
+// ============================================
+async function markConversationAsRead(userId, companyId) {
+    try {
+        const url = `${API_BASE_URL}/api/chat/conversations/${userId}/read?company_id=${companyId}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getToken()}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ ${data.marked_count || 0} mensajes marcados como leídos`);
+        }
+    } catch (e) {
+        console.warn('⚠️ Error marcando como leído:', e);
+    }
 }
 
 // ============================================
@@ -560,6 +579,13 @@ async function selectConversation(userId, element) {
     loadMessages();
     updateContactPanel();
     updateChatHeader();
+
+    // ✅ Marcar mensajes como leídos en backend
+    if (currentConversation.unread > 0) {
+        currentConversation.unread = 0;
+        renderConversations(); // Actualizar badge inmediatamente en UI
+        markConversationAsRead(userId, currentCompanyId);
+    }
 
     // 🔗 Notificar al módulo de contactos
     if (window.onConversationSelectedForContacts) {
