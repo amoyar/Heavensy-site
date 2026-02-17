@@ -48,22 +48,41 @@ function getUserFromToken() {
 }
 
 
-function updateSidebarCompanyTitle() {
-  const titleEl = document.getElementById("sidebarTitle");
-  if (!titleEl) return;
+// function updateSidebarCompanyTitle() {
+//   const titleEl = document.getElementById("sidebarTitle");
+//   if (!titleEl) return;
 
-  const user = getUserFromToken();
-  if (!user) return;
+//   const user = getUserFromToken();
+//   if (!user) return;
 
-  // Usar lo que viene directo en el JWT
-  const companyName = user.company_name || user.company_id || "Empresa";
+//   // Usar lo que viene directo en el JWT
+//   const companyName = user.company_name || user.company_id || "Empresa";
 
-  titleEl.textContent = companyName;
+//   titleEl.textContent = companyName;
 
-  // Ajuste visual (ya no es "NAVEGACIÓN")
-  titleEl.classList.remove("uppercase", "text-gray-500");
-  titleEl.classList.add("text-gray-700");
+//   // Ajuste visual (ya no es "NAVEGACIÓN")
+//   titleEl.classList.remove("uppercase", "text-gray-500");
+//   titleEl.classList.add("text-gray-700");
+// }
+
+async function loadSidebarCompanyName() {
+  const res = await apiCall('/api/me/company/profile');
+  if (!res.ok) return;
+
+  const company = res.data;
+
+  const textEl = document.getElementById('sidebarTitleText');
+  const skelEl = document.getElementById('sidebarTitleSkeleton');
+
+  if (textEl) {
+    textEl.textContent = company.name || company.company_id;
+    textEl.classList.remove('hidden');
+  }
+  if (skelEl) {
+    skelEl.classList.add('hidden');
+  }
 }
+
 
 
 

@@ -27,18 +27,14 @@ async function loadLayout() {
     initSidebarToggle();
 
     // 👇👇👇 AÑADE ESTO AQUÍ 👇👇👇
-    if (typeof updateSidebarCompanyTitle === 'function') {
-      updateSidebarCompanyTitle();
+    if (typeof loadSidebarCompanyName === 'function') {
+      loadSidebarCompanyName();
     }
 
   } catch (e) {
     console.error('❌ Error cargando layout', e);
   }
 }
-
-//Busca la compañia del usuario
-
-
 
 // Inicializar menú desplegable de usuario
 function initUserMenu() {
