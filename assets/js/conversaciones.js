@@ -66,6 +66,7 @@ async function initConversacionesPage() {
     // Si ya se inicializó antes (navegación SPA), solo recargar datos y re-configurar listeners
     if (window.ConversacionesModuleInitialized) {
         console.log('🔄 Re-inicializando página (navegación SPA)...');
+        resetChatAndContactPanel();
         setupConversacionesEventListeners();
         await cargarEmpresasYConversaciones();
         return;
@@ -147,13 +148,8 @@ async function cargarEmpresasYConversaciones() {
 }
 
 function mostrarEstadoSinEmpresaSeleccionada() {
-  const chatHeader = document.getElementById("chatHeader");
-  const rightPanel = document.getElementById("contactPanel");
+  resetChatAndContactPanel();
   const chatContainer = document.getElementById("chatMessages");
-
-  if (chatHeader) chatHeader.classList.add("hidden");
-  if (rightPanel) rightPanel.classList.add("hidden");
-
   if (chatContainer) {
     chatContainer.innerHTML = `
       <div class="flex items-center justify-center h-full text-gray-400 text-lg select-none">
@@ -164,13 +160,8 @@ function mostrarEstadoSinEmpresaSeleccionada() {
 }
 
 function mostrarEstadoSinConversacionSeleccionada() {
-  const chatHeader = document.getElementById("chatHeader");
-  const rightPanel = document.getElementById("contactPanel");
+  resetChatAndContactPanel();
   const chatContainer = document.getElementById("chatMessages");
-
-  if (chatHeader) chatHeader.classList.add("hidden");
-  if (rightPanel) rightPanel.classList.add("hidden");
-
   if (chatContainer) {
     chatContainer.innerHTML = `
       <div class="flex items-center justify-center h-full text-gray-400 text-lg select-none">
@@ -186,6 +177,53 @@ function mostrarChatActivo() {
 
   if (chatHeader) chatHeader.classList.remove("hidden");
   if (rightPanel) rightPanel.classList.remove("hidden");
+}
+
+/**
+ * Resetea el header del chat y el panel derecho de contacto.
+ * Se llama al cargar la página, cambiar empresa, o cuando no hay conversación seleccionada.
+ */
+function resetChatAndContactPanel() {
+  // Ocultar header del chat y panel derecho
+  const chatHeader = document.getElementById("chatHeader");
+  const rightPanel = document.getElementById("contactPanel");
+  if (chatHeader) chatHeader.classList.add("hidden");
+  if (rightPanel) rightPanel.classList.add("hidden");
+
+  // Resetear header del chat
+  const headerName = document.getElementById("chatHeaderName");
+  const headerPhone = document.getElementById("chatHeaderPhone");
+  const headerAvatar = document.getElementById("chatHeaderAvatar");
+  if (headerName) headerName.textContent = "—";
+  if (headerPhone) headerPhone.textContent = "—";
+  if (headerAvatar) headerAvatar.innerHTML = "";
+
+  // Resetear panel de contacto derecho
+  const contactName = document.getElementById("contactHeaderName");
+  const contactPhone = document.getElementById("contactPhone");
+  const contactAvatar = document.getElementById("contactHeaderAvatar");
+  if (contactName) contactName.textContent = "—";
+  if (contactPhone) contactPhone.textContent = "—";
+  if (contactAvatar) {
+    contactAvatar.innerHTML = "";
+    contactAvatar.removeAttribute("data-avatar-url");
+  }
+
+  // Limpiar tags, notas y meta
+  const tagsContainer = document.getElementById("contactTagsContainer");
+  if (tagsContainer) tagsContainer.innerHTML = "";
+  const notesContainer = document.getElementById("contactNotesContainer");
+  if (notesContainer) notesContainer.innerHTML = "";
+  const metaEl = document.getElementById("contactHeaderMeta");
+  if (metaEl) metaEl.innerHTML = "";
+
+  // Limpiar mensajes y estado interno
+  const chatMessages = document.getElementById("chatMessages");
+  if (chatMessages) chatMessages.innerHTML = "";
+
+  currentConversation = null;
+  currentMessages = [];
+  selectedMessageToReply = null;
 }
 
 
@@ -268,24 +306,25 @@ function setupIAToggleChip() {
     const chip = document.getElementById("iaToggleChip");
     if (!chip) return;
 
+    // Este chip ahora filtra: muestra conversaciones con IA desactivada
     chip.addEventListener("click", () => {
-        iaEnabledForConversation = !iaEnabledForConversation;
+        const isActive = chip.classList.contains("active");
 
-        if (iaEnabledForConversation) {
-            chip.textContent = "IA On";
-            chip.dataset.ia = "on";
+        document.querySelectorAll(".filter-chip").forEach(c => c.classList.remove("active"));
+
+        if (!isActive) {
             chip.classList.add("active");
-
-            showSystemBubble("🤖 La IA ha sido activada para esta conversación.");
-        } else {
             chip.textContent = "IA Off";
-            chip.dataset.ia = "off";
-            chip.classList.remove("active");
-
-            showSystemBubble("⚠️ La IA ha sido desactivada para esta conversación. Las respuestas serán manuales.");
+            const filtered = conversations.filter(c => c.ia_enabled === false);
+            const original = conversations;
+            conversations = filtered;
+            renderConversations();
+            conversations = original;
+        } else {
+            document.querySelector('.filter-chip[data-filter="all"]')?.classList.add("active");
+            chip.textContent = "IA On";
+            renderConversations();
         }
-
-        console.log("IA activa:", iaEnabledForConversation);
     });
 }
 
@@ -375,6 +414,7 @@ function procesarConversaciones(conversationsData) {
             lastMessage: conv.last_message || '',
             time: formatTimestamp(conv.timestamp),
             blocked: conv.blocked || false,
+            ia_enabled: conv.ia_enabled !== false,
             messages: []
         };
 
@@ -405,6 +445,95 @@ async function markConversationAsRead(userId, companyId) {
         }
     } catch (e) {
         console.warn('⚠️ Error marcando como leído:', e);
+    }
+}
+
+// ============================================
+// TOGGLE IA POR CONVERSACIÓN
+// ============================================
+let currentIAEnabled = true;
+
+async function loadIAStatus(userId, companyId) {
+    try {
+        const url = `${API_BASE_URL}/api/chat/conversations/${userId}/ia?company_id=${companyId}`;
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            currentIAEnabled = data.ia_enabled !== false;
+        } else {
+            currentIAEnabled = true;
+        }
+    } catch (e) {
+        currentIAEnabled = true;
+    }
+    updateIAToggleUI();
+}
+
+async function toggleIAForConversation() {
+    if (!currentConversation || !currentCompanyId) return;
+
+    const newState = !currentIAEnabled;
+
+    try {
+        const url = `${API_BASE_URL}/api/chat/conversations/${currentConversation.id}/ia?company_id=${currentCompanyId}`;
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${getToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ enabled: newState })
+        });
+
+        if (response.ok) {
+            currentIAEnabled = newState;
+            updateIAToggleUI();
+
+            // Actualizar estado en la lista local
+            if (currentConversation) {
+                currentConversation.ia_enabled = newState;
+                const conv = conversations.find(c => c.id === currentConversation.id);
+                if (conv) conv.ia_enabled = newState;
+            }
+
+            // Burbuja de sistema en el chat
+            if (newState) {
+                showSystemBubble("🤖 La IA ha sido activada para esta conversación.");
+            } else {
+                showSystemBubble("⚠️ La IA ha sido desactivada. Las respuestas serán manuales.");
+            }
+
+            console.log(`🤖 IA ${newState ? 'activada' : 'desactivada'} para ${currentConversation.id}`);
+        }
+    } catch (e) {
+        console.warn('⚠️ Error toggling IA:', e);
+    }
+}
+
+function updateIAToggleUI() {
+    const btn = document.getElementById('iaToggleBtn');
+    const dot = document.getElementById('iaToggleDot');
+    const track = btn?.querySelector('.relative');
+
+    if (!btn || !dot || !track) return;
+
+    if (currentIAEnabled) {
+        // ON: azul, dot a la derecha
+        btn.className = 'flex items-center gap-1 cursor-pointer select-none px-1.5 py-0.5 rounded-full transition-all bg-[#dbe4f0] hover:bg-[#c8d5e8]';
+        btn.title = 'Desactivar respuestas automáticas de IA';
+        track.className = 'relative w-6 h-3.5 rounded-full bg-[#8faed4] transition-all';
+        dot.className = 'absolute top-0.5 left-3 w-2.5 h-2.5 rounded-full bg-white shadow transition-all';
+        btn.querySelector('i').className = 'fas fa-robot text-[10px] text-[#5a7baa]';
+    } else {
+        // OFF: gris-rojo, dot a la izquierda
+        btn.className = 'flex items-center gap-1 cursor-pointer select-none px-1.5 py-0.5 rounded-full transition-all bg-red-50 hover:bg-red-100';
+        btn.title = 'Activar respuestas automáticas de IA';
+        track.className = 'relative w-6 h-3.5 rounded-full bg-red-300 transition-all';
+        dot.className = 'absolute top-0.5 left-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-all';
+        btn.querySelector('i').className = 'fas fa-robot text-[10px] text-red-400';
     }
 }
 
@@ -633,6 +762,9 @@ async function selectConversation(userId, element) {
         renderConversations(); // Actualizar badge inmediatamente en UI
         markConversationAsRead(userId, currentCompanyId);
     }
+
+    // 🤖 Cargar estado de IA para esta conversación
+    loadIAStatus(userId, currentCompanyId);
 
     // 🔗 Notificar al módulo de contactos
     if (window.onConversationSelectedForContacts) {
@@ -1431,6 +1563,9 @@ function setupConversacionesEventListeners() {
 
       console.log("🏢 Empresa seleccionada:", companyId);
       currentCompanyId = companyId;
+
+      // Limpiar chat y panel del contacto anterior
+      resetChatAndContactPanel();
 
       await cargarConversacionesPorEmpresa(companyId);
 

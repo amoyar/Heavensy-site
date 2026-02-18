@@ -46,9 +46,6 @@
   <button class="px-3 py-1 rounded-full text-xs border transition-all filter-chip" data-filter="unread">
     No leídos
   </button>
-  <button class="px-3 py-1 rounded-full text-xs border transition-all filter-chip" id="iaToggleChip" data-ia="on">
-    IA On
-  </button>
 </div>
 
     </div>
@@ -135,7 +132,7 @@
 
     <!-- Header del Chat (Altura optimizada) -->
     <!-- Header del Chat -->
-<div class="bg-white border-b border-gray-200 px-4 py-1.5 shadow-sm z-10 h-12 flex items-center">
+<div id="chatHeader" class="bg-white border-b border-gray-200 px-4 py-1.5 shadow-sm z-10 h-12 flex items-center hidden">
 
   <div class="flex items-center justify-between w-full">
     <div class="flex items-center gap-2">
@@ -157,6 +154,16 @@
 
     <!-- BOTONES DERECHA -->
     <div class="flex items-center gap-1">
+      <!-- IA Toggle Switch -->
+      <div id="iaToggleBtn" onclick="toggleIAForConversation()"
+        class="flex items-center gap-1 cursor-pointer select-none px-1.5 py-0.5 rounded-full transition-all bg-[#dbe4f0] hover:bg-[#c8d5e8]"
+        title="Desactivar respuestas automáticas de IA">
+        <i class="fas fa-robot text-[10px] text-[#5a7baa]"></i>
+        <div class="relative w-6 h-3.5 rounded-full bg-[#8faed4] transition-all">
+          <div id="iaToggleDot" class="absolute top-0.5 left-3 w-2.5 h-2.5 rounded-full bg-white shadow transition-all"></div>
+        </div>
+      </div>
+
       <button id="toggleMessageOrder" onclick="toggleMessageOrder()"
         class="p-2 hover:bg-purple-50 rounded-xl transition-all group" title="Cambiar orden">
         <i class="fas fa-arrow-down-short-wide text-gray-500 group-hover:text-purple-600 text-sm"></i>
@@ -239,7 +246,7 @@
 
 
   <!-- COLUMNA 3: Panel de Contacto con bordes mejorados -->
-  <div class="w-56 bg-white border-l border-gray-200 flex flex-col overflow-y-auto overflow-x-hidden shadow-lg">
+  <div id="contactPanel" class="w-56 bg-white border-l border-gray-200 flex flex-col overflow-y-auto overflow-x-hidden shadow-lg hidden">
 
 <!-- Header del Contacto -->
 <div class="p-2 border-b border-gray-200 text-center flex flex-col items-center">
