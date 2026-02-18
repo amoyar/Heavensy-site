@@ -367,7 +367,17 @@ function showMessageNotification(data, state) {
     `;
 
     const preview = text.length > 80 ? text.substring(0, 80) + '...' : text;
-    const avatarUrl = data.avatar_url || "assets/img/Avatar.png";
+    
+    // Buscar avatar del contacto en la lista de conversaciones cargadas
+    let avatarUrl = data.avatar_url || "";
+    if (!avatarUrl) {
+        const convs = state.conversations || [];
+        const match = convs.find(c => c.id === userId || c.phone === userId);
+        if (match && match.avatar_url) {
+            avatarUrl = match.avatar_url;
+        }
+    }
+    if (!avatarUrl) avatarUrl = "assets/img/Avatar.png";
 
     notif.innerHTML = `
         <div style="flex-shrink:0; width:36px; height:36px; border-radius:50%; overflow:hidden; background:#e5e7eb;">

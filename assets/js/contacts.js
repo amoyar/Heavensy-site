@@ -249,12 +249,47 @@ function renderContactHeader(contact) {
     const avatarEl = document.getElementById("contactHeaderAvatar");
     const nameEl = document.getElementById("contactHeaderName");
     const phoneEl = document.getElementById("contactPhone");
+    const metaEl = document.getElementById("contactHeaderMeta");
 
     if (!contact || !avatarEl) return;
 
     const name = contact.profile_name || contact.user_id || "—";
     if (nameEl) nameEl.textContent = name;
     if (phoneEl) phoneEl.textContent = contact.user_id || "—";
+
+    // ✅ Renderizar rating y plan
+    if (metaEl) {
+        const rating = contact.rating || 0;
+        const plan = contact.plan || "";
+
+        let starsHtml = "";
+        for (let i = 1; i <= 5; i++) {
+            if (i <= rating) {
+                starsHtml += '<i class="fas fa-star text-yellow-500"></i>';
+            } else {
+                starsHtml += '<i class="fas fa-star text-gray-300"></i>';
+            }
+        }
+
+        let planHtml = "";
+        if (plan) {
+            const planColors = {
+                "Premium": "bg-purple-100 text-purple-700",
+                "Basic": "bg-blue-100 text-blue-700",
+                "Free": "bg-gray-100 text-gray-600"
+            };
+            const colorClass = planColors[plan] || "bg-gray-100 text-gray-600";
+            planHtml = `<span class="px-2 py-0.5 rounded-full ${colorClass} font-bold text-[10px]">${plan}</span>`;
+        }
+
+        metaEl.innerHTML = `
+            <div class="flex items-center gap-1 text-xs">
+                ${starsHtml}
+                <span class="text-gray-600 font-semibold ml-1">${rating}</span>
+            </div>
+            ${planHtml}
+        `;
+    }
 
     // ✅ Solo usar avatar real (no generado con iniciales)
     const avatarObj = contact.avatar || {};
