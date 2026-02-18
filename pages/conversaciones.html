@@ -227,8 +227,26 @@
           <input id="messageInput" type="text" placeholder="Escribe un mensaje..."
             class="flex-1 bg-transparent focus:outline-none text-sm text-gray-900 placeholder-gray-400"
             onkeypress="if(event.key === 'Enter') sendMessage()" />
-          
 
+          <!-- Micrófono (grabar audio) -->
+          <button id="micButton" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()"
+            class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0 group" title="Mantener presionado para grabar audio">
+            <i id="micIcon" class="fas fa-microphone text-gray-400 group-hover:text-purple-500 text-sm"></i>
+          </button>
+
+          <!-- Preview de audio grabado -->
+          <div id="audioPreview" class="hidden items-center gap-1">
+            <audio id="audioPlayer" class="h-7" style="max-width:120px;" controls></audio>
+            <button onclick="clearAudioRecording()" class="p-1 text-red-400 hover:text-red-600" title="Descartar audio">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
+
+          <!-- Indicador de grabación -->
+          <div id="recordingIndicator" class="hidden items-center gap-1 px-2">
+            <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+            <span class="text-[10px] text-red-500 font-medium">Grabando...</span>
+          </div>
 
           <button id="sendButton" onclick="sendMessage()"
             class="p-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-full transition-all shadow-md flex-shrink-0 active:scale-95">

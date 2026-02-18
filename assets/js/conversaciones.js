@@ -7,7 +7,8 @@ console.log('✅ conversaciones.js cargado');
 // Estado global (solo se inicializa una vez)
 if (typeof window.conversacionesState === 'undefined') {
     window.conversacionesState = {
-        attachedFile: null  // Solo usamos el estado global para attachedFile
+        attachedFile: null,  // Solo usamos el estado global para attachedFile
+        recordedAudio: null  // Audio grabado con micrófono
     };
 }
 
@@ -1418,9 +1419,10 @@ async function sendMessage() {
 
     const message = input.value.trim();
     const hasFile = !!window.conversacionesState.attachedFile;
+    const hasAudio = !!window.conversacionesState.recordedAudio;
 
     // ✅ VALIDACIONES ANTES de activar spinner
-    if (!message && !hasFile) {
+    if (!message && !hasFile && !hasAudio) {
         showMessageError('Debes escribir un mensaje o adjuntar un archivo');
         return;
     }
@@ -1431,8 +1433,14 @@ async function sendMessage() {
     }
 
     if (!selectedMessageToReply) {
-        showMessageError('Selecciona un mensaje del usuario para responder');
-        return;
+        // Auto-seleccionar último mensaje del usuario para audio/archivos
+        const lastUserMsg = [...currentMessages].reverse().find(m => m.role === 'user');
+        if (lastUserMsg) {
+            selectedMessageToReply = lastUserMsg;
+        } else {
+            showMessageError('No hay mensajes del usuario para responder');
+            return;
+        }
     }
 
     // ✅ Limpiar error si todo está OK
@@ -1450,6 +1458,7 @@ async function sendMessage() {
         };
 
         const fileToSend = window.conversacionesState.attachedFile;
+        const audioToSend = window.conversacionesState.recordedAudio;
 
         const messageToUpdate = currentMessages.find(
             m => m.message_id === selectedMessageToReply.message_id
@@ -1469,6 +1478,9 @@ async function sendMessage() {
 
         if (fileToSend) {
             formData.append('file', fileToSend);
+        } else if (audioToSend) {
+            const ext = window.conversacionesState.audioExtension || 'ogg';
+            formData.append('file', audioToSend, `audio_message.${ext}`);
         }
 
         const endpoint = `${API_BASE_URL}/api/chat/messages/${messageToUpdate.message_id}/reply`;
@@ -1494,6 +1506,7 @@ async function sendMessage() {
 
         // Refrescar datos
         clearAttachment();
+        clearAudioRecording();
         const freshMessages = await cargarMensajesDeConversacion(currentConversation.id);
         currentConversation.messages = freshMessages;
         loadMessages();
@@ -1510,6 +1523,118 @@ async function sendMessage() {
     }
 }
 
+
+
+// ============================================
+// 🎤 GRABACIÓN DE AUDIO
+// ============================================
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingTimer = null;
+const MAX_RECORDING_SECONDS = 120;
+
+async function startRecording() {
+    try {
+        // Limpiar grabación anterior
+        clearAudioRecording();
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // WhatsApp acepta: ogg/opus, mp4, aac, mpeg, amr
+        // Intentar formatos compatibles con WhatsApp en orden de preferencia
+        let mimeType = 'audio/ogg;codecs=opus';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'audio/mp4';
+        }
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'audio/webm;codecs=opus'; // fallback — necesita conversión
+        }
+
+        const fileExtension = mimeType.includes('ogg') ? 'ogg' 
+            : mimeType.includes('mp4') ? 'mp4' 
+            : 'webm';
+        
+        // Guardar extensión para el nombre del archivo al enviar
+        window.conversacionesState.audioExtension = fileExtension;
+        window.conversacionesState.audioMimeType = mimeType;
+
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            // Detener micrófono
+            stream.getTracks().forEach(t => t.stop());
+
+            if (audioChunks.length === 0) return;
+
+            const blob = new Blob(audioChunks, { type: mimeType });
+            window.conversacionesState.recordedAudio = blob;
+
+            // Mostrar preview
+            const player = document.getElementById('audioPlayer');
+            const preview = document.getElementById('audioPreview');
+            if (player && preview) {
+                player.src = URL.createObjectURL(blob);
+                preview.classList.remove('hidden');
+                preview.classList.add('flex');
+            }
+
+            // Ocultar botón de micrófono
+            const micBtn = document.getElementById('micButton');
+            if (micBtn) micBtn.classList.add('hidden');
+
+            console.log(`🎤 Audio grabado: ${(blob.size / 1024).toFixed(1)} KB`);
+        };
+
+        mediaRecorder.start();
+
+        // UI: mostrar indicador de grabación
+        const indicator = document.getElementById('recordingIndicator');
+        const micIcon = document.getElementById('micIcon');
+        if (indicator) { indicator.classList.remove('hidden'); indicator.classList.add('flex'); }
+        if (micIcon) micIcon.className = 'fas fa-microphone text-red-500 text-sm animate-pulse';
+
+        // Límite de tiempo
+        recordingTimer = setTimeout(() => stopRecording(), MAX_RECORDING_SECONDS * 1000);
+
+        console.log('🎤 Grabando audio...');
+
+    } catch (err) {
+        console.error('❌ Error accediendo al micrófono:', err);
+        showMessageError('No se pudo acceder al micrófono. Verifica los permisos.');
+    }
+}
+
+function stopRecording() {
+    if (recordingTimer) { clearTimeout(recordingTimer); recordingTimer = null; }
+
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
+
+    // UI: ocultar indicador
+    const indicator = document.getElementById('recordingIndicator');
+    const micIcon = document.getElementById('micIcon');
+    if (indicator) { indicator.classList.add('hidden'); indicator.classList.remove('flex'); }
+    if (micIcon) micIcon.className = 'fas fa-microphone text-gray-400 group-hover:text-purple-500 text-sm';
+}
+
+function clearAudioRecording() {
+    window.conversacionesState.recordedAudio = null;
+    audioChunks = [];
+
+    const player = document.getElementById('audioPlayer');
+    const preview = document.getElementById('audioPreview');
+    const micBtn = document.getElementById('micButton');
+
+    if (player) { player.src = ''; player.pause(); }
+    if (preview) { preview.classList.add('hidden'); preview.classList.remove('flex'); }
+    if (micBtn) micBtn.classList.remove('hidden');
+}
 
 
 function showMessageError(text) {
