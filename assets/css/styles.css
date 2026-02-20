@@ -399,3 +399,23 @@ input[type="text"]:focus {
   color: #ffffff;          /* 🔹 Activo: texto blanco */
   font-weight: 600;
 }
+
+/* Scrollbar delgada para el contenedor de filtros */
+#filterChipsContainer {
+  scrollbar-width: thin;              /* Firefox */
+  scrollbar-color: #9ca3af transparent;
+}
+
+/* Chrome, Edge, Safari */
+#filterChipsContainer::-webkit-scrollbar {
+  height: 3px;                        /* 👈 grosor del scroll horizontal */
+}
+
+#filterChipsContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#filterChipsContainer::-webkit-scrollbar-thumb {
+  background-color: #9ca3af;          /* gris suave */
+  border-radius: 999px;
+}

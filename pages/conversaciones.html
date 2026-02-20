@@ -38,13 +38,62 @@
   <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
 </div>
 
-<!-- Filtros horizontales -->
-<div class="flex gap-2 mt-2">
-  <button class="px-3 py-1 rounded-full text-xs border transition-all filter-chip active" data-filter="all">
+<!-- Filtros rápidos (chips) -->
+<div class="flex gap-1.5 mt-2 overflow-x-auto pb-1" id="filterChipsContainer" style="scrollbar-width:2px;">
+  
+  <button class="filter-chip active flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="all">
     Todos
+    <span class="filter-count text-[9px] px-1 rounded-full bg-white/30 leading-none"></span>
   </button>
-  <button class="px-3 py-1 rounded-full text-xs border transition-all filter-chip" data-filter="unread">
+
+  <button class="filter-chip flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="unread">
     No leídos
+    <span class="filter-count text-[9px] px-1 rounded-full bg-gray-200 leading-none"></span>
+  </button>
+
+  <button class="filter-chip flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="no_reply">
+    Sin responder
+    <span class="filter-count text-[9px] px-1 rounded-full bg-gray-200 leading-none"></span>
+  </button>
+
+  <button class="filter-chip flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="ia_off">
+    IA Off
+    <span class="filter-count text-[9px] px-1 rounded-full bg-gray-200 leading-none"></span>
+  </button>
+
+</div>
+
+
+<!-- Filtros avanzados (colapsable) -->
+<button id="advancedFiltersToggle" onclick="toggleAdvancedFilters()"
+  class="w-full flex items-center justify-between mt-1.5 px-2 py-1 text-[10px] text-gray-400 hover:text-gray-600 transition-all">
+  <span class="flex items-center gap-1">
+    <i class="fas fa-sliders-h"></i> Filtros avanzados
+  </span>
+  <i id="advancedFiltersIcon" class="fas fa-chevron-down text-[8px] transition-transform"></i>
+</button>
+
+<div id="advancedFiltersPanel" class="hidden mt-1 mx-1 p-2 bg-gray-50 rounded-xl space-y-2 border border-gray-100">
+  <!-- Por Plan -->
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Plan</span>
+    <div class="flex gap-1 mt-1 flex-wrap" id="planFilters">
+      <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-purple-100 text-purple-700 font-semibold transition-all" data-plan="">Todos</button>
+      <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Premium">Premium</button>
+      <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Basic">Basic</button>
+      <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Free">Free</button>
+    </div>
+  </div>
+  <!-- Por Tags (dinámico) -->
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Tags</span>
+    <div class="flex gap-1 mt-1 flex-wrap" id="tagFilters">
+      <!-- Se llena dinámicamente desde JS -->
+    </div>
+  </div>
+  <!-- Limpiar -->
+  <button id="clearAdvancedFilters" onclick="clearAdvancedFilters()" class="hidden text-[10px] text-red-400 hover:text-red-600 transition-all">
+    <i class="fas fa-times"></i> Limpiar filtros
   </button>
 </div>
 
@@ -120,6 +169,11 @@
     
     <div class="flex-1 overflow-y-auto bg-white" id="conversationsList">
       <!-- JS inyecta las conversaciones aquí -->
+    </div>
+
+    <!-- Footer con contador -->
+    <div class="px-3 py-1.5 border-t border-gray-100 bg-gray-50">
+      <span id="conversationsCounter" class="text-[10px] text-gray-400"></span>
     </div>
 
   </div>

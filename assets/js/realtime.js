@@ -247,10 +247,18 @@ function updateConversationList(data, state, api) {
             state.conversations.unshift(conv);
         }
 
-        api.renderConversations();
+        // ✅ Reaplicar filtros si existen (evita mostrar todos y luego filtrar)
+        if (typeof window.applyAllFilters === "function") {
+            window.applyAllFilters();
+        } else if (api && typeof api.renderConversations === "function") {
+            api.renderConversations();
+        }
+
     } else {
-        // Conversación nueva → recargar lista
-        api.cargarConversacionesPorEmpresa(state.currentCompanyId);
+        // Conversación nueva → recargar lista completa
+        if (api && typeof api.cargarConversacionesPorEmpresa === "function") {
+            api.cargarConversacionesPorEmpresa(state.currentCompanyId);
+        }
     }
 }
 
