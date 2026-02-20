@@ -8,18 +8,19 @@ console.log('✅ conv-render.js cargado');
 // ============================================
 // RENDER: Lista de conversaciones (sidebar)
 // ============================================
+
 function renderConversations(list = conversations) {
     const container = document.getElementById('conversationsList');
     if (!container) return;
 
-    const data = Array.isArray(list) ? list : [];
-
     container.innerHTML = '';
+
+    const data = list || [];
 
     if (data.length === 0) {
         container.innerHTML = `
-            <div class="flex flex-col items-center justify-center text-gray-400 text-sm py-10">
-                <i class="fas fa-inbox text-3xl mb-2"></i>
+            <div class="flex flex-col items-center justify-center h-full text-gray-400 text-sm gap-2 py-10">
+                <i class="fas fa-comments text-3xl"></i>
                 <span>No hay conversaciones</span>
             </div>
         `;
@@ -28,15 +29,18 @@ function renderConversations(list = conversations) {
 
     data.forEach(conv => {
         const item = document.createElement('div');
+        item.className = 'conversation-item border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-all rounded-2xl mx-2 my-0.5 p-2';
+        item.dataset.conversationId = conv.id;
 
-        item.className = `
-            border-b border-gray-100 hover:bg-gray-50 cursor-pointer
-            transition-all rounded-2xl mx-2 my-0.5 p-2
-        `;
+        // Resaltar si está seleccionada
+        if (currentConversation && currentConversation.id === conv.id) {
+            item.classList.add('bg-purple-50');
+        }
 
         item.innerHTML = `
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                <!-- Avatar -->
+                <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden" id="avatar-list-${conv.id}">
                     ${
                         conv.avatar_url
                             ? `<img src="${conv.avatar_url}" class="w-full h-full object-cover" />`
@@ -48,38 +52,81 @@ function renderConversations(list = conversations) {
 
                 <div class="flex-1 min-w-0">
                     <div class="flex justify-between items-center">
-                        <span class="font-medium text-sm text-gray-800 truncate">
-                            ${conv.name || conv.phone}
-                        </span>
+                        <!-- Nombre + mini etiqueta -->
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="font-medium text-sm text-gray-800 truncate">
+                                ${conv.name || conv.phone}
+                            </span>
+
+                            <!-- 🏷️ Mini etiqueta decorativa -->
+<span 
+  class="inline-flex items-center justify-center w-4 h-4 rounded bg-white text-[10px] flex-shrink-0"
+  title="${(conv.tag && conv.tag.label) ? conv.tag.label : 'Etiqueta'}"
+>
+  <i 
+    class="fas fa-tag text-[10px]" 
+    style="color:${(conv.tag && conv.tag.color) ? conv.tag.color : '#9ca3af'}"
+  ></i>
+</span>
+                        </div>
+
                         <span class="text-xs text-gray-400">
                             ${conv.time || ''}
                         </span>
                     </div>
 
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs text-gray-500 truncate">
-                            ${conv.lastMessage || ''}
-                        </span>
+                    <div class="flex justify-between items-center gap-2">
+                        <div class="flex flex-col min-w-0">
+                            <span class="text-xs text-gray-500 truncate">
+                                ${conv.lastMessage || ''}
+                            </span>
 
-                        ${
-                            (conv.unread || 0) > 0
-                                ? `<span class="ml-2 text-xs bg-purple-500 text-white rounded-full px-2 py-0.5">
-                                       ${conv.unread}
-                                   </span>`
-                                : ''
-                        }
+                            <!-- 🤖 Estado IA -->
+                            ${
+                                conv.ia_enabled === false
+                                    ? `<span class="text-[10px] text-red-400 mt-0.5">IA desactivada</span>`
+                                    : ''
+                            }
+                        </div>
+
+                        <div class="flex items-center gap-1 flex-shrink-0">
+                            <!-- 🟢 Puntitos de colores por TAG (más pequeños) -->
+                            ${
+                                (conv.tags || []).map(t => `
+                                    <span 
+                                        title="${t.label}"
+                                        class="w-2 h-2 rounded-full inline-block"
+                                        style="background:${t.color || '#999'}"
+                                    ></span>
+                                `).join('')
+                            }
+
+                            <!-- 📩 Unread -->
+                            ${
+                                (conv.unread || 0) > 0
+                                    ? `<span class="ml-1 text-xs bg-purple-500 text-white rounded-full px-2 py-0.5">
+                                           ${conv.unread}
+                                       </span>`
+                                    : ''
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
         `;
 
         item.addEventListener('click', () => {
-            if (typeof selectConversation === "function") {
+            if (typeof selectConversation === 'function') {
                 selectConversation(conv.id, item);
             }
         });
 
         container.appendChild(item);
+
+        // Actualizar avatar dinámico si existe helper
+        if (typeof updateConversationAvatar === 'function') {
+            updateConversationAvatar(conv.id, conv.avatar_url);
+        }
     });
 }
 // ============================================
