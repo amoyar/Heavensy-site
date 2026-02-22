@@ -41,13 +41,12 @@ function renderConversations(list = conversations) {
             <div class="flex items-center gap-3">
                 <!-- Avatar -->
                 <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden" id="avatar-list-${conv.id}">
-                    ${
-                        conv.avatar_url
-                            ? `<img src="${conv.avatar_url}" class="w-full h-full object-cover" />`
-                            : `<span class="text-sm font-semibold text-gray-600">
+                    ${conv.avatar_url
+                ? `<img src="${conv.avatar_url}" class="w-full h-full object-cover" />`
+                : `<span class="text-sm font-semibold text-gray-600">
                                    ${(conv.name || conv.phone || '?').substring(0, 2).toUpperCase()}
                                </span>`
-                    }
+            }
                 </div>
 
                 <div class="flex-1 min-w-0">
@@ -59,16 +58,16 @@ function renderConversations(list = conversations) {
                             </span>
 
                             <!-- 🏷️ Mini etiqueta decorativa -->
-<span 
-  class="inline-flex items-center justify-center w-4 h-4 rounded bg-white text-[10px] flex-shrink-0"
-  title="${(conv.tag && conv.tag.label) ? conv.tag.label : 'Etiqueta'}"
->
-  <i 
-    class="fas fa-tag text-[10px]" 
-    style="color:${(conv.tag && conv.tag.color) ? conv.tag.color : '#9ca3af'}"
-  ></i>
-</span>
-                        </div>
+                                <span 
+                                class="inline-flex items-center justify-center w-4 h-4 rounded bg-white text-[10px] flex-shrink-0"
+                                title="${(conv.tag && conv.tag.label) ? conv.tag.label : 'Etiqueta'}"
+                                >
+                                <i 
+                                    class="fas fa-tag text-[10px]" 
+                                    style="color:${(conv.tag && conv.tag.color) ? conv.tag.color : '#9ca3af'}"
+                                ></i>
+                                </span>
+                                                        </div>
 
                         <span class="text-xs text-gray-400">
                             ${conv.time || ''}
@@ -82,33 +81,30 @@ function renderConversations(list = conversations) {
                             </span>
 
                             <!-- 🤖 Estado IA -->
-                            ${
-                                conv.ia_enabled === false
-                                    ? `<span class="text-[10px] text-red-400 mt-0.5">IA desactivada</span>`
-                                    : ''
-                            }
+                            ${conv.ia_enabled === false
+                ? `<span class="text-[10px] text-red-400 mt-0.5">IA desactivada</span>`
+                : ''
+            }
                         </div>
 
                         <div class="flex items-center gap-1 flex-shrink-0">
                             <!-- 🟢 Puntitos de colores por TAG (más pequeños) -->
-                            ${
-                                (conv.tags || []).map(t => `
+                            ${(conv.tags || []).map(t => `
                                     <span 
                                         title="${t.label}"
                                         class="w-2 h-2 rounded-full inline-block"
                                         style="background:${t.color || '#999'}"
                                     ></span>
                                 `).join('')
-                            }
+            }
 
                             <!-- 📩 Unread -->
-                            ${
-                                (conv.unread || 0) > 0
-                                    ? `<span class="ml-1 text-xs bg-purple-500 text-white rounded-full px-2 py-0.5">
+                            ${(conv.unread || 0) > 0
+                ? `<span class="ml-1 text-xs bg-purple-500 text-white rounded-full px-2 py-0.5">
                                            ${conv.unread}
                                        </span>`
-                                    : ''
-                            }
+                : ''
+            }
                         </div>
                     </div>
                 </div>

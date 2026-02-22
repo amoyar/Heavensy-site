@@ -242,7 +242,7 @@
     <!-- Input de Mensaje (Pegado a la base y más bajo) -->
     <div class="bg-gray-50 border-t border-gray-200 px-3 py-1 flex-shrink-0">
 
-      <div class="max-w-4xl mx-auto">
+      <div class="max-w-4xl mx-auto relative">
         <!-- Preview de archivos adjuntos -->
         <div id="attachmentPreview" class="hidden mb-2 bg-white rounded-xl p-2 border border-gray-200 shadow-sm">
           <div
@@ -264,49 +264,128 @@
           </div>
         </div>
         <!-- Barra de entrada (Altura reducida py-1.0) -->
-        <div
-          class="flex items-center gap-1 bg-white border border-gray-300 rounded-full px-3 py-1.0 focus-within:border-purple-400 transition-all shadow-sm">
-          <button class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0">
-            <i class="far fa-smile text-gray-400 text-lg"></i>
-          </button>
+         <!-- ============================= -->
+<!-- ⚡ Panel de Respuestas Rápidas -->
+<!-- ============================= -->
+<!-- ============================= -->
+<!-- ⚡ Panel de Respuestas Rápidas -->
+<!-- ============================= -->
+<div id="quickRepliesPanel"
+  class="hidden absolute bottom-16 left-4 right-4 max-w-xl bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
 
-          <input type="file" id="fileInput" class="hidden"
-            accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip" onchange="handleFileSelect(event)" />
+  <!-- Header -->
+  <div class="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+    <div class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+      ⚡ Respuestas rápidas
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-[10px] text-gray-400 whitespace-nowrap">Ctrl + /</span>
+      <button id="qrCloseBtn" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
 
-          <button onclick="document.getElementById('fileInput').click()"
-            class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0" title="Adjuntar">
-            <i class="fas fa-paperclip text-gray-400 text-lg"></i>
-          </button>
+  <!-- Formulario -->
+  <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
+    <div class="grid grid-cols-12 gap-2">
+      <input id="qrFormShortcut" type="text" placeholder="/hola"
+        class="col-span-3 px-2 py-1 border border-gray-300 rounded-lg text-xs" />
+      <input id="qrFormCategory" type="text" placeholder="Categoría"
+        class="col-span-3 px-2 py-1 border border-gray-300 rounded-lg text-xs" />
+      <input id="qrFormText" type="text" placeholder="Texto de la respuesta..."
+        class="col-span-6 px-2 py-1 border border-gray-300 rounded-lg text-xs" />
+    </div>
 
-          <input id="messageInput" type="text" placeholder="Escribe un mensaje..."
-            class="flex-1 bg-transparent focus:outline-none text-sm text-gray-900 placeholder-gray-400"
-            onkeypress="if(event.key === 'Enter') sendMessage()" />
+    <div class="flex items-center justify-between mt-2">
+      <div class="text-[11px] text-gray-400" id="qrFormModeLabel">Modo: Crear</div>
+      <div class="flex gap-2">
+        <button id="qrFormCancelBtn"
+          class="px-3 py-1 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100">
+          Cancelar
+        </button>
+        <button id="qrFormSaveBtn"
+          class="px-3 py-1 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-700">
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
 
-          <!-- Micrófono (grabar audio) -->
-          <button id="micButton" onmousedown="startRecording()" onmouseup="stopRecording()" ontouchstart="startRecording()" ontouchend="stopRecording()"
-            class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0 group" title="Mantener presionado para grabar audio">
-            <i id="micIcon" class="fas fa-microphone text-gray-400 group-hover:text-purple-500 text-sm"></i>
-          </button>
+  <!-- Buscador -->
+  <div class="px-4 py-2 border-b border-gray-100">
+    <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5">
+      <i class="fas fa-search text-gray-400 text-sm"></i>
+      <input id="qrSearchInput" type="text" placeholder="Buscar respuesta..."
+        class="w-full bg-transparent text-sm outline-none" />
+    </div>
+  </div>
 
-          <!-- Preview de audio grabado -->
-          <div id="audioPreview" class="hidden items-center gap-1">
-            <audio id="audioPlayer" class="h-7" style="max-width:120px;" controls></audio>
-            <button onclick="clearAudioRecording()" class="p-1 text-red-400 hover:text-red-600" title="Descartar audio">
-              <i class="fas fa-times text-xs"></i>
-            </button>
-          </div>
+  <!-- Categorías -->
+  <div id="qrCategories" class="px-4 py-2 flex gap-1.5 flex-wrap border-b border-gray-100"></div>
 
-          <!-- Indicador de grabación -->
-          <div id="recordingIndicator" class="hidden items-center gap-1 px-2">
-            <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-            <span class="text-[10px] text-red-500 font-medium">Grabando...</span>
-          </div>
+  <!-- Lista -->
+  <div id="qrList" class="max-h-64 overflow-y-auto p-2 space-y-2"></div>
+</div>
 
-          <button id="sendButton" onclick="sendMessage()"
-            class="p-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-full transition-all shadow-md flex-shrink-0 active:scale-95">
-            <i class="fas fa-paper-plane text-xs"></i>
-          </button>
-        </div>
+<div
+  class="flex items-center gap-1 bg-white border border-gray-300 rounded-full px-3 py-1.0 focus-within:border-purple-400 transition-all shadow-sm">
+
+  <!-- ⚡ Respuestas rápidas -->
+  <button id="quickRepliesBtn"
+    class="p-1.5 hover:bg-yellow-50 rounded-full transition-all flex-shrink-0"
+    title="Respuestas rápidas">
+    <i class="fas fa-bolt text-yellow-500 text-lg"></i>
+  </button>
+
+  <!-- Emoji -->
+  <button class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0">
+    <i class="far fa-smile text-gray-400 text-lg"></i>
+  </button>
+
+  <input type="file" id="fileInput" class="hidden"
+    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip" onchange="handleFileSelect(event)" />
+
+  <!-- Adjuntar -->
+  <button onclick="document.getElementById('fileInput').click()"
+    class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0" title="Adjuntar">
+    <i class="fas fa-paperclip text-gray-400 text-lg"></i>
+  </button>
+
+  <!-- Input mensaje -->
+  <input id="messageInput" type="text" placeholder="Escribe un mensaje..."
+    class="flex-1 bg-transparent focus:outline-none text-sm text-gray-900 placeholder-gray-400"
+    onkeypress="if(event.key === 'Enter') sendMessage()" />
+
+  <!-- Micrófono (grabar audio) -->
+  <button id="micButton"
+    onmousedown="startRecording()" onmouseup="stopRecording()"
+    ontouchstart="startRecording()" ontouchend="stopRecording()"
+    class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0 group"
+    title="Mantener presionado para grabar audio">
+    <i id="micIcon" class="fas fa-microphone text-gray-400 group-hover:text-purple-500 text-sm"></i>
+  </button>
+
+  <!-- Preview de audio grabado -->
+  <div id="audioPreview" class="hidden items-center gap-1">
+    <audio id="audioPlayer" class="h-7" style="max-width:120px;" controls></audio>
+    <button onclick="clearAudioRecording()" class="p-1 text-red-400 hover:text-red-600" title="Descartar audio">
+      <i class="fas fa-times text-xs"></i>
+    </button>
+  </div>
+
+  <!-- Indicador de grabación -->
+  <div id="recordingIndicator" class="hidden items-center gap-1 px-2">
+    <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+    <span class="text-[10px] text-red-500 font-medium">Grabando...</span>
+  </div>
+
+  <!-- Enviar -->
+  <button id="sendButton" onclick="sendMessage()"
+    class="p-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-full transition-all shadow-md flex-shrink-0 active:scale-95">
+    <i class="fas fa-paper-plane text-xs"></i>
+  </button>
+</div>
       </div>
     </div>
   </div>
