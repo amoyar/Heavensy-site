@@ -351,6 +351,7 @@ function buildPicker() {
   loadRecents();
 
   const div = document.createElement("div");
+  const currentYear = new Date().getFullYear();
   div.id = PICKER_ID;
   div.innerHTML = `
     <div id="_epHeader">
@@ -362,7 +363,7 @@ function buildPicker() {
     <div id="_epCatBar"></div>
     <div id="_epGrid"></div>
     <div id="_epEmpty"><div class="ico">🔍</div><div>Sin resultados para "<span id="_epEmptyQ"></span>"</div></div>
-    <div id="_epFooter"><b>Heavensy</b> · Panel de Conversaciones</div>
+    <div id="_epFooter"><b>Heavensy</b> &copy; ${currentYear}</div>
   `;
   document.body.appendChild(div);
 
