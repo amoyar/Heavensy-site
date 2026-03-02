@@ -3,7 +3,13 @@
 // ============================================
 
 console.log("⚡ quick-replies.js cargado");
-
+// ================= CONFIG ATAJOS =================
+const SAVE_QR_SHORTCUT = {
+  ctrl: true,
+  shift: true,
+  key: "S"   // Cambia aquí si quieres otro (ej: "D", "Q", etc)
+};
+// ===============================================
 const qrState = {
   all: [],
   filtered: [],
@@ -91,9 +97,11 @@ function togglePanel() {
 // --------------------------------------------
 function setupShortcuts() {
   const input = getMessageInput();
+
+  // Detectar "/" para abrir panel
   if (input) {
-    input.addEventListener("input", (e) => {
-      const val = e.target.value || "";
+    input.addEventListener("input", (event) => {
+      const val = event.target.value || "";
       if (val.startsWith("/")) {
         const q = val.slice(1);
         filter(q);
@@ -102,13 +110,29 @@ function setupShortcuts() {
     });
   }
 
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && qrState.isOpen) closePanel();
+    document.addEventListener("keydown", async (event) => {
 
-    if (e.ctrlKey && e.key === "/") {
-      e.preventDefault();
+    // ESC cierra panel
+    if (event.key === "Escape" && qrState.isOpen) {
+      closePanel();
+    }
+
+    // Ctrl + / abre/cierra
+    if (event.ctrlKey && event.key === "/") {
+      event.preventDefault();
       togglePanel();
     }
+
+    // Ctrl + Shift + S guarda quick reply
+    if (
+      event.ctrlKey &&
+      event.shiftKey &&
+      event.key.toUpperCase() === "S"
+    ) {
+      event.preventDefault();
+      await saveCurrentInputAsQuickReply();
+    }
+
   });
 }
 
@@ -279,7 +303,9 @@ function renderList() {
     // Eliminar
     item.querySelector("[data-del]").addEventListener("click", async (e) => {
       e.stopPropagation();
-      if (!confirm("¿Eliminar esta respuesta rápida?")) return;
+      // if (!confirm("¿Eliminar esta respuesta rápida?")) return;
+      const ok = await showConfirm("¿Eliminar esta respuesta rápida?");
+      if (!ok) return;
       try {
         const companyId = getCurrentCompanyId();
         await deleteQuickReply(qr.id, companyId);
@@ -316,6 +342,45 @@ function insertIntoInput(text) {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+async function saveCurrentInputAsQuickReply() {
+  const input = getMessageInput();
+  if (!input) return;
+
+  const text = (input.value || "").trim();
+  if (!text) {
+    alert("No hay texto para guardar como respuesta rápida.");
+    return;
+  }
+
+  const companyId = getCurrentCompanyId();
+  if (!companyId) {
+    alert("No hay empresa seleccionada.");
+    return;
+  }
+
+  // Pedimos un shortcut simple (puedes mejorar UI después)
+  let shortcut = prompt("Atajo para esta respuesta (ej: /hola, /pago, /bye):", "/");
+  if (!shortcut) return;
+
+  let category = prompt("Categoría:", "General") || "General";
+
+  const payload = {
+    company_id: companyId,
+    shortcut: shortcut.trim(),
+    text: text,
+    category: category.trim() || "General"
+  };
+
+  try {
+    await createQuickReply(payload);
+    await loadQuickReplies();   // 🔥 Esto es lo que garantiza el APPEND real desde backend
+    console.log("✅ Guardada como quick reply:", payload.shortcut);
+  } catch (err) {
+    alert("Error guardando respuesta rápida");
+    console.error(err);
+  }
+}
+
 // --------------------------------------------
 // Formulario
 // --------------------------------------------
@@ -335,11 +400,18 @@ function fillFormForEdit(qr) {
 
 function clearForm() {
   const { formShortcut, formText, formCategory, formModeLabel } = getUI();
+
   qrState.editingId = null;
-  formShortcut.value = "";
-  formText.value = "";
-  formCategory.value = "";
-  if (formModeLabel) formModeLabel.textContent = "Modo: Crear";
+
+  if (formShortcut) formShortcut.value = "";
+  if (formText) formText.value = "";
+  if (formCategory) formCategory.value = "";
+
+  if (formModeLabel) {
+    formModeLabel.textContent = "Modo: Crear";
+  }
+
+  console.log("🧹 Formulario limpiado y modo edición cancelado");
 }
 
 async function onSaveForm() {
@@ -354,7 +426,8 @@ async function onSaveForm() {
   };
 
   if (!payload.shortcut || !payload.text) {
-    alert("Faltan campos obligatorios");
+    // alert("Faltan campos obligatorios");
+    showToast("Completa todos los campos obligatorios", "error");
     return;
   }
 
@@ -363,12 +436,15 @@ async function onSaveForm() {
       await updateQuickReply(qrState.editingId, payload);
     } else {
       await createQuickReply(payload);
+      showToast("Respuesta rápida guardada", "success");   // 👈 AQUÍ VA
     }
 
     await loadQuickReplies();
     clearForm();
   } catch (err) {
-    alert("Error guardando");
+    // alert("Error guardando");
+    showToast("Error guardando la respuesta rápida", "error");
+
     console.error(err);
   }
 }
@@ -427,6 +503,68 @@ function initQuickReplies() {
   }, 1500);
 
   console.log("✅ Quick Replies UI inicializada");
+}
+
+function showToast(message, type = "info") {
+  const container = document.getElementById("qrToastContainer");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+
+  const colors = {
+    success: "bg-green-500",
+    error: "bg-red-500",
+    info: "bg-gray-800"
+  };
+
+  toast.className =
+    `${colors[type] || colors.info} text-white text-sm px-4 py-3 rounded-xl shadow-lg transition-all opacity-0 translate-y-2`;
+
+  toast.textContent = message;
+
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.remove("opacity-0", "translate-y-2");
+  });
+
+  setTimeout(() => {
+    toast.classList.add("opacity-0", "translate-y-2");
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+function showConfirm(message) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("qrConfirmModal");
+    const msg = document.getElementById("qrConfirmMessage");
+    const btnCancel = document.getElementById("qrConfirmCancel");
+    const btnAccept = document.getElementById("qrConfirmAccept");
+
+    if (!modal) return resolve(false);
+
+    msg.textContent = message;
+    modal.classList.remove("hidden");
+
+    const cleanup = () => {
+      modal.classList.add("hidden");
+      btnCancel.removeEventListener("click", onCancel);
+      btnAccept.removeEventListener("click", onAccept);
+    };
+
+    const onCancel = () => {
+      cleanup();
+      resolve(false);
+    };
+
+    const onAccept = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    btnCancel.addEventListener("click", onCancel);
+    btnAccept.addEventListener("click", onAccept);
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
