@@ -29,6 +29,12 @@ async function initConversacionesPage() {
         resetChatAndContactPanel();
         setupConversacionesEventListeners();
         await cargarEmpresasYConversaciones();
+
+        // 🔥 IMPORTANTE
+        if (window.initQuickRepliesModule) {
+            window.initQuickRepliesModule();
+        }
+
         return;
     }
 
@@ -36,6 +42,11 @@ async function initConversacionesPage() {
 
     await cargarEmpresasYConversaciones();
     setupConversacionesEventListeners();
+
+    // 🔥 AQUÍ VA
+    if (window.initQuickRepliesModule) {
+        window.initQuickRepliesModule();
+    }
 
     console.log('✅ Página de conversaciones inicializada');
 }
@@ -68,6 +79,9 @@ function setupConversacionesEventListeners() {
             currentCompanyId = companyId;
             resetChatAndContactPanel();
             await cargarConversacionesPorEmpresa(companyId);
+            if (window.reloadQuickReplies) {
+                window.reloadQuickReplies();
+}
             mostrarEstadoSinConversacionSeleccionada();
         });
     }
