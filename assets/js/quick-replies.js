@@ -17,7 +17,8 @@ const qrState = {
   isOpen: false,
   lastQuery: "",
   editingId: null, // null = crear, string = editar
-  _lastCompanyId: null
+  _lastCompanyId: null,
+  activeCategory: null // null = "Todas"
 };
 
 // --------------------------------------------
@@ -57,6 +58,9 @@ function getUI() {
     categories: qs("qrCategories"),
     list: qs("qrList"),
 
+    newBtn: qs("qrNewBtn"),
+    formWrapper: qs("qrFormWrapper"),
+
     formShortcut: qs("qrFormShortcut"),
     formText: qs("qrFormText"),
     formCategory: qs("qrFormCategory"),
@@ -88,6 +92,12 @@ function closePanel() {
 function togglePanel() {
   const { panel } = getUI();
   if (!panel) return;
+
+  if (panel.classList.contains("hidden") && !getCurrentCompanyId()) {
+    showToast("Selecciona una empresa para usar las respuestas rápidas", "info");
+    return;
+  }
+
   if (panel.classList.contains("hidden")) openPanel();
   else closePanel();
 }
@@ -216,10 +226,14 @@ function renderCategories() {
 
   categories.innerHTML = "";
 
+  const ACTIVE   = "px-2 py-0.5 rounded-full text-[11px] bg-purple-600 text-white font-semibold shadow-sm transition";
+  const INACTIVE = "px-2 py-0.5 rounded-full text-[11px] bg-gray-100 text-gray-600 hover:bg-purple-100 hover:text-purple-700 transition";
+
   const allBtn = document.createElement("button");
-  allBtn.className = "px-2 py-0.5 rounded-full text-[11px] bg-purple-100 text-purple-700 font-semibold";
+  allBtn.className = qrState.activeCategory === null ? ACTIVE : INACTIVE;
   allBtn.textContent = "Todas";
   allBtn.onclick = () => {
+    qrState.activeCategory = null;
     filter("");
     const { search } = getUI();
     if (search) search.value = "";
@@ -228,11 +242,22 @@ function renderCategories() {
 
   qrState.categories.forEach(cat => {
     const btn = document.createElement("button");
-    btn.className = "px-2 py-0.5 rounded-full text-[11px] bg-gray-100 text-gray-600 hover:bg-purple-100 hover:text-purple-700 transition";
+    btn.className = qrState.activeCategory === cat ? ACTIVE : INACTIVE;
     btn.textContent = cat;
     btn.onclick = () => filterByCategory(cat);
     categories.appendChild(btn);
   });
+
+  // Sincronizar datalist del formulario con categorías existentes
+  const datalist = document.getElementById("qrCategoryList");
+  if (datalist) {
+    datalist.innerHTML = "";
+    qrState.categories.forEach(cat => {
+      const opt = document.createElement("option");
+      opt.value = cat;
+      datalist.appendChild(opt);
+    });
+  }
 }
 
 // --------------------------------------------
@@ -242,6 +267,7 @@ function filter(query) {
   const q = (query || "").toLowerCase().trim();
 
   if (!q) {
+    qrState.activeCategory = null;
     qrState.filtered = [...qrState.all];
   } else {
     qrState.filtered = qrState.all.filter(qr =>
@@ -254,7 +280,9 @@ function filter(query) {
 }
 
 function filterByCategory(category) {
+  qrState.activeCategory = category;
   qrState.filtered = qrState.all.filter(qr => qr.category === category);
+  renderCategories();
   renderList();
 }
 
@@ -392,15 +420,38 @@ async function saveCurrentInputAsQuickReply() {
 function fillFormForEdit(qr) {
   const { formShortcut, formText, formCategory, formModeLabel } = getUI();
 
+  if (!formShortcut || !formText) {
+    console.warn("Campos del formulario no encontrados");
+    return;
+  }
+
   qrState.editingId = qr.id;
 
   formShortcut.value = qr.shortcut || "";
   formText.value = qr.text || "";
-  formCategory.value = qr.category || "";
+  if (formCategory) formCategory.value = qr.category || "";
+  if (formModeLabel) formModeLabel.textContent = "Modo: Editar ✏️";
 
-  if (formModeLabel) formModeLabel.textContent = "Modo: Editar";
+  const { formWrapper } = getUI();
+  if (formWrapper) formWrapper.classList.remove("hidden");
+  formShortcut.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  formShortcut.focus();
+}
 
-  formText.focus();
+function openForm() {
+  // getElementById directo para máxima fiabilidad
+  const fw = document.getElementById("qrFormWrapper");
+  if (fw) fw.classList.remove("hidden");
+
+  qrState.editingId = null;
+  const fs_ = document.getElementById("qrFormShortcut");
+  const ft  = document.getElementById("qrFormText");
+  const fc  = document.getElementById("qrFormCategory");
+  const fl  = document.getElementById("qrFormModeLabel");
+  if (fs_) { fs_.value = ""; fs_.focus(); }
+  if (ft)  ft.value = "";
+  if (fc)  fc.value = "";
+  if (fl)  fl.textContent = "Modo: Crear";
 }
 
 function clearForm() {
@@ -411,12 +462,13 @@ function clearForm() {
   if (formShortcut) formShortcut.value = "";
   if (formText) formText.value = "";
   if (formCategory) formCategory.value = "";
+  if (formModeLabel) formModeLabel.textContent = "Modo: Crear";
 
-  if (formModeLabel) {
-    formModeLabel.textContent = "Modo: Crear";
-  }
+  // getElementById directo para evitar problemas de timing
+  var fw = document.getElementById("qrFormWrapper");
+  if (fw) fw.classList.add("hidden");
 
-  console.log("🧹 Formulario limpiado y modo edición cancelado");
+  console.log("🧹 Formulario cerrado");
 }
 
 async function onSaveForm() {
@@ -439,11 +491,13 @@ async function onSaveForm() {
   try {
     if (qrState.editingId) {
       await updateQuickReply(qrState.editingId, payload);
+      showToast("Respuesta rápida actualizada", "success");
     } else {
       await createQuickReply(payload);
-      showToast("Respuesta rápida guardada", "success");   // 👈 AQUÍ VA
+      showToast("Respuesta rápida guardada", "success");
     }
 
+    qrState._lastCompanyId = null;
     await loadQuickReplies();
     clearForm();
   } catch (err) {
@@ -467,36 +521,20 @@ function escapeHtml(text) {
 // Init
 // --------------------------------------------
 function initQuickReplies() {
-  const { btn, closeBtn, search, formSaveBtn, formCancelBtn } = getUI();
 
-  // Siempre registrar shortcuts (solo se ejecuta 1 vez gracias al flag)
   setupShortcuts();
 
-  if (!btn) {
-    console.warn("❌ No existe #quickRepliesBtn");
-    return;
-  }
-
-  btn.addEventListener("click", togglePanel);
-  if (closeBtn) closeBtn.addEventListener("click", closePanel);
-
-  if (search) {
-    search.addEventListener("input", (e) => {
-      filter(e.target.value || "");
+  if (!window._qrDelegationInitialized) {
+    window._qrDelegationInitialized = true;
+    document.addEventListener("click", (e) => {
+      if      (e.target.closest("#quickRepliesBtn"))  togglePanel();
+      else if (e.target.closest("#qrCloseBtn"))       closePanel();
+      else if (e.target.closest("#qrNewBtn"))         openForm();
+      else if (e.target.closest("#qrFormSaveBtn"))    { e.preventDefault(); onSaveForm(); }
+      else if (e.target.closest("#qrFormCancelBtn"))  { e.preventDefault(); clearForm(); }
     });
-  }
-
-  if (formSaveBtn) {
-    formSaveBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      onSaveForm();
-    });
-  }
-
-  if (formCancelBtn) {
-    formCancelBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      clearForm();
+    document.addEventListener("input", (e) => {
+      if (e.target.id === "qrSearchInput") filter(e.target.value || "");
     });
   }
 
@@ -520,7 +558,7 @@ function showToast(message, type = "info") {
   const colors = {
     success: "bg-green-500",
     error: "bg-red-500",
-    info: "bg-gray-800"
+    info: "bg-blue-500"
   };
 
   toast.className =
@@ -572,6 +610,73 @@ function showConfirm(message) {
     btnAccept.addEventListener("click", onAccept);
   });
 }
+
+function reinitQuickReplies() {
+  qrState.isOpen = false;
+  qrState._lastCompanyId = null;
+  clearForm();
+  const panelNow = qs("quickRepliesPanel");
+  if (panelNow) panelNow.classList.add("hidden");
+  const observer = new MutationObserver(() => {
+    const panel = qs("quickRepliesPanel");
+    if (panel && !panel.classList.contains("hidden")) {
+      panel.classList.add("hidden");
+      qrState.isOpen = false;
+    }
+  });
+  observer.observe(document.getElementById("app") || document.body, { childList: true, subtree: true });
+  setTimeout(() => observer.disconnect(), 3000);
+  console.log("🔄 Quick Replies re-inicializado (SPA)");
+}
+window.reinitQuickReplies = reinitQuickReplies;
+
+// ============================================
+// FORMATO WHATSAPP — toolbar del formulario
+// ============================================
+
+// Envuelve el texto seleccionado en el textarea con el marcador dado
+function qrFormatWrap(marker) {
+  const ta = document.getElementById("qrFormText");
+  if (!ta) return;
+  const start = ta.selectionStart;
+  const end   = ta.selectionEnd;
+  const sel   = ta.value.substring(start, end);
+  const replacement = sel.length > 0
+    ? marker + sel + marker          // envolver selección
+    : marker + marker;               // sin selección: poner marcadores vacíos
+  ta.value = ta.value.substring(0, start) + replacement + ta.value.substring(end);
+  // Dejar cursor entre marcadores si no había selección
+  const newPos = sel.length > 0 ? start + replacement.length : start + marker.length;
+  ta.setSelectionRange(newPos, newPos);
+  ta.focus();
+}
+
+// Inserta un salto de línea real en la posición del cursor
+function qrFormatInsertNewline() {
+  const ta = document.getElementById("qrFormText");
+  if (!ta) return;
+  const pos = ta.selectionStart;
+  ta.value = ta.value.substring(0, pos) + "\n" + ta.value.substring(pos);
+  ta.setSelectionRange(pos + 1, pos + 1);
+  ta.focus();
+}
+
+// Limpia marcadores WA del texto (para plataformas sin formato)
+function qrStripWAFormat(text) {
+  return (text || "")
+    .replace(/\*([^*]+)\*/g, "$1")   // *negrita*
+    .replace(/_([^_]+)_/g, "$1")     // _cursiva_
+    .replace(/~([^~]+)~/g, "$1");    // ~tachado~
+}
+
+window.qrFormatWrap         = qrFormatWrap;
+window.qrFormatInsertNewline = qrFormatInsertNewline;
+window.qrStripWAFormat      = qrStripWAFormat;
+
+// ============================================
+window.openForm   = openForm;
+window.clearForm  = clearForm;
+window.onSaveForm = onSaveForm;
 
 document.addEventListener("DOMContentLoaded", () => {
   setTimeout(initQuickReplies, 1000);

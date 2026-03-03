@@ -416,6 +416,7 @@ async function sendMessage() {
 
         selectedMessageToReply = null;
         input.value = '';
+        input.style.height = 'auto'; // resetear altura del textarea
         renderMessages();
 
         const formData = new FormData();

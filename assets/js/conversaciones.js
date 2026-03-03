@@ -11,6 +11,58 @@
 // ============================================
 
 console.log('✅ conversaciones.js (orquestador) cargado');
+// ============================================
+// CONTROL BARRA DE INPUT
+// ============================================
+function setInputBarEnabled(enabled) {
+    const ids = ['messageInput', 'sendButton', 'micButton', 'emojiBtn', 'quickRepliesBtn'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = !enabled;
+        el.style.opacity = enabled ? '' : '0.4';
+        el.style.pointerEvents = enabled ? '' : 'none';
+        el.style.cursor = enabled ? '' : 'not-allowed';
+    });
+    const fileBtn = document.querySelector('button[onclick*="fileInput"]');
+    if (fileBtn) {
+        fileBtn.disabled = !enabled;
+        fileBtn.style.opacity = enabled ? '' : '0.4';
+        fileBtn.style.pointerEvents = enabled ? '' : 'none';
+    }
+    const input = document.getElementById('messageInput');
+    if (input) {
+        input.placeholder = enabled
+            ? 'Escribe un mensaje...'
+            : 'Selecciona una empresa y conversación...';
+    }
+}
+
+// ============================================
+// CONTROL BARRA DE INPUT
+// ============================================
+function setInputBarEnabled(enabled) {
+    const ids = ['messageInput', 'sendButton', 'micButton', 'emojiBtn', 'quickRepliesBtn'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = !enabled;
+        el.style.opacity = enabled ? '' : '0.4';
+        el.style.pointerEvents = enabled ? '' : 'none';
+        el.style.cursor = enabled ? '' : 'not-allowed';
+    });
+    const fileBtn = document.querySelector('button[onclick*="fileInput"]');
+    if (fileBtn) {
+        fileBtn.disabled = !enabled;
+        fileBtn.style.opacity = enabled ? '' : '0.4';
+        fileBtn.style.pointerEvents = enabled ? '' : 'none';
+    }
+    const input = document.getElementById('messageInput');
+    if (input) {
+        input.placeholder = enabled ? 'Escribe un mensaje...' : 'Selecciona una empresa y conversación...';
+    }
+}
+
 
 // ============================================
 // INICIALIZACIÓN
@@ -29,12 +81,8 @@ async function initConversacionesPage() {
         resetChatAndContactPanel();
         setupConversacionesEventListeners();
         await cargarEmpresasYConversaciones();
-
-        // 🔥 IMPORTANTE
-        if (window.initQuickRepliesModule) {
-            window.initQuickRepliesModule();
-        }
-
+        if (typeof reinitQuickReplies === 'function') reinitQuickReplies();
+        setTimeout(() => setInputBarEnabled(false), 150);
         return;
     }
 
@@ -42,11 +90,7 @@ async function initConversacionesPage() {
 
     await cargarEmpresasYConversaciones();
     setupConversacionesEventListeners();
-
-    // 🔥 AQUÍ VA
-    if (window.initQuickRepliesModule) {
-        window.initQuickRepliesModule();
-    }
+    setTimeout(() => setInputBarEnabled(false), 150);
 
     console.log('✅ Página de conversaciones inicializada');
 }
@@ -69,6 +113,7 @@ function setupConversacionesEventListeners() {
                 currentConversation = null;
                 renderConversations();
                 mostrarEstadoSinEmpresaSeleccionada();
+                setInputBarEnabled(false);
 
                 if (typeof hideContactPanel === "function") {
                 hideContactPanel();
@@ -79,10 +124,8 @@ function setupConversacionesEventListeners() {
             currentCompanyId = companyId;
             resetChatAndContactPanel();
             await cargarConversacionesPorEmpresa(companyId);
-            if (window.reloadQuickReplies) {
-                window.reloadQuickReplies();
-}
             mostrarEstadoSinConversacionSeleccionada();
+            setInputBarEnabled(true);
         });
     }
 
@@ -105,6 +148,8 @@ function setupConversacionesEventListeners() {
 // EXPONER FUNCIONES GLOBALMENTE
 // ============================================
 window.initConversacionesPage = initConversacionesPage;
+window.setInputBarEnabled = setInputBarEnabled;
+window.setInputBarEnabled = setInputBarEnabled;
 
 // Estas funciones las expone conv-messages.js directamente
 
