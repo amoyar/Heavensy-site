@@ -95,7 +95,12 @@ function togglePanel() {
 // --------------------------------------------
 // Atajos
 // --------------------------------------------
+let _shortcutsInitialized = false;
+
 function setupShortcuts() {
+  if (_shortcutsInitialized) return;
+  _shortcutsInitialized = true;
+
   const input = getMessageInput();
 
   // Detectar "/" para abrir panel
@@ -464,6 +469,9 @@ function escapeHtml(text) {
 function initQuickReplies() {
   const { btn, closeBtn, search, formSaveBtn, formCancelBtn } = getUI();
 
+  // Siempre registrar shortcuts (solo se ejecuta 1 vez gracias al flag)
+  setupShortcuts();
+
   if (!btn) {
     console.warn("❌ No existe #quickRepliesBtn");
     return;
@@ -491,8 +499,6 @@ function initQuickReplies() {
       clearForm();
     });
   }
-
-  setupShortcuts();
 
   setInterval(() => {
     const companyId = getCurrentCompanyId();
