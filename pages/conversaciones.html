@@ -286,21 +286,55 @@
     </div>
   </div>
 
-  <!-- Formulario -->
-  <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
-    <div class="grid grid-cols-12 gap-2">
+  <!-- Botones abrir/cerrar formulario -->
+  <div class="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
+    <button id="qrOpenFormBtn"
+      onclick="document.getElementById('qrFormWrapper').classList.remove('hidden'); document.getElementById('qrOpenFormBtn').classList.add('hidden'); document.getElementById('qrCloseFormBtn').classList.remove('hidden');"
+      class="flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-800 font-medium transition">
+      <i class="fas fa-plus text-[10px]"></i> Nueva respuesta
+    </button>
+    <button id="qrCloseFormBtn"
+      onclick="document.getElementById('qrFormWrapper').classList.add('hidden'); document.getElementById('qrCloseFormBtn').classList.add('hidden'); document.getElementById('qrOpenFormBtn').classList.remove('hidden');"
+      class="hidden flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-800 font-medium transition">
+      <i class="fas fa-times text-[10px]"></i> Cerrar
+    </button>
+  </div>
+
+  <!-- Formulario (oculto por defecto) -->
+  <div id="qrFormWrapper" class="hidden px-4 py-3 border-b border-gray-100 bg-gray-50">
+    <!-- Fila 1: shortcut + categoría -->
+    <div class="grid grid-cols-2 gap-2 mb-2">
       <input id="qrFormShortcut" type="text" placeholder="/hola"
-        class="col-span-3 px-2 py-1 border border-gray-300 rounded-lg text-xs" />
-      <input id="qrFormCategory" type="text" placeholder="Categoría"
-        class="col-span-3 px-2 py-1 border border-gray-300 rounded-lg text-xs" />
-      <input id="qrFormText" type="text" placeholder="Texto de la respuesta..."
-        class="col-span-6 px-2 py-1 border border-gray-300 rounded-lg text-xs" />
+        class="px-2 py-1 border border-gray-300 rounded-lg text-xs" />
+      <div class="relative">
+        <input id="qrFormCategory" type="text" placeholder="Selecciona Categoría o Ingresa nueva..." list="qrCategoryList" autocomplete="off"
+          class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs" />
+        <datalist id="qrCategoryList"></datalist>
+      </div>
     </div>
+
+    <!-- Fila 2: toolbar de formato WA -->
+    <div class="flex items-center gap-1 mb-1 px-1">
+      <span class="text-[10px] text-gray-400 mr-1">Formato WA:</span>
+      <button type="button" onclick="qrFormatWrap('*')"
+        class="w-6 h-6 flex items-center justify-center rounded text-xs font-bold text-gray-600 hover:bg-gray-200 transition" title="Negrita (*texto*)">B</button>
+      <button type="button" onclick="qrFormatWrap('_')"
+        class="w-6 h-6 flex items-center justify-center rounded text-xs italic text-gray-600 hover:bg-gray-200 transition" title="Cursiva (_texto_)">I</button>
+      <button type="button" onclick="qrFormatWrap('~')"
+        class="w-6 h-6 flex items-center justify-center rounded text-xs line-through text-gray-600 hover:bg-gray-200 transition" title="Tachado (~texto~)">S</button>
+      <button type="button" onclick="qrFormatInsertNewline()"
+        class="w-6 h-6 flex items-center justify-center rounded text-xs text-gray-600 hover:bg-gray-200 transition" title="Salto de línea">↵</button>
+    </div>
+
+    <!-- Fila 3: textarea -->
+    <textarea id="qrFormText" rows="3" placeholder="Texto de la respuesta... (selecciona texto y usa los botones de formato)"
+      class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs resize-none focus:outline-none focus:border-purple-400"></textarea>
 
     <div class="flex items-center justify-between mt-2">
       <div class="text-[11px] text-gray-400" id="qrFormModeLabel">Modo: Crear</div>
       <div class="flex gap-2">
         <button id="qrFormCancelBtn"
+          onclick="document.getElementById('qrFormWrapper').classList.add('hidden'); document.getElementById('qrCloseFormBtn').classList.add('hidden'); document.getElementById('qrOpenFormBtn').classList.remove('hidden');"
           class="px-3 py-1 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100">
           Cancelar
         </button>
@@ -357,9 +391,11 @@
   </button>
 
   <!-- Input mensaje -->
-  <input id="messageInput" type="text" placeholder="Escribe un mensaje..."
-    class="flex-1 bg-transparent focus:outline-none text-sm text-gray-900 placeholder-gray-400"
-    onkeypress="if(event.key === 'Enter') sendMessage()" />
+  <textarea id="messageInput" rows="1" placeholder="Escribe un mensaje..."
+    class="flex-1 bg-transparent focus:outline-none text-sm text-gray-900 placeholder-gray-400 resize-none leading-5"
+    style="max-height:60px; overflow-y:auto;"
+    oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,60)+'px';"
+    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
 
   <!-- Micrófono (grabar audio) -->
   <button id="micButton"
@@ -548,7 +584,6 @@
           <i id="contactServicesSectionIcon"
             class="fas fa-chevron-right text-xs text-gray-400 group-hover:text-gray-600 transition-colors"></i>
         </button>
-
         <div id="contactServicesSection" class="hidden">
           <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
             <div id="contactServicesContainer">
