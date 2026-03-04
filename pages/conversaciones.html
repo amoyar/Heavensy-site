@@ -98,75 +98,7 @@
 </div>
 
     </div>
-
-    <!-- Filtros rápidos (COLAPSABLE) -->
-    <!-- <div class="px-3 py-2.5 border-b border-gray-200 bg-gray-50">
-
-      <button onclick="toggleLeftSection('filtersSection')"
-        class="w-full flex items-center justify-between text-xs font-bold text-gray-600 mb-2">
-        <span>Filtros</span>
-        <i id="filtersSectionIcon" class="fas fa-chevron-down text-xs"></i>
-      </button>
-
-      <div id="filtersSection" class="space-y-1 bg-white rounded-xl p-2 shadow-sm">
-        <button
-          class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-gradient-to-r from-purple-400 to-purple-500 text-white font-medium text-xs shadow-sm hover:shadow-md transition-all">
-          <i class="fas fa-check-circle text-sm"></i>
-          <span>Todos</span>
-        </button>
-        <button
-          class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white text-gray-700 text-xs hover:bg-gray-100 border border-gray-200 transition-all">
-          <i class="fas fa-clock text-blue-500 text-sm"></i>
-          <span>No leídos</span>
-        </button>
-        <button
-          class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white text-gray-700 text-xs hover:bg-gray-100 border border-gray-200 transition-all">
-          <i class="fas fa-exclamation-circle text-red-500 text-sm"></i>
-          <span>Urgentes</span>
-        </button>
-      </div>
-    </div> -->
-
-
-
-    <!-- Sección de Tags (COLAPSABLE) -->
-    <!-- <div class="px-3 py-2.5 border-b border-gray-200 bg-white">
-
-      <button onclick="toggleLeftSection('tagsSection')"
-        class="w-full flex items-center justify-between text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-        <span class="flex items-center gap-1.5">
-          <i class="fas fa-tags text-purple-600 text-xs"></i>
-          Tags
-        </span>
-        <i id="tagsSectionIcon" class="fas fa-chevron-right text-xs"></i>
-      </button>
-
-      <div id="tagsSection" class="space-y-1 bg-gray-50 rounded-xl p-2 shadow-sm hidden">
-        <button
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-gray-700 text-xs hover:bg-blue-100 transition-all">
-          <div class="flex items-center gap-1.5">
-            <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-            <span class="font-medium">No leídos</span>
-          </div>
-          <span class="bg-blue-500 text-white px-1.5 py-0.5 rounded-full text-xs font-bold shadow-sm">1</span>
-        </button>
-
-        <button
-          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-purple-50 border border-purple-100 text-gray-700 text-xs hover:bg-purple-100 transition-all">
-          <div class="flex items-center gap-1.5">
-            <div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
-            <span class="font-medium">No Leídos</span>
-          </div>
-          <span class="bg-green-500 text-white px-1.5 py-0.5 rounded-full text-xs shadow-sm">
-            <i class="fab fa-whatsapp"></i>
-          </span>
-        </button>
-      </div>
-    </div> -->
-
-
-
-    
+   
     <div class="flex-1 overflow-y-auto bg-white" id="conversationsList">
       <!-- JS inyecta las conversaciones aquí -->
     </div>
@@ -265,8 +197,6 @@
         </div>
         <!-- Barra de entrada (Altura reducida py-1.0) -->
          <!-- ============================= -->
-<!-- ⚡ Panel de Respuestas Rápidas -->
-<!-- ============================= -->
 <!-- ============================= -->
 <!-- ⚡ Panel de Respuestas Rápidas -->
 <!-- ============================= -->
@@ -437,11 +367,12 @@
 
 
   <!-- COLUMNA 3: Panel de Contacto con bordes mejorados -->
-  <div id="contactPanel" class="w-56 bg-white border-l border-gray-200 flex flex-col overflow-y-auto overflow-x-hidden shadow-lg hidden">
+<!-- COLUMNA 3: Panel de Contacto -->
+<div id="contactPanel" class="w-64 bg-white border-l border-gray-200 flex flex-col overflow-y-auto overflow-x-hidden shadow-lg hidden">
 
-<!-- Header del Contacto -->
-<div class="p-2 border-b border-gray-200 text-center flex flex-col items-center">
-  
+<!-- HEADER CONTACTO -->
+<div class="p-3 border-b border-gray-200 text-center flex flex-col items-center">
+
   <div id="contactHeaderAvatar"
        class="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center mb-2">
   </div>
@@ -451,151 +382,278 @@
   <h3 id="contactHeaderName" class="font-bold text-gray-900 text-sm mb-1">—</h3>
 
   <div id="contactHeaderMeta" class="flex items-center justify-center gap-2 text-xs">
-    <!-- Rating y plan se llenan dinámicamente desde contacts.js -->
   </div>
 
-  <button class="text-gray-400 hover:text-purple-600 text-xs mt-1 p-1 hover:bg-gray-100 rounded-lg transition-all">
-    <i class="fas fa-ellipsis-h"></i>
+  <!-- BOTON CONECTAR -->
+  <button id="connectPartnerBtn"
+    class="mt-2 flex items-center border border-gray-300 rounded-full gap-2 px-3 py-1.5 bg-gray-100 hover:bg-purple-50 text-gray-700 rounded-full text-xs transition-all shadow-sm">
+
+    <img src="assets/img/logo_no_socio.png"
+         class="w-6 h-6 object-contain">
+
+    <span>Conectar</span>
+
   </button>
+
 </div>
 
 
-    <!-- Información del Contacto (COLAPSABLE) -->
-    <div class="border-b border-gray-200">
+<!-- ============================= -->
+<!-- GRUPO CONTACTO -->
+<!-- ============================= -->
+
+<button onclick="toggleRightSection('contactGroup')"
+class="w-full flex items-center justify-between px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider hover:bg-gray-50">
+
+<div class="flex items-center gap-2">
+<i class="fas fa-user"></i>
+Contacto
+</div>
+
+<i id="contactGroupIcon" class="fas fa-chevron-down text-[10px]"></i>
+
+</button>
 
 
-      <button onclick="toggleRightSection('contactSection')"
-        class="w-full flex items-center justify-between px-4 py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors group">
-        <div class="flex items-center gap-2">
-          <i class="fas fa-info-circle text-purple-600 text-sm"></i>
-          <span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Contacto</span>
-        </div>
-        <i id="contactSectionIcon"
-          class="fas fa-chevron-right text-xs text-gray-400 group-hover:text-gray-600 transition-colors"></i>
-      </button>
+<div id="contactGroup">
 
 
+<!-- INFORMACIÓN -->
+<div class="border-b border-gray-200">
 
-      <div id="contactSection">
-        <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
+<button onclick="toggleRightSection('contactSection')"
+class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50">
 
-          <!-- Teléfono principal -->
-          <div class="bg-white border border-gray-100 rounded-lg p-3">
-            <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-lg bg-green-500 flex items-center justify-center shadow-sm">
-                <i class="fab fa-whatsapp text-white"></i>
-              </div>
-              <div>
-                <p id="contactPhone" class="text-sm font-bold text-gray-900">—</p>
-                <p class="text-xs text-gray-500">Principal</p>
-              </div>
-            </div>
-          </div>
+<div class="flex items-center gap-2">
+<i class="fas fa-info-circle text-purple-600 text-sm"></i>
+<span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Información</span>
+</div>
 
-          <!-- Estado -->
-          <div id="contactStatus"
-            class="flex items-center gap-2 text-xs bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1.5">
-            <div class="w-2 h-2 rounded-full bg-gray-400"></div>
-            <span class="text-gray-600 font-semibold">Sin estado</span>
-          </div>
+<i id="contactSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
 
-        </div>
-      </div>
-
-      <!-- Tags (COLAPSABLE) -->
-      <div class="border-b border-gray-200">
+</button>
 
 
-        <button onclick="toggleRightSection('contactTagsSection')"
-          class="w-full flex items-center justify-between px-4 py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors group">
-          <div class="flex items-center gap-2">
-            <i class="fas fa-tags text-purple-600 text-sm"></i>
-            <span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Tags</span>
-          </div>
-          <i id="contactTagsSectionIcon"
-            class="fas fa-chevron-right text-xs text-gray-400 group-hover:text-gray-600 transition-colors"></i>
-        </button>
+<div id="contactSection">
+
+<div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
+
+<div class="bg-white border border-gray-100 rounded-lg p-3">
+
+<div class="flex items-center gap-2.5">
+
+<div class="w-9 h-9 rounded-lg bg-green-500 flex items-center justify-center">
+<i class="fab fa-whatsapp text-white"></i>
+</div>
+
+<div>
+<p id="contactPhone" class="text-sm font-bold text-gray-900">—</p>
+<p class="text-xs text-gray-500">Principal</p>
+</div>
+
+</div>
+</div>
+
+<div id="contactStatus"
+class="flex items-center gap-2 text-xs bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1.5">
+
+<div class="w-2 h-2 rounded-full bg-gray-400"></div>
+<span class="text-gray-600 font-semibold">Sin estado</span>
+
+</div>
+
+</div>
+
+</div>
+</div>
 
 
+<!-- EMBUDOS -->
+<div class="border-b border-gray-200">
 
-        <div id="contactTagsSection" class="hidden">
-          <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100 w-full overflow-hidden">
-            <!-- Contenedor dinámico de tags -->
-            <div id="contactTagsContainer" class="flex flex-wrap gap-1.5 mb-2.5 w-full"></div>
+<button onclick="toggleRightSection('funnelsSection')"
+class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50">
 
-            <!-- Input para nuevo tag -->
-            <div class="flex items-center gap-1 w-full">
-              <input id="newTagInput" type="text" placeholder="Nuevo tag..."
-                class="flex-1 min-w-0 px-2 py-1 border border-gray-300 rounded-lg text-xs" />
+<div class="flex items-center gap-2">
+<i class="fas fa-filter text-purple-600 text-sm"></i>
+<span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Embudos</span>
+  <span id="funnelsCounter"
+    class="ml-auto text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
+    0
+  </span>
+</div>
 
-              <input id="newTagColor" type="color" value="#7c3aed"
-                class="w-8 h-8 p-0 border border-gray-300 rounded-lg cursor-pointer flex-shrink-0"
-                title="Color del tag" />
+<i id="funnelsSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
 
-              <button onclick="addTag()"
-                class="w-8 h-8 flex items-center justify-center bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700 flex-shrink-0">+</button>
-            </div>
-
-          </div>
-        </div>
-      </div>
-      <!-- Notas (COLAPSABLE) -->
-      <div class="border-b border-gray-200">
-
-        <button onclick="toggleRightSection('notesSection')"
-          class="w-full flex items-center justify-between px-4 py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors group">
-          <div class="flex items-center gap-2">
-            <i class="fas fa-sticky-note text-purple-600 text-sm"></i>
-            <span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Notas</span>
-          </div>
-          <i id="notesSectionIcon"
-            class="fas fa-chevron-right text-xs text-gray-400 group-hover:text-gray-600 transition-colors"></i>
-        </button>
+</button>
 
 
+<div id="funnelsSection" class="hidden">
 
-        <div id="notesSection" class="hidden">
-          <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+<div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
 
-            <!-- Contenedor dinámico de notas -->
-            <div id="contactNotesContainer" class="space-y-2 mb-2"></div>
+<div id="contactFunnelsContainer">
+<p class="text-xs text-gray-400">Sin embudos asignados</p>
+</div>
 
-            <!-- Input nueva nota -->
-            <textarea id="newNoteInput" placeholder="Escribir nota..."
-              class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs mb-2"></textarea>
+</div>
 
-            <button onclick="addNote()"
-              class="w-full px-3 py-1 bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700">
-              Agregar nota
-            </button>
+</div>
 
-          </div>
-        </div>
-      </div>
+</div>
 
-      <!-- SERVICIOS (COLAPSABLE) -->
-      <div class="border-b border-gray-200">
-        <button onclick="toggleRightSection('contactServicesSection')"
-          class="w-full flex items-center justify-between px-4 py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors group">
-          <div class="flex items-center gap-2">
-            <i class="fas fa-concierge-bell text-purple-600 text-sm"></i>
-            <span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Servicios</span>
-          </div>
-          <i id="contactServicesSectionIcon"
-            class="fas fa-chevron-right text-xs text-gray-400 group-hover:text-gray-600 transition-colors"></i>
-        </button>
-        <div id="contactServicesSection" class="hidden">
-          <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
-            <div id="contactServicesContainer">
-              <p class="text-xs text-gray-400 px-1">Selecciona un contacto.</p>
-            </div>
-          </div>
-        </div>
-      </div>
 
-    </div>
+<!-- TAGS -->
+<div class="border-b border-gray-200">
 
-  </div>
+<button onclick="toggleRightSection('contactTagsSection')"
+class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+
+<div class="flex items-center gap-2">
+<i class="fas fa-tags text-purple-600 text-sm"></i>
+<span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Tags</span>
+  <span id="tagsCounter"
+    class="ml-auto text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
+    0
+  </span>
+</div>
+
+<i id="contactTagsSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
+
+</button>
+
+
+<div id="contactTagsSection" class="hidden">
+
+<div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+
+<div id="contactTagsContainer" class="flex flex-wrap gap-1.5 mb-2.5"></div>
+
+<div class="flex items-center gap-1">
+
+<input id="newTagInput" type="text" placeholder="Nuevo tag..."
+class="flex-1 px-2 py-1 border border-gray-300 rounded-lg text-xs"/>
+
+<input id="newTagColor" type="color" value="#7c3aed"
+class="w-8 h-8 border border-gray-300 rounded-lg"/>
+
+<button onclick="addTag()"
+class="w-8 h-8 flex items-center justify-center bg-purple-600 text-white rounded-lg text-xs font-bold">
++
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- NOTAS -->
+<div class="border-b border-gray-200">
+
+<button onclick="toggleRightSection('notesSection')"
+class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+
+<div class="flex items-center gap-2">
+<i class="fas fa-sticky-note text-purple-600 text-sm"></i>
+<span data-section="notes"
+class="font-semibold text-gray-800 text-xs uppercase tracking-wider">
+Notas
+</span>
+  <span id="notesCounter"
+    class="ml-auto text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
+    0
+  </span>
+</div>
+
+<i id="notesSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
+
+</button>
+
+
+<div id="notesSection" class="hidden">
+
+<div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+
+<div id="contactNotesContainer" class="space-y-2 mb-2"></div>
+
+<textarea id="newNoteInput"
+placeholder="Escribir nota..."
+class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs mb-2"></textarea>
+
+<button onclick="addNote()"
+class="w-full px-3 py-1 bg-purple-600 text-white rounded-lg text-xs font-bold">
+Agregar nota
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+
+</div>
+
+
+<!-- ============================= -->
+<!-- GRUPO SERVICIOS -->
+<!-- ============================= -->
+
+<button onclick="toggleRightSection('servicesGroup')"
+class="w-full flex items-center justify-between px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider hover:bg-gray-50">
+
+<div class="flex items-center gap-2">
+<i class="fas fa-bolt"></i>
+Servicios
+</div>
+
+<i id="servicesGroupIcon" class="fas fa-chevron-down text-[10px]"></i>
+
+</button>
+
+
+<div id="servicesGroup">
+
+<div class="border-b border-gray-200">
+
+<button onclick="toggleRightSection('contactServicesSection')"
+class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+
+<div class="flex items-center gap-2">
+<i class="fas fa-concierge-bell text-purple-600 text-sm"></i>
+<span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Servicios</span>
+  <span id="servicesCounter"
+    class="ml-auto text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
+    0
+  </span>
+</div>
+
+<i id="contactServicesSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
+
+</button>
+
+
+<div id="contactServicesSection" class="hidden">
+
+<div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+
+<div id="contactServicesContainer">
+<p class="text-xs text-gray-400 px-1">Selecciona un contacto.</p>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
 
   <!-- mejorar los modales de confirmacion -->
   <div id="qrToastContainer" class="fixed top-5 right-5 z-50 space-y-3"></div>

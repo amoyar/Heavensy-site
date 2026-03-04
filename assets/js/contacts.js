@@ -83,11 +83,53 @@ async function loadContactProfile(userId, phone = null, profileName = null, comp
 // Render principal del panel
 // --------------------------------------------
 function renderContactPanel(contact) {
-    renderContactHeader(contact);   // 👈 nuevo
-    renderTags(contact.tags || []);
-    renderNotes(contact.notes || []);
+
+    renderContactHeader(contact);
+
+    const tags = contact.tags || [];
+    const notes = contact.notes || [];
+    const services = contact.services || [];
+    const funnels = contact.funnel ? [contact.funnel] : [];
+
+    renderTags(tags);
+    renderNotes(notes);
+
+    updatePanelCounters({
+        tags: tags.length,
+        notes: notes.length,
+        services: services.length,
+        funnels: funnels.length
+    });
+
 }
 
+function updatePanelCounters(counts){
+
+    const tagsCounter = document.getElementById("tagsCounter");
+    const notesCounter = document.getElementById("notesCounter");
+    const servicesCounter = document.getElementById("servicesCounter");
+    const funnelsCounter = document.getElementById("funnelsCounter");
+
+    if(tagsCounter){
+        tagsCounter.textContent = counts.tags;
+        tagsCounter.style.display = counts.tags ? "inline-block" : "none";
+    }
+
+    if(notesCounter){
+        notesCounter.textContent = counts.notes;
+        notesCounter.style.display = counts.notes ? "inline-block" : "none";
+    }
+
+    if(servicesCounter){
+        servicesCounter.textContent = counts.services;
+        servicesCounter.style.display = counts.services ? "inline-block" : "none";
+    }
+
+    if(funnelsCounter){
+        funnelsCounter.textContent = counts.funnels;
+        funnelsCounter.style.display = counts.funnels ? "inline-block" : "none";
+    }
+}
 
 // --------------------------------------------
 // TAGS
