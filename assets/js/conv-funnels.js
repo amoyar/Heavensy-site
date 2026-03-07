@@ -163,17 +163,18 @@ function renderFunnels(funnels) {
         const block = document.createElement('div');
         block.className = 'funnel-block';
 
-        // Nombre del embudo con punto de color
-        const title = document.createElement('div');
-        title.className = 'funnel-block-title';
-
-        // Tomar el color de la primera etapa como color del embudo
+        // Nombre del embudo con punto de color + chevron colapsable
         const activeStage = funnel.stages?.find(s => s.id === funnel.current_stage_id);
         const funnelColor = activeStage?.color || '#7c3aed';
 
+        const title = document.createElement('div');
+        title.className = 'funnel-block-title funnel-block-title--toggle';
         title.innerHTML = `
-            <span class="funnel-dot" style="background:${funnelColor}"></span>
-            ${funnel.funnel_name}
+            <div class="funnel-title-left">
+                <span class="funnel-dot" style="background:${funnelColor}"></span>
+                <span>${funnel.funnel_name}</span>
+            </div>
+            <i class="fas fa-chevron-up funnel-chevron"></i>
         `;
         block.appendChild(title);
 
@@ -210,15 +211,31 @@ function renderFunnels(funnels) {
             stagesContainer.appendChild(btn);
         });
 
-        block.appendChild(stagesContainer);
+        // Caja blanca que envuelve botones + timestamp
+        const stagesBox = document.createElement('div');
+        stagesBox.className = 'funnel-stages-box';
+        stagesBox.appendChild(stagesContainer);
 
         // Timestamp última actualización
         if (funnel.updated_at) {
             const ts = document.createElement('div');
             ts.className   = 'funnel-updated-at';
             ts.textContent = `Actualizado: ${_formatRelativeTime(funnel.updated_at)}`;
-            block.appendChild(ts);
+            stagesBox.appendChild(ts);
         }
+
+        block.appendChild(stagesBox);
+
+        // Toggle colapsar/expandir al hacer click en el título
+        title.addEventListener('click', () => {
+            const isOpen = stagesBox.style.display !== 'none';
+            stagesBox.style.display = isOpen ? 'none' : 'block';
+            const chevron = title.querySelector('.funnel-chevron');
+            if (chevron) {
+                chevron.classList.toggle('fa-chevron-up', !isOpen);
+                chevron.classList.toggle('fa-chevron-down', isOpen);
+            }
+        });
 
         // Separador entre embudos (no en el último)
         if (index < funnels.length - 1) {
@@ -287,7 +304,7 @@ function _applyStageStyle(btn, isActive, color) {
         btn.style.fontWeight      = '600';
         btn.classList.add('active');
     } else {
-        btn.style.backgroundColor = '#f3f4f6';
+        btn.style.backgroundColor = '#ffffff';
         btn.style.color           = '#9ca3af';
         btn.style.borderColor     = '#e5e7eb';
         btn.style.fontWeight      = '400';
@@ -341,17 +358,41 @@ function injectFunnelStyles() {
     s.textContent = `
         /* ── Bloque por embudo ── */
         .funnel-block {
-            padding: 8px 12px 4px;
+            padding: 4px 2px 2px;
         }
 
         .funnel-block-title {
-            font-size: 12px;
+            font-size: 11.5px;
             font-weight: 600;
             color: #374151;
-            margin-bottom: 6px;
+            margin-bottom: 3px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
+        }
+
+        .funnel-block-title--toggle {
+            cursor: pointer;
+            justify-content: space-between;
+            padding: 2px 2px;
+            border-radius: 4px;
+            transition: background 0.1s;
+        }
+
+        .funnel-block-title--toggle:hover {
+            background: #f3f4f6;
+        }
+
+        .funnel-title-left {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .funnel-chevron {
+            font-size: 9px;
+            color: #9ca3af;
+            transition: transform 0.15s;
         }
 
         .funnel-dot {
@@ -362,11 +403,20 @@ function injectFunnelStyles() {
             flex-shrink: 0;
         }
 
+        /* ── Caja blanca de botones ── */
+        .funnel-stages-box {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 6px 8px;
+            margin-top: 3px;
+        }
+
         /* ── Contenedor de etapas ── */
         .funnel-stages {
             display: flex;
             flex-wrap: wrap;
-            gap: 4px;
+            gap: 3px;
         }
 
         /* ── Botón de etapa ── */
@@ -374,11 +424,11 @@ function injectFunnelStyles() {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 2px 9px;
+            padding: 1px 8px;
             height: 20px;
             border-radius: 10px;
             border: 1px solid #e5e7eb;
-            font-size: 9px;
+            font-size: 10.5px;
             cursor: pointer;
             transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
             white-space: nowrap;
@@ -397,16 +447,16 @@ function injectFunnelStyles() {
 
         /* ── Timestamp ── */
         .funnel-updated-at {
-            font-size: 11px;
+            font-size: 10px;
             color: #d1d5db;
-            margin-top: 5px;
+            margin-top: 4px;
         }
 
         /* ── Separador entre embudos ── */
         .funnel-separator {
             height: 1px;
-            background: #f3f4f6;
-            margin: 8px 0 4px;
+            background: #ffffff;
+            margin: 4px 0 2px;
         }
 
         /* ── Estados vacío / loading / error ── */
@@ -436,6 +486,21 @@ function injectFunnelStyles() {
 
         .funnel-retry-btn:hover {
             background: #f5f3ff;
+        }
+
+        /* Scrollbar discreto */
+        #contactFunnelsContainer::-webkit-scrollbar {
+            width: 3px;
+        }
+        #contactFunnelsContainer::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #contactFunnelsContainer::-webkit-scrollbar-thumb {
+            background: #e5e7eb;
+            border-radius: 3px;
+        }
+        #contactFunnelsContainer::-webkit-scrollbar-thumb:hover {
+            background: #a78bfa;
         }
     `;
     document.head.appendChild(s);
