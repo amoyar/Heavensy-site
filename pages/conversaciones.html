@@ -151,7 +151,7 @@
       </div>
 
       <button id="toggleMessageOrder" onclick="toggleMessageOrder()"
-        class="p-2 hover:bg-purple-50 rounded-xl transition-all group" title="Cambiar orden">
+        class="p-2 hover:bg-blue-50 rounded-xl transition-all group" title="Cambiar orden">
         <i class="fas fa-arrow-down-short-wide text-gray-500 group-hover:text-purple-600 text-sm"></i>
       </button>
       <button class="p-2 hover:bg-gray-100 rounded-xl transition-all">
@@ -386,7 +386,7 @@
 
   <!-- BOTON CONECTAR -->
   <button id="connectPartnerBtn"
-    class="mt-2 flex items-center border border-gray-300 rounded-full gap-2 px-3 py-1.5 bg-gray-100 hover:bg-purple-50 text-gray-700 rounded-full text-xs transition-all shadow-sm">
+    class="mt-2 flex items-center border border-gray-300 rounded-full gap-2 px-3 py-1.5 bg-gray-100 hover:bg-blue-50 text-gray-700 rounded-full text-xs transition-all shadow-sm">
 
     <img src="assets/img/logo_no_socio.png"
          class="w-6 h-6 object-contain">
@@ -403,15 +403,14 @@
 <!-- ============================= -->
 
 <button onclick="toggleRightSection('contactGroup')"
-class="w-full flex items-center justify-between px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider hover:bg-gray-50">
-
-<div class="flex items-center gap-2">
-<i class="fas fa-user"></i>
-Contacto
+class="w-full flex items-center justify-between px-4 py-2.5 bg-blue-50 hover:bg-blue-100 transition-colors border-b border-blue-200">
+<div class="flex items-center gap-2.5">
+  <div class="w-5 h-5 rounded bg-blue-200 flex items-center justify-center flex-shrink-0">
+    <i class="fas fa-user text-blue-700 text-[10px]"></i>
+  </div>
+  <span class="text-xs font-extrabold text-blue-800 uppercase tracking-wide">Contacto</span>
 </div>
-
-<i id="contactGroupIcon" class="fas fa-chevron-down text-[10px]"></i>
-
+<i id="contactGroupIcon" class="fas fa-chevron-down text-[10px] text-blue-400"></i>
 </button>
 
 
@@ -422,15 +421,14 @@ Contacto
 <div class="border-b border-gray-200">
 
 <button onclick="toggleRightSection('contactSection')"
-class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50">
-
-<div class="flex items-center gap-2">
-<i class="fas fa-info-circle text-purple-600 text-sm"></i>
-<span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Información</span>
+class="w-full flex items-center justify-between px-4 py-3 hover:bg-blue-50 transition-colors">
+<div class="flex items-center gap-2.5">
+  <div class="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center flex-shrink-0">
+    <i class="fas fa-info-circle text-indigo-500 text-[10px]"></i>
+  </div>
+  <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Información</span>
 </div>
-
 <i id="contactSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
-
 </button>
 
 
@@ -472,19 +470,15 @@ class="flex items-center gap-2 text-xs bg-gray-100 border border-gray-200 rounde
 <div class="border-b border-gray-200">
 
 <button onclick="toggleRightSection('funnelsSection')"
-class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50">
-
-<div class="flex items-center gap-2">
-<i class="fas fa-filter text-purple-600 text-sm"></i>
-<span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Embudos</span>
-  <span id="funnelsCounter"
-    class="ml-auto text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
-    0
-  </span>
+class="w-full flex items-center justify-between px-4 py-3 hover:bg-blue-50 transition-colors">
+<div class="flex items-center gap-2.5">
+  <div class="w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center flex-shrink-0">
+    <i class="fas fa-filter text-purple-600 text-[10px]"></i>
+  </div>
+  <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Embudos</span>
+  <span id="funnelsCounter" class="ml-2 text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-semibold">0</span>
 </div>
-
 <i id="funnelsSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
-
 </button>
 
 
@@ -507,19 +501,15 @@ class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50">
 <div class="border-b border-gray-200">
 
 <button onclick="toggleRightSection('contactTagsSection')"
-class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50">
-
-<div class="flex items-center gap-2">
-<i class="fas fa-tags text-purple-600 text-sm"></i>
-<span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Tags</span>
-  <span id="tagsCounter"
-    class="ml-auto text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
-    0
-  </span>
+class="w-full flex items-center justify-between px-4 py-3 hover:bg-blue-50 transition-colors">
+<div class="flex items-center gap-2.5">
+  <div class="w-6 h-6 rounded-md bg-pink-100 flex items-center justify-center flex-shrink-0">
+    <i class="fas fa-tags text-pink-500 text-[10px]"></i>
+  </div>
+  <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Tags</span>
+  <span id="tagsCounter" class="ml-2 text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-semibold">0</span>
 </div>
-
 <i id="contactTagsSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
-
 </button>
 
 
@@ -555,22 +545,15 @@ class="w-8 h-8 flex items-center justify-center bg-purple-600 text-white rounded
 <div class="border-b border-gray-200">
 
 <button onclick="toggleRightSection('notesSection')"
-class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50">
-
-<div class="flex items-center gap-2">
-<i class="fas fa-sticky-note text-purple-600 text-sm"></i>
-<span data-section="notes"
-class="font-semibold text-gray-800 text-xs uppercase tracking-wider">
-Notas
-</span>
-  <span id="notesCounter"
-    class="ml-auto text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
-    0
-  </span>
+class="w-full flex items-center justify-between px-4 py-3 hover:bg-blue-50 transition-colors">
+<div class="flex items-center gap-2.5">
+  <div class="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center flex-shrink-0">
+    <i class="fas fa-sticky-note text-amber-500 text-[10px]"></i>
+  </div>
+  <span data-section="notes" class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Notas</span>
+  <span id="notesCounter" class="ml-2 text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-semibold">0</span>
 </div>
-
 <i id="notesSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
-
 </button>
 
 
@@ -604,15 +587,14 @@ Agregar nota
 <!-- ============================= -->
 
 <button onclick="toggleRightSection('servicesGroup')"
-class="w-full flex items-center justify-between px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider hover:bg-gray-50">
-
-<div class="flex items-center gap-2">
-<i class="fas fa-bolt"></i>
-Servicios
+class="w-full flex items-center justify-between px-4 py-2.5 bg-blue-50 hover:bg-blue-100 transition-colors border-b border-blue-200 mt-1">
+<div class="flex items-center gap-2.5">
+  <div class="w-5 h-5 rounded bg-blue-200 flex items-center justify-center flex-shrink-0">
+    <i class="fas fa-bolt text-blue-700 text-[10px]"></i>
+  </div>
+  <span class="text-xs font-extrabold text-blue-800 uppercase tracking-wide">Servicios</span>
 </div>
-
-<i id="servicesGroupIcon" class="fas fa-chevron-down text-[10px]"></i>
-
+<i id="servicesGroupIcon" class="fas fa-chevron-down text-[10px] text-blue-400"></i>
 </button>
 
 
@@ -621,19 +603,15 @@ Servicios
 <div class="border-b border-gray-200">
 
 <button onclick="toggleRightSection('contactServicesSection')"
-class="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50">
-
-<div class="flex items-center gap-2">
-<i class="fas fa-concierge-bell text-purple-600 text-sm"></i>
-<span class="font-semibold text-gray-800 text-xs uppercase tracking-wider">Servicios</span>
-  <span id="servicesCounter"
-    class="ml-auto text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
-    0
-  </span>
+class="w-full flex items-center justify-between px-4 py-3 hover:bg-blue-50 transition-colors">
+<div class="flex items-center gap-2.5">
+  <div class="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center flex-shrink-0">
+    <i class="fas fa-concierge-bell text-orange-500 text-[10px]"></i>
+  </div>
+  <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Servicios</span>
+  <span id="servicesCounter" class="ml-2 text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-semibold">0</span>
 </div>
-
 <i id="contactServicesSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
-
 </button>
 
 

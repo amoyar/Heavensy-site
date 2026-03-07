@@ -82,7 +82,7 @@ function renderServicesPanel() {
 
   // ── Servicios asignados al contacto ──────────────────────
   if (contactServices.length === 0) {
-    html += `<p class="text-xs text-gray-400 px-1 mb-2">Sin servicios asignados.</p>`;
+    html += `<p class="text-sm text-gray-400 px-1 mb-2">Sin servicios asignados.</p>`;
   } else {
     contactServices.forEach(svc => {
       const isOpen = !!serviciosState.expanded[svc.company_service_id];
@@ -96,28 +96,28 @@ function renderServicesPanel() {
              onclick="svcToggleExpand('${csId}')">
           <div class="flex items-center gap-1.5">
             <div class="w-2 h-2 rounded-full flex-shrink-0" style="background:${color}"></div>
-            <span class="text-xs font-medium text-gray-700">${svc.name}</span>
-            ${slots.length > 0 ? `<span class="text-[9px] bg-purple-100 text-purple-600 px-1 rounded-full">${slots.length}</span>` : ""}
+            <span class="text-xs font-semibold text-gray-800">${svc.name}</span>
+            ${slots.length > 0 ? `<span class="text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full font-semibold">${slots.length}</span>` : ""}
           </div>
           <div class="flex items-center gap-1">
             <button onclick="event.stopPropagation(); svcOpenAddSlot('${csId}')"
-              class="text-[10px] text-gray-400 hover:text-purple-600 p-0.5 rounded transition" title="Agregar cupo">
+              class="text-xs text-gray-400 hover:text-purple-600 p-0.5 rounded transition" title="Agregar cupo">
               <i class="fas fa-plus"></i>
             </button>
             <button onclick="event.stopPropagation(); svcRemoveService('${csId}')"
-              class="text-[10px] text-gray-400 hover:text-red-500 p-0.5 rounded transition" title="Quitar servicio">
+              class="text-xs text-gray-400 hover:text-red-500 p-0.5 rounded transition" title="Quitar servicio">
               <i class="fas fa-times"></i>
             </button>
-            <i class="fas fa-chevron-${isOpen ? "up" : "down"} text-[9px] text-gray-300"></i>
+            <i class="fas fa-chevron-${isOpen ? "up" : "down"} text-[10px] text-gray-300"></i>
           </div>
         </div>
 
         ${isOpen ? `
         <div class="px-2 pb-2 bg-gray-50 space-y-1">
           ${slots.length === 0
-            ? `<p class="text-[10px] text-gray-400 py-1">Sin cupos registrados.</p>`
+            ? `<p class="text-xs text-gray-400 py-1">Sin cupos registrados.</p>`
             : slots.map(slot => `
-              <div class="flex items-center justify-between bg-white border border-gray-100 rounded px-2 py-1 text-[10px]">
+              <div class="flex items-center justify-between bg-white border border-gray-100 rounded px-2 py-1.5 text-xs">
                 <div>
                   <span class="font-medium text-purple-700">${fmtSlotDate(slot.datetime)}</span>
                   ${slot.provider ? `<span class="text-gray-400 ml-1">· ${slot.provider}</span>` : ""}
@@ -125,22 +125,22 @@ function renderServicesPanel() {
                 </div>
                 <button onclick="svcDeleteSlotUI('${csId}','${slot.id}')"
                   class="text-gray-300 hover:text-red-400 transition ml-1">
-                  <i class="fas fa-trash text-[9px]"></i>
+                  <i class="fas fa-trash text-[10px]"></i>
                 </button>
               </div>`).join("")
           }
           <div id="svcSlotForm_${csId}" class="hidden mt-1 space-y-1">
             <input type="datetime-local" id="svcSlotDatetime_${csId}"
-              class="w-full text-[10px] border border-gray-200 rounded px-1.5 py-1 focus:outline-none focus:border-purple-400"/>
+              class="w-full text-xs border border-gray-200 rounded px-1.5 py-1 focus:outline-none focus:border-purple-400"/>
             <input type="text" id="svcSlotProvider_${csId}" placeholder="Profesional (opcional)"
-              class="w-full text-[10px] border border-gray-200 rounded px-1.5 py-1 focus:outline-none focus:border-purple-400"/>
+              class="w-full text-xs border border-gray-200 rounded px-1.5 py-1 focus:outline-none focus:border-purple-400"/>
             <input type="number" id="svcSlotDuration_${csId}" placeholder="Duración (min)" value="60"
-              class="w-full text-[10px] border border-gray-200 rounded px-1.5 py-1 focus:outline-none focus:border-purple-400"/>
+              class="w-full text-xs border border-gray-200 rounded px-1.5 py-1 focus:outline-none focus:border-purple-400"/>
             <div class="flex gap-1">
               <button onclick="svcSaveSlot('${csId}')"
-                class="flex-1 text-[10px] bg-purple-600 text-white rounded px-2 py-1 hover:bg-purple-700 transition">Guardar</button>
+                class="flex-1 text-xs bg-purple-600 text-white rounded px-2 py-1 hover:bg-purple-700 transition">Guardar</button>
               <button onclick="document.getElementById('svcSlotForm_${csId}').classList.add('hidden')"
-                class="text-[10px] text-gray-400 px-2 py-1 border border-gray-200 rounded hover:bg-gray-100 transition">Cancelar</button>
+                class="text-xs text-gray-400 px-2 py-1 border border-gray-200 rounded hover:bg-gray-100 transition">Cancelar</button>
             </div>
           </div>
         </div>` : ""}
@@ -158,7 +158,7 @@ function renderServicesPanel() {
     html += `
     <div class="flex gap-1">
       <select id="svcCompanySelect"
-        class="flex-1 text-[10px] border border-gray-200 rounded px-1.5 py-1 focus:outline-none focus:border-purple-400">
+        class="flex-1 text-xs border border-gray-200 rounded px-1.5 py-1 focus:outline-none focus:border-purple-400">
         <option value="">+ Asignar servicio...</option>
         ${available.map(cs => {
           const name = cs.name_override || cs._name || cs.effective_name || "";
@@ -167,10 +167,10 @@ function renderServicesPanel() {
         }).join("")}
       </select>
       <button onclick="svcAssignFromSelect()"
-        class="text-[10px] bg-purple-600 text-white rounded px-2 py-1 hover:bg-purple-700 transition">OK</button>
+        class="text-xs bg-purple-600 text-white rounded px-2 py-1 hover:bg-purple-700 transition">OK</button>
     </div>`;
   } else {
-    html += `<p class="text-[10px] text-gray-400">Todos los servicios de la empresa ya asignados.</p>`;
+    html += `<p class="text-xs text-gray-400">Todos los servicios de la empresa ya asignados.</p>`;
   }
 
   html += `</div>`;

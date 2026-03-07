@@ -121,7 +121,12 @@ async function onStageClick(funnelId, stageId, clickedBtn, container, color) {
 
         // Actualizar estado local
         const funnel = _funnelData.find(f => f.funnel_id === funnelId);
-        if (funnel) funnel.current_stage_id = stageId;
+        if (funnel) {
+            funnel.current_stage_id = stageId;
+            // Actualizar el punto de color del título
+            const dot = container.closest('.funnel-block')?.querySelector('.funnel-dot');
+            if (dot) dot.style.background = color;
+        }
 
         console.log(`✅ Etapa actualizada: ${funnelId} → ${stageId}`);
 
@@ -150,10 +155,18 @@ function renderFunnels(funnels) {
         const block = document.createElement('div');
         block.className = 'funnel-block';
 
-        // Nombre del embudo
+        // Nombre del embudo con punto de color
         const title = document.createElement('div');
         title.className = 'funnel-block-title';
-        title.textContent = funnel.funnel_name;
+
+        // Tomar el color de la primera etapa como color del embudo
+        const activeStage = funnel.stages?.find(s => s.id === funnel.current_stage_id);
+        const funnelColor = activeStage?.color || '#7c3aed';
+
+        title.innerHTML = `
+            <span class="funnel-dot" style="background:${funnelColor}"></span>
+            ${funnel.funnel_name}
+        `;
         block.appendChild(title);
 
         // Contenedor de etapas
@@ -322,12 +335,21 @@ function injectFunnelStyles() {
         }
 
         .funnel-block-title {
-            font-size: 10.5px;
-            font-weight: 700;
-            color: #6d28d9;
+            font-size: 12px;
+            font-weight: 600;
+            color: #374151;
             margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .funnel-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
         }
 
         /* ── Contenedor de etapas ── */
@@ -365,7 +387,7 @@ function injectFunnelStyles() {
 
         /* ── Timestamp ── */
         .funnel-updated-at {
-            font-size: 8.5px;
+            font-size: 11px;
             color: #d1d5db;
             margin-top: 5px;
         }
