@@ -259,6 +259,11 @@ async function selectConversation(userId, element) {
 
     loadIAStatus(userId, currentCompanyId);
 
+    // Cargar embudos del contacto en el panel derecho
+    if (typeof loadFunnels === "function") {
+        loadFunnels(currentCompanyId, userId);
+    }
+
     if (window.onConversationSelectedForContacts) {
         window.onConversationSelectedForContacts(
             currentConversation.id,

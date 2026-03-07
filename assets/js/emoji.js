@@ -1,219 +1,71 @@
 // ============================================
 // EMOJI.JS — Picker profesional para Heavensy
-// Búsqueda por palabras clave en español
+// Datos cargados desde /api/emojis/all (MongoDB)
 // ============================================
 
 console.log("😊 emoji.js cargado");
 
-// ─── Datos por categoría ──────────────────────────────────────────────────────
-const EMOJI_DATA = {
-  "😊": ["😀","😁","😂","🤣","😃","😄","😅","😆","😉","😊","😋","😎","😍","🥰","😘","😗","😙","😚","🙂","🤗","🤩","🤔","🤨","😐","😑","😶","🙄","😏","😣","😥","😮","🤐","😯","😪","😫","🥱","😴","😌","😛","😜","😝","🤤","😒","😓","😔","😕","🙃","🤑","😲","☹️","🙁","😖","😞","😟","😤","😢","😭","😦","😧","😨","😩","🤯","😬","😰","😱","🥵","🥶","😳","🤪","😵","🥴","😠","😡","🤬","😷","🤒","🤕","🤢","🤮","🤧","😇","🥳","🥺","🤠","🤡","🤥","🤫","🤭","🧐","🤓"],
-  "👋": ["👋","🤚","🖐","✋","🖖","👌","🤌","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦾","🦵","🦶","👂","🦻","👃","🧠","🦷","🦴","👀","👁","👅","👄"],
-  "❤️": ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝","💟","🥰","😍","😘","💏","💑","👨‍👩‍👧","👨‍👩‍👦","👪","🌹","💐","🌺","🌸","🌼","🌻","🌷"],
-  "🎉": ["🎉","🎊","🎈","🎁","🎀","🎗","🎟","🎫","🏆","🥇","🥈","🥉","🏅","🎖","🎪","🤹","🎭","🎨","🎬","🎤","🎧","🎼","🎵","🎶","🎹","🥁","🎷","🎺","🎸","🎻","🎲","♟","🎯","🎳","🎮","🎰","🧩","🪀","🪁"],
-  "🐶": ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🙈","🙉","🙊","🐔","🐧","🐦","🐤","🦆","🦅","🦉","🦇","🐺","🐗","🐴","🦄","🐝","🐛","🦋","🐌","🐞","🐜","🕷","🦂","🐢","🐍","🦎","🐙","🦑","🦐","🦀","🐡","🐠","🐟","🐬","🐳","🐋","🦈","🐊","🐅","🐆","🦓","🐘","🦒","🦘","🐃","🐂","🐄","🐎","🐖","🐏","🐑","🐕","🐈","🐓","🦃","🦚","🦜","🦢","🦩","🕊","🐇","🦝","🦨","🦡","🦦","🦥","🐁","🐀","🐿","🦔"],
-  "🍕": ["🍕","🍔","🌮","🌯","🥙","🧆","🥚","🍳","🥘","🍲","🥣","🥗","🍿","🧈","🥫","🍱","🍘","🍙","🍚","🍛","🍜","🍝","🍠","🍢","🧁","🍡","🍧","🍨","🍦","🥧","🍰","🎂","🍮","🍭","🍬","🍫","🍩","🍪","🌰","🥜","🍯","🧃","🥤","🧋","☕","🍵","🫖","🍺","🍻","🥂","🍷","🥃","🍸","🍹","🧉","🍾","🥐","🥖","🫓","🧀","🥞","🧇","🥓","🌭","🥪"],
-  "🌍": ["🌍","🌎","🌏","🌐","🗺","🧭","🏔","⛰","🌋","🗻","🏕","🏖","🏜","🏝","🏞","🏟","🏛","🏗","🧱","🏘","🏠","🏡","🏢","🏣","🏤","🏥","🏦","🏨","🏩","🏪","🏫","🏬","🏭","🏯","🏰","💒","🗼","🗽","⛪","🕌","🛕","🕍","⛩","🕋","⛲","⛺","🌁","🌃","🏙","🌄","🌅","🌆","🌇","🌉","🎠","🎡","🎢","💈","🎪"],
-  "⚽": ["⚽","🏀","🏈","⚾","🥎","🎾","🏐","🏉","🥏","🎱","🏓","🏸","🏒","🏑","🥍","🏏","🥅","⛳","🏹","🎣","🤿","🥊","🥋","🎽","🛹","🛼","🛷","⛸","🥌","🎿","🏆","🥇","🏋️","🤸","⛹️","🤺","🤾","🏌️","🏇","🧘","🏄","🏊","🤽","🚣","🧗","🚵","🚴"],
-  "✈️": ["✈️","🚀","🛸","🚁","🛶","⛵","🚤","🛥","🛳","⛴","🚢","🚂","🚃","🚄","🚅","🚆","🚇","🚈","🚉","🚊","🚝","🚞","🚋","🚌","🚍","🚎","🚐","🚑","🚒","🚓","🚔","🚕","🚖","🚗","🚘","🚙","🛻","🚚","🏎","🏍","🛵","🚲","🛴","🛹","🛼","🚦","🚥","🧳","⛽","🚧","⚓"],
-  "💡": ["💡","🔦","🕯","🪔","🧯","💰","💴","💵","💶","💷","💸","💳","🪙","💹","📈","📉","📊","📋","📌","📍","📎","🖇","📏","📐","✂️","🗃","🗄","🗑","🔒","🔓","🔑","🗝","🔨","🪓","⛏","⚒","🛠","⚔️","🔫","🏹","🛡","🔧","🪛","🔩","⚙️","🗜","⚖️","🔮","🪄","🧲","🪜","🧰","🔬","🔭","📡","💻","🖥","⌨️","🖱","💾","💿","📀","📱","☎️","📞","📟","📠","🔋","🔌"],
-  "💬": ["💬","💭","🗯","💤","💢","💥","💫","💦","💨","🕳","💣","🔈","🔉","🔊","📢","📣","🔔","🔕","🎵","🎶","✅","❌","❓","❗","⚠️","🚫","🔞","💯","🆕","🆒","🆓","🆙","🆗","🆘","🆚","🅰️","🅱️","🅾️","🅿️","🔝","🔛","🔜","🔚","🔙","🔴","🟠","🟡","🟢","🔵","🟣","⚫","⚪","🟤","🔶","🔷","🔸","🔹","🔺","🔻","💠","🔘","🔲","🔳","▪️","▫️","◾","◽","◼️","◻️","⬛","⬜","🟥","🟧","🟨","🟩","🟦","🟪","🟫"]
-};
+// ─── Cache en memoria (se llena una sola vez por sesión) ──────────────────────
+// { icon: "😊", key: "faces", label: "Caras", order: 1, emojis: [...] }
+let _categories   = null;   // array de categorías
+let _keywords     = null;   // { "😀": ["cara","feliz",...], ... }
+let _loadPromise  = null;   // evita peticiones duplicadas simultáneas
 
-const CAT_LABELS = {
-  "😊":"Caras","👋":"Gestos","❤️":"Amor","🎉":"Celebración",
-  "🐶":"Animales","🍕":"Comida","🌍":"Lugares","⚽":"Deportes",
-  "✈️":"Viajes","💡":"Objetos","💬":"Símbolos"
-};
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+function _authHeaders() {
+  const token =
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("token") ||
+    window._jwtToken || "";
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+  };
+}
 
-// ─── Mapa de palabras clave en español ────────────────────────────────────────
-// Formato: emoji → "kw1 kw2 kw3 ..."
-const KW = {
-  "😀":"cara feliz contento sonrisa alegre","😁":"sonrisa dientes feliz",
-  "😂":"llanto risa carcajada gracioso llorando","🤣":"rodando risa gracioso muerto",
-  "😃":"cara feliz ojos grandes","😄":"sonrisa ojos feliz alegre",
-  "😅":"sudor nervioso alivio","😆":"ojos cerrados risa carcajada",
-  "😉":"guiño pícaro","😊":"feliz tímido sonrojo contento",
-  "😋":"rico comida sabroso","😎":"cool fresco gafas sol",
-  "😍":"enamorado ojos corazón amor","🥰":"amor corazones enamorado",
-  "😘":"beso amor mua","😗":"beso labios","😙":"beso sonrisa",
-  "😚":"beso ojos cerrados","🙂":"leve sonrisa neutral",
-  "🤗":"abrazo cariño feliz","🤩":"ojos estrellas emocionado wow",
-  "🤔":"pensando duda reflexión","🤨":"ceja duda sospecha",
-  "😐":"neutral sin expresión","😑":"aburrido inexpresivo",
-  "😶":"silencio sin boca callado","🙄":"ojos arriba molesto hastío",
-  "😏":"sonrisa maliciosa pícaro","😣":"angustia esfuerzo",
-  "😥":"alivio decepción lágrima","😮":"sorpresa boca abierta",
-  "🤐":"boca cerrada silencio secreto","😯":"sorpresa impactado",
-  "😪":"cansado sueño bostezo","😫":"agotado cansado estresado",
-  "🥱":"bostezo sueño aburrido","😴":"dormido sueño zzz",
-  "😌":"alivio relajado contento","😛":"lengua fuera burla",
-  "😜":"guiño lengua loco","😝":"lengua ojos humor",
-  "😒":"molesto aburrido insatisfecho","😓":"sudor preocupado estrés",
-  "😔":"triste decaído deprimido","😕":"confuso dudoso preocupado",
-  "🙃":"irónico al revés humor","🤑":"dinero rico codicioso",
-  "😲":"sorpresa impactado increíble","☹️":"triste ceño fruncido",
-  "🙁":"ligeramente triste","😖":"confundido angustiado",
-  "😞":"decepcionado triste","😟":"preocupado nervioso",
-  "😤":"frustrado orgulloso vapor nariz","😢":"llorando triste lágrima",
-  "😭":"llorando mucho triste sollozando","😦":"descontento sorpresa",
-  "😧":"angustiado preocupado","😨":"miedo asustado",
-  "😩":"agotado frustrado weary","🤯":"mente explotada impactado",
-  "😬":"incómodo nervioso mueca","😰":"miedo ansioso sudor",
-  "😱":"terror grito horror miedo","🥵":"caliente fiebre vapor",
-  "🥶":"frío helado congelado","😳":"sonrojado avergonzado",
-  "🤪":"loco tonto silly","😵":"mareado aturdido vértigo",
-  "🥴":"mareado borracho confuso","😠":"enojado molesto",
-  "😡":"furioso rojo enojado bravo","🤬":"insultos maldición enojado",
-  "😷":"mascarilla enfermo virus","🤒":"enfermo termómetro fiebre",
-  "🤕":"herido vendaje accidente","🤢":"náuseas enfermo vomitando",
-  "🤮":"vómito náuseas asco","🤧":"estornudo resfriado alérgico",
-  "😇":"ángel aureola inocente bendición","🥳":"fiesta celebración cumpleaños",
-  "🥺":"súplica ojos tiernos por favor","🤠":"vaquero cowboy sombrero",
-  "🤡":"payaso gracioso circo","🤥":"mentiroso nariz larga pinocho",
-  "🤫":"silencio shh secreto","🤭":"sorpresa tímido ups",
-  "🧐":"monóculo investigando curioso","🤓":"nerd lentes estudioso",
-  // Gestos
-  "👋":"hola adiós saludo mano","🤚":"mano alto detente",
-  "🖐":"mano dedos abierta","✋":"alto detente mano","🖖":"vulcano saludo",
-  "👌":"ok perfecto bien","🤌":"perfecto italiano gesto",
-  "✌️":"paz victoria dos dedos","🤞":"dedos cruzados suerte",
-  "👍":"me gusta aprobado bien pulgar arriba","👎":"no aprobado mal pulgar abajo",
-  "👏":"aplausos bravo felicitaciones","🙌":"celebración arriba bien",
-  "🤝":"apretón manos acuerdo trato","🙏":"por favor gracias oración ruego",
-  "💪":"músculo fuerte fuerza brazo","💅":"uñas elegante manicura",
-  // Amor
-  "❤️":"corazón rojo amor","🧡":"corazón naranja","💛":"corazón amarillo",
-  "💚":"corazón verde","💙":"corazón azul","💜":"corazón morado",
-  "🖤":"corazón negro","💔":"corazón roto desamor","❣️":"exclamación corazón",
-  "💕":"dos corazones amor","💗":"corazón latido","💖":"corazón brillante",
-  "💘":"corazón flecha cupido","💝":"corazón lazo regalo",
-  "🌹":"rosa flor amor romántico","💐":"flores ramo regalo",
-  "🌷":"tulipán flor rosa","🌸":"flor cerezo primavera",
-  // Celebración
-  "🎉":"fiesta celebración confeti","🎊":"fiesta sorpresa confeti",
-  "🎈":"globo fiesta celebración","🎁":"regalo presente sorpresa",
-  "🎂":"pastel cumpleaños torta","🏆":"trofeo campeón ganador",
-  "🥇":"oro medalla primero ganador","🎵":"nota musical canción",
-  "🎶":"música notas canción","🎸":"guitarra rock música","🎺":"trompeta música",
-  "🎷":"saxofón jazz música","🎹":"piano música teclado",
-  "🎮":"videojuego jugar consola","🎲":"dado juego azar suerte",
-  // Animales
-  "🐶":"perro can mascota cachorro","🐱":"gato felino mascota",
-  "🐭":"ratón roedor","🐰":"conejo conejito","🦊":"zorro astuto",
-  "🐻":"oso pardo","🐼":"panda china oso","🐯":"tigre felino rayas",
-  "🦁":"león rey selva rugido","🐮":"vaca leche campo",
-  "🐷":"cerdo chancho puerco","🐸":"rana verde anfibio",
-  "🐵":"mono primate","🐶":"perro","🦋":"mariposa insecto vuelo",
-  "🐢":"tortuga lenta reptil","🐍":"serpiente víbora reptil",
-  "🐙":"pulpo tentáculos mar","🦈":"tiburón pez grande mar",
-  "🐬":"delfín mar inteligente","🐳":"ballena mar grande",
-  "🦄":"unicornio mágico","🐝":"abeja miel insecto",
-  "🦋":"mariposa vuelo colores","🐠":"pez tropical colores",
-  "🐟":"pez mar agua","🦅":"águila ave rapaz",
-  "🦉":"búho nocturno sabio","🦜":"loro pájaro colorido habla",
-  // Comida
-  "🍕":"pizza italiana comida","🍔":"hamburguesa burger comida",
-  "🌮":"taco mexicano comida","🌯":"wrap burrito comida",
-  "🥚":"huevo cocina","🍳":"huevo frito sartén cocina",
-  "🍲":"olla guiso cocido","🥗":"ensalada saludable verde",
-  "🍿":"palomitas cine maíz","🍰":"pastel torta postre",
-  "🎂":"pastel cumpleaños torta","🍫":"chocolate dulce cacao",
-  "🍪":"galleta dulce cookie","🍩":"dona rosquilla dulce",
-  "🍦":"helado soft crema","🍨":"helado crema postre",
-  "🧁":"cupcake muffin dulce","☕":"café taza caliente",
-  "🍵":"té infusión caliente","🍺":"cerveza bebida alcohol",
-  "🍷":"vino copa bebida","🥂":"brindis champán celebración",
-  "🍹":"cóctel tropical bebida","🧋":"bubble tea boba bebida",
-  "🥐":"croissant pan desayuno","🍞":"pan panadería","🧀":"queso amarillo",
-  "🌭":"hot dog perro caliente","🥓":"tocino bacon",
-  "🍜":"ramen fideos sopa","🍝":"pasta espagueti italiano",
-  "🍣":"sushi japonés arroz","🍱":"bento japonés comida",
-  // Lugares
-  "🏠":"casa hogar vivienda","🏢":"edificio oficina trabajo",
-  "🏥":"hospital médico salud","🏪":"tienda comercio",
-  "🏫":"escuela colegio educación","🏦":"banco dinero finanzas",
-  "🌍":"mundo tierra planeta globo","🌎":"mundo tierra planeta globo",
-  "🏔":"montaña cima nieve","🏖":"playa mar arena verano",
-  "🏕":"camping carpa naturaleza","🏝":"isla tropical paraíso",
-  "🌋":"volcán lava erupción","🌃":"ciudad noche","🏙":"ciudad skyline",
-  "🗼":"torre eiffel paris","🗽":"estatua libertad nueva york",
-  "⛩":"torii japonés templo","🕌":"mezquita islam",
-  // Deportes
-  "⚽":"fútbol balón deporte","🏀":"baloncesto basket NBA",
-  "🏈":"fútbol americano NFL","⚾":"béisbol pelota MLB",
-  "🎾":"tenis raqueta pelota","🏐":"voleibol","🏊":"nadar piscina natación",
-  "🚴":"bicicleta ciclismo pedalear","🏋️":"pesas gym musculación",
-  "🧘":"yoga meditación zen paz","🏄":"surf ola mar",
-  "🥊":"boxeo pelea guante","🎯":"diana dardo puntería",
-  "🏆":"trofeo campeón victoria","🥇":"oro medalla primero",
-  // Viajes
-  "✈️":"avión vuelo viaje avión","🚀":"cohete espacio nasa",
-  "🚗":"auto coche carro vehículo","🚕":"taxi amarillo transporte",
-  "🚌":"bus autobús transporte","🚂":"tren locomotora ferrocarril",
-  "🚢":"barco crucero mar","🚁":"helicóptero vuelo",
-  "🛸":"ovni ufo nave espacial","🏍":"moto motocicleta",
-  "🚲":"bici bicicleta ecológico","🧳":"maleta equipaje viaje",
-  "⚓":"ancla barco mar","⛽":"gasolina combustible",
-  // Objetos
-  "💡":"idea bombilla luz","📱":"celular móvil teléfono smartphone",
-  "💻":"computadora laptop ordenador","📊":"gráfico estadísticas datos",
-  "📈":"alza subida crecimiento","📉":"baja caída descenso",
-  "🔒":"candado cerrado seguridad","🔑":"llave acceso puerta",
-  "⚙️":"engranaje configuración ajustes","🔧":"llave herramienta arreglar",
-  "🔨":"martillo herramienta construir","🔬":"microscopio ciencia laboratorio",
-  "🔭":"telescopio astronomía estrellas","📡":"antena señal satélite",
-  "💰":"dinero plata billetes","💳":"tarjeta crédito pago",
-  "📋":"portapapeles lista documento","📌":"pin chincheta fijar",
-  "✂️":"tijeras cortar","🔮":"bola cristal magia futuro",
-  "🪄":"varita mágica hechizo","🧲":"imán atraer magnético",
-  // Símbolos
-  "✅":"check ok correcto aprobado","❌":"x no incorrecto error",
-  "❓":"pregunta duda interrogación","❗":"exclamación importante alerta",
-  "⚠️":"advertencia cuidado alerta","🚫":"prohibido no permitido",
-  "💯":"cien perfecto completo","🔔":"campana notificación alerta",
-  "🔕":"sin sonido silencio mudo","📢":"megáfono anuncio",
-  "🆕":"nuevo new","🆒":"cool genial","🆓":"gratis free",
-  "🆗":"ok correcto","🆘":"socorro ayuda emergencia",
-  "🔴":"círculo rojo","🟢":"círculo verde","🔵":"círculo azul",
-  "⚫":"círculo negro","⚪":"círculo blanco","🟡":"círculo amarillo",
-  "💬":"burbuja mensaje chat comentario","💭":"pensamiento idea burbuja",
-  "🗯":"enojo burbuja exclamación","🔊":"volumen alto sonido",
-  "🎵":"nota musical canción","🎶":"música notas doble"
-};
+// ─── Carga de datos desde API ─────────────────────────────────────────────────
+async function loadEmojiData() {
+  if (_categories && _keywords) return true;        // ya en cache
+  if (_loadPromise) return _loadPromise;             // petición en vuelo
 
-// Construir índice invertido para búsqueda eficiente
-const SEARCH_INDEX = {}; // "palabra" → [emoji, emoji, ...]
-(function buildIndex() {
-  Object.entries(KW).forEach(([emoji, kws]) => {
-    kws.split(" ").forEach(w => {
-      w = w.toLowerCase().trim();
-      if (!w) return;
-      if (!SEARCH_INDEX[w]) SEARCH_INDEX[w] = [];
-      SEARCH_INDEX[w].push(emoji);
-    });
-  });
-})();
+  _loadPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL || ""}/api/emojis/all`, { headers: _authHeaders() });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      _categories = data.categories || [];
+      _keywords   = data.keywords   || {};
+      console.log(`✅ Emoji data cargada: ${_categories.length} categorías`);
+      return true;
+    } catch (err) {
+      console.error("❌ Error cargando emoji data:", err);
+      _loadPromise = null;   // permitir reintento
+      return false;
+    }
+  })();
 
+  return _loadPromise;
+}
+
+// ─── Búsqueda (client-side sobre cache) ──────────────────────────────────────
 function searchEmojis(query) {
-  const q = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  if (!_keywords) return [];
+
+  const q = query.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
   if (!q) return [];
 
   const scores = {};
 
-  // 1. Coincidencia exacta de palabra
-  Object.entries(SEARCH_INDEX).forEach(([word, emojis]) => {
-    const wNorm = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    if (wNorm === q) {
-      emojis.forEach(e => { scores[e] = (scores[e] || 0) + 10; });
-    } else if (wNorm.startsWith(q)) {
-      emojis.forEach(e => { scores[e] = (scores[e] || 0) + 5; });
-    } else if (wNorm.includes(q)) {
-      emojis.forEach(e => { scores[e] = (scores[e] || 0) + 2; });
-    }
+  Object.entries(_keywords).forEach(([emoji, kwList]) => {
+    kwList.forEach(kw => {
+      const kwNorm = kw.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      if (kwNorm === q)              scores[emoji] = (scores[emoji] || 0) + 10;
+      else if (kwNorm.startsWith(q)) scores[emoji] = (scores[emoji] || 0) + 5;
+      else if (kwNorm.includes(q))   scores[emoji] = (scores[emoji] || 0) + 2;
+    });
   });
 
-  // 2. Ordenar por score desc, mantener orden original para mismos scores
   return Object.entries(scores)
     .sort((a, b) => b[1] - a[1])
     .map(([emoji]) => emoji);
@@ -224,8 +76,8 @@ const PICKER_ID  = "_emojiPicker";
 const RECENT_KEY = "_ep_recent";
 const RECENT_MAX = 24;
 
-let pickerEl      = null;
-let activeCategory = "😊";
+let pickerEl       = null;
+let activeCategory = null;   // se setea al cargar (primera categoría de la API)
 let searchTimeout  = null;
 let isSearching    = false;
 let recentEmojis   = [];
@@ -247,6 +99,7 @@ function injectStyles() {
     @keyframes _epIn  { from{opacity:0;transform:translateY(10px) scale(.96)} to{opacity:1;transform:translateY(0) scale(1)} }
     @keyframes _epOut { from{opacity:1;transform:translateY(0) scale(1)} to{opacity:0;transform:translateY(6px) scale(.97)} }
     @keyframes _epPop { 0%{transform:scale(1)} 40%{transform:scale(1.4)} 70%{transform:scale(.9)} 100%{transform:scale(1)} }
+    @keyframes _epSpin { to { transform: rotate(360deg) } }
 
     #${PICKER_ID} {
       position:fixed;width:338px;height:408px;
@@ -280,10 +133,12 @@ function injectStyles() {
     }
     #_epSearch:focus { background:#fff;border-color:rgba(139,92,246,.4);box-shadow:0 0 0 3px rgba(139,92,246,.08); }
     #_epSearch::placeholder { color:#b0b8c8;font-size:12.5px; }
+    #_epSearch:disabled { opacity:.5;cursor:not-allowed; }
 
     #_epCatBar {
       display:flex;gap:1px;padding:5px 9px;overflow-x:auto;
       scrollbar-width:none;flex-shrink:0;border-bottom:1px solid rgba(0,0,0,.05);
+      min-height:38px;
     }
     #_epCatBar::-webkit-scrollbar { display:none }
     ._epCat {
@@ -326,6 +181,35 @@ function injectStyles() {
     ._epE:active { transform:scale(.9); }
     ._epE.pop { animation:_epPop .25s ease; }
 
+    /* Estado: cargando */
+    #_epLoading {
+      display:none;flex:1;flex-direction:column;
+      align-items:center;justify-content:center;gap:10px;
+      color:#a78bfa;font-size:12.5px;
+    }
+    #_epSpinner {
+      width:22px;height:22px;
+      border:2.5px solid rgba(139,92,246,.2);
+      border-top-color:#7c3aed;
+      border-radius:50%;
+      animation:_epSpin .7s linear infinite;
+    }
+
+    /* Estado: error */
+    #_epError {
+      display:none;flex:1;flex-direction:column;
+      align-items:center;justify-content:center;
+      gap:8px;color:#f87171;font-size:12.5px;padding:20px;text-align:center;
+    }
+    #_epErrorRetry {
+      padding:5px 14px;
+      background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);
+      border-radius:8px;color:#7c3aed;font-size:12px;cursor:pointer;
+      transition:background .15s;
+    }
+    #_epErrorRetry:hover { background:rgba(139,92,246,.18); }
+
+    /* Estado: sin resultados */
     #_epEmpty {
       display:none;flex:1;flex-direction:column;
       align-items:center;justify-content:center;
@@ -339,10 +223,24 @@ function injectStyles() {
     }
     #_epFooter b { color:#c4b5fd;font-weight:600; }
 
-    /* Highlight en resultados de búsqueda */
     ._epE.match { background:rgba(139,92,246,.06); }
   `;
   document.head.appendChild(s);
+}
+
+// ─── Helpers de estado visual ─────────────────────────────────────────────────
+function _showState(state) {
+  // state: "loading" | "error" | "grid" | "empty"
+  const grid    = document.getElementById("_epGrid");
+  const loading = document.getElementById("_epLoading");
+  const error   = document.getElementById("_epError");
+  const empty   = document.getElementById("_epEmpty");
+  if (!grid) return;
+
+  grid.style.display    = state === "grid"    ? "flex" : "none";
+  loading.style.display = state === "loading" ? "flex" : "none";
+  error.style.display   = state === "error"   ? "flex" : "none";
+  empty.style.display   = state === "empty"   ? "flex" : "none";
 }
 
 // ─── Build picker ──────────────────────────────────────────────────────────────
@@ -351,42 +249,41 @@ function buildPicker() {
   loadRecents();
 
   const div = document.createElement("div");
-  const currentYear = new Date().getFullYear();
   div.id = PICKER_ID;
   div.innerHTML = `
     <div id="_epHeader">
       <div id="_epHeaderRow">
         <span id="_epSearchIco">🔍</span>
-        <input id="_epSearch" type="text" placeholder="Buscar emoji…" autocomplete="off" spellcheck="false">
+        <input id="_epSearch" type="text" placeholder="Buscar emoji…"
+               autocomplete="off" spellcheck="false" disabled>
       </div>
     </div>
     <div id="_epCatBar"></div>
     <div id="_epGrid"></div>
-    <div id="_epEmpty"><div class="ico">🔍</div><div>Sin resultados para "<span id="_epEmptyQ"></span>"</div></div>
-    <div id="_epFooter"><b>Heavensy</b> &copy; ${currentYear}</div>
+    <div id="_epLoading"><div id="_epSpinner"></div><span>Cargando emojis…</span></div>
+    <div id="_epError">
+      <span style="font-size:24px">⚠️</span>
+      <span>No se pudo cargar los emojis</span>
+      <button id="_epErrorRetry">Reintentar</button>
+    </div>
+    <div id="_epEmpty">
+      <div class="ico">🔍</div>
+      <div>Sin resultados para "<span id="_epEmptyQ"></span>"</div>
+    </div>
+    <div id="_epFooter"><b>Heavensy</b> &copy; ${new Date().getFullYear()}</div>
   `;
   document.body.appendChild(div);
 
-  // Categorías
-  const bar = div.querySelector("#_epCatBar");
-  Object.keys(EMOJI_DATA).forEach(cat => {
-    const btn = document.createElement("button");
-    btn.className = "_epCat" + (cat === activeCategory ? " on" : "");
-    btn.textContent = cat; btn.title = CAT_LABELS[cat];
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      const s = document.getElementById("_epSearch");
-      if (s) s.value = "";
-      isSearching = false;
-      activeCategory = cat;
-      bar.querySelectorAll("._epCat").forEach(b => b.classList.remove("on"));
-      btn.classList.add("on");
-      renderCat(cat);
-    });
-    bar.appendChild(btn);
+  // Reintento
+  div.querySelector("#_epErrorRetry").addEventListener("click", e => {
+    e.stopPropagation();
+    _categories  = null;
+    _keywords    = null;
+    _loadPromise = null;
+    _initContent();
   });
 
-  // Búsqueda con debounce
+  // Búsqueda con debounce (sobre cache en memoria)
   const searchEl = div.querySelector("#_epSearch");
   searchEl.addEventListener("input", e => {
     clearTimeout(searchTimeout);
@@ -396,33 +293,74 @@ function buildPicker() {
       if (!q) { renderCat(activeCategory); return; }
 
       const results = searchEmojis(q);
-      const emptyQ = document.getElementById("_epEmptyQ");
+      const emptyQ  = document.getElementById("_epEmptyQ");
       if (emptyQ) emptyQ.textContent = q;
+      if (!results.length) { _showState("empty"); return; }
       renderGrid(results, `Resultados: "${q}"`, false);
     }, 150);
   });
   searchEl.addEventListener("keydown", e => { if (e.key === "Escape") closePicker(); });
 
   div.addEventListener("mousedown", e => e.stopPropagation());
-
-  renderCat(activeCategory);
   return div;
 }
 
-function renderCat(cat) {
-  renderGrid(EMOJI_DATA[cat], CAT_LABELS[cat], !isSearching && recentEmojis.length > 0);
+// ─── Inicializar contenido (llama a la API si hace falta) ─────────────────────
+async function _initContent() {
+  _showState("loading");
+
+  const ok = await loadEmojiData();
+  if (!ok) { _showState("error"); return; }
+
+  // Setear categoría activa con la primera de la API
+  if (!activeCategory && _categories.length) {
+    activeCategory = _categories[0].key;
+  }
+
+  // Poblar barra de categorías
+  const bar = document.getElementById("_epCatBar");
+  if (bar) {
+    bar.innerHTML = "";
+    _categories.forEach(cat => {
+      const btn = document.createElement("button");
+      btn.className = "_epCat" + (cat.key === activeCategory ? " on" : "");
+      btn.textContent = cat.icon;
+      btn.title = cat.label;
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const s = document.getElementById("_epSearch");
+        if (s) { s.value = ""; }
+        isSearching    = false;
+        activeCategory = cat.key;
+        bar.querySelectorAll("._epCat").forEach(b => b.classList.remove("on"));
+        btn.classList.add("on");
+        renderCat(cat.key);
+      });
+      bar.appendChild(btn);
+    });
+  }
+
+  // Habilitar buscador
+  const searchEl = document.getElementById("_epSearch");
+  if (searchEl) { searchEl.disabled = false; searchEl.focus(); }
+
+  renderCat(activeCategory);
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderCat(catKey) {
+  const cat = _categories?.find(c => c.key === catKey);
+  if (!cat) return;
+  renderGrid(cat.emojis, cat.label, !isSearching && recentEmojis.length > 0);
 }
 
 function renderGrid(emojis, label, showRecent) {
-  const grid  = document.getElementById("_epGrid");
-  const empty = document.getElementById("_epEmpty");
+  const grid = document.getElementById("_epGrid");
   if (!grid) return;
   grid.innerHTML = "";
 
-  if (!emojis?.length) {
-    grid.style.display = "none"; empty.style.display = "flex"; return;
-  }
-  grid.style.display = "flex"; empty.style.display = "none";
+  if (!emojis?.length) { _showState("empty"); return; }
+  _showState("grid");
 
   if (showRecent && recentEmojis.length) {
     addLabel(grid, "⏱ Recientes");
@@ -441,7 +379,10 @@ function addLabel(parent, text) {
 
 function mkBtn(emoji) {
   const btn = document.createElement("button");
-  btn.className = "_epE"; btn.textContent = emoji; btn.title = KW[emoji]?.split(" ")[0] || emoji;
+  btn.className = "_epE";
+  btn.textContent = emoji;
+  // Tooltip: primera keyword del cache, o el propio emoji como fallback
+  btn.title = _keywords?.[emoji]?.[0] || emoji;
   btn.addEventListener("click", e => {
     e.stopPropagation();
     btn.classList.remove("pop"); void btn.offsetWidth; btn.classList.add("pop");
@@ -469,21 +410,30 @@ function openPicker(anchor) {
   void pickerEl.offsetWidth;
   pickerEl.classList.add("ep-open");
 
+  // Posicionamiento
   const r = anchor.getBoundingClientRect(), W = 338, H = 408;
   let top  = r.top - H - 10;
   let left = r.left;
-  if (top  < 8)                        top  = r.bottom + 10;
+  if (top  < 8)                         top  = r.bottom + 10;
   if (left + W > window.innerWidth - 8) left = window.innerWidth - W - 8;
   if (left < 8)                         left = 8;
-  pickerEl.style.top = top + "px"; pickerEl.style.left = left + "px";
+  pickerEl.style.top  = top  + "px";
+  pickerEl.style.left = left + "px";
 
-  setTimeout(() => {
-    loadRecents();
-    const s = document.getElementById("_epSearch");
-    if (s) { s.value = ""; s.focus(); }
-    isSearching = false;
-    renderCat(activeCategory);
-  }, 20);
+  loadRecents();
+
+  if (!_categories) {
+    // Primera apertura: cargar desde API
+    _initContent();
+  } else {
+    // Ya en cache: mostrar directo
+    setTimeout(() => {
+      const s = document.getElementById("_epSearch");
+      if (s) { s.value = ""; s.focus(); }
+      isSearching = false;
+      renderCat(activeCategory);
+    }, 20);
+  }
 }
 
 function closePicker() {
@@ -508,7 +458,7 @@ function initEmojiPicker() {
   if (!btn || btn._emojiReady) return false;
   btn._emojiReady = true;
   btn.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); togglePicker(btn); });
-  console.log("✅ Emoji picker Pro inicializado");
+  console.log("✅ Emoji picker Pro (API mode) inicializado");
   return true;
 }
 
