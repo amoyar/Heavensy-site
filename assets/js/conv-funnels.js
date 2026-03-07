@@ -67,6 +67,14 @@ async function loadFunnels(companyId, userId) {
 
         _funnelData = data.funnels || [];
 
+        // Actualizar contador en el header
+        const funnelsCounter = document.getElementById('funnelsCounter');
+        if (funnelsCounter) {
+            const count = (_funnelData || []).length;
+            funnelsCounter.textContent = count;
+            funnelsCounter.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+
         if (_funnelData.length === 0) {
             renderFunnelEmpty('Sin embudos asignados');
         } else {
@@ -258,6 +266,8 @@ function resetFunnelPanel() {
     _funnelCurrentUserId    = null;
     _funnelCurrentCompanyId = null;
     _funnelData             = [];
+    const funnelsCounter = document.getElementById('funnelsCounter');
+    if (funnelsCounter) { funnelsCounter.textContent = '0'; funnelsCounter.style.display = 'none'; }
     renderFunnelEmpty('Sin embudos asignados');
 }
 
