@@ -600,35 +600,6 @@ class="w-full flex items-center justify-between px-4 py-2.5 bg-blue-50 hover:bg-
 
 <div id="servicesGroup">
 
-<div class="border-b border-gray-200">
-
-<button onclick="toggleRightSection('contactServicesSection')"
-class="w-full flex items-center justify-between px-4 py-3 hover:bg-blue-50 transition-colors">
-<div class="flex items-center gap-2.5">
-  <div class="w-6 h-6 rounded-md bg-orange-100 flex items-center justify-center flex-shrink-0">
-    <i class="fas fa-concierge-bell text-orange-500 text-[10px]"></i>
-  </div>
-  <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Servicios</span>
-  <span id="servicesCounter" class="ml-2 text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-semibold">0</span>
-</div>
-<i id="contactServicesSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
-</button>
-
-
-<div id="contactServicesSection" class="hidden">
-
-<div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
-
-<div id="contactServicesContainer">
-<p class="text-xs text-gray-400 px-1">Selecciona un contacto.</p>
-</div>
-
-</div>
-
-</div>
-
-</div>
-
   <!-- ============================= -->
   <!-- AGENDA (hermana de SERVICIOS) -->
   <!-- ============================= -->
@@ -648,6 +619,32 @@ class="w-full flex items-center justify-between px-4 py-3 hover:bg-blue-50 trans
     <div id="contactAgendaSection" class="hidden">
       <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
         <div id="contactAgendaContainer">
+          <p class="text-xs text-gray-400 px-1">Selecciona un contacto.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============================= -->
+  <!-- CALENDARIO DE CITAS          -->
+  <!-- ============================= -->
+  <div class="border-b border-gray-200">
+
+    <button onclick="toggleRightSection('contactCalendarSection'); calToggleLoad();"
+      class="w-full flex items-center justify-between px-4 py-3 hover:bg-blue-50 transition-colors">
+      <div class="flex items-center gap-2.5">
+        <div class="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-calendar-check text-blue-600 text-[10px]"></i>
+        </div>
+        <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Calendario</span>
+      </div>
+      <i id="contactCalendarSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
+    </button>
+
+    <div id="contactCalendarSection" class="hidden">
+      <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+        <div id="contactCalendarContainer">
           <p class="text-xs text-gray-400 px-1">Selecciona un contacto.</p>
         </div>
       </div>
