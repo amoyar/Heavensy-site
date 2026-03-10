@@ -108,7 +108,9 @@ function updatePanelCounters(counts){
     const tagsCounter = document.getElementById("tagsCounter");
     const notesCounter = document.getElementById("notesCounter");
     const servicesCounter = document.getElementById("servicesCounter");
-    const funnelsCounter = document.getElementById("funnelsCounter");
+    // funnelsCounter lo maneja exclusivamente conv-funnels.js
+    // para evitar condición de carrera: contacts.js ejecuta renderContactPanel()
+    // antes de que loadFunnels() termine su fetch y sobreescribiría el contador con 0.
 
     if(tagsCounter){
         tagsCounter.textContent = counts.tags;
@@ -123,11 +125,6 @@ function updatePanelCounters(counts){
     if(servicesCounter){
         servicesCounter.textContent = counts.services;
         servicesCounter.style.display = counts.services ? "inline-block" : "none";
-    }
-
-    if(funnelsCounter){
-        funnelsCounter.textContent = counts.funnels;
-        funnelsCounter.style.display = counts.funnels ? "inline-block" : "none";
     }
 }
 

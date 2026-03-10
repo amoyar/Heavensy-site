@@ -178,6 +178,7 @@ function renderServicesPanel() {
   container.innerHTML = html;
 }
 
+
 // ── Acciones ──────────────────────────────────────────────────
 
 function svcToggleExpand(csId) {
@@ -246,11 +247,35 @@ window.svcAssignFromSelect     = svcAssignFromSelect;
 // cuando se selecciona una conversación. Lo encadenamos aquí.
 const _prevHook = window.onConversationSelectedForContacts;
 window.onConversationSelectedForContacts = function(waId, phone, name, companyId) {
-  // Preservar otros hooks que puedan existir (contacts.js, etc.)
   if (typeof _prevHook === "function") _prevHook(waId, phone, name, companyId);
-  // Resetear catálogo al cambiar empresa
   if (serviciosState.companyId !== companyId) {
     serviciosState.companyServices = [];
   }
   loadServicesForContact(companyId, waId);
+
+  // Cargar agenda en el bloque del HTML (hermano de SERVICIOS)
+  if (typeof loadAgenda === "function") {
+    // Abrir la sección si está colapsada
+    const section = document.getElementById("contactAgendaSection");
+    if (section && section.classList.contains("hidden")) {
+      // Dejar colapsada, se cargará al abrir
+    }
+    loadAgenda(companyId, waId);
+  }
 };
+
+// Abrir/cerrar sección agenda — disparar carga lazy
+const _origToggle = window.toggleRightSection;
+if (typeof _origToggle === "function") {
+  window.toggleRightSection = function(sectionId) {
+    _origToggle(sectionId);
+    if (sectionId === "contactAgendaSection") {
+      const section = document.getElementById("contactAgendaSection");
+      if (section && !section.classList.contains("hidden")) {
+        if (typeof loadAgenda === "function") {
+          loadAgenda(serviciosState.companyId, serviciosState.waId);
+        }
+      }
+    }
+  };
+}
