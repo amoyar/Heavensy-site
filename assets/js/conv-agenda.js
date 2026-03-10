@@ -106,8 +106,11 @@ async function loadAgenda(companyId, userId) {
             return;
         }
 
-        _agendaMyResource  = data.resource;
-        _agendaMyServices  = data.services || [];
+        _agendaMyResource      = data.resource;
+        _agendaMyServices      = data.services || [];
+        _agendaSchedulingMode  = data.scheduling_mode || 'sequential';
+        _agendaReservationTtl  = data.reservation_ttl || 30;
+        _agendaPaymentMode     = data.payment_mode || 'manual';
         _agendaSelectedService = _agendaMyServices[0] || null;
 
         // Mes inicial = hoy
@@ -133,7 +136,12 @@ async function _agendaRenderPanel() {
 
     container.innerHTML = '';
 
-    // ── 1. Próximos cupos por servicio ────────
+    if (_agendaSchedulingMode === 'concurrent') {
+        await _agendaRenderConcurrent(container);
+        return;
+    }
+
+    // ── SEQUENTIAL: Próximos cupos por servicio ────────
     await _agendaRenderNextSlotsByService(container);
 
     // ── 2. Separador + botón buscar por día ───
@@ -277,59 +285,25 @@ async function _agendaLoadNextSlots(svc, container, color = '#7c3aed') {
 
 
 function _agendaOnNextSlotClick(svc, slot, btn, color = '#7c3aed') {
-    // Seleccionar servicio y slot
     _agendaSelectedService = svc;
     _agendaSelectedDate    = slot.date;
 
-    // Marcar pill seleccionada
-    document.querySelectorAll('.agenda-next-slot-pill').forEach(b => b.classList.remove('agenda-next-slot-pill--selected'));
+    document.querySelectorAll('.agenda-next-slot-pill').forEach(b => {
+        b.classList.remove('agenda-next-slot-pill--selected');
+        b.style.background = '';
+        b.style.borderColor = b.style.borderTopColor || '#e5e7eb';
+    });
     btn.classList.add('agenda-next-slot-pill--selected');
-    btn.style.background    = color;
-    btn.style.borderColor   = color;
+    btn.style.background  = color;
+    btn.style.borderColor = color;
 
-    // Mostrar panel de confirmación debajo de los cupos
-    let confirmPanel = document.getElementById('agendaQuickConfirmPanel');
-    if (!confirmPanel) {
-        confirmPanel = document.createElement('div');
-        confirmPanel.id = 'agendaQuickConfirmPanel';
-        confirmPanel.className = 'agenda-confirm-panel';
-        const nextSection = document.querySelector('.agenda-next-slots-section');
-        if (nextSection) nextSection.appendChild(confirmPanel);
-    }
-
-    confirmPanel.className = 'agenda-confirm-panel';
-    confirmPanel.innerHTML = `
-        <div class="agenda-confirm-info">
-            <div class="agenda-confirm-row">
-                <i class="fas fa-calendar-day"></i>
-                <span>${_agendaFormatDate(slot.date)}</span>
-            </div>
-            <div class="agenda-confirm-row">
-                <i class="fas fa-clock"></i>
-                <span>${slot.start} – ${slot.end} · ${svc.name}</span>
-            </div>
-            ${svc.price ? `
-            <div class="agenda-confirm-row">
-                <i class="fas fa-tag"></i>
-                <span>$${svc.price.toLocaleString('es-CL')}</span>
-            </div>` : ''}
-        </div>
-        <div class="agenda-confirm-notes">
-            <input type="text" id="agendaNotesQuick" class="agenda-notes-input" placeholder="Notas (opcional)">
-        </div>
-        <div class="agenda-confirm-actions">
-            <button class="agenda-btn-cancel-confirm" onclick="_agendaCancelQuickConfirm()">Cancelar</button>
-            <button class="agenda-btn-confirm" onclick="_agendaConfirmBooking('${slot.start}', '${slot.end}')">
-                <i class="fas fa-check"></i> Confirmar cita
-            </button>
-        </div>
-    `;
+    // Usar el nuevo panel de reserva con TTL
+    const container = document.getElementById('contactAgendaContainer');
+    _agendaShowReservationPanel(slot, svc, container, color);
 }
 
 function _agendaCancelQuickConfirm() {
-    document.querySelectorAll('.agenda-next-slot-pill').forEach(b => b.classList.remove('agenda-next-slot-pill--selected'));
-    const p = document.getElementById('agendaQuickConfirmPanel');
-    if (p) p.remove();
+    _agendaCancelReservationPanel();
 }
 
 function _agendaToggleCalendar() {
@@ -585,7 +559,7 @@ function _agendaOnSlotClick(slot, btn) {
                 Cancelar
             </button>
             <button class="agenda-btn-confirm" id="agendaBtnConfirm"
-                onclick="_agendaConfirmBooking('${slot.start}', '${slot.end}')">
+                onclick="_agendaConfirmReservation('${slot.start}', '${slot.end}')">
                 <i class="fas fa-check"></i> Confirmar cita
             </button>
         </div>
@@ -1532,6 +1506,101 @@ function _agendaRenderError() {
     }
     .agenda-appt-confirm-no:hover { background: #f9fafb; }
 
+
+    /* ── Reserva success ────────────────────── */
+    .agenda-reservation-success {
+        text-align: center;
+        padding: 12px 8px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        margin-bottom: 8px;
+    }
+    .agenda-reservation-success-icon {
+        font-size: 28px;
+        color: #10b981;
+        margin-bottom: 6px;
+    }
+    .agenda-reservation-success-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #065f46;
+        margin-bottom: 8px;
+    }
+    .agenda-reservation-success-ttl {
+        font-size: 11px;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        margin-bottom: 10px;
+    }
+    .agenda-countdown {
+        font-size: 16px;
+        font-weight: 800;
+        color: #10b981;
+        font-variant-numeric: tabular-nums;
+        min-width: 48px;
+        display: inline-block;
+    }
+    .agenda-reservation-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .agenda-btn-confirm-payment {
+        padding: 7px 12px;
+        background: #10b981;
+        color: #fff;
+        border: none;
+        border-radius: 7px;
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        width: 100%;
+        transition: background .12s;
+    }
+    .agenda-btn-confirm-payment:hover { background: #059669; }
+    .agenda-btn-confirm-payment:disabled { opacity: .6; cursor: default; }
+    .agenda-btn-send-msg {
+        padding: 6px 12px;
+        background: #ede9fe;
+        color: #7c3aed;
+        border: 1px solid #c4b5fd;
+        border-radius: 7px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        width: 100%;
+        transition: all .12s;
+    }
+    .agenda-btn-send-msg:hover { background: #ddd6fe; }
+    .agenda-waiting-payment {
+        font-size: 11px;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 6px;
+    }
+    .agenda-ttl-row {
+        background: #fffbeb;
+        border-radius: 5px;
+        padding: 4px 6px;
+        font-size: 10.5px;
+        color: #92400e;
+    }
+
     /* ── Animación ──────────────────────────── */
     @keyframes agendaFadeIn {
         from { opacity: 0; transform: translateY(4px); }
@@ -1541,3 +1610,355 @@ function _agendaRenderError() {
     `;
     document.head.appendChild(style);
 })();
+
+
+// ============================================
+// MODO CONCURRENT
+// ============================================
+
+async function _agendaRenderConcurrent(container) {
+    const title = document.createElement('div');
+    title.className = 'agenda-next-slots-title';
+    title.innerHTML = '<i class="fas fa-bolt"></i> Próxima disponibilidad';
+    container.appendChild(title);
+
+    // Selector de servicio
+    if (_agendaMyServices.length > 1) {
+        const sel = document.createElement('select');
+        sel.className = 'agenda-service-select';
+        _agendaMyServices.forEach((s, i) => {
+            const opt = document.createElement('option');
+            opt.value = s.service_id;
+            opt.textContent = `${s.name} (${s.duration} min)`;
+            if (i === 0) opt.selected = true;
+            sel.appendChild(opt);
+        });
+        sel.addEventListener('change', async () => {
+            _agendaSelectedService = _agendaMyServices.find(s => s.service_id === sel.value);
+            await _agendaRenderPanel();
+        });
+        container.appendChild(sel);
+    }
+
+    const svc = _agendaSelectedService || _agendaMyServices[0];
+    if (!svc) return;
+
+    const loading = document.createElement('div');
+    loading.innerHTML = '<span class="agenda-next-loading"><i class="fas fa-spinner fa-spin"></i> Cargando disponibilidad...</span>';
+    container.appendChild(loading);
+
+    try {
+        const res = await fetch(
+            `${API_BASE_URL || ''}/api/agenda/availability/concurrent?service_id=${svc.service_id}&limit=3`,
+            { headers: _agendaAuthHeaders() }
+        );
+        const data = await res.json();
+        loading.remove();
+
+        const resources = data.resources || [];
+        if (resources.length === 0) {
+            container.innerHTML += '<p class="agenda-hint">Sin disponibilidad próxima</p>';
+            return;
+        }
+
+        const _svcColors = ['#7c3aed','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899'];
+
+        resources.forEach((resource, idx) => {
+            const block = document.createElement('div');
+            block.className = 'agenda-next-svc-block';
+            const color = _svcColors[idx % _svcColors.length];
+
+            const nameRow = document.createElement('div');
+            nameRow.className = 'agenda-next-svc-name';
+            nameRow.innerHTML = `
+                <span class="agenda-next-svc-dot" style="background:${color}"></span>
+                <span>${resource.name}</span>
+            `;
+            block.appendChild(nameRow);
+
+            const slotsRow = document.createElement('div');
+            slotsRow.className = 'agenda-next-slots-row';
+
+            if (!resource.slots || resource.slots.length === 0) {
+                slotsRow.innerHTML = '<span class="agenda-next-empty">Sin disponibilidad</span>';
+            } else {
+                resource.slots.forEach(slot => {
+                    const btn = document.createElement('button');
+                    btn.className = 'agenda-next-slot-pill';
+                    btn.style.borderTopColor = color;
+                    btn.style.borderTopWidth = '2px';
+                    btn.innerHTML = `
+                        <span class="agenda-next-slot-date">${_agendaFormatDateShort(slot.date)}</span>
+                        <span class="agenda-next-slot-time">${slot.start}</span>
+                    `;
+                    btn.addEventListener('click', () => {
+                        _agendaSelectedService = svc;
+                        _agendaSelectedDate = slot.date;
+                        // Para concurrent guardamos el resource_id específico
+                        _agendaMyResource = { ..._agendaMyResource, _id: resource.resource_id };
+                        document.querySelectorAll('.agenda-next-slot-pill').forEach(b => {
+                            b.classList.remove('agenda-next-slot-pill--selected');
+                            b.style.background = '';
+                            b.style.borderColor = b.style.borderTopColor;
+                        });
+                        btn.classList.add('agenda-next-slot-pill--selected');
+                        btn.style.background = color;
+                        btn.style.borderColor = color;
+                        _agendaShowReservationPanel(slot, svc, container, color);
+                    });
+                    slotsRow.appendChild(btn);
+                });
+            }
+            block.appendChild(slotsRow);
+            container.appendChild(block);
+        });
+
+    } catch(err) {
+        loading.innerHTML = '<span class="agenda-next-empty">Error cargando disponibilidad</span>';
+    }
+
+    // Botón buscar por día
+    const calToggle = document.createElement('div');
+    calToggle.className = 'agenda-cal-toggle';
+    calToggle.innerHTML = '<button class="agenda-btn-search-day" onclick="_agendaToggleCalendar()"><i class="fas fa-calendar-search"></i> Buscar otro día</button>';
+    container.appendChild(calToggle);
+
+    const calWrapper = document.createElement('div');
+    calWrapper.id = 'agendaCalWrapper';
+    calWrapper.style.display = 'none';
+    calWrapper.appendChild(_agendaBuildCalendar());
+    const slotsDiv = document.createElement('div');
+    slotsDiv.id = 'agendaSlotsContainer';
+    calWrapper.appendChild(slotsDiv);
+    container.appendChild(calWrapper);
+
+    await _agendaRenderContactAppointments(container);
+}
+
+
+// ============================================
+// PANEL DE CONFIRMACIÓN DE RESERVA
+// ============================================
+
+function _agendaShowReservationPanel(slot, svc, container, color) {
+    // Remover panel anterior si existe
+    const prev = document.getElementById('agendaReservationPanel');
+    if (prev) prev.remove();
+
+    const panel = document.createElement('div');
+    panel.id = 'agendaReservationPanel';
+    panel.className = 'agenda-confirm-panel';
+    panel.style.borderLeft = `3px solid ${color}`;
+
+    const price = svc.price
+        ? `<div class="agenda-confirm-row"><i class="fas fa-tag"></i><span>$${svc.price.toLocaleString('es-CL')} ${svc.currency || 'CLP'}</span></div>`
+        : '';
+
+    panel.innerHTML = `
+        <div class="agenda-confirm-info">
+            <div class="agenda-confirm-row">
+                <i class="fas fa-concierge-bell" style="color:${color}"></i>
+                <span><strong>${svc.name}</strong> · ${svc.duration} min</span>
+            </div>
+            <div class="agenda-confirm-row">
+                <i class="fas fa-calendar-day"></i>
+                <span>${_agendaFormatDate(slot.date)}</span>
+            </div>
+            <div class="agenda-confirm-row">
+                <i class="fas fa-clock"></i>
+                <span>${slot.start} – ${slot.end}</span>
+            </div>
+            ${price}
+            <div class="agenda-confirm-row agenda-ttl-row">
+                <i class="fas fa-hourglass-half" style="color:#f59e0b"></i>
+                <span>Se reserva por <strong>${_agendaReservationTtl} min</strong> hasta confirmar pago</span>
+            </div>
+        </div>
+        <div class="agenda-confirm-notes">
+            <input type="text" id="agendaReservationNotes" class="agenda-notes-input" placeholder="Notas (opcional)">
+        </div>
+        <div class="agenda-confirm-actions">
+            <button class="agenda-btn-cancel-confirm" onclick="_agendaCancelReservationPanel()">Cancelar</button>
+            <button class="agenda-btn-confirm" onclick="_agendaConfirmReservation('${slot.start}', '${slot.end}')">
+                <i class="fas fa-calendar-check"></i> Reservar hora
+            </button>
+        </div>
+    `;
+
+    const nextSection = container.querySelector('.agenda-next-slots-section') || container;
+    nextSection.appendChild(panel);
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function _agendaCancelReservationPanel() {
+    document.querySelectorAll('.agenda-next-slot-pill').forEach(b => {
+        b.classList.remove('agenda-next-slot-pill--selected');
+        b.style.background = '';
+    });
+    const p = document.getElementById('agendaReservationPanel');
+    if (p) p.remove();
+}
+
+async function _agendaConfirmReservation(start, end) {
+    if (!_agendaCurrentUserId || !_agendaCurrentCompanyId) return;
+
+    const notes = document.getElementById('agendaReservationNotes')?.value || '';
+    const btn = document.querySelector('#agendaReservationPanel .agenda-btn-confirm');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reservando...'; }
+
+    try {
+        const res = await fetch(`${API_BASE_URL || ''}/api/agenda/reservations`, {
+            method: 'POST',
+            headers: { ..._agendaAuthHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                resource_id: _agendaMyResource._id,
+                service_id:  _agendaSelectedService.service_id,
+                contact_id:  _agendaCurrentUserId,
+                date:        _agendaSelectedDate,
+                start,
+                notes
+            })
+        });
+
+        const data = await res.json();
+
+        if (!data.success) {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-calendar-check"></i> Reservar hora'; }
+            _agendaShowError(data.error || 'Error al reservar');
+            if (data.code === 'duplicate') await _agendaRenderPanel();
+            return;
+        }
+
+        // Éxito → mostrar panel post-reserva con countdown y mensaje
+        _agendaShowReservationSuccess(data);
+
+    } catch(err) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-calendar-check"></i> Reservar hora'; }
+        _agendaShowError('Error de conexión');
+    }
+}
+
+function _agendaShowReservationSuccess(data) {
+    const container = document.getElementById('contactAgendaContainer');
+    if (!container) return;
+
+    const reservedUntil = new Date(data.reserved_until);
+
+    container.innerHTML = `
+        <div class="agenda-reservation-success">
+            <div class="agenda-reservation-success-icon">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="agenda-reservation-success-title">¡Hora reservada!</div>
+            <div class="agenda-reservation-success-ttl">
+                <i class="fas fa-hourglass-half"></i>
+                Tiempo para confirmar pago:
+                <span id="agendaCountdown" class="agenda-countdown">--:--</span>
+            </div>
+            <div class="agenda-reservation-actions">
+                ${data.payment_mode === 'manual' ? `
+                <button class="agenda-btn-confirm-payment" onclick="_agendaConfirmPayment('${data.appointment_id}')">
+                    <i class="fas fa-check-circle"></i> Confirmar pago recibido
+                </button>` : `
+                <div class="agenda-waiting-payment">
+                    <i class="fas fa-spinner fa-spin"></i> Esperando confirmación de pago...
+                </div>`}
+                <button class="agenda-btn-send-msg" onclick="_agendaSendReservationMsg()">
+                    <i class="fas fa-paper-plane"></i> Enviar instrucciones al paciente
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Guardar mensaje en variable global para envío
+    window._agendaPendingMessage = data.whatsapp_message;
+    window._agendaPendingAppointmentId = data.appointment_id;
+
+    // Iniciar countdown
+    _agendaStartCountdown('agendaCountdown', reservedUntil, () => {
+        _agendaRenderPanel(); // TTL venció → refrescar
+    });
+}
+
+function _agendaStartCountdown(elementId, until, onExpire) {
+    const tick = () => {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const diff = Math.max(0, until - new Date());
+        const mins = Math.floor(diff / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        el.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        if (diff <= 0) {
+            el.textContent = '00:00';
+            if (typeof onExpire === 'function') onExpire();
+            return;
+        }
+        // Color de urgencia
+        el.style.color = diff < 300000 ? '#ef4444' : diff < 600000 ? '#f59e0b' : '#10b981';
+        setTimeout(tick, 1000);
+    };
+    tick();
+}
+
+async function _agendaConfirmPayment(appointmentId) {
+    const btn = document.querySelector('.agenda-btn-confirm-payment');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirmando...'; }
+
+    try {
+        const res = await fetch(`${API_BASE_URL || ''}/api/agenda/reservations/${appointmentId}/confirm`, {
+            method: 'PATCH',
+            headers: { ..._agendaAuthHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ payment_reference: 'manual' })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            _agendaRenderPanel();
+        } else {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar pago recibido'; }
+            _agendaShowError(data.error || 'Error al confirmar');
+        }
+    } catch(err) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar pago recibido'; }
+    }
+}
+
+function _agendaSendReservationMsg() {
+    const msg = window._agendaPendingMessage;
+    if (!msg) return;
+
+    // Intentar inyectar en el input del chat del panel principal
+    const chatInput = document.getElementById('messageInput') ||
+                      document.querySelector('.message-input') ||
+                      document.querySelector('textarea[name="message"]');
+
+    if (chatInput) {
+        chatInput.value = msg;
+        chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+        chatInput.focus();
+
+        // Mostrar feedback
+        const btn = document.querySelector('.agenda-btn-send-msg');
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-check"></i> Mensaje cargado en el chat';
+            btn.style.background = '#10b981';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar instrucciones al paciente';
+                btn.style.background = '';
+            }, 3000);
+        }
+    } else {
+        // Fallback: copiar al clipboard
+        navigator.clipboard.writeText(msg).then(() => {
+            const btn = document.querySelector('.agenda-btn-send-msg');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check"></i> Copiado al portapapeles';
+                btn.style.background = '#10b981';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar instrucciones al paciente';
+                    btn.style.background = '';
+                }, 3000);
+            }
+        });
+    }
+}
