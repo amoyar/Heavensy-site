@@ -127,6 +127,8 @@ async function _calLoadMonth() {
         const data = await res.json();
         _calAppointments = data.appointments || [];
         _calSummary      = data.summary      || {};
+        console.log('📅 [cal] statuses cargados:', [...new Set(_calAppointments.map(a => a.status))]);
+        console.log('📅 [cal] total citas:', _calAppointments.length, '| data raw:', data);
     } catch(err) {
         console.error('❌ Error cargando citas del calendario:', err);
         _calAppointments = [];
@@ -221,12 +223,13 @@ function _calBuild(container) {
 
         cell.innerHTML = `<span class="cal-day-num">${d}</span>`;
 
-        // Dots de colores (máx 3)
+        // Dots de colores — uno por status único presente en el día
         if (hasCitas) {
             const dots = document.createElement('div');
             dots.className = 'cal-dots';
-            appts.slice(0, 3).forEach(a => {
-                const cfg = _CAL_STATUS[a.status] || { dot: '#9ca3af' };
+            const uniqueStatuses = [...new Set(appts.map(a => a.status))].slice(0, 4);
+            uniqueStatuses.forEach(status => {
+                const cfg = _CAL_STATUS[status] || { dot: '#9ca3af' };
                 const dot = document.createElement('span');
                 dot.className = 'cal-dot';
                 dot.style.background = isSelected ? 'rgba(255,255,255,.85)' : cfg.dot;
@@ -316,7 +319,17 @@ function _calBuild(container) {
         container.appendChild(panel);
     }
 
-
+    // ── Leyenda estática (todos los estados posibles) ──
+    const legend = document.createElement('div');
+    legend.className = 'cal-legend';
+    Object.entries(_CAL_STATUS).forEach(([, cfg]) => {
+        legend.innerHTML += `
+            <span class="cal-legend-item">
+                <span class="cal-dot" style="background:${cfg.dot}"></span>
+                ${cfg.label}
+            </span>`;
+    });
+    container.appendChild(legend);
 }
 
 
@@ -496,6 +509,8 @@ function _calInjectStyles() {
 
     /* Leyenda */
     .cal-summary { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
+    .cal-legend { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; padding:6px 0 2px; }
+    .cal-legend-item { display:inline-flex; align-items:center; gap:3px; font-size:9px; color:#9ca3af; }
     .cal-filter-btn {
         display: inline-flex; align-items: center; gap: 4px;
         font-size: 10px; font-weight: 600; padding: 4px 10px;
