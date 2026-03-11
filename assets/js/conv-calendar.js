@@ -176,15 +176,25 @@ function _calBuild(container) {
     const cal = document.createElement('div');
     cal.className = 'cal-box';
 
-    // Nav mes
+    // Nav mes con toggle
     const nav = document.createElement('div');
     nav.className = 'cal-nav';
     nav.innerHTML = `
         <button class="cal-nav-btn" id="calPrevBtn">‹</button>
-        <span class="cal-nav-title">${_CAL_MONTHS[_calMonth]} ${_calYear}</span>
+        <span class="cal-nav-title" id="calNavTitle" style="cursor:pointer;user-select:none;">${_CAL_MONTHS[_calMonth]} ${_calYear}</span>
         <button class="cal-nav-btn" id="calNextBtn">›</button>
+        <button class="cal-nav-btn cal-toggle-btn" id="calGridToggleBtn" title="Colapsar calendario"><i class="fas fa-chevron-up"></i></button>
     `;
     cal.appendChild(nav);
+
+    // Grid colapsable — leer estado previo
+    const _calGridCollapsed = window._calGridCollapsed || false;
+
+    // Contenedor colapsable del grid
+    const gridWrapper = document.createElement('div');
+    gridWrapper.id = 'calGridWrapper';
+    gridWrapper.style.display = _calGridCollapsed ? 'none' : 'block';
+    cal.appendChild(gridWrapper);
 
     // Cabecera días semana
     const header = document.createElement('div');
@@ -195,7 +205,7 @@ function _calBuild(container) {
         cell.textContent = d;
         header.appendChild(cell);
     });
-    cal.appendChild(header);
+    gridWrapper.appendChild(header);
 
     // Días del mes
     const grid = document.createElement('div');
@@ -251,8 +261,21 @@ function _calBuild(container) {
         grid.appendChild(cell);
     }
 
-    cal.appendChild(grid);
+    gridWrapper.appendChild(grid);
     container.appendChild(cal);
+
+    // Botón toggle
+    const toggleBtn = document.getElementById('calGridToggleBtn');
+    if (toggleBtn) {
+        toggleBtn.innerHTML = _calGridCollapsed ? '<i class="fas fa-chevron-down"></i>' : '<i class="fas fa-chevron-up"></i>';
+        toggleBtn.addEventListener('click', () => {
+            window._calGridCollapsed = !window._calGridCollapsed;
+            const gw = document.getElementById('calGridWrapper');
+            const tb = document.getElementById('calGridToggleBtn');
+            if (gw) gw.style.display = window._calGridCollapsed ? 'none' : 'block';
+            if (tb) tb.innerHTML = window._calGridCollapsed ? '<i class="fas fa-chevron-down"></i>' : '<i class="fas fa-chevron-up"></i>';
+        });
+    }
 
     // Event listeners nav
     document.getElementById('calPrevBtn').addEventListener('click', async () => {
@@ -416,8 +439,17 @@ function _calInjectStyles() {
     .cal-box { background:#fff; border-radius:12px; box-shadow:0 1px 6px rgba(0,0,0,.07); overflow:hidden; margin-bottom:8px; }
 
     /* Nav */
-    .cal-nav { display:flex; align-items:center; justify-content:space-between; padding:10px 12px 8px; border-bottom:1px solid #f3f4f6; }
-    .cal-nav-title { font-size:12px; font-weight:700; color:#1f2937; }
+    .cal-nav { display:flex; align-items:center; gap:4px; padding:10px 12px 10px; background:linear-gradient(135deg,#f5f3ff,#ede9fe); border-radius:10px 10px 0 0; border-bottom:1px solid #e5e7eb; }
+    .cal-nav-title { font-size:13px; font-weight:700; color:#4c1d95; flex:1; text-align:center; }
+    .cal-toggle-btn {
+        margin-left: auto;
+        font-size: 11px;
+        color: #9ca3af;
+        transition: color 0.15s, transform 0.2s;
+        padding: 2px 6px;
+        border-radius: 6px;
+    }
+    .cal-toggle-btn:hover { color: #374151; background: #f3f4f6; }
     .cal-nav-btn { width:26px; height:26px; border-radius:6px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; font-size:13px; color:#6b7280; display:flex; align-items:center; justify-content:center; line-height:1; transition:all .1s; }
     .cal-nav-btn:hover { background:#f3f4f6; }
 

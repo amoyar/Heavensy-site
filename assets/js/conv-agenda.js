@@ -17,6 +17,7 @@ let _agendaCurrentUserId    = null;
 let _agendaCurrentCompanyId = null;
 let _agendaMyResource       = null;   // recurso del profesional logueado
 let _agendaMyServices       = [];     // servicios del profesional
+const _svcColors = ['#7c3aed','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899','#8b5cf6','#14b8a6'];
 let _agendaSelectedService  = null;   // servicio seleccionado
 let _agendaSelectedDate     = null;   // fecha seleccionada en el calendario
 let _agendaCalendarMonth    = null;   // mes visible (Date primer día del mes)
@@ -78,7 +79,15 @@ const DIAS  = ['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
 // al seleccionar una conversación
 // ============================================
 
+let _agendaLoading = false;
+
 async function loadAgenda(companyId, userId) {
+    if (_agendaLoading) return;
+    _agendaLoading = true;
+
+    // Limpiar inmediatamente para evitar doble render visible
+    const container = document.getElementById('contactAgendaContainer');
+    if (container) container.innerHTML = '<div style="padding:12px;text-align:center;"><i class="fas fa-spinner fa-spin" style="color:#7c3aed"></i></div>';
     if (!companyId || !userId) {
         _agendaRenderEmpty('Sin contacto seleccionado');
         return;
@@ -122,6 +131,8 @@ async function loadAgenda(companyId, userId) {
     } catch (err) {
         console.error('❌ Error cargando agenda:', err);
         _agendaRenderError();
+    } finally {
+        _agendaLoading = false;
     }
 }
 
@@ -191,20 +202,12 @@ async function _agendaRenderNextSlotsByService(container) {
 
     // Renderizar estructura de todos los servicios primero (con loading)
     // luego lanzar todos los fetches en paralelo con Promise.all
-    const _svcColors = [
-        '#7c3aed', // violeta
-        '#0ea5e9', // celeste
-        '#10b981', // verde
-        '#f59e0b', // amarillo
-        '#ef4444', // rojo
-        '#ec4899', // rosa
-        '#8b5cf6', // lavanda
-        '#14b8a6', // teal
-    ];
+    // _svcColors es global
 
     const fetchPromises = _agendaMyServices.map((svc, idx) => {
         const svcBlock = document.createElement('div');
         svcBlock.className = 'agenda-next-svc-block';
+        svcBlock.dataset.svcId = svc.service_id;
 
         const svcName = document.createElement('div');
         svcName.className = 'agenda-next-svc-name';
@@ -222,13 +225,37 @@ async function _agendaRenderNextSlotsByService(container) {
             <i class="fas fa-chevron-${isOpen ? 'down' : 'right'} agenda-next-svc-chevron"></i>
         `;
         svcName.addEventListener('click', () => {
-            const row   = document.getElementById(svcId);
-            const chev  = svcName.querySelector('.agenda-next-svc-chevron');
+            const row  = document.getElementById(svcId);
+            const chev = svcName.querySelector('.agenda-next-svc-chevron');
             if (!row) return;
             const open = row.style.display !== 'none';
-            row.style.display = open ? 'none' : 'flex';
-            chev.className = `fas fa-chevron-${open ? 'right' : 'down'} agenda-next-svc-chevron`;
+
+            // Colapsar todos y quitar highlight
+            document.querySelectorAll('.agenda-next-svc-block').forEach(block => {
+                const otherRow = block.querySelector('.agenda-next-slots-row');
+                const otherHdr = block.querySelector('.agenda-next-svc-name--toggle');
+                const otherChev = block.querySelector('.agenda-next-svc-chevron');
+                if (otherRow)  otherRow.style.display = 'none';
+                if (otherHdr)  { otherHdr.style.background = ''; otherHdr.style.borderRadius = ''; }
+                if (otherChev) otherChev.className = 'fas fa-chevron-right agenda-next-svc-chevron';
+            });
+
+            // Si estaba cerrado, abrir éste y resaltar
+            if (open) {
+                // Ya lo colapsamos arriba — no hacer nada más
+            } else {
+                row.style.display = 'flex';
+                chev.className = 'fas fa-chevron-down agenda-next-svc-chevron';
+                svcName.style.background    = `${svcColor}22`;
+                svcName.style.borderRadius  = '8px';
+                _agendaSelectedService = svc;
+            }
         });
+        // Highlight inicial si es el primero (abierto por defecto)
+        if (isOpen) {
+            svcName.style.background   = `${svcColor}22`;
+            svcName.style.borderRadius = '8px';
+        }
         svcBlock.appendChild(svcName);
 
         const slotsRow = document.createElement('div');
@@ -268,6 +295,8 @@ async function _agendaLoadNextSlots(svc, container, color = '#7c3aed') {
         slots.forEach(slot => {
             const btn = document.createElement('button');
             btn.className = 'agenda-next-slot-pill';
+            btn.dataset.start = slot.start;
+            btn.dataset.date  = slot.date;
             btn.style.borderTopColor = color;
             btn.style.borderTopWidth = '2px';
             btn.innerHTML = `
@@ -288,16 +317,18 @@ function _agendaOnNextSlotClick(svc, slot, btn, color = '#7c3aed') {
     _agendaSelectedService = svc;
     _agendaSelectedDate    = slot.date;
 
+    // Desmarcar todos los slots
     document.querySelectorAll('.agenda-next-slot-pill').forEach(b => {
         b.classList.remove('agenda-next-slot-pill--selected');
         b.style.background = '';
         b.style.borderColor = b.style.borderTopColor || '#e5e7eb';
     });
+
+    // Marcar el slot seleccionado
     btn.classList.add('agenda-next-slot-pill--selected');
     btn.style.background  = color;
     btn.style.borderColor = color;
 
-    // Usar el nuevo panel de reserva con TTL
     const container = document.getElementById('contactAgendaContainer');
     _agendaShowReservationPanel(slot, svc, container, color);
 }
@@ -310,13 +341,12 @@ function _agendaToggleCalendar() {
     const wrapper = document.getElementById('agendaCalWrapper');
     const btn     = document.querySelector('.agenda-btn-search-day');
     if (!wrapper) return;
-
     const isOpen = wrapper.style.display !== 'none';
     wrapper.style.display = isOpen ? 'none' : 'block';
     if (btn) {
         btn.innerHTML = isOpen
             ? '<i class="fas fa-calendar-search"></i> Buscar otro día'
-            : '<i class="fas fa-chevron-up"></i> Cerrar calendario';
+            : '<i class="fas fa-calendar-search"></i> Buscar otro día';
     }
 }
 
@@ -340,8 +370,15 @@ function _agendaBuildCalendar() {
         <button class="agenda-cal-nav" id="agendaCalPrev"><i class="fas fa-chevron-left"></i></button>
         <span class="agenda-cal-title">${MESES[month]} ${year}</span>
         <button class="agenda-cal-nav" id="agendaCalNext"><i class="fas fa-chevron-right"></i></button>
+        <button class="agenda-cal-nav agenda-cal-toggle-btn" id="agendaCalGridToggle" title="Colapsar"><i class="fas fa-chevron-${window._agendaCalCollapsed ? 'down' : 'up'}"></i></button>
     `;
     wrapper.appendChild(header);
+
+    // ── Contenedor colapsable ─────────────────
+    const gridWrapper = document.createElement('div');
+    gridWrapper.id = 'agendaCalGridWrapper';
+    gridWrapper.style.display = window._agendaCalCollapsed ? 'none' : 'block';
+    wrapper.appendChild(gridWrapper);
 
     // ── Días de semana ────────────────────────
     const daysRow = document.createElement('div');
@@ -352,7 +389,7 @@ function _agendaBuildCalendar() {
         cell.textContent = d;
         daysRow.appendChild(cell);
     });
-    wrapper.appendChild(daysRow);
+    gridWrapper.appendChild(daysRow);
 
     // ── Grilla de días ────────────────────────
     const grid = document.createElement('div');
@@ -393,7 +430,7 @@ function _agendaBuildCalendar() {
         grid.appendChild(cell);
     }
 
-    wrapper.appendChild(grid);
+    gridWrapper.appendChild(grid);
 
     // ── Navegación mes ────────────────────────
     header.querySelector('#agendaCalPrev').addEventListener('click', () => {
@@ -415,6 +452,18 @@ function _agendaBuildCalendar() {
         const calWrapper = document.querySelector('.agenda-calendar');
         if (calWrapper) calWrapper.replaceWith(_agendaBuildCalendar());
     });
+
+    // Toggle colapsar grid
+    const toggleBtn = wrapper.querySelector('#agendaCalGridToggle');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            window._agendaCalCollapsed = !window._agendaCalCollapsed;
+            const gw = wrapper.querySelector('#agendaCalGridWrapper');
+            if (gw) gw.style.display = window._agendaCalCollapsed ? 'none' : 'block';
+            toggleBtn.innerHTML = `<i class="fas fa-chevron-${window._agendaCalCollapsed ? 'down' : 'up'}"></i>`;
+        });
+    }
 
     return wrapper;
 }
@@ -669,20 +718,22 @@ function _agendaShowDuplicate() {
 }
 
 function _agendaShowBookingError(msg) {
-    const confirm = document.getElementById('agendaConfirmPanel');
-    if (!confirm) return;
+    // Buscar el panel activo — puede ser confirmPanel o reservationPanel
+    const panel = document.getElementById('agendaReservationPanel')
+                || document.getElementById('agendaConfirmPanel')
+                || document.getElementById('contactAgendaContainer');
+    if (!panel) return;
 
-    const btnConfirm = document.getElementById('agendaBtnConfirm');
-    if (btnConfirm) {
-        btnConfirm.disabled  = false;
-        btnConfirm.innerHTML = '<i class="fas fa-check"></i> Confirmar cita';
-    }
+    // Eliminar error anterior si existe
+    panel.querySelectorAll('.agenda-error-inline').forEach(el => el.remove());
 
-    confirm.innerHTML += `
-        <div class="agenda-error-inline">
-            <i class="fas fa-exclamation-circle"></i> ${msg}
-        </div>
-    `;
+    const errDiv = document.createElement('div');
+    errDiv.className = 'agenda-error-inline';
+    errDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${msg}`;
+    panel.appendChild(errDiv);
+
+    // Auto-ocultar a los 4 segundos
+    setTimeout(() => errDiv.remove(), 4000);
 }
 
 function _agendaResetSlots() {
@@ -908,6 +959,15 @@ function _agendaRenderEmpty(msg = '') {
         </div>`;
 }
 
+
+// Refrescar calendario si está visible
+function _agendaRefreshCalendarIfOpen() {
+    const section = document.getElementById('contactCalendarSection');
+    if (section && !section.classList.contains('hidden')) {
+        if (typeof _calRender === 'function') _calRender();
+    }
+}
+
 function _agendaRenderError() {
     const container = document.getElementById('contactAgendaContainer');
     if (!container) return;
@@ -981,31 +1041,39 @@ function _agendaRenderError() {
         background: #fff;
         border: 1px solid #e5e7eb;
         border-radius: 8px;
-        padding: 8px;
+        overflow: hidden;
         margin-bottom: 8px;
     }
     .agenda-cal-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        margin-bottom: 6px;
+        gap: 4px;
+        padding: 10px 12px 10px;
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        border-radius: 8px 8px 0 0;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 0;
     }
     .agenda-cal-title {
-        font-size: 12px;
-        font-weight: 600;
-        color: #1f2937;
+        font-size: 13px;
+        font-weight: 700;
+        color: #1e40af;
+        flex: 1;
+        text-align: center;
     }
     .agenda-cal-nav {
         background: none;
         border: none;
         cursor: pointer;
-        color: #7c3aed;
+        color: #3b82f6;
         padding: 2px 5px;
         border-radius: 4px;
         font-size: 11px;
         transition: background .15s;
     }
-    .agenda-cal-nav:hover { background: #ede9fe; }
+    .agenda-cal-nav:hover { background: #dbeafe; }
+    .agenda-cal-toggle-btn { margin-left: 2px; color: #93c5fd; }
+    .agenda-cal-toggle-btn:hover { color: #1e40af; background: #dbeafe; }
 
     .agenda-cal-days-row {
         display: grid;
@@ -1661,7 +1729,7 @@ async function _agendaRenderConcurrent(container) {
             return;
         }
 
-        const _svcColors = ['#7c3aed','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899'];
+        // _svcColors es global
 
         resources.forEach((resource, idx) => {
             const block = document.createElement('div');
@@ -1824,8 +1892,21 @@ async function _agendaConfirmReservation(start, end) {
 
         if (!data.success) {
             if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-calendar-check"></i> Reservar hora'; }
-            _agendaShowError(data.error || 'Error al reservar');
-            if (data.code === 'duplicate') await _agendaRenderPanel();
+            _agendaShowBookingError(data.error || 'Error al reservar');
+            if (data.code === 'duplicate') {
+                // Marcar el slot como no disponible en el UI inmediatamente
+                const slotKey = `${_agendaSelectedDate}-${start}`;
+                document.querySelectorAll('.agenda-next-slot-pill').forEach(pill => {
+                    if (pill.dataset.start === start) {
+                        pill.classList.add('agenda-slot-taken');
+                        pill.style.opacity = '0.4';
+                        pill.style.pointerEvents = 'none';
+                        pill.style.textDecoration = 'line-through';
+                    }
+                });
+                // Refrescar panel en background
+                await _agendaRenderPanel();
+            }
             return;
         }
 
@@ -1834,7 +1915,7 @@ async function _agendaConfirmReservation(start, end) {
 
     } catch(err) {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-calendar-check"></i> Reservar hora'; }
-        _agendaShowError('Error de conexión');
+        _agendaShowBookingError('Error de conexión');
     }
 }
 
@@ -1893,11 +1974,14 @@ function _agendaStartCountdown(elementId, until, onExpire) {
             if (typeof onExpire === 'function') onExpire();
             return;
         }
-        // Color de urgencia
         el.style.color = diff < 300000 ? '#ef4444' : diff < 600000 ? '#f59e0b' : '#10b981';
-        setTimeout(tick, 1000);
+        _agendaCountdownTimer = setTimeout(tick, 1000);
     };
     tick();
+}
+
+function _agendaStopCountdown() {
+    if (_agendaCountdownTimer) { clearTimeout(_agendaCountdownTimer); _agendaCountdownTimer = null; }
 }
 
 async function _agendaConfirmPayment(appointmentId) {
@@ -1913,14 +1997,33 @@ async function _agendaConfirmPayment(appointmentId) {
         const data = await res.json();
 
         if (data.success) {
-            _agendaRenderPanel();
+            _agendaStopCountdown();
+            _agendaShowConfirmedSuccess();
+            _agendaRefreshCalendarIfOpen();
         } else {
+            console.error('❌ [Agenda] Error confirmando:', data);
             if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar pago recibido'; }
-            _agendaShowError(data.error || 'Error al confirmar');
+            _agendaShowBookingError(data.error || 'Error al confirmar');
         }
     } catch(err) {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar pago recibido'; }
     }
+}
+
+function _agendaShowConfirmedSuccess() {
+    const container = document.getElementById('contactAgendaContainer');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;text-align:center;">
+            <div style="font-size:28px;margin-bottom:8px;">✅</div>
+            <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px;">¡Hora confirmada!</div>
+            <div style="font-size:11px;color:#4ade80;margin-bottom:16px;">Pago registrado correctamente.</div>
+            <button onclick="_agendaRenderPanel()" 
+                style="font-size:11px;padding:6px 16px;background:#10b981;color:#fff;border:none;border-radius:8px;cursor:pointer;">
+                Ver agenda
+            </button>
+        </div>`;
 }
 
 function _agendaSendReservationMsg() {

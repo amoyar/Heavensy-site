@@ -253,15 +253,7 @@ window.onConversationSelectedForContacts = function(waId, phone, name, companyId
   }
   loadServicesForContact(companyId, waId);
 
-  // Cargar agenda en el bloque del HTML (hermano de SERVICIOS)
-  if (typeof loadAgenda === "function") {
-    // Abrir la sección si está colapsada
-    const section = document.getElementById("contactAgendaSection");
-    if (section && section.classList.contains("hidden")) {
-      // Dejar colapsada, se cargará al abrir
-    }
-    loadAgenda(companyId, waId);
-  }
+  // La agenda se carga lazy al abrir la sección (ver toggleRightSection más abajo)
 };
 
 // Abrir/cerrar sección agenda — disparar carga lazy
