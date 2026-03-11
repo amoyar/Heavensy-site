@@ -126,6 +126,13 @@ async function loadAgenda(companyId, userId) {
         const today = _agendaToday();
         _agendaCalendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
+        // Verificar si hay reserva activa pendiente de confirmación
+        const activeRes = await _agendaCheckActiveReservation();
+        if (activeRes) {
+            _agendaResumeReservation(activeRes);
+            return;
+        }
+
         await _agendaRenderPanel();
 
     } catch (err) {
@@ -134,6 +141,70 @@ async function loadAgenda(companyId, userId) {
     } finally {
         _agendaLoading = false;
     }
+}
+
+
+// ============================================
+// RESERVA ACTIVA — RETOMAR AL REABRIR
+// ============================================
+
+async function _agendaCheckActiveReservation() {
+    if (!_agendaMyResource) return null;
+    try {
+        const res = await fetch(
+            `${API_BASE_URL || ''}/api/agenda/active-reservation?contact_id=${_agendaCurrentUserId}&resource_id=${_agendaMyResource._id}`,
+            { headers: _agendaAuthHeaders() }
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.reservation || null;
+    } catch { return null; }
+}
+
+function _agendaResumeReservation(appt) {
+    // Calcular tiempo restante del TTL
+    const reservedUntil = new Date(appt.reserved_until);
+    const now           = new Date();
+    const remainingMs   = reservedUntil - now;
+    if (remainingMs <= 0) return null; // expiró justo ahora
+
+    // Buscar el servicio correspondiente
+    const svc = _agendaMyServices.find(s => s.service_id === appt.service_id)
+             || { name: appt.service_name || 'Servicio', duration: appt.duration, price: appt.price };
+
+    const slot = { date: appt.date, start: appt.start, end: appt.end };
+    const color = _svcColors[0];
+
+    const container = document.getElementById('contactAgendaContainer');
+    if (!container) return;
+
+    _agendaSelectedService = svc;
+    _agendaSelectedDate    = appt.date;
+
+    // Mostrar banner de reserva pendiente
+    const banner = document.createElement('div');
+    banner.style.cssText = 'background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#713f12;display:flex;align-items:center;gap:8px;';
+    banner.innerHTML = `
+        <i class="fas fa-clock" style="color:#ca8a04"></i>
+        <span>Tienes una reserva pendiente de confirmación</span>
+        <button onclick="_agendaCancelActiveReservation();" 
+            style="margin-left:auto;font-size:11px;color:#9ca3af;background:none;border:none;cursor:pointer;white-space:nowrap;">
+            Cancelar reserva
+        </button>
+    `;
+    container.innerHTML = '';
+    container.appendChild(banner);
+
+    // Guardar appointment id para confirmación
+    window._agendaPendingAppointmentId = appt._id;
+
+    // Mostrar panel de reserva con tiempo restante
+    _agendaShowReservationPanel(slot, svc, container, color);
+
+    // Retomar el countdown con el tiempo real restante
+    _agendaStartCountdown('agendaCountdown', reservedUntil, () => {
+        _agendaRenderPanel();
+    });
 }
 
 
@@ -1467,6 +1538,7 @@ function _agendaRenderError() {
         display: flex;
         gap: 4px;
         flex-wrap: wrap;
+        padding-top: 6px;
     }
     .agenda-next-loading {
         font-size: 11px;
@@ -1856,6 +1928,23 @@ function _agendaShowReservationPanel(slot, svc, container, color) {
     const nextSection = container.querySelector('.agenda-next-slots-section') || container;
     nextSection.appendChild(panel);
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function _agendaCancelActiveReservation() {
+    const apptId = window._agendaPendingAppointmentId;
+    if (!apptId) { _agendaStopCountdown(); await _agendaRenderPanel(); return; }
+
+    try {
+        await fetch(
+            `${API_BASE_URL || ''}/api/agenda/appointments/${apptId}/cancel`,
+            { method: 'PATCH', headers: { ..._agendaAuthHeaders(), 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reason: 'Cancelada desde el panel' }) }
+        );
+    } catch(e) { /* si falla igual limpiamos el UI */ }
+
+    window._agendaPendingAppointmentId = null;
+    _agendaStopCountdown();
+    await _agendaRenderPanel();
 }
 
 function _agendaCancelReservationPanel() {

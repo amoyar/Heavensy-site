@@ -18,6 +18,7 @@ let _calResourceId  = null;
 let _calYear        = null;
 let _calMonth       = null;  // 0-11
 let _calSelected    = null;  // 'YYYY-MM-DD'
+let _calActiveFilter = null;  // status filtrado, null = todos
 let _calAppointments = [];   // todas las citas del mes cargado
 let _calSummary      = {};   // resumen por status del mes
 
@@ -156,22 +157,6 @@ function _calBuild(container) {
         summary[s]++;
     });
 
-    // ── Resumen chips ──────────────────────────
-    if (Object.keys(summary).length > 0) {
-        const summaryDiv = document.createElement('div');
-        summaryDiv.className = 'cal-summary';
-        summaryDiv.innerHTML = Object.entries(summary)
-            .filter(([,v]) => v > 0)
-            .map(([k, v]) => {
-                const cfg = _CAL_STATUS[k] || { label: k, color: '#6b7280', bg: '#f3f4f6', dot: '#9ca3af' };
-                return `<span class="cal-chip" style="color:${cfg.color};background:${cfg.bg};">
-                    <span class="cal-chip-dot" style="background:${cfg.dot}"></span>
-                    ${v} ${cfg.label}${v > 1 ? 's' : ''}
-                </span>`;
-            }).join('');
-        container.appendChild(summaryDiv);
-    }
-
     // ── Calendario ────────────────────────────
     const cal = document.createElement('div');
     cal.className = 'cal-box';
@@ -296,24 +281,42 @@ function _calBuild(container) {
         _calBuild(container);
     });
 
+    // ── Botones de filtro ────────────────────
+    if (Object.keys(summary).length > 0) {
+        const filterBar = document.createElement('div');
+        filterBar.className = 'cal-summary';
+
+        const allBtn = document.createElement('button');
+        allBtn.className = 'cal-filter-btn' + (_calActiveFilter === null ? ' cal-filter-btn--active' : '');
+        allBtn.style.cssText = '--filter-color:#374151;--filter-bg:#f3f4f6;';
+        allBtn.textContent = 'Todas';
+        allBtn.addEventListener('click', () => { _calActiveFilter = null; _calBuild(container); });
+        filterBar.appendChild(allBtn);
+
+        Object.entries(summary).filter(([,v]) => v > 0).forEach(([status, count]) => {
+            const cfg = _CAL_STATUS[status] || { label: status, color: '#6b7280', bg: '#f3f4f6', dot: '#9ca3af' };
+            const btn = document.createElement('button');
+            btn.className = 'cal-filter-btn' + (_calActiveFilter === status ? ' cal-filter-btn--active' : '');
+            btn.style.cssText = `--filter-color:${cfg.color};--filter-bg:${cfg.bg};`;
+            btn.innerHTML = `<span class="cal-chip-dot" style="background:${cfg.dot}"></span>${count} ${cfg.label}${count > 1 ? 's' : ''}`;
+            btn.addEventListener('click', () => {
+                _calActiveFilter = _calActiveFilter === status ? null : status;
+                _calBuild(container);
+            });
+            filterBar.appendChild(btn);
+        });
+        container.appendChild(filterBar);
+    }
+
     // ── Panel día seleccionado ─────────────────
     if (_calSelected) {
-        const selectedAppts = (byDate[_calSelected] || []).sort((a,b) => a.start.localeCompare(b.start));
+        let selectedAppts = (byDate[_calSelected] || []).sort((a,b) => a.start.localeCompare(b.start));
+        if (_calActiveFilter) selectedAppts = selectedAppts.filter(a => a.status === _calActiveFilter);
         const panel = _calBuildDayPanel(_calSelected, selectedAppts);
         container.appendChild(panel);
     }
 
-    // ── Leyenda ────────────────────────────────
-    const legend = document.createElement('div');
-    legend.className = 'cal-legend';
-    Object.entries(_CAL_STATUS).forEach(([, cfg]) => {
-        legend.innerHTML += `
-            <span class="cal-legend-item">
-                <span class="cal-dot" style="background:${cfg.dot}"></span>
-                ${cfg.label}
-            </span>`;
-    });
-    container.appendChild(legend);
+
 }
 
 
@@ -492,8 +495,22 @@ function _calInjectStyles() {
     .cal-appt-badge   { font-size:9.5px; font-weight:600; padding:2px 7px; border-radius:20px; border:1px solid; background:#fff; white-space:nowrap; }
 
     /* Leyenda */
-    .cal-legend { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; padding:4px 0 2px; }
-    .cal-legend-item { display:flex; align-items:center; gap:3px; font-size:9px; color:#9ca3af; }
+    .cal-summary { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
+    .cal-filter-btn {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 10px; font-weight: 600; padding: 4px 10px;
+        border-radius: 20px; cursor: pointer; transition: all .15s;
+        border: 1.5px solid var(--filter-color, #d1d5db);
+        background: #fff;
+        color: var(--filter-color, #6b7280);
+        opacity: 0.5;
+    }
+    .cal-filter-btn:hover { opacity: 0.8; }
+    .cal-filter-btn--active {
+        background: var(--filter-bg, #f3f4f6);
+        opacity: 1;
+        box-shadow: 0 1px 3px 0 rgba(0,0,0,.08);
+    }
     `;
     document.head.appendChild(style);
 }
