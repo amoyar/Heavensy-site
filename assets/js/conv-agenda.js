@@ -1520,7 +1520,7 @@ function _agendaRenderError() {
         margin: 0 -6px;
         transition: background .1s;
     }
-    .agenda-next-svc-name--toggle:hover { background: #f3f4f6; }
+    .agenda-next-svc-name--toggle:hover { filter: brightness(0.82); box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
     .agenda-next-svc-chevron {
         font-size: 9px;
         color: #9ca3af;
