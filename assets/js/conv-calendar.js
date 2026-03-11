@@ -167,9 +167,9 @@ function _calBuild(container) {
     const nav = document.createElement('div');
     nav.className = 'cal-nav';
     nav.innerHTML = `
-        <button class="cal-nav-btn" id="calPrevBtn">‹</button>
+        <button class="cal-nav-btn" id="calPrevBtn"><i class="fas fa-chevron-left"></i></button>
         <span class="cal-nav-title" id="calNavTitle" style="cursor:pointer;user-select:none;">${_CAL_MONTHS[_calMonth]} ${_calYear}</span>
-        <button class="cal-nav-btn" id="calNextBtn">›</button>
+        <button class="cal-nav-btn" id="calNextBtn"><i class="fas fa-chevron-right"></i></button>
         <button class="cal-nav-btn cal-toggle-btn" id="calGridToggleBtn" title="Colapsar calendario"><i class="fas fa-chevron-up"></i></button>
     `;
     cal.appendChild(nav);
@@ -455,8 +455,8 @@ function _calInjectStyles() {
     .cal-box { background:#fff; border-radius:12px; box-shadow:0 1px 6px rgba(0,0,0,.07); overflow:hidden; margin-bottom:8px; }
 
     /* Nav */
-    .cal-nav { display:flex; align-items:center; gap:4px; padding:10px 12px 10px; background:linear-gradient(135deg,#f5f3ff,#ede9fe); border-radius:10px 10px 0 0; border-bottom:1px solid #e5e7eb; }
-    .cal-nav-title { font-size:13px; font-weight:700; color:#4c1d95; flex:1; text-align:center; }
+    .cal-nav { display:flex; align-items:center; gap:4px; padding:5px 12px 5px; background:linear-gradient(135deg,#f5f3ff,#ede9fe); border-radius:10px 10px 0 0; border-bottom:1px solid #e5e7eb; }
+    .cal-nav-title { font-size:12px; font-weight:700; color:#4c1d95; flex:1; text-align:center; }
     .cal-toggle-btn {
         margin-left: auto;
         font-size: 11px;
@@ -466,8 +466,10 @@ function _calInjectStyles() {
         border-radius: 6px;
     }
     .cal-toggle-btn:hover { color: #374151; background: #f3f4f6; }
-    .cal-nav-btn { width:26px; height:26px; border-radius:6px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; font-size:13px; color:#6b7280; display:flex; align-items:center; justify-content:center; line-height:1; transition:all .1s; }
-    .cal-nav-btn:hover { background:#f3f4f6; }
+    .cal-nav-btn { background:none; border:none; cursor:pointer; color:#7c3aed; padding:2px 5px; border-radius:4px; font-size:11px; transition:background .15s; display:flex; align-items:center; justify-content:center; }
+    .cal-nav-btn:hover { background:#ede9fe; }
+    .cal-toggle-btn { margin-left:2px; color:#a78bfa; }
+    .cal-toggle-btn:hover { color:#4c1d95; background:#ede9fe; }
 
     /* Grid */
     .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); padding:6px 8px 2px; }

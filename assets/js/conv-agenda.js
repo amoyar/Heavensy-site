@@ -279,6 +279,7 @@ async function _agendaRenderNextSlotsByService(container) {
         const svcBlock = document.createElement('div');
         svcBlock.className = 'agenda-next-svc-block';
         svcBlock.dataset.svcId = svc.service_id;
+        svcBlock.dataset.idx = idx;
 
         const svcName = document.createElement('div');
         svcName.className = 'agenda-next-svc-name';
@@ -307,7 +308,7 @@ async function _agendaRenderNextSlotsByService(container) {
                 const otherHdr = block.querySelector('.agenda-next-svc-name--toggle');
                 const otherChev = block.querySelector('.agenda-next-svc-chevron');
                 if (otherRow)  otherRow.style.display = 'none';
-                if (otherHdr)  { otherHdr.style.background = ''; otherHdr.style.borderRadius = ''; }
+                if (otherHdr)  { const c = _svcColors[parseInt(block.dataset.idx||0) % _svcColors.length]; otherHdr.style.background = `${c}14`; otherHdr.style.borderRadius = '8px'; }
                 if (otherChev) otherChev.className = 'fas fa-chevron-right agenda-next-svc-chevron';
             });
 
@@ -317,16 +318,14 @@ async function _agendaRenderNextSlotsByService(container) {
             } else {
                 row.style.display = 'flex';
                 chev.className = 'fas fa-chevron-down agenda-next-svc-chevron';
-                svcName.style.background    = `${svcColor}22`;
+                svcName.style.background    = `${svcColor}33`;
                 svcName.style.borderRadius  = '8px';
                 _agendaSelectedService = svc;
             }
         });
-        // Highlight inicial si es el primero (abierto por defecto)
-        if (isOpen) {
-            svcName.style.background   = `${svcColor}22`;
-            svcName.style.borderRadius = '8px';
-        }
+        // Color base siempre visible; activo más fuerte
+        svcName.style.background   = isOpen ? `${svcColor}33` : `${svcColor}14`;
+        svcName.style.borderRadius = '8px';
         svcBlock.appendChild(svcName);
 
         const slotsRow = document.createElement('div');
@@ -1062,7 +1061,7 @@ function _agendaRenderError() {
 
     /* ── Contenedor general ─────────────────── */
     #contactAgendaContainer {
-        padding: 4px 0 8px 0;
+        padding: 4px 0 2px 0;
         font-size: 12px;
         color: #374151;
     }
@@ -1104,7 +1103,7 @@ function _agendaRenderError() {
         background: #ede9fe;
         padding: 3px 8px;
         border-radius: 20px;
-        margin-bottom: 8px;
+        margin-bottom: 2px;
     }
 
     /* ── Calendario ─────────────────────────── */
@@ -1119,7 +1118,7 @@ function _agendaRenderError() {
         display: flex;
         align-items: center;
         gap: 4px;
-        padding: 10px 12px 10px;
+        padding: 5px 12px 5px;
         background: linear-gradient(135deg, #eff6ff, #dbeafe);
         border-radius: 8px 8px 0 0;
         border-bottom: 1px solid #e5e7eb;
@@ -1481,7 +1480,7 @@ function _agendaRenderError() {
 
     /* ── Próximos cupos por servicio ────────── */
     .agenda-next-slots-section {
-        margin-bottom: 8px;
+        margin-bottom: 0;
     }
     .agenda-next-slots-title {
         font-size: 10.5px;
@@ -1517,8 +1516,8 @@ function _agendaRenderError() {
         cursor: pointer;
         user-select: none;
         border-radius: 5px;
-        padding: 2px 4px;
-        margin: 0 -4px;
+        padding: 5px 6px;
+        margin: 0 -6px;
         transition: background .1s;
     }
     .agenda-next-svc-name--toggle:hover { background: #f3f4f6; }
@@ -1588,11 +1587,11 @@ function _agendaRenderError() {
 
     /* ── Botón buscar otro día ──────────────── */
     .agenda-cal-toggle {
-        margin: 4px 0 8px 0;
+        margin: 2px 0 4px 0;
         text-align: center;
     }
     .agenda-btn-search-day {
-        padding: 5px 12px;
+        padding: 3px 10px;
         border: 1px dashed #c4b5fd;
         border-radius: 6px;
         background: #faf5ff;
