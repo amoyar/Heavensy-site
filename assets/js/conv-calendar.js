@@ -18,9 +18,11 @@ let _calResourceId  = null;
 let _calYear        = null;
 let _calMonth       = null;  // 0-11
 let _calSelected    = null;  // 'YYYY-MM-DD'
-let _calActiveFilter = null;  // status filtrado, null = todos
+let _calActiveFilter     = null;  // status filtrado, null = todos
+let _calSpecialistFilter = null;  // resource_id filtrado, null = todos
 let _calAppointments = [];   // todas las citas del mes cargado
 let _calSummary      = {};   // resumen por status del mes
+let _calResources    = [];   // lista de {resource_id, name} de la empresa
 
 const _CAL_MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const _CAL_DAYS   = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
@@ -120,19 +122,19 @@ async function _calLoadMonth() {
     try {
         const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
         const res = await fetch(
-            `${API_BASE_URL || ''}/api/calendar/resource/${_calResourceId}?month=${month}`,
+            `${API_BASE_URL || ''}/api/calendar/company?month=${month}`,
             { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         _calAppointments = data.appointments || [];
         _calSummary      = data.summary      || {};
-        console.log('📅 [cal] statuses cargados:', [...new Set(_calAppointments.map(a => a.status))]);
-        console.log('📅 [cal] total citas:', _calAppointments.length, '| data raw:', data);
+        _calResources    = data.resources    || [];
     } catch(err) {
         console.error('❌ Error cargando citas del calendario:', err);
         _calAppointments = [];
         _calSummary      = {};
+        _calResources    = [];
     }
 }
 
@@ -144,20 +146,52 @@ async function _calLoadMonth() {
 function _calBuild(container) {
     container.innerHTML = '';
 
-    // Agrupar citas por fecha
+    // Agrupar citas por fecha (aplicar filtro de especialista al grid también)
     const byDate = {};
-    _calAppointments.forEach(a => {
+    const filteredAppts = _calSpecialistFilter
+        ? _calAppointments.filter(a => a.resource_id === _calSpecialistFilter)
+        : _calAppointments;
+    filteredAppts.forEach(a => {
         if (!byDate[a.date]) byDate[a.date] = [];
         byDate[a.date].push(a);
     });
 
-    // Resumen mensual
+    // Resumen mensual (sobre citas filtradas por especialista)
     const summary = {};
-    _calAppointments.forEach(a => {
+    filteredAppts.forEach(a => {
         const s = a.status;
         if (!summary[s]) summary[s] = 0;
         summary[s]++;
     });
+
+    // ── Filtro por especialista (sobre el calendario) ──
+    if (_calResources.length > 1) {
+        const specBar = document.createElement('div');
+        specBar.className = 'cal-summary';
+        specBar.style.marginBottom = '4px';
+
+        const allSpecBtn = document.createElement('button');
+        allSpecBtn.className = 'cal-filter-btn' + (_calSpecialistFilter === null ? ' cal-filter-btn--active' : '');
+        allSpecBtn.style.cssText = '--filter-color:#374151;--filter-bg:#f3f4f6;';
+        allSpecBtn.textContent = 'Todos';
+        allSpecBtn.addEventListener('click', () => { _calSpecialistFilter = null; _calBuild(container); });
+        specBar.appendChild(allSpecBtn);
+
+        _calResources.forEach((spec, idx) => {
+            const specColor = ['#7c3aed','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899'][idx % 6];
+            const btn = document.createElement('button');
+            btn.className = 'cal-filter-btn' + (_calSpecialistFilter === spec.resource_id ? ' cal-filter-btn--active' : '');
+            btn.style.cssText = `--filter-color:${specColor};--filter-bg:${specColor}14;`;
+            const shortName = spec.name.split(' ').slice(-2).join(' ');
+            btn.innerHTML = `<span class="cal-chip-dot" style="background:${specColor}"></span>${shortName}`;
+            btn.addEventListener('click', () => {
+                _calSpecialistFilter = _calSpecialistFilter === spec.resource_id ? null : spec.resource_id;
+                _calBuild(container);
+            });
+            specBar.appendChild(btn);
+        });
+        container.appendChild(specBar);
+    }
 
     // ── Calendario ────────────────────────────
     const cal = document.createElement('div');
@@ -214,12 +248,14 @@ function _calBuild(container) {
         const isToday    = dStr === todayStr;
         const isSelected = dStr === _calSelected;
         const hasCitas   = appts.length > 0;
+        const isPast     = !isToday && dStr < todayStr;
 
         const cell = document.createElement('div');
         cell.className = 'cal-day' +
             (isToday    ? ' cal-day--today'    : '') +
             (isSelected ? ' cal-day--selected' : '') +
-            (hasCitas   ? ' cal-day--has-citas': '');
+            (hasCitas   ? ' cal-day--has-citas': '') +
+            (isPast     ? ' cal-day--past'     : '');
 
         cell.innerHTML = `<span class="cal-day-num">${d}</span>`;
 
@@ -232,7 +268,7 @@ function _calBuild(container) {
                 const cfg = _CAL_STATUS[status] || { dot: '#9ca3af' };
                 const dot = document.createElement('span');
                 dot.className = 'cal-dot';
-                dot.style.background = isSelected ? 'rgba(255,255,255,.85)' : cfg.dot;
+                dot.style.background = cfg.dot;
                 dots.appendChild(dot);
             });
             cell.appendChild(dots);
@@ -314,6 +350,7 @@ function _calBuild(container) {
     // ── Panel día seleccionado ─────────────────
     if (_calSelected) {
         let selectedAppts = (byDate[_calSelected] || []).sort((a,b) => a.start.localeCompare(b.start));
+        if (_calSpecialistFilter) selectedAppts = selectedAppts.filter(a => a.resource_id === _calSpecialistFilter);
         if (_calActiveFilter) selectedAppts = selectedAppts.filter(a => a.status === _calActiveFilter);
         const panel = _calBuildDayPanel(_calSelected, selectedAppts);
         container.appendChild(panel);
@@ -356,11 +393,20 @@ function _calBuildDayPanel(dateStr, appts) {
     const list = document.createElement('div');
     list.className = 'cal-appt-list';
 
+    // Asignar color por especialista
+    const specColors = ['#7c3aed','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899'];
+    const specColorMap = {};
+    _calResources.forEach((r, i) => { specColorMap[r.resource_id] = specColors[i % specColors.length]; });
+
     appts.forEach(appt => {
-        const cfg = _CAL_STATUS[appt.status] || { label: appt.status, color: '#6b7280', bg: '#f9fafb', dot: '#9ca3af' };
+        const cfg       = _CAL_STATUS[appt.status] || { label: appt.status, color: '#6b7280', bg: '#f9fafb', dot: '#9ca3af' };
+        const specColor = specColorMap[appt.resource_id] || '#6b7280';
+        const specName  = appt.resource_name || '';
+        const initials  = specName.split(' ').filter(w => w.match(/^[A-ZÁÉÍÓÚÑ]/)).slice(0,2).map(w=>w[0]).join('');
+
         const item = document.createElement('div');
         item.className = 'cal-appt-item';
-        item.style.borderLeft = `3px solid ${cfg.color}`;
+        item.style.borderLeft = `3px solid ${specColor}`;
         item.style.background = cfg.bg;
         item.innerHTML = `
             <div class="cal-appt-time">
@@ -369,7 +415,7 @@ function _calBuildDayPanel(dateStr, appts) {
             </div>
             <div class="cal-appt-info">
                 <div class="cal-appt-service">${appt.service_name || appt.service_id || '—'}</div>
-                <div class="cal-appt-contact">${appt.contact_name || appt.contact_id || '—'}</div>
+                <div class="cal-appt-contact" style="color:${specColor}">${specName}</div>
             </div>
             <div class="cal-appt-badge" style="color:${cfg.color};border-color:${cfg.color}">
                 ${cfg.label}
@@ -456,7 +502,7 @@ function _calInjectStyles() {
 
     /* Nav */
     .cal-nav { display:flex; align-items:center; gap:4px; padding:5px 12px 5px; background:linear-gradient(135deg,#f5f3ff,#ede9fe); border-radius:10px 10px 0 0; border-bottom:1px solid #e5e7eb; }
-    .cal-nav-title { font-size:12px; font-weight:700; color:#4c1d95; flex:1; text-align:center; }
+    .cal-nav-title { font-size:13px; font-weight:700; color:#4c1d95; flex:1; text-align:center; }
     .cal-toggle-btn {
         margin-left: auto;
         font-size: 11px;
@@ -472,25 +518,27 @@ function _calInjectStyles() {
     .cal-toggle-btn:hover { color:#4c1d95; background:#ede9fe; }
 
     /* Grid */
-    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); padding:6px 8px 2px; }
-    .cal-days-grid { padding:2px 8px 8px; gap:2px; }
-    .cal-day-header { text-align:center; font-size:9px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:.04em; padding:2px 0; }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); padding:4px 4px 2px; }
+    .cal-days-grid { padding:0 4px 4px; gap:2px; }
+    .cal-day-header { text-align:center; font-size:10px; font-weight:600; color:#9ca3af; padding:2px 0; }
 
     /* Días */
-    .cal-day { position:relative; text-align:center; padding:5px 2px 3px; border-radius:7px; border:1.5px solid transparent; transition:all .12s; min-height:32px; display:flex; flex-direction:column; align-items:center; }
+    .cal-day { position:relative; text-align:center; padding:2px 1px; border-radius:5px; border:1.5px solid transparent; transition:all .12s; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
     .cal-day--has-citas { cursor:pointer; }
     .cal-day--has-citas:hover { background:#f5f3ff; }
     .cal-day--today { border-color:#c4b5fd; background:#ede9fe; }
     .cal-day--selected { background:#7c3aed !important; border-color:#7c3aed !important; }
-    .cal-day-num { font-size:11.5px; line-height:1.2; }
+    .cal-day-num { font-size:11px; line-height:1.2; }
     .cal-day--has-citas .cal-day-num { font-weight:700; color:#1f2937; }
     .cal-day--today .cal-day-num    { color:#7c3aed; font-weight:700; }
     .cal-day--selected .cal-day-num { color:#fff !important; }
-    .cal-day:not(.cal-day--has-citas) .cal-day-num { color:#c4c4c4; }
+    .cal-day:not(.cal-day--has-citas):not(.cal-day--past) .cal-day-num { color:#6b7280; }
+    .cal-day--past .cal-day-num { color:#d1d5db; cursor:default; }
 
     /* Dots */
     .cal-dots { display:flex; gap:2px; margin-top:2px; justify-content:center; }
     .cal-dot   { width:4px; height:4px; border-radius:50%; display:inline-block; }
+    .cal-day--selected .cal-dot { outline: 1.5px solid rgba(255,255,255,0.6); outline-offset: 0.5px; }
 
     /* Panel día */
     .cal-day-panel { background:#fff; border-radius:12px; box-shadow:0 1px 6px rgba(0,0,0,.07); overflow:hidden; margin-bottom:8px; }

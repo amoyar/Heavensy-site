@@ -23,6 +23,8 @@ let _agendaSelectedDate     = null;   // fecha seleccionada en el calendario
 let _agendaCalendarMonth    = null;   // mes visible (Date primer día del mes)
 let _agendaSlots            = [];     // slots del día seleccionado
 let _agendaBooking          = false;  // proceso de agendamiento en curso
+let _agendaCompanyServices  = [];     // servicios agrupados de toda la empresa (multi-especialista)
+let _agendaMultiMode        = false;  // true si hay más de 1 especialista
 
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -102,8 +104,9 @@ async function loadAgenda(companyId, userId) {
 
     try {
         // Cargar el recurso del profesional logueado
+        // Llamar /api/agenda/company para datos multi-especialista
         const res = await fetch(
-            `${API_BASE_URL || ''}/api/agenda/my`,
+            `${API_BASE_URL || ''}/api/agenda/company?limit=3`,
             { headers: _agendaAuthHeaders() }
         );
 
@@ -115,11 +118,20 @@ async function loadAgenda(companyId, userId) {
             return;
         }
 
-        _agendaMyResource      = data.resource;
-        _agendaMyServices      = data.services || [];
+        _agendaCompanyServices = data.services || [];
         _agendaSchedulingMode  = data.scheduling_mode || 'sequential';
         _agendaReservationTtl  = data.reservation_ttl || 30;
         _agendaPaymentMode     = data.payment_mode || 'manual';
+
+        // Usar primer especialista del primer servicio como recurso de referencia
+        const firstSpec = _agendaCompanyServices[0]?.specialists?.[0];
+        _agendaMyResource = firstSpec ? { _id: firstSpec.resource_id } : null;
+        _agendaMyServices = _agendaCompanyServices.map(s => ({
+            service_id: s.specialists[0]?.service_id,
+            name: s.name,
+            duration: s.duration,
+            price: s.price
+        }));
         _agendaSelectedService = _agendaMyServices[0] || null;
 
         // Mes inicial = hoy
@@ -223,8 +235,8 @@ async function _agendaRenderPanel() {
         return;
     }
 
-    // ── SEQUENTIAL: Próximos cupos por servicio ────────
-    await _agendaRenderNextSlotsByService(container);
+    // ── SEQUENTIAL: siempre layout multi-especialista ────────
+    await _agendaRenderMultiSpecialist(container);
 
     // ── 2. Separador + botón buscar por día ───
     const calToggle = document.createElement('div');
@@ -254,6 +266,181 @@ async function _agendaRenderPanel() {
 
     // ── 4. Próximas citas del contacto ────────
     await _agendaRenderContactAppointments(container);
+}
+
+
+
+// ============================================
+// MULTI-ESPECIALISTA — nuevo layout
+// ============================================
+
+async function _agendaRenderMultiSpecialist(container) {
+    const section = document.createElement('div');
+    section.className = 'agenda-next-slots-section';
+
+    const title = document.createElement('div');
+    title.className = 'agenda-next-slots-title';
+    title.innerHTML = `<i class="fas fa-bolt"></i> Próximos cupos disponibles`;
+    section.appendChild(title);
+
+    _agendaCompanyServices.forEach((svcGroup, idx) => {
+        const svcColor = _svcColors[idx % _svcColors.length];
+        const svcId    = `agendaSvc_${idx}`;
+        const isOpen   = idx === 0;
+
+        const svcBlock = document.createElement('div');
+        svcBlock.className = 'agenda-next-svc-block';
+        svcBlock.dataset.idx = idx;
+
+        // ── Header especialidad ────────────────
+        const svcName = document.createElement('div');
+        svcName.className = 'agenda-next-svc-name agenda-next-svc-name--toggle';
+        svcName.dataset.target = svcId;
+        svcName.innerHTML = `
+            <span class="agenda-next-svc-dot" style="background:${svcColor}"></span>
+            <span>${svcGroup.name}</span>
+            <span class="agenda-next-svc-duration">${svcGroup.duration} min</span>
+            <i class="fas fa-chevron-${isOpen ? 'down' : 'right'} agenda-next-svc-chevron"></i>
+        `;
+        svcName.style.background   = isOpen ? `${svcColor}33` : `${svcColor}14`;
+        svcName.style.borderRadius = '8px';
+
+        // ── Contenido colapsable ───────────────
+        const svcContent = document.createElement('div');
+        svcContent.id = svcId;
+        svcContent.style.display = isOpen ? 'block' : 'none';
+
+        // Slots globales de la especialidad
+        const globalRow = document.createElement('div');
+        globalRow.className = 'agenda-next-slots-row';
+        globalRow.style.display = 'flex';
+
+        if (svcGroup.next_slots && svcGroup.next_slots.length > 0) {
+            svcGroup.next_slots.forEach(slot => {
+                const btn = document.createElement('button');
+                btn.className = 'agenda-next-slot-pill';
+                btn.dataset.start = slot.start;
+                btn.dataset.date  = slot.date;
+                btn.style.borderTopColor = svcColor;
+                btn.style.borderTopWidth = '2px';
+                btn.innerHTML = `
+                    <span class="agenda-next-slot-date">${_agendaFormatDateShort(slot.date)}</span>
+                    <span class="agenda-next-slot-time">${slot.start}</span>
+                `;
+                // El slot ya tiene resource_id y service_id del especialista
+                const svc = {
+                    service_id:   slot.service_id,
+                    name:         svcGroup.name,
+                    duration:     svcGroup.duration,
+                    price:        svcGroup.price,
+                    resource_id:  slot.resource_id,
+                    resource_name: slot.resource_name
+                };
+                btn.addEventListener('click', () => _agendaOnNextSlotClick(svc, slot, btn, svcColor));
+                globalRow.appendChild(btn);
+            });
+        } else {
+            globalRow.innerHTML = `<span class="agenda-next-empty">Sin disponibilidad próxima</span>`;
+        }
+        svcContent.appendChild(globalRow);
+
+        // ── Especialistas ──────────────────────
+        if (svcGroup.specialists && svcGroup.specialists.length > 0) {
+            const specsWrapper = document.createElement('div');
+            specsWrapper.className = 'agenda-specialists-wrapper';
+
+            svcGroup.specialists.forEach(spec => {
+                const specBlock = document.createElement('div');
+                specBlock.className = 'agenda-specialist-block';
+
+                // Iniciales del especialista
+                const initials = spec.resource_name.split(' ')
+                    .filter(w => w.match(/^[A-ZÁÉÍÓÚÑ]/))
+                    .slice(0, 2).map(w => w[0]).join('');
+
+                const specHeader = document.createElement('div');
+                specHeader.className = 'agenda-specialist-header';
+                specHeader.innerHTML = `
+                    <div class="agenda-specialist-avatar" style="background:${svcColor}">${initials}</div>
+                    <span class="agenda-specialist-name">${spec.resource_name}</span>
+                    <i class="fas fa-chevron-right agenda-specialist-chev"></i>
+                `;
+
+                // Slots del especialista
+                const specSlots = document.createElement('div');
+                specSlots.className = 'agenda-next-slots-row agenda-specialist-slots';
+                specSlots.style.display = 'flex';
+
+                if (spec.next_slots && spec.next_slots.length > 0) {
+                    spec.next_slots.forEach(slot => {
+                        const btn = document.createElement('button');
+                        btn.className = 'agenda-next-slot-pill agenda-next-slot-pill--sm';
+                        btn.dataset.start = slot.start;
+                        btn.dataset.date  = slot.date;
+                        btn.style.borderTopColor = svcColor;
+                        btn.style.borderTopWidth = '2px';
+                        btn.innerHTML = `
+                            <span class="agenda-next-slot-date">${_agendaFormatDateShort(slot.date)}</span>
+                            <span class="agenda-next-slot-time">${slot.start}</span>
+                        `;
+                        const svc = {
+                            service_id:    spec.service_id,
+                            name:          svcGroup.name,
+                            duration:      svcGroup.duration,
+                            price:         svcGroup.price,
+                            resource_id:   spec.resource_id,
+                            resource_name: spec.resource_name
+                        };
+                        btn.addEventListener('click', () => _agendaOnNextSlotClick(svc, slot, btn, svcColor));
+                        specSlots.appendChild(btn);
+                    });
+                } else {
+                    specSlots.innerHTML = `<span class="agenda-next-empty">Sin disponibilidad</span>`;
+                }
+
+                specBlock.appendChild(specHeader);
+                specBlock.appendChild(specSlots);
+                specsWrapper.appendChild(specBlock);
+            });
+
+            svcContent.appendChild(specsWrapper);
+        }
+
+        // ── Toggle acordeón ────────────────────
+        svcName.addEventListener('click', () => {
+            const chev = svcName.querySelector('.agenda-next-svc-chevron');
+            const isNowOpen = svcContent.style.display !== 'none';
+
+            // Colapsar todos
+            document.querySelectorAll('.agenda-next-svc-block').forEach(block => {
+                const blockIdx   = parseInt(block.dataset.idx || 0);
+                const blockColor = _svcColors[blockIdx % _svcColors.length];
+                const blockHdr   = block.querySelector('.agenda-next-svc-name--toggle');
+                const blockChev  = block.querySelector('.agenda-next-svc-chevron');
+                const blockId    = blockHdr?.dataset?.target;
+                const blockContent = blockId ? document.getElementById(blockId) : null;
+                if (blockHdr)     { blockHdr.style.background = `${blockColor}14`; blockHdr.style.borderRadius = '8px'; }
+                if (blockChev)    blockChev.className = 'fas fa-chevron-right agenda-next-svc-chevron';
+                if (blockContent) blockContent.style.display = 'none';
+            });
+
+            if (!isNowOpen) {
+                svcContent.style.display = 'block';
+                chev.className = 'fas fa-chevron-down agenda-next-svc-chevron';
+                svcName.style.background = `${svcColor}33`;
+                _agendaSelectedService = {
+                    service_id: svcGroup.specialists[0]?.service_id,
+                    name: svcGroup.name, duration: svcGroup.duration, price: svcGroup.price
+                };
+            }
+        });
+
+        svcBlock.appendChild(svcName);
+        svcBlock.appendChild(svcContent);
+        section.appendChild(svcBlock);
+    });
+
+    container.appendChild(section);
 }
 
 
@@ -382,6 +569,13 @@ async function _agendaLoadNextSlots(svc, container, color = '#7c3aed') {
     }
 }
 
+
+
+function _agendaGetResourceId(svc) {
+    // En multi-modo el resource_id viene en el objeto servicio
+    // En mono-modo usamos _agendaMyResource
+    return svc?.resource_id || _agendaMyResource?._id || null;
+}
 
 function _agendaOnNextSlotClick(svc, slot, btn, color = '#7c3aed') {
     _agendaSelectedService = svc;
@@ -720,7 +914,7 @@ async function _agendaConfirmBooking(start, end) {
                 method:  'POST',
                 headers: _agendaAuthHeaders(),
                 body: JSON.stringify({
-                    resource_id: _agendaMyResource._id,
+                    resource_id: _agendaGetResourceId(_agendaSelectedService),
                     service_id:  _agendaSelectedService.service_id,
                     contact_id:  _agendaCurrentUserId,
                     date:        _agendaSelectedDate,
@@ -1608,6 +1802,58 @@ function _agendaRenderError() {
         border-color: #7c3aed;
     }
 
+
+    /* ── Multi-especialista ─────────────────── */
+    .agenda-specialists-wrapper {
+        margin-top: 4px;
+        border-left: 2px solid #e5e7eb;
+        margin-left: 8px;
+        padding-left: 8px;
+    }
+    .agenda-specialist-block {
+        margin-bottom: 8px;
+    }
+    .agenda-specialist-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 0;
+        margin-bottom: 4px;
+        cursor: default;
+    }
+    .agenda-specialist-avatar {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8px;
+        color: #fff;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .agenda-specialist-name {
+        font-size: 11px;
+        color: #374151;
+        flex: 1;
+        font-weight: 500;
+    }
+    .agenda-specialist-chev {
+        font-size: 8px;
+        color: #d1d5db;
+    }
+    .agenda-specialist-slots {
+        margin-left: 0;
+        gap: 4px;
+    }
+    .agenda-next-slot-pill--sm {
+        min-width: 58px !important;
+        padding: 3px 5px !important;
+    }
+    .agenda-next-slot-pill--sm .agenda-next-slot-date { font-size: 9px !important; }
+    .agenda-next-slot-pill--sm .agenda-next-slot-time { font-size: 11px !important; }
+
     /* ── Confirm inline citas ──────────────── */
     .agenda-appt-confirm-inline {
         display: flex;
@@ -1967,7 +2213,7 @@ async function _agendaConfirmReservation(start, end) {
             method: 'POST',
             headers: { ..._agendaAuthHeaders(), 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                resource_id: _agendaMyResource._id,
+                resource_id: _agendaGetResourceId(_agendaSelectedService),
                 service_id:  _agendaSelectedService.service_id,
                 contact_id:  _agendaCurrentUserId,
                 date:        _agendaSelectedDate,
