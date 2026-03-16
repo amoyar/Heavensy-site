@@ -302,8 +302,21 @@ async function _agendaRenderMultiSpecialist(container) {
             <span class="agenda-next-svc-duration">${svcGroup.duration} min</span>
             <i class="fas fa-chevron-${isOpen ? 'down' : 'right'} agenda-next-svc-chevron"></i>
         `;
-        svcName.style.background   = isOpen ? `${svcColor}33` : `${svcColor}14`;
-        svcName.style.borderRadius = '8px';
+        svcName.style.background   = isOpen ? '#E1DEFF' : '#EFF6FF';
+        svcName.style.border       = isOpen ? '0.5px solid #9961FF' : '0.5px solid #C9D9FF';
+        svcName.style.borderRadius = '5px';
+        if (isOpen) svcName.classList.add('open');
+
+        svcName.addEventListener('mouseenter', () => {
+            if (!svcName.classList.contains('open')) {
+                svcName.style.background = '#dce8ff';
+            }
+        });
+        svcName.addEventListener('mouseleave', () => {
+            if (!svcName.classList.contains('open')) {
+                svcName.style.background = '#EFF6FF';
+            }
+        });
 
         // ── Contenido colapsable ───────────────
         const svcContent = document.createElement('div');
@@ -419,7 +432,7 @@ async function _agendaRenderMultiSpecialist(container) {
                 const blockChev  = block.querySelector('.agenda-next-svc-chevron');
                 const blockId    = blockHdr?.dataset?.target;
                 const blockContent = blockId ? document.getElementById(blockId) : null;
-                if (blockHdr)     { blockHdr.style.background = `${blockColor}14`; blockHdr.style.borderRadius = '8px'; }
+                if (blockHdr)     { blockHdr.style.background = '#EFF6FF'; blockHdr.style.border = '0.5px solid #C9D9FF'; blockHdr.style.borderRadius = '5px'; blockHdr.classList.remove('open'); }
                 if (blockChev)    blockChev.className = 'fas fa-chevron-right agenda-next-svc-chevron';
                 if (blockContent) blockContent.style.display = 'none';
             });
@@ -427,7 +440,9 @@ async function _agendaRenderMultiSpecialist(container) {
             if (!isNowOpen) {
                 svcContent.style.display = 'block';
                 chev.className = 'fas fa-chevron-down agenda-next-svc-chevron';
-                svcName.style.background = `${svcColor}33`;
+                svcName.style.background = '#E1DEFF';
+                svcName.style.border     = '0.5px solid #9961FF';
+                svcName.style.borderRadius = '5px';
                 _agendaSelectedService = {
                     service_id: svcGroup.specialists[0]?.service_id,
                     name: svcGroup.name, duration: svcGroup.duration, price: svcGroup.price
@@ -495,7 +510,7 @@ async function _agendaRenderNextSlotsByService(container) {
                 const otherHdr = block.querySelector('.agenda-next-svc-name--toggle');
                 const otherChev = block.querySelector('.agenda-next-svc-chevron');
                 if (otherRow)  otherRow.style.display = 'none';
-                if (otherHdr)  { const c = _svcColors[parseInt(block.dataset.idx||0) % _svcColors.length]; otherHdr.style.background = `${c}14`; otherHdr.style.borderRadius = '8px'; }
+                if (otherHdr)  { otherHdr.style.background = '#EFF6FF'; otherHdr.style.border = '0.5px solid #C9D9FF'; otherHdr.style.borderRadius = '5px'; otherHdr.classList.remove('open'); }
                 if (otherChev) otherChev.className = 'fas fa-chevron-right agenda-next-svc-chevron';
             });
 
@@ -505,14 +520,30 @@ async function _agendaRenderNextSlotsByService(container) {
             } else {
                 row.style.display = 'flex';
                 chev.className = 'fas fa-chevron-down agenda-next-svc-chevron';
-                svcName.style.background    = `${svcColor}33`;
-                svcName.style.borderRadius  = '8px';
+                svcName.style.background    = '#E1DEFF';
+                svcName.style.border        = '0.5px solid #9961FF';
+                svcName.style.borderRadius  = '5px';
+                svcName.classList.add('open');
                 _agendaSelectedService = svc;
             }
         });
         // Color base siempre visible; activo más fuerte
-        svcName.style.background   = isOpen ? `${svcColor}33` : `${svcColor}14`;
-        svcName.style.borderRadius = '8px';
+        svcName.style.background   = isOpen ? '#E1DEFF' : '#EFF6FF';
+        svcName.style.border       = isOpen ? '0.5px solid #9961FF' : '0.5px solid #C9D9FF';
+        svcName.style.borderRadius = '5px';
+        if (isOpen) svcName.classList.add('open');
+
+        svcName.addEventListener('mouseenter', () => {
+            if (!svcName.classList.contains('open')) {
+                svcName.style.background = '#dce8ff';
+            }
+        });
+        svcName.addEventListener('mouseleave', () => {
+            if (!svcName.classList.contains('open')) {
+                svcName.style.background = '#EFF6FF';
+            }
+        });
+
         svcBlock.appendChild(svcName);
 
         const slotsRow = document.createElement('div');
@@ -1267,7 +1298,7 @@ function _agendaRenderError() {
         align-items: center;
         gap: 6px;
         padding: 16px 0;
-        color: #7c3aed;
+        color: #9961FF;
         font-size: 12px;
     }
     .agenda-state i { font-size: 18px; }
@@ -1287,14 +1318,14 @@ function _agendaRenderError() {
         cursor: pointer;
         outline: none;
     }
-    .agenda-service-select:focus { border-color: #7c3aed; }
+    .agenda-service-select:focus { border-color: #9961FF; }
     .agenda-service-tag {
         display: inline-flex;
         align-items: center;
         gap: 5px;
         font-size: 11px;
-        color: #6d28d9;
-        background: #ede9fe;
+        color: #9961FF;
+        background: #E1DEFF;
         padding: 3px 8px;
         border-radius: 20px;
         margin-bottom: 2px;
@@ -1313,15 +1344,15 @@ function _agendaRenderError() {
         align-items: center;
         gap: 4px;
         padding: 5px 12px 5px;
-        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        background: #EFF6FF;
         border-radius: 8px 8px 0 0;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid #C9D9FF;
         margin-bottom: 0;
     }
     .agenda-cal-title {
         font-size: 13px;
         font-weight: 700;
-        color: #1e40af;
+        color: #7D84C1;
         flex: 1;
         text-align: center;
     }
@@ -1329,15 +1360,15 @@ function _agendaRenderError() {
         background: none;
         border: none;
         cursor: pointer;
-        color: #3b82f6;
+        color: #9961FF;
         padding: 2px 5px;
         border-radius: 4px;
         font-size: 11px;
         transition: background .15s;
     }
-    .agenda-cal-nav:hover { background: #dbeafe; }
-    .agenda-cal-toggle-btn { margin-left: 2px; color: #93c5fd; }
-    .agenda-cal-toggle-btn:hover { color: #1e40af; background: #dbeafe; }
+    .agenda-cal-nav:hover { background: #E1DEFF; }
+    .agenda-cal-toggle-btn { margin-left: 2px; color: #9961FF; }
+    .agenda-cal-toggle-btn:hover { color: #7D84C1; background: #E1DEFF; }
 
     .agenda-cal-days-row {
         display: grid;
@@ -1370,20 +1401,20 @@ function _agendaRenderError() {
         user-select: none;
     }
     .agenda-cal-cell:not(.agenda-cal-cell--past):not(.agenda-cal-cell--empty):hover {
-        background: #ede9fe;
-        color: #7c3aed;
+        background: #E1DEFF;
+        color: #9961FF;
     }
     .agenda-cal-cell--today {
         font-weight: 700;
-        color: #7c3aed;
-        border: 1px solid #7c3aed;
+        color: #9961FF;
+        border: 1px solid #9961FF;
     }
     .agenda-cal-cell--past {
         color: #d1d5db;
         cursor: default;
     }
     .agenda-cal-cell--selected {
-        background: #7c3aed !important;
+        background: #9961FF !important;
         color: #fff !important;
         font-weight: 600;
     }
@@ -1400,8 +1431,8 @@ function _agendaRenderError() {
         margin-bottom: 6px;
     }
     .agenda-slots-count {
-        background: #ede9fe;
-        color: #7c3aed;
+        background: #E1DEFF;
+        color: #9961FF;
         padding: 1px 7px;
         border-radius: 10px;
         font-size: 10px;
@@ -1430,20 +1461,20 @@ function _agendaRenderError() {
         transition: all .12s;
     }
     .agenda-slot-btn:hover {
-        border-color: #7c3aed;
-        color: #7c3aed;
-        background: #faf5ff;
+        border-color: #9961FF;
+        color: #9961FF;
+        background: #EFF6FF;
     }
     .agenda-slot-btn--selected {
-        background: #7c3aed !important;
+        background: #9961FF !important;
         color: #fff !important;
-        border-color: #7c3aed !important;
+        border-color: #9961FF !important;
         font-weight: 600;
     }
 
     /* ── Panel de confirmación ──────────────── */
     .agenda-confirm-panel {
-        background: #faf5ff;
+        background: #EFF6FF;
         border: 1px solid #c4b5fd;
         border-radius: 8px;
         padding: 10px;
@@ -1460,7 +1491,7 @@ function _agendaRenderError() {
         color: #4b5563;
         margin-bottom: 3px;
     }
-    .agenda-confirm-row i { color: #7c3aed; width: 12px; }
+    .agenda-confirm-row i { color: #9961FF; width: 12px; }
     .agenda-notes-input {
         width: 100%;
         box-sizing: border-box;
@@ -1472,7 +1503,7 @@ function _agendaRenderError() {
         margin-bottom: 8px;
         outline: none;
     }
-    .agenda-notes-input:focus { border-color: #7c3aed; }
+    .agenda-notes-input:focus { border-color: #9961FF; }
     .agenda-confirm-actions {
         display: flex;
         gap: 6px;
@@ -1493,14 +1524,14 @@ function _agendaRenderError() {
         padding: 6px;
         border: none;
         border-radius: 5px;
-        background: #7c3aed;
+        background: #9961FF;
         color: #fff;
         font-size: 11px;
         font-weight: 600;
         cursor: pointer;
         transition: background .12s;
     }
-    .agenda-btn-confirm:hover:not(:disabled) { background: #6d28d9; }
+    .agenda-btn-confirm:hover:not(:disabled) { background: #7D84C1; }
     .agenda-btn-confirm:disabled { opacity: .6; cursor: default; }
 
     /* ── Éxito ──────────────────────────────── */
@@ -1514,15 +1545,15 @@ function _agendaRenderError() {
     .agenda-success-detail { font-size: 11px; color: #6b7280; margin-bottom: 10px; line-height: 1.6; }
     .agenda-btn-new {
         padding: 6px 14px;
-        border: 1px dashed #7c3aed;
+        border: 1px dashed #9961FF;
         border-radius: 6px;
         background: #fff;
-        color: #7c3aed;
+        color: #9961FF;
         font-size: 11px;
         cursor: pointer;
         transition: background .12s;
     }
-    .agenda-btn-new:hover { background: #faf5ff; }
+    .agenda-btn-new:hover { background: #EFF6FF; }
 
     /* ── Sin horarios + waitlist ────────────── */
     .agenda-no-slots {
@@ -1545,7 +1576,7 @@ function _agendaRenderError() {
         cursor: pointer;
         transition: all .12s;
     }
-    .agenda-btn-waitlist:hover { border-color: #7c3aed; color: #7c3aed; }
+    .agenda-btn-waitlist:hover { border-color: #9961FF; color: #9961FF; }
 
     /* ── Hint ───────────────────────────────── */
     .agenda-hint {
@@ -1596,7 +1627,7 @@ function _agendaRenderError() {
         gap: 5px;
         margin-bottom: 6px;
     }
-    .agenda-appts-title i { color: #7c3aed; }
+    .agenda-appts-title i { color: #9961FF; }
     .agenda-appts-loading {
         text-align: center;
         color: #9ca3af;
@@ -1622,7 +1653,7 @@ function _agendaRenderError() {
     .agenda-appt-day {
         font-size: 11px;
         font-weight: 700;
-        color: #7c3aed;
+        color: #9961FF;
         line-height: 1.2;
     }
     .agenda-appt-time {
@@ -1651,7 +1682,7 @@ function _agendaRenderError() {
         display: inline-block;
         width: fit-content;
     }
-    .agenda-status--scheduled   { background: #ede9fe; color: #7c3aed; }
+    .agenda-status--scheduled   { background: #E1DEFF; color: #9961FF; }
     .agenda-status--confirmed   { background: #d1fae5; color: #059669; }
     .agenda-status--arrived     { background: #dbeafe; color: #2563eb; }
     .agenda-status--inprogress  { background: #fef3c7; color: #d97706; }
@@ -1679,7 +1710,7 @@ function _agendaRenderError() {
     .agenda-next-slots-title {
         font-size: 10.5px;
         font-weight: 700;
-        color: #7c3aed;
+        color: #9961FF;
         text-transform: uppercase;
         letter-spacing: .04em;
         display: flex;
@@ -1693,28 +1724,29 @@ function _agendaRenderError() {
     .agenda-next-svc-name {
         display: flex;
         align-items: center;
-        gap: 5px;
-        font-size: 11px;
+        gap: 6px;
+        font-size: 11.5px;
         font-weight: 600;
-        color: #374151;
+        color: #7D84C1;
         margin-bottom: 5px;
     }
     .agenda-next-svc-dot {
-        width: 6px;
-        height: 6px;
+        width: 7px;
+        height: 7px;
         border-radius: 50%;
-        background: #7c3aed;
         flex-shrink: 0;
     }
     .agenda-next-svc-name--toggle {
         cursor: pointer;
         user-select: none;
         border-radius: 5px;
-        padding: 5px 6px;
-        margin: 0 -6px;
+        padding: 5px 8px;
+        margin: 0;
+        background: #EFF6FF;
+        border: 0.5px solid #C9D9FF;
         transition: background .1s;
     }
-    .agenda-next-svc-name--toggle:hover { filter: brightness(0.82); box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+    .agenda-next-svc-name--toggle:hover { background: #dce8ff; border-color: #9961FF; }
     .agenda-next-svc-chevron {
         font-size: 9px;
         color: #9ca3af;
@@ -1756,12 +1788,12 @@ function _agendaRenderError() {
         min-width: 52px;
     }
     .agenda-next-slot-pill:hover {
-        border-color: #7c3aed;
-        background: #faf5ff;
+        border-color: #9961FF;
+        background: #EFF6FF;
     }
     .agenda-next-slot-pill--selected {
-        border-color: #7c3aed !important;
-        background: #7c3aed !important;
+        border-color: #9961FF !important;
+        background: #9961FF !important;
     }
     .agenda-next-slot-pill--selected .agenda-next-slot-date,
     .agenda-next-slot-pill--selected .agenda-next-slot-time {
@@ -1788,8 +1820,8 @@ function _agendaRenderError() {
         padding: 3px 10px;
         border: 1px dashed #c4b5fd;
         border-radius: 6px;
-        background: #faf5ff;
-        color: #7c3aed;
+        background: #EFF6FF;
+        color: #9961FF;
         font-size: 11px;
         cursor: pointer;
         transition: all .12s;
@@ -1798,8 +1830,8 @@ function _agendaRenderError() {
         gap: 5px;
     }
     .agenda-btn-search-day:hover {
-        background: #ede9fe;
-        border-color: #7c3aed;
+        background: #E1DEFF;
+        border-color: #9961FF;
     }
 
 
@@ -1954,8 +1986,8 @@ function _agendaRenderError() {
     .agenda-btn-confirm-payment:disabled { opacity: .6; cursor: default; }
     .agenda-btn-send-msg {
         padding: 6px 12px;
-        background: #ede9fe;
-        color: #7c3aed;
+        background: #E1DEFF;
+        color: #9961FF;
         border: 1px solid #c4b5fd;
         border-radius: 7px;
         font-size: 11px;

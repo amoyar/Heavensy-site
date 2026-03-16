@@ -172,17 +172,18 @@ function renderFunnels(funnels) {
         const funnelId = funnel.funnel_id;
         const funnelName = funnel.funnel_name;
         title.innerHTML = `
-            <div class="funnel-title-left">
-                <span class="funnel-dot" style="background:${funnelColor}"></span>
-                <span>${funnelName}</span>
-            </div>
+            <span class="funnel-dot" style="background:${funnelColor}"></span>
+            <span class="funnel-name-text">${funnelName}</span>
             <div class="funnel-title-actions">
                 <button class="funnel-btn-delete" title="Eliminar embudo">
                     <i class="fas fa-trash"></i>
                 </button>
-                <i class="fas fa-chevron-down funnel-chevron"></i>
+                <i class="fas fa-chevron-right funnel-chevron"></i>
             </div>
         `;
+        title.style.background   = '#EFF6FF';
+        title.style.border       = '0.5px solid #C9D9FF';
+        title.style.borderRadius = '5px';
         // Listener del basurero
         title.querySelector('.funnel-btn-delete').addEventListener('click', (e) => {
             e.stopPropagation();
@@ -247,9 +248,11 @@ function renderFunnels(funnels) {
             stagesBox.style.display = isOpen ? 'none' : 'block';
             const chevron = title.querySelector('.funnel-chevron');
             if (chevron) {
-                chevron.classList.toggle('fa-chevron-up', !isOpen);
-                chevron.classList.toggle('fa-chevron-down', isOpen);
+                chevron.classList.toggle('fa-chevron-right', isOpen);
+                chevron.classList.toggle('fa-chevron-down', !isOpen);
             }
+            title.style.background = isOpen ? '#EFF6FF' : '#E1DEFF';
+            title.style.border     = isOpen ? '0.5px solid #C9D9FF' : '0.5px solid #9961FF';
         });
 
         // Separador entre embudos (no en el último)
@@ -376,8 +379,7 @@ function injectFunnelStyles() {
     s.textContent = `
         /* ── Bloque por embudo ── */
         .funnel-block {
-            padding: 6px 2px 6px;
-            border-bottom: 1px solid #f3f4f6;
+            padding: 3px 0;
         }
 
         .funnel-block:last-child {
@@ -387,29 +389,27 @@ function injectFunnelStyles() {
         .funnel-block-title {
             font-size: 11.5px;
             font-weight: 600;
-            color: #374151;
-            margin-bottom: 3px;
+            color: #7D84C1;
+            margin-bottom: 0;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
+            padding: 5px 8px;
         }
 
         .funnel-block-title--toggle {
             cursor: pointer;
-            justify-content: space-between;
-            padding: 2px 2px;
-            border-radius: 4px;
-            transition: background 0.1s;
+            border-radius: 5px;
+            transition: background 0.1s, border-color 0.1s;
         }
 
         .funnel-block-title--toggle:hover {
-            background: #f3f4f6;
+            background: #dce8ff !important;
+            border-color: #9961FF !important;
         }
 
-        .funnel-title-left {
-            display: flex;
-            align-items: center;
-            gap: 5px;
+        .funnel-name-text {
+            flex: 1;
         }
 
         .funnel-chevron {
@@ -420,8 +420,8 @@ function injectFunnelStyles() {
 
         .funnel-dot {
             display: inline-block;
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
             flex-shrink: 0;
         }
