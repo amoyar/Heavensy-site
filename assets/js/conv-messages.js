@@ -264,6 +264,11 @@ async function selectConversation(userId, element) {
         loadFunnels(currentCompanyId, userId);
     }
 
+    // Cargar seguimientos del contacto en el panel derecho
+    if (typeof loadSeguimiento === "function") {
+        loadSeguimiento(userId, currentCompanyId);
+    }
+
     if (window.onConversationSelectedForContacts) {
         window.onConversationSelectedForContacts(
             currentConversation.id,
