@@ -1,0 +1,115 @@
+<nav class="bg-[#b2c4fb] border-b px-4 py-1.5 flex justify-between items-center shadow-sm sticky top-0 z-50 h-10">
+  <div class="flex items-center space-x-2">
+    
+    <!-- Botón toggle sidebar -->
+    <button id="toggleSidebarBtn" class="text-white hover:text-white/80 focus:outline-none">
+      <i class="fas fa-bars text-lg"></i>
+    </button>
+
+    <img src="assets/img/heavensy-logo.png" alt="Heavensy" class="h-6 w-auto" />
+    <span class="text-sm font-semibold text-[#193d6d]">Heavensy</span>
+  </div>
+
+  <div class="flex items-center space-x-3">
+    <!-- Connection Status Indicator -->
+    <div id="connectionStatus" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/30 cursor-default" title="Estado de conexión">
+      <div id="connectionDot" class="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
+      <span id="connectionText" class="text-[10px] font-medium text-gray-600">Conectando...</span>
+    </div>
+
+    <!-- Notifications -->
+    <button class="relative text-gray-500 hover:text-gray-700">
+      <i class="fas fa-bell text-lg"></i>
+    </button>
+
+    <!-- User Menu -->
+    <div class="relative">
+      <button id="userMenuBtn" class="flex items-center space-x-1.5 focus:outline-none">
+        <div class="w-7 h-7 bg-[#92acde] rounded-full flex items-center justify-center text-white text-xs">
+          <i class="fas fa-user"></i>
+        </div>
+        <span id="topbarUsername" class="text-xs font-medium text-[#193d6d]">
+          Usuario
+        </span>
+        <i class="fas fa-chevron-down text-[10px] text-gray-500"></i>
+      </button>
+
+      <div
+        id="userMenu"
+        class="hidden absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg border z-50"
+      >
+        <button onclick="openProfileModal()" class="block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100">
+          Mi perfil
+        </button>
+        <button onclick="openSecurityModal()" class="block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100">
+          Seguridad
+        </button>
+        <div class="border-t my-1"></div>
+        <button onclick="logout()" class="block w-full text-left px-3 py-1.5 text-xs text-red-600 hover:bg-gray-100">
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+<!-- ── MODAL PERFIL ── -->
+<div id="profileModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+  <div class="bg-white w-full max-w-md rounded-xl shadow-xl mx-4">
+    <div class="flex justify-between items-center px-5 py-4 border-b">
+      <h2 class="text-sm font-bold text-gray-800"><i class="fas fa-user text-[#9961FF] mr-2"></i>Mi perfil</h2>
+      <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="profileForm2" class="px-5 py-4 space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Nombre</label>
+          <input id="profileFirstName" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Apellido</label>
+          <input id="profileLastName" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Email</label>
+        <input id="profileEmail" type="email" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Usuario</label>
+        <input id="profileUsername" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400" readonly>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t mt-3">
+        <button type="button" onclick="closeProfileModal()" class="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">Cancelar</button>
+        <button type="submit" class="px-4 py-2 text-sm bg-[#9961FF] text-white rounded-lg font-semibold hover:bg-[#8450f0]">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── MODAL SEGURIDAD ── -->
+<div id="securityModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+  <div class="bg-white w-full max-w-md rounded-xl shadow-xl mx-4">
+    <div class="flex justify-between items-center px-5 py-4 border-b">
+      <h2 class="text-sm font-bold text-gray-800"><i class="fas fa-lock text-[#9961FF] mr-2"></i>Cambiar contraseña</h2>
+      <button onclick="closeSecurityModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="passwordForm2" class="px-5 py-4 space-y-3">
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Contraseña actual</label>
+        <input id="currentPassword" type="password" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]" placeholder="••••••••">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Nueva contraseña</label>
+        <input id="newPassword" type="password" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]" placeholder="Mínimo 8 caracteres">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Confirmar nueva contraseña</label>
+        <input id="confirmPassword" type="password" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]" placeholder="Repite la contraseña">
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t mt-3">
+        <button type="button" onclick="closeSecurityModal()" class="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">Cancelar</button>
+        <button type="submit" class="px-4 py-2 text-sm bg-[#9961FF] text-white rounded-lg font-semibold hover:bg-[#8450f0]">Cambiar contraseña</button>
+      </div>
+    </form>
+  </div>
+</div>

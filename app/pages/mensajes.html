@@ -1,0 +1,246 @@
+<!-- MENSAJES / WEBHOOK TESTING PAGE -->
+<div class="container mx-auto">
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+      <i class="fas fa-paper-plane text-green-600"></i>
+      Mensajes WhatsApp
+    </h1>
+    <p class="text-gray-600 mt-1">Testeo de webhook y envío de mensajes</p>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-600">Estado del Webhook</p>
+          <p class="text-2xl font-bold" id="webhookStatus">Verificando...</p>
+        </div>
+        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+          <i class="fas fa-server text-blue-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-600">Mensajes Enviados</p>
+          <p class="text-2xl font-bold text-green-700" id="messagesSent">0</p>
+        </div>
+        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+          <i class="fas fa-check-circle text-green-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-600">Última Respuesta</p>
+          <p class="text-sm font-semibold" id="lastResponse">-</p>
+        </div>
+        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+          <i class="fas fa-clock text-purple-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    
+    <!-- Configuración del Webhook -->
+    <div class="bg-white rounded-lg shadow">
+      <div class="px-6 py-4 border-b bg-gradient-to-r from-blue-50 to-blue-100">
+        <h3 class="text-lg font-semibold flex items-center gap-2">
+          <i class="fas fa-cog text-blue-600"></i>
+          Configuración WhatsApp
+        </h3>
+      </div>
+      
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Phone Number ID *
+          </label>
+          <input 
+            id="phoneNumberId" 
+            type="text" 
+            class="w-full border rounded-lg px-3 py-2 text-sm"
+            placeholder="814189351782625"
+            value="814189351782625"
+          />
+          <p class="text-xs text-gray-500 mt-1">ID del número de WhatsApp Business</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Access Token *
+          </label>
+          <div class="relative">
+            <input 
+              id="accessToken" 
+              type="password" 
+              class="w-full border rounded-lg px-3 py-2 text-sm pr-10"
+              placeholder="EAAxxxxxxxxxx"
+            />
+            <button 
+              onclick="toggleTokenVisibility('accessToken')"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Token de acceso de Meta WhatsApp API</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Verify Token
+          </label>
+          <input 
+            id="verifyToken" 
+            type="text" 
+            class="w-full border rounded-lg px-3 py-2 text-sm"
+            placeholder="tu_verify_token"
+          />
+          <p class="text-xs text-gray-500 mt-1">Token de verificación del webhook</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Webhook URL
+          </label>
+          <input 
+            id="webhookUrl" 
+            type="text" 
+            class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50"
+            value="https://heavensy-api-webhook-v2.onrender.com"
+            readonly
+          />
+        </div>
+
+        <button 
+          onclick="testWebhookHealth()"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+        >
+          <i class="fas fa-heartbeat"></i>
+          Verificar Estado del Webhook
+        </button>
+      </div>
+    </div>
+
+    <!-- Enviar Mensaje de Prueba -->
+    <div class="bg-white rounded-lg shadow">
+      <div class="px-6 py-4 border-b bg-gradient-to-r from-green-50 to-green-100">
+        <h3 class="text-lg font-semibold flex items-center gap-2">
+          <i class="fas fa-comment-dots text-green-600"></i>
+          Enviar Mensaje de Prueba
+        </h3>
+      </div>
+      
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Número de Destino *
+          </label>
+          <input 
+            id="destinationNumber" 
+            type="text" 
+            class="w-full border rounded-lg px-3 py-2 text-sm"
+            placeholder="+56912345678"
+          />
+          <p class="text-xs text-gray-500 mt-1">Número en formato internacional (con +)</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Mensaje *
+          </label>
+          <textarea 
+            id="messageText" 
+            rows="6"
+            class="w-full border rounded-lg px-3 py-2 text-sm"
+            placeholder="Escribe tu mensaje aquí..."
+          >Hola, este es un mensaje de prueba desde Heavensy Admin Panel 🚀</textarea>
+          <p class="text-xs text-gray-500 mt-1">El mensaje se enviará directamente a WhatsApp</p>
+        </div>
+
+        <div class="flex gap-2">
+          <button 
+            onclick="sendTestMessage()"
+            class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+          >
+            <i class="fas fa-paper-plane"></i>
+            Enviar Mensaje
+          </button>
+          
+          <button 
+            onclick="testAIReply()"
+            class="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+          >
+            <i class="fas fa-robot"></i>
+            Test IA Reply
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial de Mensajes -->
+  <div class="bg-white rounded-lg shadow mt-6">
+    <div class="px-6 py-4 border-b flex justify-between items-center">
+      <h3 class="text-lg font-semibold flex items-center gap-2">
+        <i class="fas fa-history text-gray-600"></i>
+        Historial de Mensajes
+      </h3>
+      <button 
+        onclick="clearMessageHistory()"
+        class="text-sm text-red-600 hover:text-red-700"
+      >
+        <i class="fas fa-trash"></i> Limpiar
+      </button>
+    </div>
+    
+    <div id="messageHistory" class="p-6 space-y-3 max-h-96 overflow-y-auto">
+      <div class="text-center text-gray-500 py-8">
+        <i class="fas fa-inbox text-4xl mb-3"></i>
+        <p>No hay mensajes enviados aún</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documentación Rápida -->
+  <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
+    <h3 class="text-lg font-semibold text-blue-900 mb-3 flex items-center gap-2">
+      <i class="fas fa-book"></i>
+      Guía Rápida
+    </h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
+      <div>
+        <h4 class="font-semibold mb-2">📱 Configuración:</h4>
+        <ul class="space-y-1 list-disc list-inside">
+          <li>Obtén el Phone Number ID desde Meta Business</li>
+          <li>Genera un Access Token en Meta Developers</li>
+          <li>Configura el Verify Token en tu webhook</li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-semibold mb-2">✉️ Envío de Mensajes:</h4>
+        <ul class="space-y-1 list-disc list-inside">
+          <li>El número debe estar en formato internacional</li>
+          <li>Usa el formato: +[código país][número]</li>
+          <li>Ejemplo: +56912345678</li>
+        </ul>
+      </div>
+    </div>
+    <div class="mt-4 p-3 bg-white rounded border border-blue-300">
+      <p class="text-sm text-blue-900">
+        <i class="fas fa-info-circle"></i>
+        <strong>Nota:</strong> Los mensajes se envían directamente a WhatsApp Business API. 
+        Asegúrate de que el número de destino esté registrado en tu cuenta de WhatsApp Business.
+      </p>
+    </div>
+  </div>
+</div>

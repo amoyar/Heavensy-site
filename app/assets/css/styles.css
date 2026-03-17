@@ -1,0 +1,511 @@
+:root {
+  --heavensy-blue: #2563EB;        /* blue-600 */
+  --heavensy-blue-dark: #1E40AF;   /* blue-800 */
+  --heavensy-bg: #F8FAFC;          /* gray-50 */
+  --heavensy-border: #E5E7EB;      /* gray-200 */
+}
+body {
+  background-color: var(--heavensy-bg);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+.chat-font {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* Mejoras para scrollbar en historial */
+#historialMessagesContainer::-webkit-scrollbar {
+  width: 8px;
+}
+
+#historialMessagesContainer::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+#historialMessagesContainer::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+#historialMessagesContainer::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Estilos para las tarjetas de mensaje */
+.message-card {
+  transition: all 0.2s ease;
+}
+
+.message-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* ============================================
+   CONVERSACIONES - ESTILOS ADICIONALES
+   ============================================ */
+
+/* Scrollbar para lista de conversaciones */
+#conversationsList::-webkit-scrollbar {
+  width: 6px;
+}
+
+#conversationsList::-webkit-scrollbar-track {
+  background: #f9fafb;
+}
+
+#conversationsList::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
+
+#conversationsList::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Scrollbar para área de chat */
+#chatMessages::-webkit-scrollbar {
+  width: 6px;
+}
+
+#chatMessages::-webkit-scrollbar-track {
+  background: #f9fafb;
+}
+
+#chatMessages::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
+
+#chatMessages::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Avatares con gradientes */
+.avatar-gradient-purple {
+  background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%);
+}
+
+.avatar-gradient-blue {
+  background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+}
+
+.avatar-gradient-green {
+  background: linear-gradient(135deg, #4ade80 0%, #16a34a 100%);
+}
+
+.avatar-gradient-orange {
+  background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+}
+
+.avatar-gradient-pink {
+  background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+}
+
+/* Animación para mensajes nuevos */
+@keyframes slideInMessage {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-animate {
+  animation: slideInMessage 0.3s ease-out;
+}
+
+/* Estado de escritura (typing indicator) */
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 12px;
+}
+
+.typing-indicator span {
+  width: 8px;
+  height: 8px;
+  background: #9ca3af;
+  border-radius: 50%;
+  animation: typing 1.4s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  30% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+}
+
+/* Mejoras de hover en conversaciones */
+.conversation-item {
+  transition: all 0.2s ease;
+}
+
+.conversation-item:hover {
+  background-color: #f9fafb;
+}
+
+.conversation-item.active {
+  background-color: #f3e8ff;
+}
+
+.conversation-user-bubble {
+  background-color: #e7f0fd;
+}
+.conversation-admin-bubble {
+  background-color: #d3f9e3;
+}
+/* Badge de notificación */
+.notification-badge {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   CONVERSACIONES PRO - ESTILOS MEJORADOS
+   ============================================ */
+
+/* Efectos de glassmorphism para tarjetas */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Sombras suaves y profesionales */
+.shadow-soft {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-soft-lg {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* Hover effect para botones redondeados */
+button.rounded-xl,
+button.rounded-2xl {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button.rounded-xl:hover,
+button.rounded-2xl:hover {
+  transform: translateY(-1px);
+}
+
+/* Animación de pulso para indicador online */
+@keyframes pulse-green {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+.animate-pulse {
+  animation: pulse-green 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Mejoras para inputs con focus */
+input[type="text"]:focus {
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+}
+
+/* Transiciones suaves para conversaciones */
+#conversationsList > div {
+  transition: all 0.2s ease;
+}
+
+/* Efecto de escala en avatares */
+.avatar-scale {
+  transition: transform 0.2s ease;
+}
+
+.avatar-scale:hover {
+  transform: scale(1.05);
+}
+
+/* Gradientes mejorados */
+.gradient-purple {
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+}
+
+.gradient-purple-light {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+}
+
+/* Bordes con brillo sutil */
+.border-glow {
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Mejora de scrollbar para la lista de conversaciones */
+#conversationsList::-webkit-scrollbar {
+  width: 5px;
+}
+
+#conversationsList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#conversationsList::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
+
+#conversationsList::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Mejora de scrollbar para el área de chat */
+#chatMessages::-webkit-scrollbar {
+  width: 5px;
+}
+
+#chatMessages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#chatMessages::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
+
+#chatMessages::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Efecto de brillo en tags */
+.tag-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.tag-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s;
+}
+
+.tag-shine:hover::before {
+  left: 100%;
+}
+
+/* Mejora visual para mensajes */
+.message-bubble {
+  transition: all 0.2s ease;
+}
+
+.message-bubble:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Animación para nuevos mensajes */
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.message-user {
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+.message-assistant {
+  animation: slideInFromLeft 0.3s ease-out;
+}
+
+/* Efecto de resplandor para estado activo */
+.status-glow {
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+
+/* Mejora de contraste en badges */
+.badge-contrast {
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+
+/* Efecto de fondo animado para conversación activa */
+.conversation-active {
+  background: linear-gradient(90deg, #f3e8ff 0%, rgba(243, 232, 255, 0.3) 100%);
+  border-left: 3px solid #9333ea;
+}
+
+
+/* estilo filtros busqueda*/
+.filter-chip {
+  background-color: #c9dcef;
+  border-color: #92acde;
+  color: #193d6d;          /* 🔹 Inactivo: texto azul */
+  cursor: pointer;
+}
+
+.filter-chip:hover {
+  background-color: #bcd2f2;
+}
+
+.filter-chip.active {
+  background-color: #92acde;
+  border-color: #92acde;
+  color: #ffffff;          /* 🔹 Activo: texto blanco */
+  font-weight: 600;
+}
+
+/* Scrollbar delgada para el contenedor de filtros */
+#filterChipsContainer {
+  scrollbar-width: thin;              /* Firefox */
+  scrollbar-color: #9ca3af transparent;
+}
+
+/* Chrome, Edge, Safari */
+#filterChipsContainer::-webkit-scrollbar {
+  height: 3px;                        /* 👈 grosor del scroll horizontal */
+}
+
+#filterChipsContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#filterChipsContainer::-webkit-scrollbar-thumb {
+  background-color: #9ca3af;          /* gris suave */
+  border-radius: 999px;
+}
+
+
+/* ============================================
+   RESPONSIVE — HEAVENSY ADMIN
+   ============================================ */
+
+/* Sidebar transition */
+#appSidebar {
+  transition: transform 0.3s ease, width 0.3s ease;
+}
+
+/* ── Tablet ≤1024px ── */
+@media (max-width: 1024px) {
+  /* Tablas — scroll horizontal */
+  .overflow-x-auto { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Grids de stats de 3 cols → 2 cols */
+  .grid.grid-cols-3 { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+
+  /* Modal ancho completo */
+  .max-w-3xl { max-width: calc(100vw - 2rem) !important; }
+}
+
+/* ── Mobile ≤768px ── */
+@media (max-width: 768px) {
+  /* Sidebar oculto por defecto — controlado por JS */
+  #appSidebar {
+    position: fixed !important;
+    top: 0; left: 0;
+    height: 100vh !important;
+    z-index: 40;
+    box-shadow: 4px 0 20px rgba(0,0,0,.15);
+    transform: translateX(-100%);
+    width: 200px !important;
+  }
+
+  #appSidebar .sidebar-text { display: inline !important; }
+
+  /* Main ocupa todo el ancho */
+  #app { width: 100% !important; padding: 0.5rem !important; }
+
+  /* Navbar — ocultar username en muy pequeño */
+  #topbarUsername { display: none; }
+
+  /* Tablas scroll horizontal */
+  table { min-width: 500px; }
+  .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; }
+
+  /* Grids → 1 columna */
+  .grid.grid-cols-3,
+  .grid.grid-cols-2,
+  .md\:grid-cols-3,
+  .md\:grid-cols-2 { grid-template-columns: 1fr !important; }
+
+  /* Cards — padding más pequeño */
+  .bg-white.rounded-lg.shadow { padding: 1rem !important; }
+
+  /* Botones — texto más pequeño */
+  .text-sm { font-size: .8rem; }
+
+  /* Modales full width */
+  .max-w-3xl,
+  .max-w-2xl,
+  .max-w-xl  { max-width: calc(100vw - 1rem) !important; margin: 0.5rem !important; }
+
+  /* Ocultar columnas menos importantes en tablas */
+  .hide-mobile { display: none !important; }
+}
+
+/* ── Small mobile ≤480px ── */
+@media (max-width: 480px) {
+  #topbarUsername { display: none; }
+  .px-6 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+  .py-4 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+  h1.text-2xl { font-size: 1.2rem !important; }
+  .text-2xl.font-bold { font-size: 1.2rem !important; }
+}
+
+/* ── Tablas responsive helper ── */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Conversaciones — layout responsive ── */
+@media (max-width: 768px) {
+  /* Panel de conversaciones: ocultar lista en mobile cuando hay chat abierto */
+  #conversationsList { min-width: 100%; }
+}
