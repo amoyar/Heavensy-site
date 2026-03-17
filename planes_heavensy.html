@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planes — Heavensy</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #F7F8FC; color: #1E2140; }
+
+  /* CONTAINER */
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  /* NAV */
+  .nav { display: flex; align-items: center; gap: 2rem; padding: 1rem 2rem; border-bottom: 1px solid #E4E6F0; background: #FFFFFF; position: sticky; top: 0; z-index: 100; }
+  .logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; text-decoration: none; color: #1E2140; }
+  .logo-dot { width: 30px; height: 30px; border-radius: 50%; background: #7C6FF7; display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; }
+  .nav-links { display: flex; gap: 1.5rem; flex: 1; }
+  .nav-links a { font-size: 13px; color: #6B7194; text-decoration: none; transition: color 0.2s; }
+  .nav-links a:hover { color: #5B6AD4; }
+  .nav-links a.active { color: #5B6AD4; border-bottom: 2px solid #5B6AD4; padding-bottom: 2px; }
+  .btn-nav { background: #7C6FF7; color: white; border: none; border-radius: 8px; padding: 8px 18px; font-size: 13px; font-family: inherit; cursor: pointer; transition: opacity 0.2s; }
+  .btn-nav:hover { opacity: 0.9; }
+
+  /* HERO */
+  .hero { text-align: center; padding: 3rem 1rem 2rem; background: #F2F3F9; border-bottom: 1px solid #E4E6F0; }
+  .hero h1 { font-size: 32px; font-weight: 600; color: #5B6AD4; margin-bottom: 10px; }
+  .hero p { font-size: 15px; color: #6B7194; margin-bottom: 1.5rem; }
+  .toggle { display: inline-flex; border: 1px solid #D0D4E8; border-radius: 10px; overflow: hidden; background: #FFFFFF; }
+  .toggle button { padding: 8px 22px; font-size: 13px; font-family: inherit; border: none; cursor: pointer; background: transparent; color: #6B7194; transition: all 0.2s; }
+  .toggle button.active { background: #7C6FF7; color: white; }
+
+  /* SECTION LABEL */
+  .section-label { display: flex; align-items: center; gap: 12px; padding: 2rem 2rem 1rem; }
+  .section-label span { font-size: 11px; font-weight: 600; color: #9BA3C0; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: #E4E6F0; margin-left: 10px; }
+
+  /* PLANS GRID */
+  .plans-wrap { padding: 0 2rem 1.5rem; }
+  .plans-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .plans-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding-bottom: 2rem; }
+
+  /* PLAN CARD */
+  .plan { background: #FFFFFF; border: 1px solid #E4E6F0; border-radius: 14px; display: flex; flex-direction: column; position: relative; overflow: hidden; transition: box-shadow 0.2s; }
+  .plan:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .plan.featured { border: 2px solid #4A9FD4; }
+  .badge-pop { position: absolute; top: -1px; left: 50%; transform: translateX(-50%); background: #4A9FD4; color: white; font-size: 10px; font-weight: 600; padding: 4px 16px; border-radius: 0 0 8px 8px; white-space: nowrap; letter-spacing: 0.04em; }
+
+  /* PLAN HEADER */
+  .plan-header { padding: 1.5rem 1.5rem 1.25rem; border-bottom: 1px solid #F0F1F8; }
+  .plan-tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 6px; margin-bottom: 10px; letter-spacing: 0.02em; }
+  .plan-name { font-size: 15px; font-weight: 600; color: #1E2140; margin-bottom: 3px; }
+  .plan-sub { font-size: 12px; color: #9BA3C0; margin-bottom: 12px; }
+  .plan-price { font-size: 30px; font-weight: 600; margin-bottom: 2px; }
+  .plan-period { font-size: 12px; color: #9BA3C0; }
+
+  /* PLAN BODY */
+  .plan-body { flex: 1; display: flex; flex-direction: column; }
+  .feat-group { padding: 12px 1.5rem; border-bottom: 1px solid #F0F1F8; }
+  .feat-group-title { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; margin-bottom: 10px; padding: 3px 10px; border-radius: 6px; display: inline-block; text-transform: uppercase; }
+  .feat { display: flex; align-items: flex-start; gap: 9px; font-size: 12.5px; color: #6B7194; line-height: 1.5; margin-bottom: 6px; }
+  .feat:last-child { margin-bottom: 0; }
+  .feat-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .feat.key { color: #1E2140; font-weight: 500; }
+  .feat.no { color: #C0C4D8; }
+  .feat.no .feat-dot { background: #D5D9E8 !important; }
+
+  /* PLAN FOOTER */
+  .plan-footer { padding: 1.25rem 1.5rem; }
+  .note { font-size: 11px; color: #9BA3C0; background: #F7F8FC; border-radius: 8px; padding: 6px 12px; margin-bottom: 10px; text-align: center; }
+  .btn-plan { width: 100%; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; border: none; transition: opacity 0.2s; }
+  .btn-plan:hover { opacity: 0.88; }
+  .btn-outline { background: transparent; border: 1px solid #D0D4E8; color: #1E2140; }
+
+  /* FAQ */
+  .faq { margin: 0.5rem 2rem 2.5rem; background: #E8EAFA; border-radius: 14px; padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
+  .faq strong { font-weight: 600; font-size: 15px; color: #5B6AD4; display: block; margin-bottom: 5px; }
+  .faq p { font-size: 13px; color: #4A52A0; }
+  .faq button { background: #7C6FF7; color: white; border: none; border-radius: 8px; padding: 10px 22px; font-size: 13px; font-family: inherit; white-space: nowrap; cursor: pointer; flex-shrink: 0; font-weight: 500; transition: opacity 0.2s; }
+  .faq button:hover { opacity: 0.9; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav"><div class="container" style="display:flex;align-items:center;gap:2rem;width:100%;">
+  <a href="#" class="logo">
+    <div class="logo-dot">✦</div>
+    Heavensy
+  </a>
+  <div class="nav-links">
+    <a href="#">Quiénes somos</a>
+    <a href="#" class="active">Planes</a>
+    <a href="#">Búsqueda servicios</a>
+  </div>
+  <button class="btn-nav">Iniciar sesión</button>
+</div></nav>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Elige tu plan</h1>
+  <p>Automatiza tu negocio · Conecta tus redes · Crece con IA</p>
+  <div class="toggle">
+    <button class="active" onclick="this.classList.add('active');this.nextElementSibling.classList.remove('active')">Mensual</button>
+    <button onclick="this.classList.add('active');this.previousElementSibling.classList.remove('active')">Anual &nbsp;−20%</button>
+  </div>
+</div>
+
+<!-- PROFESIONALES INDEPENDIENTES -->
+<div class="container"><div class="section-label"><span>Para profesionales independientes</span></div>
+</div><div class="container"><div class="plans-wrap">
+<div class="plans-3">
+
+  <!-- BÁSICO -->
+  <div class="plan">
+    <div class="plan-header">
+      <span class="plan-tag" style="background:#E8EAFA;color:#3D2EA0;">Básico</span>
+      <div class="plan-name">Tu presencia en Heavensy</div>
+      <div class="plan-sub">Sin cobro mensual</div>
+      <div class="plan-price" style="color:#5B6AD4;">$0</div>
+      <div class="plan-period">para siempre</div>
+    </div>
+    <div class="plan-body">
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#E8EAFA;color:#3D2EA0;">Perfil</div>
+        <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Perfil público completo</div>
+        <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Chat interno con clientes</div>
+        <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Archivos descargables</div>
+        <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Notificaciones</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#E8EAFA;color:#3D2EA0;">Visibilidad</div>
+        <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>2 especialidades</div>
+        <div class="feat no"><span class="feat-dot"></span>Sin video en buscador</div>
+        <div class="feat no"><span class="feat-dot"></span>Al fondo del buscador</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#E8EAFA;color:#3D2EA0;">CRM y gestión</div>
+        <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Notas, tags, ficha de cliente</div>
+        <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Respuestas rápidas</div>
+        <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Hasta 10 embudos</div>
+        <div class="feat no"><span class="feat-dot"></span>Sin integración redes sociales</div>
+        <div class="feat no"><span class="feat-dot"></span>Sin IA</div>
+        <div class="feat no"><span class="feat-dot"></span>Sin mensajes masivos</div>
+        <div class="feat no"><span class="feat-dot"></span>Sin seguimiento</div>
+        <div class="feat no"><span class="feat-dot"></span>Sin VIP ni alianzas</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#E8EAFA;color:#3D2EA0;">Agenda</div>
+        <div class="feat no"><span class="feat-dot"></span>Sin agenda pública</div>
+        <div class="feat no"><span class="feat-dot"></span>Sin reserva de horas/cupos online</div>
+        <div class="feat no"><span class="feat-dot"></span>Sin cursos ni talleres</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#E8EAFA;color:#3D2EA0;">Comisiones</div>
+        <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>50% comisión automática Heavensy</div>
+        <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>15% por referir profesional/empresa</div>
+        <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Credencial Heavensy + QR</div>
+      </div>
+    </div>
+    <div class="plan-footer">
+      <button class="btn-plan btn-outline">Empezar gratis</button>
+    </div>
+  </div>
+
+  <!-- AUTOMATE PRO -->
+  <div class="plan">
+    <div class="plan-header">
+      <span class="plan-tag" style="background:#F0EEFF;color:#5A4FD4;">Automate Pro</span>
+      <div class="plan-name">La IA trabaja por ti</div>
+      <div class="plan-sub">10 días de prueba gratis</div>
+      <div class="plan-price" style="color:#7C6FF7;">$70.000</div>
+      <div class="plan-period">/ mes</div>
+    </div>
+    <div class="plan-body">
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#F0EEFF;color:#5A4FD4;">Perfil</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Perfil público completo</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Chat interno con clientes</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Archivos descargables</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Notificaciones</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#F0EEFF;color:#5A4FD4;">Visibilidad</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>5 especialidades</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Video en buscador</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Posicionamiento medio en buscador</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#F0EEFF;color:#5A4FD4;">CRM y gestión</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Notas, tags, ficha de cliente</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Respuestas rápidas</div>
+        <div class="feat key"><span class="feat-dot" style="background:#7C6FF7;"></span>Integración WhatsApp, FB, Instagram</div>
+        <div class="feat key"><span class="feat-dot" style="background:#7C6FF7;"></span>IA responde tus mensajes 24/7</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Apagar/prender IA · intervención manual</div>
+        <div class="feat key"><span class="feat-dot" style="background:#7C6FF7;"></span>Embudos ilimitados</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Mensajes masivos a clientes</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Seguimiento del cliente</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Alianzas con profesionales/empresas</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Clientes VIP — sistema de regalías</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#F0EEFF;color:#5A4FD4;">Agenda</div>
+        <div class="feat key"><span class="feat-dot" style="background:#7C6FF7;"></span>Clientes reservan horas/cupos solos</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Crear horas/cupos y bloques masivos</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Confirmaciones y recordatorios automáticos</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Cursos, talleres y eventos</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#F0EEFF;color:#5A4FD4;">Comisiones</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>50% comisión automática Heavensy</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>15% por referir profesional/empresa</div>
+        <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Credencial Heavensy + QR</div>
+      </div>
+    </div>
+    <div class="plan-footer">
+      <button class="btn-plan" style="background:#7C6FF7;color:white;">Empezar prueba</button>
+    </div>
+  </div>
+
+  <!-- SECRETAR-IA -->
+  <div class="plan featured">
+    <div class="badge-pop">Más popular</div>
+    <div class="plan-header" style="padding-top:2rem;">
+      <span class="plan-tag" style="background:#EAF5FC;color:#1A6A9A;">Secretar-IA Premium</span>
+      <div class="plan-name">Tu secretaria virtual personalizada</div>
+      <div class="plan-sub">10 días de prueba gratis</div>
+      <div class="plan-price" style="color:#4A9FD4;">$120.000</div>
+      <div class="plan-period">/ mes</div>
+    </div>
+    <div class="plan-body">
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EAF5FC;color:#1A6A9A;">Perfil</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Perfil público completo</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Chat interno con clientes</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Archivos descargables</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Notificaciones</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EAF5FC;color:#1A6A9A;">Visibilidad</div>
+        <div class="feat key"><span class="feat-dot" style="background:#4A9FD4;"></span>Especialidades ilimitadas</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Video en buscador · primero en resultados</div>
+        <div class="feat key"><span class="feat-dot" style="background:#4A9FD4;"></span>Hasta 3 empresas en tu perfil</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Empresa extra $30.000/mes c/u</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EAF5FC;color:#1A6A9A;">CRM y gestión</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Notas, tags, ficha de cliente</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Respuestas rápidas</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Integración WhatsApp, FB, Instagram</div>
+        <div class="feat key"><span class="feat-dot" style="background:#4A9FD4;"></span>Secretaria con tus conocimientos responde</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Apagar/prender IA · intervención manual</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Embudos ilimitados</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Mensajes masivos a clientes</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Seguimiento del cliente</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Alianzas con profesionales/empresas</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Clientes VIP — sistema de regalías</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>1 modificación del prompt al mes</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EAF5FC;color:#1A6A9A;">Agenda</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Clientes reservan horas/cupos solos</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Crear horas/cupos y bloques masivos</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Confirmaciones y recordatorios automáticos</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Cursos, talleres y eventos</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EAF5FC;color:#1A6A9A;">Comisiones</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>50% comisión automática Heavensy</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>15% por referir profesional/empresa</div>
+        <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Credencial Heavensy + QR</div>
+      </div>
+    </div>
+    <div class="plan-footer">
+      <button class="btn-plan" style="background:#4A9FD4;color:white;">Empezar prueba</button>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<!-- CENTROS Y EQUIPOS -->
+<div class="container"><div class="section-label"><span>Para centros, clínicas y equipos</span></div>
+</div><div class="container"><div class="plans-wrap">
+<div class="plans-2">
+
+  <!-- ENTERPRISE -->
+  <div class="plan">
+    <div class="plan-header">
+      <span class="plan-tag" style="background:#EDFBF3;color:#1A7A40;">Enterprise</span>
+      <div class="plan-name">Tu equipo automatizado</div>
+      <div class="plan-sub">Hasta 10 integrantes · 10 días prueba gratis</div>
+      <div class="plan-price" style="color:#2ECC71;">$210.000</div>
+      <div class="plan-period">/ mes</div>
+    </div>
+    <div class="plan-body">
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">Perfil</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Perfil público completo</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Chat interno con clientes</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Archivos descargables · notificaciones</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">Visibilidad</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Especialidades ilimitadas</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Video en buscador · primero en resultados</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>+2 empresas Automate Pro incluidas</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">CRM y gestión</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Notas, tags, ficha de cliente</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Respuestas rápidas</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Integración WhatsApp, FB, Instagram</div>
+        <div class="feat key"><span class="feat-dot" style="background:#2ECC71;"></span>Secretaria con tus conocimientos</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Apagar/prender IA · intervención manual</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Embudos ilimitados · mensajes masivos</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Seguimiento · Alianzas · Clientes VIP</div>
+        <div class="feat key"><span class="feat-dot" style="background:#2ECC71;"></span>Secretaria por integrante</div>
+        <div class="feat key"><span class="feat-dot" style="background:#2ECC71;"></span>Panel de administración centralizado</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">Agenda</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Clientes reservan horas/cupos solos</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Crear horas/cupos y bloques masivos</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Confirmaciones y recordatorios automáticos</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Cursos, talleres y eventos</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">Comisiones y soporte</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>50% comisión automática Heavensy</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>15% por referir profesional/empresa</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Credencial Heavensy + QR</div>
+        <div class="feat key"><span class="feat-dot" style="background:#2ECC71;"></span>Soporte en chat/llamada</div>
+        <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Hasta 10 integrantes · adicional a convenir</div>
+      </div>
+    </div>
+    <div class="plan-footer">
+      <div class="note">Reunión con asesor comercial para activar</div>
+      <button class="btn-plan" style="background:#2ECC71;color:white;">Agendar reunión</button>
+    </div>
+  </div>
+
+  <!-- ENTERPRISE FULL -->
+  <div class="plan">
+    <div class="plan-header">
+      <span class="plan-tag" style="background:#EDFBF3;color:#1A7A40;">Enterprise Full</span>
+      <div class="plan-name">Escala sin límites</div>
+      <div class="plan-sub">20 integrantes o más · 10 días prueba gratis</div>
+      <div class="plan-price" style="color:#1A7A40;">$310.000</div>
+      <div class="plan-period">/ mes · desde</div>
+    </div>
+    <div class="plan-body">
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">Perfil</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Perfil público completo</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Chat interno con clientes</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Archivos descargables · notificaciones</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">Visibilidad</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Especialidades ilimitadas</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Video en buscador · primero en resultados</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>+2 perfiles Secretar-IA Premium</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>+2 perfiles Enterprise</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">CRM y gestión</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Notas, tags, ficha de cliente</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Respuestas rápidas</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Integración WhatsApp, FB, Instagram</div>
+        <div class="feat key"><span class="feat-dot" style="background:#1A7A40;"></span>Secretaria con tus conocimientos</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Apagar/prender IA · intervención manual</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Embudos ilimitados · mensajes masivos</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Seguimiento · Alianzas · Clientes VIP</div>
+        <div class="feat key"><span class="feat-dot" style="background:#1A7A40;"></span>Secretaria con conocimientos por integrante</div>
+        <div class="feat key"><span class="feat-dot" style="background:#1A7A40;"></span>Panel de administración centralizado</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">Agenda</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Clientes reservan horas/cupos solos</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Crear horas/cupos y bloques masivos</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Confirmaciones y recordatorios automáticos</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Cursos, talleres y eventos</div>
+      </div>
+      <div class="feat-group">
+        <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">Comisiones y soporte</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>50% comisión automática Heavensy</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>15% por referir profesional/empresa</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Credencial Heavensy + QR</div>
+        <div class="feat key"><span class="feat-dot" style="background:#1A7A40;"></span>Soporte en chat/llamada</div>
+        <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>20 integrantes o más · adicional a convenir</div>
+      </div>
+    </div>
+    <div class="plan-footer">
+      <div class="note">Reunión con asesor comercial para activar</div>
+      <button class="btn-plan btn-outline" style="border-color:#2ECC71;color:#1A7A40;">Agendar reunión</button>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<!-- FAQ -->
+<div class="container"><div class="faq">
+  <div>
+    <strong>¿No sabes qué plan elegir?</strong>
+    <p>Nuestra IA puede ayudarte a decidir según tu tipo de negocio y necesidades.</p>
+  </div>
+  <button>Hablar con IA</button>
+</div>
+</div>
+
+</body>
+</html>

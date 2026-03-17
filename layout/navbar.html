@@ -52,3 +52,64 @@
     </div>
   </div>
 </nav>
+<!-- ── MODAL PERFIL ── -->
+<div id="profileModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+  <div class="bg-white w-full max-w-md rounded-xl shadow-xl mx-4">
+    <div class="flex justify-between items-center px-5 py-4 border-b">
+      <h2 class="text-sm font-bold text-gray-800"><i class="fas fa-user text-[#9961FF] mr-2"></i>Mi perfil</h2>
+      <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="profileForm2" class="px-5 py-4 space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Nombre</label>
+          <input id="profileFirstName" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Apellido</label>
+          <input id="profileLastName" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Email</label>
+        <input id="profileEmail" type="email" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Usuario</label>
+        <input id="profileUsername" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400" readonly>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t mt-3">
+        <button type="button" onclick="closeProfileModal()" class="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">Cancelar</button>
+        <button type="submit" class="px-4 py-2 text-sm bg-[#9961FF] text-white rounded-lg font-semibold hover:bg-[#8450f0]">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── MODAL SEGURIDAD ── -->
+<div id="securityModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+  <div class="bg-white w-full max-w-md rounded-xl shadow-xl mx-4">
+    <div class="flex justify-between items-center px-5 py-4 border-b">
+      <h2 class="text-sm font-bold text-gray-800"><i class="fas fa-lock text-[#9961FF] mr-2"></i>Cambiar contraseña</h2>
+      <button onclick="closeSecurityModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="passwordForm2" class="px-5 py-4 space-y-3">
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Contraseña actual</label>
+        <input id="currentPassword" type="password" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]" placeholder="••••••••">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Nueva contraseña</label>
+        <input id="newPassword" type="password" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]" placeholder="Mínimo 8 caracteres">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Confirmar nueva contraseña</label>
+        <input id="confirmPassword" type="password" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]" placeholder="Repite la contraseña">
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t mt-3">
+        <button type="button" onclick="closeSecurityModal()" class="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">Cancelar</button>
+        <button type="submit" class="px-4 py-2 text-sm bg-[#9961FF] text-white rounded-lg font-semibold hover:bg-[#8450f0]">Cambiar contraseña</button>
+      </div>
+    </form>
+  </div>
+</div>

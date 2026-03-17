@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heavensy — Eleva tus ganancias, eleva tu vida</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue-1: #bbbfff;
+  --blue-2: #9db8f0;
+  --blue-3: #78ade5;
+  --blue-4: #C9D9FF;
+  --blue-5: #EFF6FF;
+  --navy:   #193d6d;
+  --navy-lt:#7D84C1;
+  --text:   #1E2140;
+  --text-lt:#6B7194;
+  --border: #E4E6F0;
+  --white:  #ffffff;
+  --bg:     #F7F8FC;
+}
+
+body { font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--white); overflow-x: hidden; }
+
+/* ── NAVBAR ── */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: .9rem 2rem;
+  display: flex; align-items: center; gap: 2rem;
+}
+.nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.nav-brand img { width: 36px; height: 36px; object-fit: contain; }
+.nav-brand span { font-size: 1.05rem; font-weight: 500; color: var(--navy); letter-spacing: .5px; }
+.nav-links { display: flex; gap: 1.8rem; flex: 1; justify-content: center; }
+.nav-links a { font-size: .875rem; color: var(--text-lt); text-decoration: none; transition: color .15s; }
+.nav-links a:hover { color: var(--blue-3); }
+.nav-links a.active { color: var(--navy); font-weight: 500; }
+.nav-actions { display: flex; align-items: center; gap: .8rem; }
+.btn-login {
+  background: var(--blue-3); color: #fff;
+  border: none; border-radius: 8px;
+  padding: 8px 20px; font-size: .875rem; font-weight: 500;
+  font-family: inherit; cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.btn-login:hover { background: #5e9fd8; transform: translateY(-1px); }
+.nav-hamburger { display: none; background: none; border: none; cursor: pointer; color: var(--navy); font-size: 1.2rem; }
+
+/* ── HERO ── */
+.hero {
+  background: linear-gradient(145deg, #bbbfff 0%, #9db8f0 55%, #78ade5 100%);
+  padding: 5rem 2rem 4rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  background: rgba(255,255,255,.07);
+  border-radius: 50%;
+  top: -200px; left: -150px;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  width: 400px; height: 400px;
+  background: rgba(255,255,255,.06);
+  border-radius: 50%;
+  bottom: -150px; right: -100px;
+}
+.hero-inner { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.25); border: 1px solid rgba(255,255,255,.4);
+  border-radius: 20px; padding: 5px 14px;
+  font-size: .78rem; font-weight: 500; color: #fff;
+  margin-bottom: 1.5rem; backdrop-filter: blur(6px);
+}
+.hero h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  color: #fff; line-height: 1.15;
+  margin-bottom: 1rem;
+}
+.hero h1 em { font-style: italic; opacity: .9; }
+.hero p {
+  font-size: 1.05rem; color: rgba(255,255,255,.88);
+  line-height: 1.7; margin-bottom: 2rem; max-width: 520px; margin-inline: auto;
+}
+.hero-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn-hero-primary {
+  background: #fff; color: var(--navy);
+  border: none; border-radius: 10px;
+  padding: 12px 28px; font-size: .95rem; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+}
+.btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.15); }
+.btn-hero-secondary {
+  background: transparent; color: #fff;
+  border: 1.5px solid rgba(255,255,255,.6);
+  border-radius: 10px; padding: 12px 28px;
+  font-size: .95rem; font-family: inherit; cursor: pointer;
+  transition: background .15s;
+}
+.btn-hero-secondary:hover { background: rgba(255,255,255,.12); }
+.hero-stats {
+  display: flex; justify-content: center; gap: 3rem;
+  margin-top: 3rem; padding-top: 2rem;
+  border-top: 1px solid rgba(255,255,255,.2);
+}
+.hero-stat-num { font-size: 1.6rem; font-weight: 600; color: #fff; display: block; }
+.hero-stat-label { font-size: .78rem; color: rgba(255,255,255,.75); }
+
+/* ── FEATURES ── */
+.features { padding: 5rem 2rem; background: var(--white); }
+.section-title { text-align: center; margin-bottom: 3.5rem; }
+.section-title h2 { font-family: 'DM Serif Display', serif; font-size: 2rem; color: var(--navy); margin-bottom: .5rem; }
+.section-title p { color: var(--text-lt); font-size: .95rem; max-width: 500px; margin: 0 auto; }
+.features-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem; max-width: 1100px; margin: 0 auto;
+}
+.feature-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 16px; padding: 1.75rem;
+  transition: transform .2s, box-shadow .2s;
+}
+.feature-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.07); }
+.feature-icon {
+  width: 46px; height: 46px;
+  background: linear-gradient(135deg, var(--blue-4), var(--blue-3));
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  margin-bottom: 1rem; font-size: 1.1rem; color: #fff;
+}
+.feature-card h3 { font-size: .95rem; font-weight: 600; color: var(--navy); margin-bottom: .4rem; }
+.feature-card p { font-size: .83rem; color: var(--text-lt); line-height: 1.6; }
+
+/* ── HIGHLIGHT BAND ── */
+.highlight {
+  background: linear-gradient(135deg, var(--blue-5) 0%, #e8f0ff 100%);
+  padding: 4rem 2rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.highlight-inner { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; gap: 3rem; flex-wrap: wrap; }
+.highlight-text { flex: 1; min-width: 260px; }
+.highlight-text h2 { font-family: 'DM Serif Display', serif; font-size: 1.8rem; color: var(--navy); margin-bottom: .8rem; line-height: 1.3; }
+.highlight-text p { color: var(--text-lt); line-height: 1.7; font-size: .93rem; }
+.highlight-cards { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: .8rem; }
+.highlight-card {
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 12px; padding: .9rem 1.1rem;
+  display: flex; align-items: center; gap: 12px;
+}
+.highlight-card-icon { width: 36px; height: 36px; background: var(--blue-4); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--navy); font-size: .9rem; flex-shrink: 0; }
+.highlight-card-title { font-size: .85rem; font-weight: 600; color: var(--navy); margin-bottom: 2px; }
+.highlight-card-desc { font-size: .77rem; color: var(--text-lt); }
+
+/* ── PLANS ── */
+.plans-section { padding: 5rem 2rem; background: var(--bg); }
+.plans-toggle-wrap { display: flex; justify-content: center; margin-bottom: 3rem; }
+.plans-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; }
+.plans-toggle button {
+  padding: 8px 24px; font-size: .875rem; font-family: inherit;
+  border: none; cursor: pointer; background: transparent;
+  color: var(--text-lt); transition: all .2s;
+}
+.plans-toggle button.active { background: var(--blue-3); color: #fff; }
+
+.section-label {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 0 1rem; margin-bottom: .5rem;
+}
+.section-label span {
+  font-size: .72rem; font-weight: 600; color: #9BA3C0;
+  text-transform: uppercase; letter-spacing: .1em; white-space: nowrap;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); margin-left: 10px; }
+
+.plans-container { max-width: 1100px; margin: 0 auto; }
+.plans-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 2rem; }
+.plans-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 2rem; }
+
+.plan {
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 16px; display: flex; flex-direction: column;
+  position: relative; overflow: hidden;
+  transition: box-shadow .2s, transform .2s;
+}
+.plan:hover { box-shadow: 0 6px 24px rgba(0,0,0,.08); transform: translateY(-2px); }
+.plan.featured { border: 2px solid var(--blue-3); }
+.badge-pop {
+  position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
+  background: var(--blue-3); color: #fff;
+  font-size: .68rem; font-weight: 600; padding: 4px 16px;
+  border-radius: 0 0 8px 8px; white-space: nowrap; letter-spacing: .04em;
+}
+.plan-header { padding: 1.5rem; border-bottom: 1px solid #F0F1F8; }
+.plan-tag {
+  display: inline-block; font-size: .7rem; font-weight: 600;
+  padding: 3px 10px; border-radius: 6px; margin-bottom: 10px;
+}
+.plan-name { font-size: .9rem; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.plan-sub { font-size: .75rem; color: #9BA3C0; margin-bottom: 10px; }
+.plan-price { font-size: 1.8rem; font-weight: 600; margin-bottom: 2px; }
+.plan-period { font-size: .75rem; color: #9BA3C0; }
+
+.plan-body { flex: 1; }
+.feat-group { padding: 10px 1.25rem; border-bottom: 1px solid #F0F1F8; }
+.feat-group-title {
+  font-size: .65rem; font-weight: 600; letter-spacing: .06em;
+  margin-bottom: 8px; padding: 2px 8px; border-radius: 5px;
+  display: inline-block; text-transform: uppercase;
+}
+.feat {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: .8rem; color: var(--text-lt); line-height: 1.5; margin-bottom: 5px;
+}
+.feat:last-child { margin-bottom: 0; }
+.feat-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.feat.key { color: var(--text); font-weight: 500; }
+.feat.no { color: #C0C4D8; }
+.feat.no .feat-dot { background: #D5D9E8 !important; }
+
+.plan-footer { padding: 1.25rem 1.5rem; }
+.note { font-size: .7rem; color: #9BA3C0; background: var(--bg); border-radius: 8px; padding: 5px 10px; margin-bottom: 10px; text-align: center; }
+.btn-plan {
+  width: 100%; padding: 10px; border-radius: 8px;
+  font-size: .83rem; font-weight: 500; font-family: inherit;
+  cursor: pointer; border: none; transition: opacity .2s, transform .1s;
+}
+.btn-plan:hover { opacity: .88; transform: translateY(-1px); }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+
+/* ── FAQ BAND ── */
+.faq-band {
+  margin: 0 2rem 3rem; max-width: 1100px; margin-inline: auto;
+  background: var(--blue-5); border: 1px solid var(--blue-4);
+  border-radius: 16px; padding: 1.75rem 2rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1.5rem;
+}
+.faq-band strong { font-weight: 600; font-size: 1rem; color: var(--navy); display: block; margin-bottom: 4px; }
+.faq-band p { font-size: .85rem; color: var(--navy-lt); }
+.btn-faq {
+  background: var(--blue-3); color: #fff; border: none;
+  border-radius: 8px; padding: 10px 22px; font-size: .875rem;
+  font-family: inherit; white-space: nowrap; cursor: pointer;
+  flex-shrink: 0; font-weight: 500; transition: opacity .2s;
+}
+.btn-faq:hover { opacity: .88; }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--navy); color: rgba(255,255,255,.7);
+  padding: 2.5rem 2rem;
+}
+.footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+.footer-brand { display: flex; align-items: center; gap: 10px; }
+.footer-brand img { width: 30px; height: 30px; object-fit: contain; filter: brightness(10); }
+.footer-brand span { font-size: .95rem; font-weight: 400; color: #fff; letter-spacing: 1px; }
+footer p { font-size: .78rem; }
+.footer-links { display: flex; gap: 1.5rem; }
+.footer-links a { font-size: .78rem; color: rgba(255,255,255,.6); text-decoration: none; }
+.footer-links a:hover { color: #fff; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .plans-3 { grid-template-columns: 1fr; }
+  .plans-2 { grid-template-columns: 1fr; }
+  .highlight-inner { flex-direction: column; }
+}
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .nav-hamburger { display: block; }
+  .hero { padding: 3.5rem 1.2rem 3rem; }
+  .hero-stats { gap: 1.5rem; }
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  .faq-band { flex-direction: column; text-align: center; }
+  .footer-inner { flex-direction: column; text-align: center; }
+  .footer-links { justify-content: center; }
+}
+@media (max-width: 480px) {
+  .features-grid { grid-template-columns: 1fr; }
+  .hero-stats { flex-direction: column; gap: 1rem; }
+  .nav { padding: .8rem 1rem; }
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero-inner > * { animation: fadeUp .5s ease forwards; opacity: 0; }
+.hero-inner > *:nth-child(1) { animation-delay: .1s; }
+.hero-inner > *:nth-child(2) { animation-delay: .2s; }
+.hero-inner > *:nth-child(3) { animation-delay: .3s; }
+.hero-inner > *:nth-child(4) { animation-delay: .4s; }
+.hero-inner > *:nth-child(5) { animation-delay: .5s; }
+</style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav class="nav">
+  <a href="landing.html" class="nav-brand">
+    <img src="assets/img/heavensy-logo.png" alt="Heavensy">
+    <span>Heavensy</span>
+  </a>
+  <div class="nav-links">
+    <a href="#features">Características</a>
+    <a href="#planes" class="active">Planes</a>
+    <a href="#contacto">Contacto</a>
+  </div>
+  <div class="nav-actions">
+    <button class="btn-login" onclick="window.location.href='login.html'">
+      <i class="fas fa-sign-in-alt" style="margin-right:6px;font-size:.8rem;"></i>
+      Iniciar sesión
+    </button>
+  </div>
+  <button class="nav-hamburger" onclick="toggleMobileMenu()">
+    <i class="fas fa-bars"></i>
+  </button>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <i class="fas fa-bolt" style="font-size:.7rem;"></i>
+      CRM inteligente para WhatsApp Business
+    </div>
+    <h1>Eleva tus ganancias,<br><em>eleva tu vida</em></h1>
+    <p>Automatiza tu negocio, gestiona reservas, conecta con tus clientes y haz crecer tu red — todo con IA integrada.</p>
+    <div class="hero-ctas">
+      <button class="btn-hero-primary" onclick="document.getElementById('planes').scrollIntoView({behavior:'smooth'})">
+        Ver planes
+      </button>
+      <button class="btn-hero-secondary" onclick="window.location.href='login.html'">
+        Iniciar sesión
+      </button>
+    </div>
+    <div class="hero-stats">
+      <div>
+        <span class="hero-stat-num">IA</span>
+        <span class="hero-stat-label">Integrada 24/7</span>
+      </div>
+      <div>
+        <span class="hero-stat-num">Multi</span>
+        <span class="hero-stat-label">Empresa</span>
+      </div>
+      <div>
+        <span class="hero-stat-num">WhatsApp</span>
+        <span class="hero-stat-label">Business API</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section class="features" id="features">
+  <div class="section-title">
+    <h2>Todo lo que necesitas</h2>
+    <p>Una plataforma completa para profesionales y equipos que quieren crecer con tecnología</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-comments"></i></div>
+      <h3>CRM + WhatsApp Business</h3>
+      <p>Gestiona todas tus conversaciones en un solo lugar. Multi-empresa, multi-agente con roles y permisos.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-robot"></i></div>
+      <h3>IA con Moderación</h3>
+      <p>Tu asistente virtual responde 24/7 con tus conocimientos. Enciende o apaga la IA en cualquier momento.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-calendar-check"></i></div>
+      <h3>Agenda & Reservas</h3>
+      <p>Tus clientes reservan horas y cupos solos. Lista de espera, confirmaciones y recordatorios automáticos.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-filter"></i></div>
+      <h3>Embudos & Seguimiento</h3>
+      <p>Convierte leads en clientes con embudos ilimitados. Seguimiento programado por WhatsApp, email o llamada.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-tags"></i></div>
+      <h3>Tags & Notas</h3>
+      <p>Organiza y segmenta tus contactos con tags personalizados. Historial completo de cada cliente.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+      <h3>Respuestas Rápidas</h3>
+      <p>Crea plantillas de respuesta preconfiguradas y responde al instante con un clic.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-photo-video"></i></div>
+      <h3>Multimedia completo</h3>
+      <p>Envía y recibe audio, video, documentos y mensajes de voz. Almacenamiento en la nube incluido.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+      <h3>Monitor en tiempo real</h3>
+      <p>Estadísticas y actividad en vivo. Supervisa todas las conversaciones de tu equipo desde un panel central.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── HIGHLIGHT ── -->
+<section class="highlight">
+  <div class="highlight-inner">
+    <div class="highlight-text">
+      <h2>Tu secretaria virtual personalizada, disponible 24/7</h2>
+      <p>La IA de Heavensy aprende con tus conocimientos y responde exactamente como tú lo harías — agenda citas, resuelve dudas y califica leads mientras tú descansas.</p>
+    </div>
+    <div class="highlight-cards">
+      <div class="highlight-card">
+        <div class="highlight-card-icon"><i class="fas fa-brain"></i></div>
+        <div>
+          <div class="highlight-card-title">Aprende tu negocio</div>
+          <div class="highlight-card-desc">La IA se entrena con tu información y estilo</div>
+        </div>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-card-icon"><i class="fas fa-toggle-on"></i></div>
+        <div>
+          <div class="highlight-card-title">Control total</div>
+          <div class="highlight-card-desc">Enciende o apaga la IA cuando quieras intervenir</div>
+        </div>
+      </div>
+      <div class="highlight-card">
+        <div class="highlight-card-icon"><i class="fas fa-users"></i></div>
+        <div>
+          <div class="highlight-card-title">Multi-especialista</div>
+          <div class="highlight-card-desc">Una secretaria por integrante de tu equipo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PLANES ── -->
+<section class="plans-section" id="planes">
+  <div class="section-title">
+    <h2>Elige tu plan</h2>
+    <p>Automatiza tu negocio · Conecta tus redes · Crece con IA</p>
+  </div>
+  <div class="plans-toggle-wrap">
+    <div class="plans-toggle">
+      <button class="active" id="btnMensual" onclick="setPeriod('mensual')">Mensual</button>
+      <button id="btnAnual" onclick="setPeriod('anual')">Anual &nbsp;−20%</button>
+    </div>
+  </div>
+
+  <div class="plans-container">
+    <!-- Para profesionales independientes -->
+    <div class="section-label"><span>Para profesionales independientes</span></div>
+    <div class="plans-3">
+
+      <!-- BÁSICO -->
+      <div class="plan">
+        <div class="plan-header">
+          <span class="plan-tag" style="background:#E8EAFA;color:#3D2EA0;">Básico</span>
+          <div class="plan-name">Tu presencia en Heavensy</div>
+          <div class="plan-sub">Sin cobro mensual</div>
+          <div class="plan-price" style="color:#5B6AD4;">$0</div>
+          <div class="plan-period">para siempre</div>
+        </div>
+        <div class="plan-body">
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#E8EAFA;color:#3D2EA0;">Perfil</div>
+            <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Perfil público completo</div>
+            <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Chat interno con clientes</div>
+            <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Archivos descargables</div>
+            <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Notificaciones</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#E8EAFA;color:#3D2EA0;">Visibilidad</div>
+            <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>2 especialidades</div>
+            <div class="feat no"><span class="feat-dot"></span>Sin video en buscador</div>
+            <div class="feat no"><span class="feat-dot"></span>Al fondo del buscador</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#E8EAFA;color:#3D2EA0;">CRM y gestión</div>
+            <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Notas, tags, ficha de cliente</div>
+            <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Respuestas rápidas</div>
+            <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Hasta 10 embudos</div>
+            <div class="feat no"><span class="feat-dot"></span>Sin integración redes sociales</div>
+            <div class="feat no"><span class="feat-dot"></span>Sin IA</div>
+            <div class="feat no"><span class="feat-dot"></span>Sin mensajes masivos</div>
+            <div class="feat no"><span class="feat-dot"></span>Sin seguimiento</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#E8EAFA;color:#3D2EA0;">Agenda</div>
+            <div class="feat no"><span class="feat-dot"></span>Sin agenda pública</div>
+            <div class="feat no"><span class="feat-dot"></span>Sin reserva online</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#E8EAFA;color:#3D2EA0;">Comisiones</div>
+            <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>50% comisión automática Heavensy</div>
+            <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>15% por referir profesional</div>
+            <div class="feat"><span class="feat-dot" style="background:#5B6AD4;"></span>Credencial Heavensy + QR</div>
+          </div>
+        </div>
+        <div class="plan-footer">
+          <button class="btn-plan btn-outline">Empezar gratis</button>
+        </div>
+      </div>
+
+      <!-- AUTOMATE PRO -->
+      <div class="plan">
+        <div class="plan-header">
+          <span class="plan-tag" style="background:#F0EEFF;color:#5A4FD4;">Automate Pro</span>
+          <div class="plan-name">La IA trabaja por ti</div>
+          <div class="plan-sub">10 días de prueba gratis</div>
+          <div class="plan-price" style="color:#7C6FF7;" data-mensual="$70.000" data-anual="$56.000">$70.000</div>
+          <div class="plan-period">/ mes</div>
+        </div>
+        <div class="plan-body">
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#F0EEFF;color:#5A4FD4;">Perfil</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Perfil público completo</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Chat interno con clientes</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Archivos descargables · notificaciones</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#F0EEFF;color:#5A4FD4;">Visibilidad</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>5 especialidades</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Video en buscador</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Posicionamiento medio</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#F0EEFF;color:#5A4FD4;">CRM y gestión</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Notas, tags, ficha de cliente</div>
+            <div class="feat key"><span class="feat-dot" style="background:#7C6FF7;"></span>Integración WhatsApp, FB, Instagram</div>
+            <div class="feat key"><span class="feat-dot" style="background:#7C6FF7;"></span>IA responde tus mensajes 24/7</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Apagar/prender IA · intervención manual</div>
+            <div class="feat key"><span class="feat-dot" style="background:#7C6FF7;"></span>Embudos ilimitados</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Mensajes masivos · Seguimiento</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Alianzas · Clientes VIP</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#F0EEFF;color:#5A4FD4;">Agenda</div>
+            <div class="feat key"><span class="feat-dot" style="background:#7C6FF7;"></span>Clientes reservan solos</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Confirmaciones y recordatorios automáticos</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>Cursos, talleres y eventos</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#F0EEFF;color:#5A4FD4;">Comisiones</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>50% comisión automática Heavensy</div>
+            <div class="feat"><span class="feat-dot" style="background:#7C6FF7;"></span>15% por referir · Credencial + QR</div>
+          </div>
+        </div>
+        <div class="plan-footer">
+          <button class="btn-plan" style="background:#7C6FF7;color:white;">Empezar prueba</button>
+        </div>
+      </div>
+
+      <!-- SECRETAR-IA -->
+      <div class="plan featured">
+        <div class="badge-pop">Más popular</div>
+        <div class="plan-header" style="padding-top:2rem;">
+          <span class="plan-tag" style="background:#EAF5FC;color:#1A6A9A;">Secretar-IA Premium</span>
+          <div class="plan-name">Tu secretaria virtual personalizada</div>
+          <div class="plan-sub">10 días de prueba gratis</div>
+          <div class="plan-price" style="color:#4A9FD4;" data-mensual="$120.000" data-anual="$96.000">$120.000</div>
+          <div class="plan-period">/ mes</div>
+        </div>
+        <div class="plan-body">
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#EAF5FC;color:#1A6A9A;">Perfil</div>
+            <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Perfil público completo</div>
+            <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Chat interno · Archivos · Notificaciones</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#EAF5FC;color:#1A6A9A;">Visibilidad</div>
+            <div class="feat key"><span class="feat-dot" style="background:#4A9FD4;"></span>Especialidades ilimitadas</div>
+            <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Video en buscador · primero en resultados</div>
+            <div class="feat key"><span class="feat-dot" style="background:#4A9FD4;"></span>Hasta 3 empresas en tu perfil</div>
+            <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Empresa extra $30.000/mes c/u</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#EAF5FC;color:#1A6A9A;">CRM y gestión</div>
+            <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Integración WhatsApp, FB, Instagram</div>
+            <div class="feat key"><span class="feat-dot" style="background:#4A9FD4;"></span>Secretaria con tus conocimientos</div>
+            <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Apagar/prender IA · intervención manual</div>
+            <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Embudos ilimitados · mensajes masivos</div>
+            <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Seguimiento · Alianzas · Clientes VIP</div>
+            <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>1 modificación del prompt al mes</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#EAF5FC;color:#1A6A9A;">Agenda</div>
+            <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Reservas online · bloques masivos</div>
+            <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>Confirmaciones · Cursos y talleres</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#EAF5FC;color:#1A6A9A;">Comisiones</div>
+            <div class="feat"><span class="feat-dot" style="background:#4A9FD4;"></span>50% comisión · 15% referidos · QR</div>
+          </div>
+        </div>
+        <div class="plan-footer">
+          <button class="btn-plan" style="background:#4A9FD4;color:white;">Empezar prueba</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Para centros y equipos -->
+    <div class="section-label" style="margin-top:1rem;"><span>Para centros, clínicas y equipos</span></div>
+    <div class="plans-2">
+
+      <!-- ENTERPRISE -->
+      <div class="plan">
+        <div class="plan-header">
+          <span class="plan-tag" style="background:#EDFBF3;color:#1A7A40;">Enterprise</span>
+          <div class="plan-name">Tu equipo automatizado</div>
+          <div class="plan-sub">Hasta 10 integrantes · 10 días prueba gratis</div>
+          <div class="plan-price" style="color:#2ECC71;" data-mensual="$210.000" data-anual="$168.000">$210.000</div>
+          <div class="plan-period">/ mes</div>
+        </div>
+        <div class="plan-body">
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">CRM y gestión</div>
+            <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Integración WhatsApp, FB, Instagram</div>
+            <div class="feat key"><span class="feat-dot" style="background:#2ECC71;"></span>Secretaria con tus conocimientos</div>
+            <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Embudos ilimitados · mensajes masivos</div>
+            <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Seguimiento · Alianzas · Clientes VIP</div>
+            <div class="feat key"><span class="feat-dot" style="background:#2ECC71;"></span>Secretaria por integrante</div>
+            <div class="feat key"><span class="feat-dot" style="background:#2ECC71;"></span>Panel de administración centralizado</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">Visibilidad</div>
+            <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Especialidades ilimitadas</div>
+            <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Video en buscador · primero en resultados</div>
+            <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>+2 empresas Automate Pro incluidas</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">Agenda y soporte</div>
+            <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Reservas online · bloques masivos</div>
+            <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Confirmaciones · Cursos y talleres</div>
+            <div class="feat key"><span class="feat-dot" style="background:#2ECC71;"></span>Soporte en chat/llamada</div>
+            <div class="feat"><span class="feat-dot" style="background:#2ECC71;"></span>Hasta 10 integrantes · adicional a convenir</div>
+          </div>
+        </div>
+        <div class="plan-footer">
+          <div class="note">Reunión con asesor comercial para activar</div>
+          <button class="btn-plan" style="background:#2ECC71;color:white;">Agendar reunión</button>
+        </div>
+      </div>
+
+      <!-- ENTERPRISE FULL -->
+      <div class="plan">
+        <div class="plan-header">
+          <span class="plan-tag" style="background:#EDFBF3;color:#1A7A40;">Enterprise Full</span>
+          <div class="plan-name">Escala sin límites</div>
+          <div class="plan-sub">20 integrantes o más · 10 días prueba gratis</div>
+          <div class="plan-price" style="color:#1A7A40;" data-mensual="$310.000" data-anual="$248.000">$310.000</div>
+          <div class="plan-period" id="periodEntFull">/ mes · desde</div>
+        </div>
+        <div class="plan-body">
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">CRM y gestión</div>
+            <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>Todo lo de Enterprise</div>
+            <div class="feat key"><span class="feat-dot" style="background:#1A7A40;"></span>Secretaria con conocimientos por integrante</div>
+            <div class="feat key"><span class="feat-dot" style="background:#1A7A40;"></span>Panel de administración centralizado</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">Visibilidad</div>
+            <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>+2 perfiles Secretar-IA Premium</div>
+            <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>+2 perfiles Enterprise incluidos</div>
+          </div>
+          <div class="feat-group">
+            <div class="feat-group-title" style="background:#EDFBF3;color:#1A7A40;">Soporte</div>
+            <div class="feat key"><span class="feat-dot" style="background:#1A7A40;"></span>Soporte prioritario chat/llamada</div>
+            <div class="feat"><span class="feat-dot" style="background:#1A7A40;"></span>20 integrantes o más · a convenir</div>
+          </div>
+        </div>
+        <div class="plan-footer">
+          <div class="note">Reunión con asesor comercial para activar</div>
+          <button class="btn-plan btn-outline" style="border-color:#2ECC71;color:#1A7A40;">Agendar reunión</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ BAND -->
+    <div class="faq-band" id="contacto">
+      <div>
+        <strong>¿No sabes qué plan elegir?</strong>
+        <p>Nuestra IA puede ayudarte a decidir según tu tipo de negocio y necesidades.</p>
+      </div>
+      <button class="btn-faq">Hablar con IA</button>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <img src="assets/img/heavensy-logo.png" alt="Heavensy">
+      <span>Heavensy</span>
+    </div>
+    <p>© 2026 Heavensy · Todos los derechos reservados</p>
+    <div class="footer-links">
+      <a href="#">Términos</a>
+      <a href="#">Privacidad</a>
+      <a href="#contacto">Contacto</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+function setPeriod(p) {
+  const isAnual = p === 'anual';
+  document.getElementById('btnMensual').classList.toggle('active', !isAnual);
+  document.getElementById('btnAnual').classList.toggle('active', isAnual);
+  document.querySelectorAll('.plan-price[data-mensual]').forEach(el => {
+    el.textContent = isAnual ? el.dataset.anual : el.dataset.mensual;
+  });
+}
+
+function toggleMobileMenu() {
+  const links = document.querySelector('.nav-links');
+  if (links.style.display === 'flex') {
+    links.style.display = 'none';
+  } else {
+    links.style.cssText = 'display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:#fff;padding:1rem 2rem;border-bottom:1px solid #E4E6F0;gap:1rem;z-index:99;';
+  }
+}
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({behavior:'smooth'}); }
+  });
+});
+</script>
+</body>
+</html>

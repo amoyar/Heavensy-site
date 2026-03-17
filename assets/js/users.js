@@ -689,3 +689,107 @@ async function handleSaveUser(e) {
     showToast('Error de conexión', 'error');
   }
 }
+
+// ============================================
+// PROFILE & SECURITY MODALS
+// ============================================
+
+function openProfileModal() {
+  document.getElementById('userMenu')?.classList.add('hidden');
+  
+  // Cargar datos del usuario actual desde el token
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  if (!token) return;
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    document.getElementById('profileFirstName').value  = payload.full_name?.split(' ')[0] || '';
+    document.getElementById('profileLastName').value   = payload.full_name?.split(' ').slice(1).join(' ') || '';
+    document.getElementById('profileEmail').value      = payload.email || '';
+    document.getElementById('profileUsername').value   = payload.username || '';
+  } catch(e) {}
+
+  document.getElementById('profileModal')?.classList.remove('hidden');
+}
+
+function closeProfileModal() {
+  document.getElementById('profileModal')?.classList.add('hidden');
+}
+
+function openSecurityModal() {
+  document.getElementById('userMenu')?.classList.add('hidden');
+  document.getElementById('currentPassword').value  = '';
+  document.getElementById('newPassword').value      = '';
+  document.getElementById('confirmPassword').value  = '';
+  document.getElementById('securityModal')?.classList.remove('hidden');
+}
+
+function closeSecurityModal() {
+  document.getElementById('securityModal')?.classList.add('hidden');
+}
+
+// Guardar perfil
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('profileForm2')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const claims = _getJwtClaims();
+    if (!claims) return;
+
+    const res = await apiCall(`/api/users/${claims.username}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        first_name: document.getElementById('profileFirstName').value,
+        last_name:  document.getElementById('profileLastName').value,
+        email:      document.getElementById('profileEmail').value,
+      }),
+      loaderMessage: 'Guardando perfil...'
+    });
+
+    if (res?.ok) {
+      showToast('Perfil actualizado', 'success');
+      closeProfileModal();
+    } else {
+      showToast(res?.data?.error || 'Error actualizando perfil', 'error');
+    }
+  });
+
+  // Cambiar contraseña
+  document.getElementById('passwordForm2')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const np = document.getElementById('newPassword').value;
+    const cp = document.getElementById('confirmPassword').value;
+
+    if (np !== cp) {
+      showToast('Las contraseñas no coinciden', 'error');
+      return;
+    }
+    if (np.length < 8) {
+      showToast('La contraseña debe tener al menos 8 caracteres', 'error');
+      return;
+    }
+
+    const res = await apiCall('/api/users/change-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        current_password: document.getElementById('currentPassword').value,
+        new_password:     np,
+      }),
+      loaderMessage: 'Cambiando contraseña...'
+    });
+
+    if (res?.ok) {
+      showToast('Contraseña actualizada', 'success');
+      closeSecurityModal();
+    } else {
+      showToast(res?.data?.error || 'Error cambiando contraseña', 'error');
+    }
+  });
+});
+
+function _getJwtClaims() {
+  try {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (!token) return null;
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch(e) { return null; }
+}

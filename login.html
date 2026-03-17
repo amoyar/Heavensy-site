@@ -3,67 +3,524 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Heavensy Admin</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Heavensy — Acceso</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --purple:    #78ade5;
+            --purple-lt: #C9D9FF;
+            --blue-lt:   #C9D9FF;
+            --blue-bg:   #EFF6FF;
+            --navy:      #78ade5;
+            --white:     #ffffff;
+            --gray-50:   #f9fafb;
+            --gray-200:  #e5e7eb;
+            --gray-500:  #6b7280;
+            --gray-700:  #374151;
+            --gray-900:  #111827;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            background: var(--blue-bg);
+            overflow: hidden;
+        }
+
+        .panel-left {
+            flex: 1;
+            background: linear-gradient(145deg, #bbbfff 0%, #9db8f0 50%, #78ade5 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 4rem 4rem;
+            position: relative;
+            overflow: hidden;
+            min-height: 100vh;
+        }
+
+        .panel-left::before {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: rgba(255,255,255,.08);
+            border-radius: 50%;
+            top: -100px;
+            left: -100px;
+        }
+        .panel-left::after {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: rgba(255,255,255,.06);
+            border-radius: 50%;
+            bottom: -80px;
+            right: -80px;
+        }
+
+        .brand {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            color: #fff;
+            width: 100%;
+            max-width: 680px;
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: .8rem;
+            width: 100%;
+        }
+
+        .brand h1 {
+            font-size: 2.8rem;
+            font-weight: 400;
+            letter-spacing: 2px;
+            margin: 0 0 4px;
+            color: #fff;
+            text-align: left;
+            line-height: 1;
+        }
+
+        .brand-tagline {
+            font-size: .92rem;
+            font-style: italic;
+            color: rgba(255,255,255,.85);
+            margin: 0;
+            text-align: left;
+        }
+
+        .brand-sub {
+            font-size: .88rem;
+            color: rgba(255,255,255,.72);
+            margin: 0 0 2rem;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        .brand-features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px 20px;
+            width: 100%;
+        }
+
+        .brand-features-col {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .brand-feature {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            background: rgba(255,255,255,.14);
+            border: 1px solid rgba(255,255,255,.22);
+            border-radius: 14px;
+            padding: 1rem 1.1rem;
+            height: 72px;
+            box-sizing: border-box;
+            min-width: 0;
+        }
+
+        .brand-feature-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(255,255,255,.22);
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: #fff;
+            font-size: 18px;
+        }
+
+        .brand-feature-title {
+            font-size: .88rem;
+            font-weight: 600;
+            color: #fff;
+            margin: 0 0 3px;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .brand-feature-desc {
+            font-size: .76rem;
+            color: rgba(255,255,255,.72);
+            margin: 0;
+            text-align: left;
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .panel-right {
+            width: 440px;
+            flex-shrink: 0;
+            background: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem;
+            box-shadow: -8px 0 32px rgba(0,0,0,.06);
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .login-header { margin-bottom: 2rem; }
+
+        .login-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: .25rem;
+        }
+
+        .login-header p {
+            font-size: .875rem;
+            color: var(--gray-500);
+        }
+
+        .form-group { margin-bottom: 1.25rem; }
+
+        .form-label {
+            display: block;
+            font-size: .8125rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: .4rem;
+        }
+
+        .input-wrap { position: relative; }
+
+        .input-wrap i.fa-lock,
+        .input-wrap i.fa-user {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 13px;
+            color: var(--navy);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 40px 10px 36px;
+            border: 1.5px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: .875rem;
+            color: var(--gray-900);
+            background: var(--gray-50);
+            outline: none;
+            transition: border-color .15s, box-shadow .15s, background .15s;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus {
+            border-color: var(--purple);
+            background: var(--white);
+            box-shadow: 0 0 0 3px rgba(201,217,255,.4);
+        }
+
+        .input-action {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--gray-500);
+            font-size: 13px;
+            padding: 4px;
+            z-index: 3;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+        }
+        .input-action:hover { color: var(--purple); }
+        .input-wrap input[type="password"],
+        .input-wrap input[type="text"] { padding-right: 40px; }
+
+        .error-msg {
+            display: none;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: .8125rem;
+            margin-bottom: 1.25rem;
+            align-items: center;
+            gap: 8px;
+        }
+        .error-msg.show { display: flex; }
+
+        .btn-login {
+            width: 100%;
+            padding: 11px;
+            background: var(--purple);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: .9rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background .15s, transform .1s, box-shadow .15s;
+            box-shadow: 0 4px 12px rgba(120,173,229,.4);
+        }
+
+        .btn-login:hover:not(:disabled) {
+            background: #5e9fd8;
+            box-shadow: 0 6px 16px rgba(120,173,229,.5);
+        }
+
+        .btn-login:active:not(:disabled) { transform: scale(.98); }
+        .btn-login:disabled { opacity: .7; cursor: default; }
+        .btn-login.success { background: #16a34a; box-shadow: 0 4px 12px rgba(22,163,74,.3); }
+
+        .login-footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: .8rem;
+            color: var(--gray-500);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 1200px) {
+            .panel-left { padding: 2rem 2.5rem 3rem; }
+            .brand { max-width: 560px; }
+            .brand h1 { font-size: 2.3rem; }
+            .brand-feature { height: auto; min-height: 64px; }
+        }
+
+        @media (max-width: 1024px) {
+            .panel-left { padding: 2rem 2rem 3rem; }
+            .brand { max-width: 480px; }
+            .brand h1 { font-size: 2rem; letter-spacing: 1px; }
+            .brand-header img { width: 80px !important; height: 80px !important; }
+            .brand-features { gap: 10px 12px; }
+            .brand-feature { padding: .8rem .9rem; }
+            .brand-feature-icon { width: 38px; height: 38px; font-size: 15px; }
+            .brand-feature-title { font-size: .82rem; }
+            .brand-feature-desc { font-size: .71rem; }
+            .panel-right { width: 360px; padding: 2rem 1.5rem; }
+        }
+
+        @media (max-width: 860px) {
+            body { flex-direction: column; overflow-y: auto; }
+            .panel-left { min-height: auto; width: 100%; padding: 2rem 1.5rem; }
+            .brand { max-width: 100%; }
+            .brand-features { grid-template-columns: 1fr 1fr; }
+            .brand-feature { height: auto; min-height: 60px; }
+            .panel-right { width: 100%; padding: 2rem 1.5rem; box-shadow: none; }
+        }
+
+        @media (max-width: 580px) {
+            .panel-left { padding: 1.5rem 1rem; }
+            .brand-header { gap: 12px; }
+            .brand-header img { width: 64px !important; height: 64px !important; }
+            .brand h1 { font-size: 1.7rem; letter-spacing: 1px; }
+            .brand-tagline { font-size: .8rem; }
+            .brand-sub { font-size: .8rem; margin-bottom: 1.2rem; }
+            .brand-features { grid-template-columns: 1fr; gap: 8px; }
+            .brand-features-col { gap: 8px; }
+            .brand-feature { padding: .7rem .9rem; }
+            .panel-right { padding: 1.5rem 1rem; }
+            .login-box { max-width: 100%; }
+        }
+
+        @media (max-width: 380px) {
+            .brand h1 { font-size: 1.4rem; }
+            .brand-feature-title { font-size: .78rem; }
+            .brand-feature-desc { font-size: .68rem; }
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 min-h-screen flex items-center justify-center">
-    <div class="w-full max-w-md">
-        <div class="bg-white rounded-2xl shadow-2xl p-8">
-            <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4">
-                    <i class="fas fa-cloud text-4xl text-blue-600"></i>
+<body>
+
+    <div class="panel-left">
+        <div class="brand">
+            <div class="brand-header">
+                <img src="assets/img/heavensy-logo.png" alt="" style="width:100px;height:100px;object-fit:contain;display:block;flex-shrink:0;">
+                <div>
+                    <h1>Heavensy</h1>
+                    <p class="brand-tagline">"Eleva tus ganancias, eleva tu vida"</p>
                 </div>
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">Heavensy Admin</h1>
-                <p class="text-gray-600">Sistema de Administración</p>
+            </div>
+            <p class="brand-sub">CRM inteligente para WhatsApp Business con integración de IA</p>
+            <div class="brand-features">
+                <div class="brand-features-col">
+                    <div class="brand-feature">
+                        <div class="brand-feature-icon"><i class="fas fa-comments"></i></div>
+                        <div>
+                            <p class="brand-feature-title">CRM + WhatsApp Business</p>
+                            <p class="brand-feature-desc">Gestiona conversaciones multi-empresa</p>
+                        </div>
+                    </div>
+                    <div class="brand-feature">
+                        <div class="brand-feature-icon"><i class="fas fa-calendar-check"></i></div>
+                        <div>
+                            <p class="brand-feature-title">Agenda & Reservas</p>
+                            <p class="brand-feature-desc">Calendario con lista de espera</p>
+                        </div>
+                    </div>
+                    <div class="brand-feature">
+                        <div class="brand-feature-icon"><i class="fas fa-filter"></i></div>
+                        <div>
+                            <p class="brand-feature-title">Embudos & Seguimiento</p>
+                            <p class="brand-feature-desc">Convierte leads en clientes</p>
+                        </div>
+                    </div>
+                    <div class="brand-feature">
+                        <div class="brand-feature-icon"><i class="fas fa-robot"></i></div>
+                        <div>
+                            <p class="brand-feature-title">IA con Moderación</p>
+                            <p class="brand-feature-desc">Respuestas automáticas inteligentes</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="brand-features-col">
+                    <div class="brand-feature">
+                        <div class="brand-feature-icon"><i class="fas fa-tags"></i></div>
+                        <div>
+                            <p class="brand-feature-title">Tags & Notas</p>
+                            <p class="brand-feature-desc">Organiza y segmenta contactos</p>
+                        </div>
+                    </div>
+                    <div class="brand-feature">
+                        <div class="brand-feature-icon"><i class="fas fa-bolt"></i></div>
+                        <div>
+                            <p class="brand-feature-title">Notas Rápidas</p>
+                            <p class="brand-feature-desc">Respuestas preconfiguradas al instante</p>
+                        </div>
+                    </div>
+                    <div class="brand-feature">
+                        <div class="brand-feature-icon"><i class="fas fa-photo-video"></i></div>
+                        <div>
+                            <p class="brand-feature-title">Multimedia</p>
+                            <p class="brand-feature-desc">Audio, video, docs y mensajes de voz</p>
+                        </div>
+                    </div>
+                    <div class="brand-feature">
+                        <div class="brand-feature-icon"><i class="fas fa-chart-line"></i></div>
+                        <div>
+                            <p class="brand-feature-title">Monitor en tiempo real</p>
+                            <p class="brand-feature-desc">Estadísticas y actividad en vivo</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-right">
+        <div class="login-box">
+            <div class="login-header">
+                <h2>Bienvenido</h2>
+                <p>Ingresa tus credenciales para continuar</p>
             </div>
 
-            <form id="loginForm" class="space-y-6">
-                <div>
-                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-user text-gray-400 mr-2"></i>Usuario
-                    </label>
-                    <input type="text" id="username" name="username" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="admin">
+            <form id="loginForm" autocomplete="off">
+                <div class="form-group">
+                    <label class="form-label" for="username">Usuario</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="username" name="username" class="form-input"
+                            placeholder="Ingresa tu usuario" required autocomplete="username">
+                    </div>
                 </div>
 
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-                        <i class="fas fa-lock text-gray-400 mr-2"></i>Contraseña
-                    </label>
-                    <div class="relative">
-                        <input type="password" id="password" name="password" required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            placeholder="••••••••">
-                        <button type="button" onclick="togglePassword()"
-                            class="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
-                            <i id="passwordIcon" class="fas fa-eye"></i>
+                <div class="form-group">
+                    <label class="form-label" for="password">Contraseña</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" name="password" class="form-input"
+                            placeholder="••••••••" required autocomplete="current-password">
+                        <button type="button" class="input-action" onclick="togglePassword()">
+                            <i id="pwIcon" class="fas fa-eye"></i>
                         </button>
                     </div>
                 </div>
 
-                <div id="errorMessage" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                    <i class="fas fa-exclamation-circle mr-2"></i>
+                <div class="error-msg" id="errorMsg">
+                    <i class="fas fa-exclamation-circle"></i>
                     <span id="errorText"></span>
                 </div>
 
-                <button type="submit" id="loginButton"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition flex items-center justify-center space-x-2">
-                    <i class="fas fa-sign-in-alt"></i>
-                    <span>Iniciar Sesión</span>
+                <button type="submit" id="loginBtn" class="btn-login">
+                    <i class="fas fa-arrow-right-to-bracket"></i>
+                    <span>Iniciar sesión</span>
                 </button>
+
+                <div style="text-align:center;margin-top:1rem;">
+                    <a href="#" onclick="openForgotModal()" style="font-size:.8rem;color:#78ade5;text-decoration:none;">
+                        ¿Olvidaste tu contraseña?
+                    </a>
+                </div>
             </form>
 
-            <div class="mt-6 text-center text-sm text-gray-600">
-                <p>© 2026 Heavensy. Todos los derechos reservados.</p>
+            <div class="login-footer">
+                © 2026 Heavensy · Todos los derechos reservados
             </div>
         </div>
+    </div>
 
-        <div class="mt-4 text-center text-white text-sm bg-white/10 backdrop-blur rounded-lg p-4">
-            <p class="font-semibold mb-2">Credenciales de prueba:</p>
-            <p>Usuario: <span class="font-mono">admin</span></p>
-            <p>Password: <span class="font-mono">Admin123!</span></p>
+    <!-- Modal Olvidé contraseña -->
+    <div id="forgotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:none;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:14px;padding:2rem;width:100%;max-width:380px;margin:1rem;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;">
+                <h3 style="font-size:1rem;font-weight:700;color:#111827;">Recuperar contraseña</h3>
+                <button onclick="closeForgotModal()" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:1rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <p style="font-size:.83rem;color:#6b7280;margin-bottom:1.2rem;line-height:1.5;">
+                Ingresa tu email y te enviaremos instrucciones por email y WhatsApp.
+            </p>
+            <div id="forgotError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:9px 12px;border-radius:8px;font-size:.8rem;margin-bottom:1rem;align-items:center;gap:6px;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="forgotErrorText"></span>
+            </div>
+            <div id="forgotSuccess" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:9px 12px;border-radius:8px;font-size:.8rem;margin-bottom:1rem;align-items:center;gap:6px;">
+                <i class="fas fa-check-circle"></i>
+                <span id="forgotSuccessText"></span>
+            </div>
+            <div style="position:relative;margin-bottom:1rem;">
+                <i class="fas fa-envelope" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:12px;color:#78ade5;pointer-events:none;"></i>
+                <input type="email" id="forgotEmail" placeholder="tu@email.com"
+                    style="width:100%;padding:10px 12px 10px 32px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.875rem;outline:none;background:#f9fafb;box-sizing:border-box;">
+            </div>
+            <button id="forgotBtn" onclick="sendForgot()"
+                style="width:100%;padding:10px;background:#78ade5;color:#fff;border:none;border-radius:8px;font-size:.875rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <i class="fas fa-paper-plane"></i>
+                <span>Enviar instrucciones</span>
+            </button>
         </div>
     </div>
 
@@ -72,71 +529,108 @@
 
         function togglePassword() {
             const input = document.getElementById('password');
-            const icon = document.getElementById('passwordIcon');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.replace('fa-eye', 'fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.replace('fa-eye-slash', 'fa-eye');
-            }
+            const icon  = document.getElementById('pwIcon');
+            const show  = input.type === 'password';
+            input.type  = show ? 'text' : 'password';
+            icon.className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
         }
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
-            const btn = document.getElementById('loginButton');
-            const err = document.getElementById('errorMessage');
-            
-            console.log('🔐 Intentando login:', username);
-            
+            const btn      = document.getElementById('loginBtn');
+            const errBox   = document.getElementById('errorMsg');
+            const errText  = document.getElementById('errorText');
+
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i><span>Conectando...</span>';
-            err.classList.add('hidden');
-            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Verificando...</span>';
+            errBox.classList.remove('show');
+
             try {
-                const url = `${API_BASE_URL}/api/auth/login`;
-                console.log('📡 POST:', url);
-                console.log('📦 Body:', { username, password: '***' });
-                
-                const res = await fetch(url, {
-                    method: 'POST',
+                const res  = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method:  'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body:    JSON.stringify({ username, password })
                 });
-                
-                console.log('📥 Status:', res.status);
-                
                 const data = await res.json();
-                console.log('📥 Data:', data);
-                
                 if (res.ok && data.access_token) {
-                    console.log('✅ Login exitoso');
                     localStorage.setItem('token', data.access_token);
-                    btn.innerHTML = '<i class="fas fa-check mr-2"></i><span>¡Bienvenido!</span>';
-                    btn.classList.remove('bg-blue-600');
-                    btn.classList.add('bg-green-600');
-                    setTimeout(() => {
-                        window.location.href = 'index.html#dashboard';
-                    }, 500);
+                    btn.classList.add('success');
+                    btn.innerHTML = '<i class="fas fa-check"></i><span>Accediendo...</span>';
+                    setTimeout(() => { window.location.href = 'index.html#dashboard'; }, 600);
                 } else {
-                    throw new Error(data.error || data.message || 'Error de autenticación');
+                    throw new Error(data.error || 'Credenciales incorrectas');
                 }
-            } catch (error) {
-                console.error('❌ Error:', error);
-                document.getElementById('errorText').textContent = error.message;
-                err.classList.remove('hidden');
+            } catch (err) {
+                errText.textContent = err.message;
+                errBox.classList.add('show');
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i><span>Iniciar Sesión</span>';
+                btn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i><span>Iniciar sesión</span>';
             }
         });
 
         if (localStorage.getItem('token')) {
-            console.log('🔑 Token encontrado, redirigiendo...');
             window.location.href = 'index.html#dashboard';
         }
+
+        function openForgotModal() {
+            document.getElementById('forgotModal').style.display = 'flex';
+            document.getElementById('forgotEmail').value = '';
+            document.getElementById('forgotError').style.display = 'none';
+            document.getElementById('forgotSuccess').style.display = 'none';
+        }
+
+        function closeForgotModal() {
+            document.getElementById('forgotModal').style.display = 'none';
+        }
+
+        async function sendForgot() {
+            const email = document.getElementById('forgotEmail').value.trim();
+            const btn   = document.getElementById('forgotBtn');
+            const err   = document.getElementById('forgotError');
+            const ok    = document.getElementById('forgotSuccess');
+
+            err.style.display = 'none';
+            ok.style.display  = 'none';
+
+            if (!email) {
+                document.getElementById('forgotErrorText').textContent = 'Ingresa tu email';
+                err.style.display = 'flex'; return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Enviando...</span>';
+
+            try {
+                const res  = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ email })
+                });
+                const data = await res.json();
+
+                if (data.ok) {
+                    document.getElementById('forgotSuccessText').textContent =
+                        'Instrucciones enviadas. Revisa tu email y WhatsApp.';
+                    ok.style.display = 'flex';
+                    btn.innerHTML = '<i class="fas fa-check"></i><span>¡Enviado!</span>';
+                    setTimeout(closeForgotModal, 3000);
+                } else {
+                    throw new Error(data.error || 'Error al enviar');
+                }
+            } catch(e) {
+                document.getElementById('forgotErrorText').textContent = e.message;
+                err.style.display = 'flex';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i><span>Enviar instrucciones</span>';
+            }
+        }
+
+        // Cerrar modal al click fuera
+        document.getElementById('forgotModal').addEventListener('click', function(e) {
+            if (e.target === this) closeForgotModal();
+        });
     </script>
 </body>
 </html>

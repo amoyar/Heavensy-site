@@ -10,13 +10,16 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 h-screen overflow-hidden">
+<body class="bg-gray-100 h-screen overflow-hidden" style="overflow-x:hidden;">
+
+  <!-- Overlay mobile sidebar -->
+  <div id="sidebarOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:30;"></div>
 
   <!-- Navbar fijo arriba -->
   <header id="navbar"></header>
 
   <!-- Contenedor principal bajo el navbar -->
-  <div class="flex h-[calc(100vh-64px)]">
+  <div class="flex h-[calc(100vh-40px)] overflow-hidden">
     <aside id="sidebar"></aside>
 
     <!-- SOLO este contenedor hace scroll -->

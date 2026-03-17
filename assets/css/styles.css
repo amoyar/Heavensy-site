@@ -419,3 +419,93 @@ input[type="text"]:focus {
   background-color: #9ca3af;          /* gris suave */
   border-radius: 999px;
 }
+
+
+/* ============================================
+   RESPONSIVE — HEAVENSY ADMIN
+   ============================================ */
+
+/* Sidebar transition */
+#appSidebar {
+  transition: transform 0.3s ease, width 0.3s ease;
+}
+
+/* ── Tablet ≤1024px ── */
+@media (max-width: 1024px) {
+  /* Tablas — scroll horizontal */
+  .overflow-x-auto { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Grids de stats de 3 cols → 2 cols */
+  .grid.grid-cols-3 { grid-template-columns: repeat(2, minmax(0,1fr)) !important; }
+
+  /* Modal ancho completo */
+  .max-w-3xl { max-width: calc(100vw - 2rem) !important; }
+}
+
+/* ── Mobile ≤768px ── */
+@media (max-width: 768px) {
+  /* Sidebar oculto por defecto — controlado por JS */
+  #appSidebar {
+    position: fixed !important;
+    top: 0; left: 0;
+    height: 100vh !important;
+    z-index: 40;
+    box-shadow: 4px 0 20px rgba(0,0,0,.15);
+    transform: translateX(-100%);
+    width: 200px !important;
+  }
+
+  #appSidebar .sidebar-text { display: inline !important; }
+
+  /* Main ocupa todo el ancho */
+  #app { width: 100% !important; padding: 0.5rem !important; }
+
+  /* Navbar — ocultar username en muy pequeño */
+  #topbarUsername { display: none; }
+
+  /* Tablas scroll horizontal */
+  table { min-width: 500px; }
+  .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; }
+
+  /* Grids → 1 columna */
+  .grid.grid-cols-3,
+  .grid.grid-cols-2,
+  .md\:grid-cols-3,
+  .md\:grid-cols-2 { grid-template-columns: 1fr !important; }
+
+  /* Cards — padding más pequeño */
+  .bg-white.rounded-lg.shadow { padding: 1rem !important; }
+
+  /* Botones — texto más pequeño */
+  .text-sm { font-size: .8rem; }
+
+  /* Modales full width */
+  .max-w-3xl,
+  .max-w-2xl,
+  .max-w-xl  { max-width: calc(100vw - 1rem) !important; margin: 0.5rem !important; }
+
+  /* Ocultar columnas menos importantes en tablas */
+  .hide-mobile { display: none !important; }
+}
+
+/* ── Small mobile ≤480px ── */
+@media (max-width: 480px) {
+  #topbarUsername { display: none; }
+  .px-6 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+  .py-4 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+  h1.text-2xl { font-size: 1.2rem !important; }
+  .text-2xl.font-bold { font-size: 1.2rem !important; }
+}
+
+/* ── Tablas responsive helper ── */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Conversaciones — layout responsive ── */
+@media (max-width: 768px) {
+  /* Panel de conversaciones: ocultar lista en mobile cuando hay chat abierto */
+  #conversationsList { min-width: 100%; }
+}
