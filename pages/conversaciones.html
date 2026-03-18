@@ -1,8 +1,8 @@
 <!-- CONVERSACIONES PAGE - DISEÑO PROFESIONAL MEJORADO -->
-<div class="h-screen flex bg-gray-50 overflow-hidden">
+<div class="h-full flex bg-gray-50 overflow-hidden" id="convWrapper" style="position:relative;">
 
   <!-- COLUMNA 1: Sidebar de Conversaciones -->
-  <div class="w-60 flex-shrink-0 bg-white border-r border-gray-200  flex flex-col shadow-lg">
+  <div id="convLeftPanel" class="w-60 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col shadow-lg">
 
     <!-- Header del Sidebar con título -->
     <div class="px-3 py-2 border-b border-gray-200">
@@ -39,7 +39,7 @@
 </div>
 
 <!-- Filtros rápidos (chips) -->
-<div class="flex gap-1.5 mt-2 overflow-x-auto pb-1" id="filterChipsContainer" style="scrollbar-width:2px;">
+<div class="flex gap-1.5 mt-2 overflow-x-auto pb-1" id="filterChipsContainer" style="scrollbar-width:none;-ms-overflow-style:none;">
   
   <button class="filter-chip active flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="all">
     Todos
@@ -112,7 +112,7 @@
 
 
   <!-- COLUMNA 2: Área de Chat Central -->
-  <div class="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col overflow-hidden">
+  <div id="convCenterPanel" class="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col overflow-hidden relative">
 
 
 
@@ -122,7 +122,8 @@
 
   <div class="flex items-center justify-between w-full">
     <div class="flex items-center gap-2">
-
+      <!-- TOGGLE LEFT PANEL -->
+      <button id="btnToggleLeft" title="Mostrar/ocultar conversaciones" style="background:none;border:none;cursor:pointer;color:#193d6d;font-size:13px;padding:2px 6px;flex-shrink:0;line-height:1;"><i class="fas fa-chevron-left"></i></button>
       <!-- AVATAR DINÁMICO -->
       <div class="relative">
         <div id="chatHeaderAvatar" class="w-8 h-8 rounded-full overflow-hidden"></div>
@@ -160,6 +161,7 @@
       <button class="p-2 hover:bg-gray-100 rounded-xl transition-all">
         <i class="fas fa-ellipsis-v text-gray-500 text-sm"></i>
       </button>
+      <button id="btnToggleRight" title="Mostrar/ocultar panel contacto" style="background:none;border:none;cursor:pointer;color:#193d6d;font-size:13px;padding:2px 6px;flex-shrink:0;line-height:1;"><i class="fas fa-chevron-right"></i></button>
     </div>
 
   </div>
@@ -368,10 +370,14 @@
 
   <!-- COLUMNA 3: Panel de Contacto con bordes mejorados -->
 <!-- COLUMNA 3: Panel de Contacto -->
-<div id="contactPanel" class="w-64 bg-white border-l border-gray-200 flex flex-col overflow-y-auto overflow-x-hidden shadow-lg hidden">
+<div id="contactPanel" class="w-64 bg-white border-l border-gray-200 flex flex-col overflow-y-auto shadow-lg hidden relative transition-all duration-300">
 
 <!-- HEADER CONTACTO -->
-<div class="p-3 border-b border-gray-200 text-center flex flex-col items-center">
+<div class="p-3 border-b border-gray-200 text-center flex flex-col items-center" style="position:relative;">
+  <button id="btnCloseContactPanel" title="Cerrar panel"
+    style="position:absolute;top:6px;left:6px;background:none;border:none;cursor:pointer;color:#193d6d;font-size:13px;padding:4px;display:none;">
+    <i class="fas fa-chevron-right"></i>
+  </button>
 
   <div id="contactHeaderAvatar"
        class="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center mb-2">
@@ -699,4 +705,71 @@ class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:b
       </button>
     </div>
   </div>
+
+<style>
+/* ── Panel toggle tabs ── */
+.panel-tab {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 48px;
+  background: #C9D9FF;
+  border: 1px solid #b2c4fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  transition: background .15s;
+  font-size: 9px;
+  color: #7D84C1;
+}
+.panel-tab:hover { background: #b2c4fb; }
+.panel-tab-left {
+  right: -18px;
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+}
+.panel-tab-right {
+  left: -18px;
+  border-radius: 6px 0 0 6px;
+  border-right: none;
+}
+#convLeftPanel.collapsed {
+  width: 0 !important;
+  overflow: hidden;
+  border: none;
+}
+#contactPanel.panel-collapsed {
+  width: 0 !important;
+  overflow: hidden;
+  border: none;
+}
+@media (max-width: 900px) {
+  #btnCloseContactPanel { display: block !important; }
+}
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style>
+#convLeftPanel  { transition: width .25s ease; overflow: hidden !important; flex-shrink: 0; }
+#convLeftPanel.panel-hidden { width: 0 !important; min-width: 0 !important; border: none !important; }
+#contactPanel.panel-hidden  { width: 0 !important; min-width: 0 !important; border: none !important; overflow: hidden !important; }
+</style>
+
+<style>
+#filterChipsContainer::-webkit-scrollbar { display: none; }
+</style>
 </div>

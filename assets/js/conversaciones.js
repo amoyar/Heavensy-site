@@ -141,6 +141,38 @@ function setupConversacionesEventListeners() {
     setupFilterChips();
     setupPlanFilters();
 
+    // Panel toggles
+    const btnClose = document.getElementById('btnCloseContactPanel');
+    if (btnClose) {
+        btnClose.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const p = document.getElementById('contactPanel');
+            if (p) p.classList.add('panel-hidden');
+        });
+    }
+    const btnL = document.getElementById('btnToggleLeft');
+    const btnR = document.getElementById('btnToggleRight');
+    if (btnL) {
+        btnL.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const lp = document.getElementById('convLeftPanel');
+            lp.classList.toggle('panel-hidden');
+            btnL.querySelector('i').className = lp.classList.contains('panel-hidden')
+                ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+        });
+    }
+    if (btnR) {
+        btnR.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const p = document.getElementById('contactPanel');
+            if (p && !p.classList.contains('hidden')) {
+                p.classList.toggle('panel-hidden');
+                btnR.querySelector('i').className = p.classList.contains('panel-hidden')
+                    ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+            }
+        });
+    }
+
     console.log('✅ Event listeners configurados');
 }
 

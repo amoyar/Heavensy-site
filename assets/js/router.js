@@ -9,7 +9,24 @@ async function loadPage(page) {
     if (!res.ok) throw new Error('No se pudo cargar la página');
 
     const html = await res.text();
-    document.getElementById('app').innerHTML = html;
+    const appEl = document.getElementById('app');
+    appEl.innerHTML = html;
+
+    // Ajustar main según página
+    const fullscreenPages = ['conversaciones'];
+    if (fullscreenPages.includes(page)) {
+      appEl.style.padding        = '0';
+      appEl.style.overflow       = 'hidden';
+      appEl.style.height         = 'calc(100vh - 40px)';
+      appEl.style.display        = 'flex';
+      appEl.style.flexDirection  = 'column';
+    } else {
+      appEl.style.padding        = '0.5rem';
+      appEl.style.overflow       = 'auto';
+      appEl.style.height         = '';
+      appEl.style.display        = '';
+      appEl.style.flexDirection  = '';
+    }
 
     // 2️⃣ Llamar init<Page>Page si existe
     const initFnName =
@@ -40,4 +57,3 @@ function handleRoute() {
 // Inicializar
 window.addEventListener('hashchange', handleRoute);
 document.addEventListener('DOMContentLoaded', handleRoute);
-

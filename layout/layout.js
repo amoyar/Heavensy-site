@@ -69,7 +69,7 @@ function initSidebarToggle() {
 
   if (!sidebar || !toggleBtn) { console.warn('Sidebar o botón toggle no encontrados'); return; }
 
-  const isMobile = () => window.innerWidth < 768;
+  const isMobile = () => window.innerWidth < 1024;
   let sidebarOpen = false;
 
   function openSidebar() {
@@ -118,7 +118,10 @@ function initSidebarToggle() {
     sidebar.style.boxShadow  = '';
     sidebar.style.transform  = '';
     sidebar.style.transition = 'width 0.3s ease';
-    sidebar.style.width      = sidebarOpen === false ? '4rem' : '11rem';
+    sidebar.style.width      = sidebarOpen ? '11rem' : '4rem';
+    document.querySelectorAll('.sidebar-text').forEach(el => {
+      el.style.display = sidebarOpen ? '' : 'none';
+    });
     if (overlay) overlay.style.display = 'none';
   }
 
@@ -141,8 +144,8 @@ function initSidebarToggle() {
     }
   });
 
-  // Estado inicial — desktop expandido, mobile cerrado
-  sidebarOpen = !isMobile();
+  // Estado inicial — siempre cerrado
+  sidebarOpen = false;
   handleResize();
   window.addEventListener('resize', handleResize);
 }
