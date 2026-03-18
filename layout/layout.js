@@ -12,6 +12,7 @@ async function loadLayout() {
     initUserMenu();
     loadTopbarUsername();
     initSidebarToggle();
+    initSidebarActive();
     if (typeof loadSidebarCompanyName === 'function') loadSidebarCompanyName();
   } catch (e) {
     console.error('❌ Error cargando layout', e);
@@ -151,3 +152,18 @@ function initSidebarToggle() {
 }
 
 document.addEventListener('DOMContentLoaded', loadLayout);
+
+// ================================
+// SIDEBAR ACTIVE STATE
+// ================================
+function initSidebarActive() {
+  function updateActive() {
+    const page = location.hash.replace('#', '') || 'dashboard';
+    document.querySelectorAll('.sidebar-link').forEach(function(link) {
+      const href = link.getAttribute('href').replace('#', '');
+      link.classList.toggle('active', href === page);
+    });
+  }
+  updateActive();
+  window.addEventListener('hashchange', updateActive);
+}

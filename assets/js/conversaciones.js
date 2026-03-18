@@ -150,17 +150,35 @@ function setupConversacionesEventListeners() {
             if (p) p.classList.add('panel-hidden');
         });
     }
-    const btnL = document.getElementById('btnToggleLeft');
-    const btnR = document.getElementById('btnToggleRight');
-    if (btnL) {
-        btnL.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const lp = document.getElementById('convLeftPanel');
-            lp.classList.toggle('panel-hidden');
-            btnL.querySelector('i').className = lp.classList.contains('panel-hidden')
-                ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
-        });
+    // ── Panel izquierdo: colapsar/expandir ──
+    // Función centralizada — la usan btnCollapseLeft (header izq) y btnToggleLeft (chatHeader)
+    function _toggleLeftPanel(e) {
+        if (e) e.stopPropagation();
+        const lp        = document.getElementById('convLeftPanel');
+        const btnExpand = document.getElementById('btnExpandLeft');
+        const btnL      = document.getElementById('btnToggleLeft');
+        const btnColl   = document.getElementById('btnCollapseLeft');
+        if (!lp) return;
+
+        const isHidden = lp.classList.toggle('panel-hidden');
+
+        // Sincronizar íconos en ambos botones
+        if (btnL)    btnL.querySelector('i').className    = isHidden ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+        if (btnColl) btnColl.querySelector('i').className = isHidden ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+
+        // Botón flotante: visible solo cuando está colapsado
+        if (btnExpand) btnExpand.style.display = isHidden ? 'flex' : 'none';
     }
+
+    const btnL    = document.getElementById('btnToggleLeft');
+    const btnColl = document.getElementById('btnCollapseLeft');
+    const btnExp  = document.getElementById('btnExpandLeft');
+    if (btnL)    btnL.addEventListener('click',    _toggleLeftPanel);
+    if (btnColl) btnColl.addEventListener('click', _toggleLeftPanel);
+    if (btnExp)  btnExp.addEventListener('click',  _toggleLeftPanel);
+
+    // ── Panel derecho (contacto): colapsar/expandir ──
+    const btnR = document.getElementById('btnToggleRight');
     if (btnR) {
         btnR.addEventListener('click', function(e) {
             e.stopPropagation();

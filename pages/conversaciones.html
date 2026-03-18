@@ -11,7 +11,13 @@
           class="w-7 h-7 rounded-lg bg-[#92acde] flex items-center justify-center">
           <i class="fas fa-message text-[#c9dcef] text-sm"></i>
         </div>
-        <h2 class="text-sm font-semibold text-gray-800">Conversaciones</h2>
+        <h2 class="text-sm font-semibold text-gray-800 flex-1">Conversaciones</h2>
+        <!-- Botón colapsar panel izquierdo (siempre visible) -->
+        <button id="btnCollapseLeft"
+          title="Colapsar panel"
+          style="background:none;border:none;cursor:pointer;color:#193d6d;font-size:13px;padding:2px 6px;line-height:1;">
+          <i class="fas fa-chevron-left"></i>
+        </button>
       </div>
 
 
@@ -39,7 +45,7 @@
 </div>
 
 <!-- Filtros rápidos (chips) -->
-<div class="flex gap-1.5 mt-2 overflow-x-auto pb-1" id="filterChipsContainer" style="scrollbar-width:none;-ms-overflow-style:none;">
+<div class="flex flex-wrap gap-1.5 mt-2" id="filterChipsContainer">
   
   <button class="filter-chip active flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="all">
     Todos
@@ -66,11 +72,11 @@
 
 <!-- Filtros avanzados (colapsable) -->
 <button id="advancedFiltersToggle" onclick="toggleAdvancedFilters()"
-  class="w-full flex items-center justify-between mt-1.5 px-2 py-1 text-[10px] text-gray-400 hover:text-gray-600 transition-all">
-  <span class="flex items-center gap-1">
+  class="w-full flex items-center justify-between mt-1.5 px-3 py-1.5 text-[11px] text-[#7D84C1] bg-[#EFF6FF] hover:bg-[#e4eeff] border border-[#7D84C1] rounded-lg transition-all">
+  <span class="flex items-center gap-1.5 font-medium">
     <i class="fas fa-sliders-h"></i> Filtros avanzados
   </span>
-  <i id="advancedFiltersIcon" class="fas fa-chevron-down text-[8px] transition-transform"></i>
+  <i id="advancedFiltersIcon" class="fas fa-chevron-down text-[9px] transition-transform"></i>
 </button>
 
 <div id="advancedFiltersPanel" class="hidden mt-1 mx-1 p-2 bg-gray-50 rounded-xl space-y-2 border border-gray-100">
@@ -772,4 +778,16 @@ class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:b
 <style>
 #filterChipsContainer::-webkit-scrollbar { display: none; }
 </style>
+
+<!-- Botón flotante para re-expandir panel izquierdo cuando está colapsado -->
+<button id="btnExpandLeft"
+  title="Mostrar conversaciones"
+  style="position:absolute;top:50%;left:0;transform:translateY(-50%);z-index:20;
+         background:#C9D9FF;border:1px solid #b2c4fb;border-left:none;
+         border-radius:0 6px 6px 0;width:18px;height:48px;
+         display:none;align-items:center;justify-content:center;
+         cursor:pointer;color:#7D84C1;font-size:9px;padding:0;">
+  <i class="fas fa-chevron-right"></i>
+</button>
+
 </div>
