@@ -204,6 +204,9 @@ function updateFilterCounts() {
 // TOGGLE PANEL AVANZADO
 // ============================================
 function toggleAdvancedFilters() {
+    const companyId = document.getElementById('conversacionesCompanyFilter')?.value;
+    if (!companyId) return; // No abrir sin empresa seleccionada
+
     const panel = document.getElementById('advancedFiltersPanel');
     const icon = document.getElementById('advancedFiltersIcon');
     if (!panel) return;

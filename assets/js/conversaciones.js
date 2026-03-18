@@ -114,6 +114,11 @@ function setupConversacionesEventListeners() {
                 renderConversations();
                 mostrarEstadoSinEmpresaSeleccionada();
                 setInputBarEnabled(false);
+                // Deshabilitar filtros avanzados
+                const btnAdv = document.getElementById('advancedFiltersToggle');
+                if (btnAdv) { btnAdv.disabled = true; btnAdv.classList.add('opacity-40','cursor-not-allowed'); }
+                // Cerrar panel si estaba abierto
+                document.getElementById('advancedFiltersPanel')?.classList.add('hidden');
 
                 if (typeof hideContactPanel === "function") {
                 hideContactPanel();
@@ -126,6 +131,9 @@ function setupConversacionesEventListeners() {
             await cargarConversacionesPorEmpresa(companyId);
             mostrarEstadoSinConversacionSeleccionada();
             setInputBarEnabled(true);
+            // Habilitar filtros avanzados
+            const btnAdv = document.getElementById('advancedFiltersToggle');
+            if (btnAdv) { btnAdv.disabled = false; btnAdv.classList.remove('opacity-40','cursor-not-allowed'); }
         });
     }
 
