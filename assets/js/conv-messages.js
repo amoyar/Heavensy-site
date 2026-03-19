@@ -237,6 +237,10 @@ async function selectConversation(userId, element) {
 
     mostrarChatActivo();
 
+    // Mostrar botón colapsar panel izquierdo
+    const btnColl = document.getElementById('btnCollapseLeft');
+    if (btnColl) btnColl.style.visibility = 'visible';
+
     // ✅ Mostrar panel derecho de contacto
     if (typeof showContactPanel === "function") {
         showContactPanel();

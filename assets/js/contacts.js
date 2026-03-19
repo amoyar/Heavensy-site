@@ -144,14 +144,13 @@ function renderTags(tags) {
 
     tags.forEach(tag => {
         const span = document.createElement("span");
-
-       span.className = "px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 max-w-full break-words";
-        span.style.backgroundColor = tag.color || "#e9d5ff";
-        span.style.color = "#1f2937"; // texto oscuro
+        span.className = "px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 border bg-white transition-all";
+        span.style.borderColor = tag.color || "#9ca3af";
+        span.style.color = tag.color || "#6b7280";
 
         span.innerHTML = `
             ${escapeHtml(tag.label)}
-            <button class="ml-1 font-bold" title="Quitar tag">×</button>
+            <button class="ml-0.5 opacity-60 hover:opacity-100 font-bold" title="Quitar tag">×</button>
         `;
 
         span.querySelector("button").onclick = () => removeTag(tag.id);

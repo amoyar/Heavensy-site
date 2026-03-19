@@ -119,6 +119,9 @@ function setupConversacionesEventListeners() {
                 if (btnAdv) { btnAdv.disabled = true; btnAdv.classList.add('opacity-40','cursor-not-allowed'); }
                 // Cerrar panel si estaba abierto
                 document.getElementById('advancedFiltersPanel')?.classList.add('hidden');
+                // Ocultar botón colapsar
+                const btnColl2 = document.getElementById('btnCollapseLeft');
+                if (btnColl2) btnColl2.style.visibility = 'hidden';
 
                 if (typeof hideContactPanel === "function") {
                 hideContactPanel();
@@ -134,6 +137,9 @@ function setupConversacionesEventListeners() {
             // Habilitar filtros avanzados
             const btnAdv = document.getElementById('advancedFiltersToggle');
             if (btnAdv) { btnAdv.disabled = false; btnAdv.classList.remove('opacity-40','cursor-not-allowed'); }
+            // Mostrar botón colapsar
+            const btnColl2 = document.getElementById('btnCollapseLeft');
+            if (btnColl2) btnColl2.style.visibility = 'visible';
         });
     }
 

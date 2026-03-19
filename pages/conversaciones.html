@@ -8,14 +8,14 @@
     <div class="px-3 py-2 border-b border-gray-200">
       <div class="flex items-center gap-2 mb-2">
         <div
-          class="w-7 h-7 rounded-lg bg-[#92acde] flex items-center justify-center">
-          <i class="fas fa-message text-[#c9dcef] text-sm"></i>
+          class="w-7 h-7 rounded-lg bg-[#c9d9ff] flex items-center justify-center">
+          <i class="fas fa-message text-[#7d84c1] text-sm"></i>
         </div>
         <h2 class="text-sm font-semibold text-gray-800 flex-1">Conversaciones</h2>
         <!-- Botón colapsar panel izquierdo (siempre visible) -->
         <button id="btnCollapseLeft"
           title="Colapsar panel"
-          style="background:none;border:none;cursor:pointer;color:#193d6d;font-size:13px;padding:2px 6px;line-height:1;">
+          style="background:none;border:none;cursor:pointer;color:#193d6d;font-size:13px;padding:2px 6px;line-height:1;visibility:hidden;">
           <i class="fas fa-chevron-left"></i>
         </button>
       </div>
@@ -80,22 +80,26 @@
   <i id="advancedFiltersIcon" class="fas fa-chevron-down text-[9px] transition-transform"></i>
 </button>
 
-<div id="advancedFiltersPanel" class="hidden mt-1 mx-1 p-2 bg-gray-50 rounded-xl space-y-2 border border-gray-100">
+<div id="advancedFiltersPanel" class="hidden mt-1 mx-1 space-y-2">
   <!-- Por Plan -->
   <div>
-    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Plan</span>
-    <div class="flex gap-1 mt-1 flex-wrap" id="planFilters">
-      <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-purple-100 text-purple-700 font-semibold transition-all" data-plan="">Todos</button>
-      <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Premium">Premium</button>
-      <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Basic">Basic</button>
-      <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Free">Free</button>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider ml-1">Plan</span>
+    <div class="bg-white border border-gray-200 rounded-xl px-2 pb-2 pt-1.5 mt-1">
+      <div class="flex gap-1 flex-wrap" id="planFilters">
+        <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-purple-100 text-purple-700 font-semibold transition-all" data-plan="">Todos</button>
+        <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Premium">Premium</button>
+        <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Basic">Basic</button>
+        <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Free">Free</button>
+      </div>
     </div>
   </div>
   <!-- Por Tags (dinámico) -->
   <div>
-    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Tags</span>
-    <div class="flex gap-1 mt-1 flex-wrap" id="tagFilters">
-      <!-- Se llena dinámicamente desde JS -->
+    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider ml-1">Tags</span>
+    <div class="bg-white border border-gray-200 rounded-xl px-2 pb-2 pt-1.5 mt-1">
+      <div class="flex gap-1 flex-wrap" id="tagFilters">
+        <!-- Se llena dinámicamente desde JS -->
+      </div>
     </div>
   </div>
   <!-- Limpiar -->
@@ -119,7 +123,7 @@
 
 
   <!-- COLUMNA 2: Área de Chat Central -->
-  <div id="convCenterPanel" class="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col overflow-hidden relative">
+  <div id="convCenterPanel" class="flex-1 bg-[#f8f9fb] flex flex-col overflow-hidden relative">
 
 
 
@@ -181,7 +185,7 @@
     </div>
 
     <!-- Input de Mensaje (Pegado a la base y más bajo) -->
-    <div class="bg-gray-50 border-t border-gray-200 px-3 py-1 flex-shrink-0">
+    <div class="bg-[#f8f9fb] border-t border-[#f8f9fb] px-3 py-1 flex-shrink-0">
 
       <div class="max-w-4xl mx-auto relative">
         <!-- Preview de archivos adjuntos -->

@@ -190,9 +190,15 @@ function _segRenderForm() {
                     <div class="seg-dt-dropdown" id="segTimeDrop">
                         <div class="seg-time-inner">
                             <div class="seg-time-cols">
-                                <div class="seg-time-col" id="segHourCol"></div>
+                                <div class="seg-time-col-wrap">
+                                  <div class="seg-time-col-label">Hora</div>
+                                  <div class="seg-time-col" id="segHourCol"></div>
+                                </div>
                                 <div style="color:#9ca3af;font-size:13px;font-weight:700;padding-top:4px;">:</div>
-                                <div class="seg-time-col" id="segMinCol"></div>
+                                <div class="seg-time-col-wrap">
+                                  <div class="seg-time-col-label">Min</div>
+                                  <div class="seg-time-col" id="segMinCol"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -974,11 +980,12 @@ function _segUpdateTime() {
             z-index:9999; display:none;
         }
         .seg-dt-dropdown.open { display:block; }
-        .seg-time-inner { padding:6px; width:110px; }
+        .seg-time-inner { padding:4px; width:88px; }
+        .seg-time-col-wrap { flex:1; display:flex; flex-direction:column; align-items:center; }
+        .seg-time-col-label { font-size:9px; font-weight:700; color:#9ca3af; text-transform:uppercase; margin-bottom:3px; }
         .seg-time-cols { display:flex; align-items:flex-start; gap:4px; }
-        .seg-time-col { flex:1; max-height:130px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#e5e7eb transparent; }
-        .seg-time-col::-webkit-scrollbar { width:3px; }
-        .seg-time-col::-webkit-scrollbar-thumb { background:#e5e7eb; border-radius:3px; }
+        .seg-time-col { flex:1; max-height:130px; overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none; }
+        .seg-time-col::-webkit-scrollbar { display:none; }
         .seg-time-item { text-align:center; padding:4px 2px; font-size:11px; color:#6b7280; border-radius:4px; cursor:pointer; transition:background .1s; }
         .seg-time-item:hover { background:#EFF6FF; color:#9961FF; }
         .seg-time-item.active { background:#9961FF; color:#fff; font-weight:700; }
