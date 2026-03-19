@@ -327,7 +327,7 @@ function _applyStageStyle(btn, isActive, color) {
     } else {
         btn.style.backgroundColor = '#ffffff';
         btn.style.color           = '#9ca3af';
-        btn.style.borderColor     = '#e5e7eb';
+        btn.style.borderColor     = color || '#e5e7eb';
         btn.style.fontWeight      = '400';
         btn.classList.remove('active');
     }

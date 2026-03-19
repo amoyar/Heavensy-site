@@ -417,11 +417,22 @@ function _calBuildDayPanel(dateStr, appts) {
                 <div class="cal-appt-service">${appt.service_name || appt.service_id || '—'}</div>
                 <div class="cal-appt-contact" style="color:${specColor}">${specName}</div>
             </div>
-            <div class="cal-appt-badge" style="color:${cfg.color};border-color:${cfg.color}">
-                ${cfg.label}
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;margin-left:auto;">
+                <div class="cal-appt-badge" style="color:${cfg.color};border-color:${cfg.color}">
+                    ${cfg.label}
+                </div>
+                ${appt.status === 'reserved' ? '<button class="cal-confirm-btn" data-confirm-id="' + appt._id + '" style="font-size:9.5px;font-weight:600;padding:2px 7px;border-radius:20px;background:#10b981;color:#fff;border:none;cursor:pointer;white-space:nowrap;">Confirmar</button>' : ''}
             </div>
         `;
         list.appendChild(item);
+        if (appt.status === 'reserved') {
+            const confirmBtn = item.querySelector('.cal-confirm-btn');
+            if (confirmBtn) {
+                const apptId = appt._id;
+                confirmBtn.addEventListener('click', function() { _calShowConfirmModal(apptId); });
+            }
+        }
+
     });
 
     panel.appendChild(list);
@@ -578,4 +589,63 @@ function _calInjectStyles() {
     }
     `;
     document.head.appendChild(style);
+}
+
+function _calShowConfirmModal(appointmentId) {
+    var appt = _calAppointments.find(function(a){ return a._id === appointmentId; });
+    if (!appt) return;
+
+    // Cerrar cualquier panel inline previo
+    var prev = document.querySelector('.cal-inline-confirm');
+    if (prev) prev.remove();
+
+    var btn = document.querySelector('[data-confirm-id="' + appointmentId + '"]');
+    if (!btn) return;
+    var item = btn.closest('.cal-appt-item');
+    if (!item) return;
+
+    var dateStr = new Date(appt.date + 'T12:00:00').toLocaleDateString('es-CL', {weekday:'short',day:'numeric',month:'short'});
+    var price = appt.price ? ('$' + Number(appt.price).toLocaleString('es-CL') + ' CLP') : '';
+
+    var panel = document.createElement('div');
+    panel.className = 'cal-inline-confirm';
+    panel.style.cssText = 'background:#f0fdf4;border:0.5px solid #bbf7d0;border-radius:8px;padding:8px 10px;margin-top:6px;font-size:11px;';
+    panel.innerHTML = '<div style="color:#166534;margin-bottom:6px;">'
+        + '<strong>' + (appt.contact_name||'—') + '</strong> · ' + (appt.service_name||'—') + '<br>'
+        + dateStr + ' · ' + appt.start + '–' + appt.end
+        + (price ? ' · ' + price : '')
+        + '</div>'
+        + '<div style="display:flex;gap:6px;">'
+        + '<button class="cal-inline-cancel" style="flex:1;padding:4px 0;font-size:11px;color:#6b7280;background:#fff;border:0.5px solid #e5e7eb;border-radius:6px;cursor:pointer;">Cancelar</button>'
+        + '<button class="cal-inline-confirm-btn" style="flex:1;padding:4px 0;font-size:11px;font-weight:600;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;">Confirmar</button>'
+        + '</div>';
+
+    item.after(panel);
+    panel.querySelector('.cal-inline-cancel').addEventListener('click', function(){ panel.remove(); });
+    panel.querySelector('.cal-inline-confirm-btn').addEventListener('click', function(){ _calConfirmReservation(appointmentId, panel); });
+}
+
+async function _calConfirmReservation(appointmentId, overlay) {
+    var btn = overlay ? overlay.querySelector('#calModalConfirm') : null;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+    try {
+        const res = await fetch(`${API_BASE_URL || ''}/api/agenda/reservations/${appointmentId}/confirm`, {
+            method: 'PATCH',
+            headers: { ..._agendaAuthHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ payment_reference: 'manual' })
+        });
+        var data = await res.json();
+        if (overlay) overlay.remove();
+        if (data.success) {
+            var appt = _calAppointments.find(function(a){ return a._id === appointmentId; });
+            if (appt) appt.status = 'confirmed';
+            var container = document.getElementById('contactCalendarContainer');
+            if (container) _calBuild(container);
+        } else {
+            alert(data.error || 'Error al confirmar');
+        }
+    } catch(e) {
+        if (overlay) overlay.remove();
+        alert('Error de conexión');
+    }
 }

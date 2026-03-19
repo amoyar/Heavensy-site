@@ -180,6 +180,7 @@ async function addTag() {
 
         input.value = "";
         await loadContactProfile(currentContactUserId, null, null, currentContactCompanyId);
+        _syncConversationTags(currentContactUserId);
     } catch (err) {
         console.error("❌ Error agregando tag:", err);
         alert("No se pudo agregar el tag");
@@ -196,6 +197,7 @@ async function removeTag(tagId) {
         );
 
         await loadContactProfile(currentContactUserId, null, null, currentContactCompanyId);
+        _syncConversationTags(currentContactUserId);
     } catch (err) {
         console.error("❌ Error quitando tag:", err);
         alert("No se pudo quitar el tag");
@@ -410,3 +412,14 @@ window.onConversationSelectedForContacts = function (userId, phone = null, name 
 
     loadContactProfile(userId, phone, name, companyId);
 };
+// --------------------------------------------
+// Sincronizar tags del contacto en el array conversations
+// para que buildTagFilters() los vea sin recargar página
+// --------------------------------------------
+function _syncConversationTags(userId) {
+    if (typeof conversations === 'undefined' || !currentContactProfile) return;
+    const conv = conversations.find(c => c.id === userId);
+    if (conv) {
+        conv.tags = currentContactProfile.tags || [];
+    }
+}

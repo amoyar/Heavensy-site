@@ -131,15 +131,15 @@ function setupConversacionesEventListeners() {
 
             currentCompanyId = companyId;
             resetChatAndContactPanel();
+            // Ocultar botón colapsar hasta que se seleccione un contacto
+            const btnColl3 = document.getElementById('btnCollapseLeft');
+            if (btnColl3) btnColl3.style.visibility = 'hidden';
             await cargarConversacionesPorEmpresa(companyId);
             mostrarEstadoSinConversacionSeleccionada();
             setInputBarEnabled(true);
             // Habilitar filtros avanzados
             const btnAdv = document.getElementById('advancedFiltersToggle');
             if (btnAdv) { btnAdv.disabled = false; btnAdv.classList.remove('opacity-40','cursor-not-allowed'); }
-            // Mostrar botón colapsar
-            const btnColl2 = document.getElementById('btnCollapseLeft');
-            if (btnColl2) btnColl2.style.visibility = 'visible';
         });
     }
 

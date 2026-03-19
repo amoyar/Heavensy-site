@@ -205,7 +205,7 @@ function updateFilterCounts() {
 // ============================================
 function toggleAdvancedFilters() {
     const companyId = document.getElementById('conversacionesCompanyFilter')?.value;
-    if (!companyId) return; // No abrir sin empresa seleccionada
+    if (!companyId) return;
 
     const panel = document.getElementById('advancedFiltersPanel');
     const icon = document.getElementById('advancedFiltersIcon');
@@ -213,6 +213,11 @@ function toggleAdvancedFilters() {
 
     panel.classList.toggle('hidden');
     if (icon) icon.style.transform = panel.classList.contains('hidden') ? '' : 'rotate(180deg)';
+
+    // Recargar tags cada vez que se abre
+    if (!panel.classList.contains('hidden')) {
+        buildTagFilters();
+    }
 }
 
 // ============================================
