@@ -795,6 +795,21 @@ class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:b
 
 <style>
 #filterChipsContainer::-webkit-scrollbar { display: none; }
+
+@media (max-height: 500px) and (orientation: landscape) {
+  /* Header: máximo 60% de la altura, el resto es la lista */
+  #convLeftPanel > div:first-child {
+    max-height: 55% !important;
+    overflow-y: auto !important;
+    flex-shrink: 0 !important;
+  }
+  /* Lista de conversaciones ocupa el resto */
+  #conversationsList {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+  }
+}
 </style>
 
 <!-- Botón flotante para re-expandir panel izquierdo cuando está colapsado -->
