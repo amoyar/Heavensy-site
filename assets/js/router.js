@@ -17,7 +17,7 @@ async function loadPage(page) {
     if (fullscreenPages.includes(page)) {
       appEl.style.padding        = '0';
       appEl.style.overflow       = 'hidden';
-      appEl.style.height         = 'calc(100vh - 40px)';
+      appEl.style.height         = 'calc(100dvh - 40px)';
       appEl.style.display        = 'flex';
       appEl.style.flexDirection  = 'column';
     } else {
