@@ -238,14 +238,19 @@ function renderFunnels(funnels) {
         }
 
         // Arranca colapsado
-        stagesBox.style.display = 'none';
+        stagesBox.style.display  = 'none';
+        stagesBox.style.maxHeight = '0px';
+        stagesBox.style.opacity   = '0';
+        stagesBox.style.overflow  = 'hidden';
+        stagesBox.style.transition = 'max-height 0.28s ease, opacity 0.24s ease';
+        stagesBox._rpSlideInit = true;
         block.appendChild(stagesBox);
 
         // Toggle colapsar/expandir al hacer click en el título
         title.addEventListener('click', (e) => {
             if (e.target.closest('.funnel-btn-delete')) return;
             const isOpen = stagesBox.style.display !== 'none';
-            stagesBox.style.display = isOpen ? 'none' : 'block';
+            rpSlide(stagesBox, !isOpen);
             const chevron = title.querySelector('.funnel-chevron');
             if (chevron) {
                 chevron.classList.toggle('fa-chevron-right', isOpen);

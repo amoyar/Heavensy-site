@@ -17,6 +17,7 @@ let _agendaCurrentUserId    = null;
 let _agendaCurrentCompanyId = null;
 let _agendaMyResource       = null;   // recurso del profesional logueado
 let _agendaMyServices       = [];     // servicios del profesional
+let _agendaCountdownTimer   = null;   // timer del countdown activo
 const _svcColors = ['#7c3aed','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899','#8b5cf6','#14b8a6'];
 let _agendaSelectedService  = null;   // servicio seleccionado
 let _agendaSelectedDate     = null;   // fecha seleccionada en el calendario
@@ -138,10 +139,10 @@ async function loadAgenda(companyId, userId) {
         const today = _agendaToday();
         _agendaCalendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-        // Verificar si hay reserva activa pendiente de confirmación
-        const activeRes = await _agendaCheckActiveReservation();
-        if (activeRes) {
-            _agendaResumeReservation(activeRes);
+        // Verificar si hay reservas activas pendientes de confirmación
+        const activeResList = await _agendaCheckActiveReservation();
+        if (activeResList) {
+            await _agendaResumeReservation(activeResList);
             return;
         }
 
@@ -161,61 +162,157 @@ async function loadAgenda(companyId, userId) {
 // ============================================
 
 async function _agendaCheckActiveReservation() {
-    if (!_agendaMyResource) return null;
+    if (!_agendaCurrentUserId || !_agendaCurrentCompanyId) return null;
     try {
         const res = await fetch(
-            `${API_BASE_URL || ''}/api/agenda/active-reservation?contact_id=${_agendaCurrentUserId}&resource_id=${_agendaMyResource._id}`,
+            `${API_BASE_URL || ''}/api/agenda/active-reservation?contact_id=${_agendaCurrentUserId}`,
             { headers: _agendaAuthHeaders() }
         );
         if (!res.ok) return null;
         const data = await res.json();
-        return data.reservation || null;
+        return data.reservations?.length ? data.reservations : null;
     } catch { return null; }
 }
 
-function _agendaResumeReservation(appt) {
-    // Calcular tiempo restante del TTL
-    const reservedUntil = new Date(appt.reserved_until);
-    const now           = new Date();
-    const remainingMs   = reservedUntil - now;
-    if (remainingMs <= 0) return null; // expiró justo ahora
-
-    // Buscar el servicio correspondiente
-    const svc = _agendaMyServices.find(s => s.service_id === appt.service_id)
-             || { name: appt.service_name || 'Servicio', duration: appt.duration, price: appt.price };
-
-    const slot = { date: appt.date, start: appt.start, end: appt.end };
-    const color = _svcColors[0];
+async function _agendaResumeReservation(appts) {
+    const list = Array.isArray(appts) ? appts : [appts];
+    const valid = list.filter(a => new Date(a.reserved_until) > new Date());
+    if (!valid.length) return;
 
     const container = document.getElementById('contactAgendaContainer');
     if (!container) return;
 
-    _agendaSelectedService = svc;
-    _agendaSelectedDate    = appt.date;
+    // Renderizar agenda normal primero
+    await _agendaRenderPanel();
 
-    // Mostrar banner de reserva pendiente
-    const banner = document.createElement('div');
-    banner.style.cssText = 'background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:#713f12;display:flex;align-items:center;gap:8px;';
-    banner.innerHTML = `
-        <i class="fas fa-clock" style="color:#ca8a04"></i>
-        <span>Tienes una reserva pendiente de confirmación</span>
-        <button onclick="_agendaCancelActiveReservation();" 
-            style="margin-left:auto;font-size:11px;color:#9ca3af;background:none;border:none;cursor:pointer;white-space:nowrap;">
-            Cancelar reserva
-        </button>
-    `;
-    container.innerHTML = '';
-    container.appendChild(banner);
+    const cont = document.getElementById('contactAgendaContainer');
+    if (!cont) return;
 
-    // Guardar appointment id para confirmación
-    window._agendaPendingAppointmentId = appt._id;
+    // Insertar un banner por cada reserva (en orden inverso para que queden en orden)
+    valid.slice().reverse().forEach(function(appt, idx) {
+        const reservedUntil = new Date(appt.reserved_until);
+        const dateStr  = _agendaFormatDate(appt.date);
 
-    // Mostrar panel de reserva con tiempo restante
-    _agendaShowReservationPanel(slot, svc, container, color);
+        // Buscar nombre del especialista: primero en el appt, luego en servicios locales
+        let specName = appt.resource_name || '';
+        if (!specName && appt.resource_id) {
+            for (const svcGroup of (_agendaCompanyServices || [])) {
+                const spec = (svcGroup.specialists || []).find(s => s.resource_id === appt.resource_id);
+                if (spec) { specName = spec.resource_name; break; }
+            }
+        }
 
-    // Retomar el countdown con el tiempo real restante
-    _agendaStartCountdown('agendaCountdown', reservedUntil, () => {
-        _agendaRenderPanel();
+        const svcName  = appt.service_name || (_agendaMyServices.find(s => s.service_id === appt.service_id) || {}).name || 'Servicio';
+        const countdownId = 'agendaCountdown_' + appt._id;
+
+        const banner = document.createElement('div');
+        banner.className = 'agenda-pending-banner';
+        banner.style.cssText = 'background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12px;color:#713f12;max-height:300px;';
+        banner.innerHTML = `
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                <i class="fas fa-clock" style="color:#ca8a04;font-size:13px;"></i>
+                <span style="font-weight:700;font-size:13px;">Reserva pendiente de confirmación</span>
+            </div>
+            <div style="background:#fff8;border-radius:7px;padding:6px 8px;margin-bottom:8px;font-size:11px;">
+                <div style="color:#6b7280;">${svcName}${specName ? ' · ' + specName : ''}</div>
+                <div style="font-weight:700;color:#111827;">${dateStr} · ${appt.start} – ${appt.end}</div>
+                <div style="margin-top:4px;">Expira en: <span id="${countdownId}" style="font-weight:700;color:#dc2626;">--:--</span></div>
+            </div>
+            <div style="display:flex;gap:5px;" id="bannerActions_${appt._id}">
+                <button class="agenda-btn-confirm-payment"
+                    onclick="_agendaBannerAskConfirm('${appt._id}', 'pay')"
+                    style="flex:2;padding:5px 6px;font-size:10px;">
+                    <i class="fas fa-check-circle"></i> Confirmar hora
+                </button>
+                <button onclick="_agendaBannerAskConfirm('${appt._id}', 'cancel')"
+                    class="agenda-btn-banner-sm-cancel">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+            <div id="bannerConfirm_${appt._id}" style="display:none;margin-top:6px;"></div>
+        `;
+        cont.prepend(banner);
+
+        // Countdown individual
+        (function(cId, until) {
+            var timer = null;
+            function tick() {
+                var el = document.getElementById(cId);
+                if (!el) { if(timer) clearTimeout(timer); return; }
+                var diff = Math.max(0, until - new Date());
+                var mins = Math.floor(diff / 60000);
+                var secs = Math.floor((diff % 60000) / 1000);
+                el.textContent = String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
+                el.style.color = diff < 300000 ? '#ef4444' : diff < 600000 ? '#f59e0b' : '#10b981';
+                if (diff <= 0) { el.textContent = '00:00'; _agendaRenderPanel(); return; }
+                timer = setTimeout(tick, 1000);
+            }
+            tick();
+        })(countdownId, reservedUntil);
+    });
+}
+
+function _agendaBannerAskConfirm(appointmentId, action) {
+    const confirmDiv = document.getElementById('bannerConfirm_' + appointmentId);
+    const actionsDiv = document.getElementById('bannerActions_' + appointmentId);
+    if (!confirmDiv) return;
+
+    // Si ya hay un panel de confirmación abierto, cerrarlo (toggle)
+    if (confirmDiv.style.display !== 'none' && confirmDiv.dataset.action === action) {
+        confirmDiv.style.display = 'none';
+        confirmDiv.innerHTML = '';
+        return;
+    }
+
+    const isPay    = action === 'pay';
+    const bg       = isPay ? '#f0fdf4' : '#fef2f2';
+    const border   = isPay ? '#bbf7d0' : '#fecaca';
+    const msgColor = isPay ? '#166534' : '#991b1b';
+    const msg      = isPay ? '¿Confirmar reserva efectuada?' : '¿Cancelar esta reserva?';
+    const icon     = isPay ? 'fa-check-circle' : 'fa-times-circle';
+    const okBg     = isPay ? '#10b981' : '#ef4444';
+    const okLabel  = isPay ? 'Sí, confirmar' : 'Sí, cancelar';
+
+    confirmDiv.dataset.action = action;
+    confirmDiv.style.cssText = `display:block;background:${bg};border:0.5px solid ${border};border-radius:8px;padding:8px 10px;font-size:11px;`;
+    confirmDiv.innerHTML = ''
+        + `<div style="color:${msgColor};font-weight:600;margin-bottom:7px;"><i class="fas ${icon}" style="margin-right:4px;"></i>${msg}</div>`
+        + '<div style="display:flex;gap:6px;">'
+        + `<button onclick="_agendaBannerDismissConfirm('${appointmentId}')"
+            style="flex:1;padding:4px 0;font-size:11px;color:#6b7280;background:#fff;border:0.5px solid #e5e7eb;border-radius:6px;cursor:pointer;">No</button>`
+        + `<button onclick="_agendaBannerDoAction('${appointmentId}','${action}')"
+            style="flex:1;padding:4px 0;font-size:11px;font-weight:600;background:${okBg};color:#fff;border:none;border-radius:6px;cursor:pointer;">${okLabel}</button>`
+        + '</div>';
+}
+
+function _agendaBannerDismissConfirm(appointmentId) {
+    const confirmDiv = document.getElementById('bannerConfirm_' + appointmentId);
+    if (confirmDiv) { confirmDiv.style.display = 'none'; confirmDiv.innerHTML = ''; }
+}
+
+function _agendaBannerDoAction(appointmentId, action) {
+    _agendaBannerDismissConfirm(appointmentId);
+    const id = appointmentId === 'direct' ? window._agendaPendingAppointmentId : appointmentId;
+    if (action === 'pay') {
+        _agendaConfirmPayment(id);
+    } else {
+        _agendaCancelReservationById(id);
+    }
+}
+
+async function _agendaCancelReservationById(appointmentId) {
+    window._agendaPendingAppointmentId = appointmentId;
+    await _agendaCancelActiveReservation();
+}
+
+function _agendaHideBannerById(appointmentId) {
+    // Ocultar banner con animación suave
+    var banners = document.querySelectorAll('.agenda-pending-banner');
+    banners.forEach(function(b) {
+        if (b.innerHTML.indexOf(appointmentId) !== -1) {
+            b.classList.add('hiding');
+            setTimeout(function() { if (b.parentNode) b.remove(); }, 400);
+        }
     });
 }
 
@@ -252,7 +349,12 @@ async function _agendaRenderPanel() {
     // ── 3. Calendario (oculto por defecto) ────
     const calWrapper = document.createElement('div');
     calWrapper.id = 'agendaCalWrapper';
-    calWrapper.style.display = 'none';
+    calWrapper.style.display    = 'none';
+    calWrapper.style.maxHeight  = '0px';
+    calWrapper.style.opacity    = '0';
+    calWrapper.style.overflow   = 'hidden';
+    calWrapper.style.transition = 'max-height 0.28s ease, opacity 0.24s ease';
+    calWrapper._rpSlideInit     = true;
     calWrapper.appendChild(_agendaBuildCalendar());
 
     // Slots del día seleccionado
@@ -419,30 +521,26 @@ async function _agendaRenderMultiSpecialist(container) {
             svcContent.appendChild(specsWrapper);
         }
 
-        // ── Toggle acordeón ────────────────────
+        // Estado inicial del contenido
+        svcContent.style.display = isOpen ? 'block' : 'none';
+        if (!isOpen) {
+            svcContent.style.maxHeight  = '0px';
+            svcContent.style.opacity    = '0';
+            svcContent.style.overflow   = 'hidden';
+            svcContent.style.transition = 'max-height 0.28s ease, opacity 0.24s ease';
+            svcContent._rpSlideInit = true;
+        }
+
+        // ── Toggle independiente ───────────────
         svcName.addEventListener('click', () => {
             const chev = svcName.querySelector('.agenda-next-svc-chevron');
-            const isNowOpen = svcContent.style.display !== 'none';
-
-            // Colapsar todos
-            document.querySelectorAll('.agenda-next-svc-block').forEach(block => {
-                const blockIdx   = parseInt(block.dataset.idx || 0);
-                const blockColor = _svcColors[blockIdx % _svcColors.length];
-                const blockHdr   = block.querySelector('.agenda-next-svc-name--toggle');
-                const blockChev  = block.querySelector('.agenda-next-svc-chevron');
-                const blockId    = blockHdr?.dataset?.target;
-                const blockContent = blockId ? document.getElementById(blockId) : null;
-                if (blockHdr)     { blockHdr.style.background = '#EFF6FF'; blockHdr.style.border = '0.5px solid #C9D9FF'; blockHdr.style.borderRadius = '5px'; blockHdr.classList.remove('open'); }
-                if (blockChev)    blockChev.className = 'fas fa-chevron-right agenda-next-svc-chevron';
-                if (blockContent) blockContent.style.display = 'none';
-            });
-
+            const isNowOpen = svcContent.style.display !== 'none' && svcContent.style.opacity !== '0';
+            rpSlide(svcContent, !isNowOpen);
+            chev.className = `fas fa-chevron-${isNowOpen ? 'right' : 'down'} agenda-next-svc-chevron`;
+            svcName.style.background   = isNowOpen ? '#EFF6FF' : '#E1DEFF';
+            svcName.style.border       = isNowOpen ? '0.5px solid #C9D9FF' : '0.5px solid #9961FF';
+            svcName.style.borderRadius = '5px';
             if (!isNowOpen) {
-                svcContent.style.display = 'block';
-                chev.className = 'fas fa-chevron-down agenda-next-svc-chevron';
-                svcName.style.background = '#E1DEFF';
-                svcName.style.border     = '0.5px solid #9961FF';
-                svcName.style.borderRadius = '5px';
                 _agendaSelectedService = {
                     service_id: svcGroup.specialists[0]?.service_id,
                     name: svcGroup.name, duration: svcGroup.duration, price: svcGroup.price
@@ -502,30 +600,14 @@ async function _agendaRenderNextSlotsByService(container) {
             const row  = document.getElementById(svcId);
             const chev = svcName.querySelector('.agenda-next-svc-chevron');
             if (!row) return;
-            const open = row.style.display !== 'none';
-
-            // Colapsar todos y quitar highlight
-            document.querySelectorAll('.agenda-next-svc-block').forEach(block => {
-                const otherRow = block.querySelector('.agenda-next-slots-row');
-                const otherHdr = block.querySelector('.agenda-next-svc-name--toggle');
-                const otherChev = block.querySelector('.agenda-next-svc-chevron');
-                if (otherRow)  otherRow.style.display = 'none';
-                if (otherHdr)  { otherHdr.style.background = '#EFF6FF'; otherHdr.style.border = '0.5px solid #C9D9FF'; otherHdr.style.borderRadius = '5px'; otherHdr.classList.remove('open'); }
-                if (otherChev) otherChev.className = 'fas fa-chevron-right agenda-next-svc-chevron';
-            });
-
-            // Si estaba cerrado, abrir éste y resaltar
-            if (open) {
-                // Ya lo colapsamos arriba — no hacer nada más
-            } else {
-                row.style.display = 'flex';
-                chev.className = 'fas fa-chevron-down agenda-next-svc-chevron';
-                svcName.style.background    = '#E1DEFF';
-                svcName.style.border        = '0.5px solid #9961FF';
-                svcName.style.borderRadius  = '5px';
-                svcName.classList.add('open');
-                _agendaSelectedService = svc;
-            }
+            const open = row.style.display !== 'none' && row.style.opacity !== '0';
+            rpSlide(row, !open, { displayType: 'flex' });
+            chev.className = `fas fa-chevron-${open ? 'right' : 'down'} agenda-next-svc-chevron`;
+            svcName.style.background   = open ? '#EFF6FF' : '#E1DEFF';
+            svcName.style.border       = open ? '0.5px solid #C9D9FF' : '0.5px solid #9961FF';
+            svcName.style.borderRadius = '5px';
+            if (!open) { svcName.classList.add('open'); _agendaSelectedService = svc; }
+            else        { svcName.classList.remove('open'); }
         });
         // Color base siempre visible; activo más fuerte
         svcName.style.background   = isOpen ? '#E1DEFF' : '#EFF6FF';
@@ -549,7 +631,16 @@ async function _agendaRenderNextSlotsByService(container) {
         const slotsRow = document.createElement('div');
         slotsRow.className = 'agenda-next-slots-row';
         slotsRow.id = svcId;
-        slotsRow.style.display = isOpen ? 'flex' : 'none';
+        if (!isOpen) {
+            slotsRow.style.display     = 'none';
+            slotsRow.style.maxHeight   = '0px';
+            slotsRow.style.opacity     = '0';
+            slotsRow.style.overflow    = 'hidden';
+            slotsRow.style.transition  = 'max-height 0.28s ease, opacity 0.24s ease';
+            slotsRow._rpSlideInit = true;
+        } else {
+            slotsRow.style.display = 'flex';
+        }
         slotsRow.innerHTML = `<span class="agenda-next-loading"><i class="fas fa-spinner fa-spin"></i></span>`;
         svcBlock.appendChild(slotsRow);
         section.appendChild(svcBlock);
@@ -634,15 +725,9 @@ function _agendaCancelQuickConfirm() {
 
 function _agendaToggleCalendar() {
     const wrapper = document.getElementById('agendaCalWrapper');
-    const btn     = document.querySelector('.agenda-btn-search-day');
     if (!wrapper) return;
-    const isOpen = wrapper.style.display !== 'none';
-    wrapper.style.display = isOpen ? 'none' : 'block';
-    if (btn) {
-        btn.innerHTML = isOpen
-            ? '<i class="fas fa-calendar-search"></i> Buscar otro día'
-            : '<i class="fas fa-calendar-search"></i> Buscar otro día';
-    }
+    const isOpen = wrapper.style.display !== 'none' && wrapper.style.opacity !== '0';
+    rpSlide(wrapper, !isOpen);
 }
 
 
@@ -672,7 +757,16 @@ function _agendaBuildCalendar() {
     // ── Contenedor colapsable ─────────────────
     const gridWrapper = document.createElement('div');
     gridWrapper.id = 'agendaCalGridWrapper';
-    gridWrapper.style.display = window._agendaCalCollapsed ? 'none' : 'block';
+    if (window._agendaCalCollapsed) {
+        gridWrapper.style.display    = 'none';
+        gridWrapper.style.maxHeight  = '0px';
+        gridWrapper.style.opacity    = '0';
+        gridWrapper.style.overflow   = 'hidden';
+        gridWrapper.style.transition = 'max-height 0.28s ease, opacity 0.24s ease';
+        gridWrapper._rpSlideInit = true;
+    } else {
+        gridWrapper.style.display = 'block';
+    }
     wrapper.appendChild(gridWrapper);
 
     // ── Días de semana ────────────────────────
@@ -755,7 +849,7 @@ function _agendaBuildCalendar() {
             e.stopPropagation();
             window._agendaCalCollapsed = !window._agendaCalCollapsed;
             const gw = wrapper.querySelector('#agendaCalGridWrapper');
-            if (gw) gw.style.display = window._agendaCalCollapsed ? 'none' : 'block';
+            if (gw) rpSlide(gw, !window._agendaCalCollapsed);
             toggleBtn.innerHTML = `<i class="fas fa-chevron-${window._agendaCalCollapsed ? 'down' : 'up'}"></i>`;
         });
     }
@@ -1258,9 +1352,12 @@ function _agendaRenderEmpty(msg = '') {
 // Refrescar calendario si está visible
 function _agendaRefreshCalendarIfOpen() {
     const section = document.getElementById('contactCalendarSection');
-    if (section && !section.classList.contains('hidden')) {
-        if (typeof _calRender === 'function') _calRender();
-    }
+    // Compatible con el nuevo sistema rp-section (rp-open) y el antiguo (hidden)
+    const isOpen = section && (
+        section.classList.contains('rp-open') ||
+        (!section.classList.contains('hidden') && section.style.display !== 'none')
+    );
+    if (isOpen && typeof _calRender === 'function') _calRender();
 }
 
 function _agendaRenderError() {
@@ -1925,7 +2022,22 @@ function _agendaRenderError() {
 
 
     /* ── Reserva success ────────────────────── */
-    .agenda-reservation-success {
+    .agenda-pending-banner {
+            transition: opacity 0.35s ease, max-height 0.4s ease, margin-bottom 0.35s ease, padding 0.35s ease;
+            overflow: hidden;
+        }
+        .agenda-pending-banner.hiding {
+            opacity: 0;
+            max-height: 0 !important;
+            margin-bottom: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+        .agenda-slot-btn {
+            transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+        }
+        .agenda-slot-btn:active { transform: scale(0.97); }
+        .agenda-reservation-success {
         text-align: center;
         padding: 12px 8px;
         background: #f0fdf4;
@@ -1984,6 +2096,27 @@ function _agendaRenderError() {
     }
     .agenda-btn-confirm-payment:hover { background: #059669; }
     .agenda-btn-confirm-payment:disabled { opacity: .6; cursor: default; }
+    .agenda-btn-banner-sm-cancel {
+        flex: 1;
+        padding: 5px 6px;
+        font-size: 10px;
+        font-weight: 500;
+        color: #9ca3af;
+        background: #fff;
+        border: 0.5px solid #e5e7eb;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        transition: background .12s, color .12s, border-color .12s;
+    }
+    .agenda-btn-banner-sm-cancel:hover {
+        background: #fee2e2;
+        color: #ef4444;
+        border-color: #fca5a5;
+    }
     .agenda-btn-send-msg {
         padding: 6px 12px;
         background: #E1DEFF;
@@ -2188,7 +2321,7 @@ function _agendaShowReservationPanel(slot, svc, container, color) {
             ${price}
             <div class="agenda-confirm-row agenda-ttl-row">
                 <i class="fas fa-hourglass-half" style="color:#f59e0b"></i>
-                <span>Se reserva por <strong>${_agendaReservationTtl} min</strong> hasta confirmar pago</span>
+                <span>Se reserva por <strong>${_agendaReservationTtl} min</strong> hasta confirmar reserva</span>
             </div>
         </div>
         <div class="agenda-confirm-notes">
@@ -2278,6 +2411,7 @@ async function _agendaConfirmReservation(start, end) {
 
         // Éxito → mostrar panel post-reserva con countdown y mensaje
         _agendaShowReservationSuccess(data);
+        _agendaRefreshCalendarIfOpen();
 
     } catch(err) {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-calendar-check"></i> Reservar hora'; }
@@ -2290,6 +2424,8 @@ function _agendaShowReservationSuccess(data) {
     if (!container) return;
 
     const reservedUntil = new Date(data.reserved_until);
+    const specName = _agendaSelectedService?.resource_name || data.resource_name || '';
+    const svcName  = _agendaSelectedService?.name || data.service_name || '';
 
     container.innerHTML = `
         <div class="agenda-reservation-success">
@@ -2297,37 +2433,60 @@ function _agendaShowReservationSuccess(data) {
                 <i class="fas fa-calendar-check"></i>
             </div>
             <div class="agenda-reservation-success-title">¡Hora reservada!</div>
+            ${svcName || specName ? `
+            <div style="font-size:11px;color:#166534;margin-bottom:4px;text-align:center;">
+                ${svcName ? `<span style="font-weight:600;">${svcName}</span>` : ''}
+                ${specName ? `<span style="color:#4ade80;"> · ${specName}</span>` : ''}
+            </div>` : ''}
             <div class="agenda-reservation-success-ttl">
                 <i class="fas fa-hourglass-half"></i>
-                Tiempo para confirmar pago:
+                Tiempo para confirmar reserva:
                 <span id="agendaCountdown" class="agenda-countdown">--:--</span>
             </div>
             <div class="agenda-reservation-actions">
                 ${data.payment_mode === 'manual' ? `
-                <button class="agenda-btn-confirm-payment" onclick="_agendaConfirmPayment('${data.appointment_id}')">
-                    <i class="fas fa-check-circle"></i> Confirmar pago recibido
-                </button>` : `
+                <button class="agenda-btn-confirm-payment" onclick="_agendaBannerAskConfirm('direct','pay')">
+                    <i class="fas fa-check-circle"></i> Confirmar hora
+                </button>
+                <div id="bannerConfirm_direct" style="display:none;margin-top:6px;"></div>` : `
                 <div class="agenda-waiting-payment">
-                    <i class="fas fa-spinner fa-spin"></i> Esperando confirmación de pago...
+                    <i class="fas fa-spinner fa-spin"></i> Esperando confirmación de reserva...
                 </div>`}
-                <button class="agenda-btn-send-msg" onclick="_agendaSendReservationMsg()">
+                <button class="agenda-btn-send-msg" id="agendaBtnSendMsg" onclick="_agendaSendReservationMsg()">
                     <i class="fas fa-paper-plane"></i> Enviar instrucciones al paciente
                 </button>
             </div>
         </div>
     `;
 
-    // Guardar mensaje en variable global para envío
-    window._agendaPendingMessage = data.whatsapp_message;
+    // Guardar mensaje — ajustar textos del backend para quitar referencias a pago
+    let msg = data.whatsapp_message || '';
+    if (specName && msg && !msg.includes(specName)) {
+        msg = msg.replace(/(\*Servicio:\*[^\n]*)/, `$1\n*Terapeuta:* ${specName}`);
+    }
+    // Corregir hora UTC a hora Chile en "reservada hasta las HH:MM"
+    msg = msg.replace(/reservada hasta las (\d{2}):(\d{2})/g, (match, hh, mm) => {
+        // Usar reserved_until del backend para obtener la hora correcta en Chile
+        const clHour = new Date(data.reserved_until)
+            .toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago' });
+        return `reservada hasta las ${clHour}`;
+    });
+    // Reemplazar texto de pago por lenguaje genérico de confirmación
+    msg = msg.replace(/Para confirmar tu hora,?\s*realiza el pago y env[íi]a el comprobante por este chat\.?/gi,
+        'Para confirmar tu hora, responde este mensaje o contáctanos.');
+    msg = msg.replace(/realiza el pago y env[íi]a el comprobante/gi,
+        'responde este mensaje para confirmar');
+    window._agendaPendingMessage = msg;
     window._agendaPendingAppointmentId = data.appointment_id;
 
     // Iniciar countdown
     _agendaStartCountdown('agendaCountdown', reservedUntil, () => {
-        _agendaRenderPanel(); // TTL venció → refrescar
+        _agendaRenderPanel();
     });
 }
 
 function _agendaStartCountdown(elementId, until, onExpire) {
+    _agendaStopCountdown(); // Detener cualquier countdown previo
     const tick = () => {
         const el = document.getElementById(elementId);
         if (!el) return;
@@ -2364,17 +2523,24 @@ async function _agendaConfirmPayment(appointmentId) {
 
         if (data.success) {
             _agendaStopCountdown();
-            _agendaShowConfirmedSuccess();
+            _agendaHideBannerById(appointmentId);
+            setTimeout(function() {
+                _agendaShowConfirmedSuccess();
+            }, 350);
             _agendaRefreshCalendarIfOpen();
         } else {
             console.error('❌ [Agenda] Error confirmando:', data);
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar pago recibido'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar reserva'; }
             _agendaShowBookingError(data.error || 'Error al confirmar');
         }
     } catch(err) {
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar pago recibido'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirmar reserva'; }
     }
 }
+
+// Exponer para uso cruzado desde conv-calendar.js
+window._agendaConfirmPayment  = _agendaConfirmPayment;
+window._agendaHideBannerById  = _agendaHideBannerById;
 
 function _agendaShowConfirmedSuccess() {
     const container = document.getElementById('contactAgendaContainer');
@@ -2384,7 +2550,7 @@ function _agendaShowConfirmedSuccess() {
         <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;text-align:center;">
             <div style="font-size:28px;margin-bottom:8px;">✅</div>
             <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px;">¡Hora confirmada!</div>
-            <div style="font-size:11px;color:#4ade80;margin-bottom:16px;">Pago registrado correctamente.</div>
+            <div style="font-size:11px;color:#4ade80;margin-bottom:16px;">Reserva confirmada correctamente.</div>
             <button onclick="_agendaRenderPanel()" 
                 style="font-size:11px;padding:6px 16px;background:#10b981;color:#fff;border:none;border-radius:8px;cursor:pointer;">
                 Ver agenda
@@ -2396,6 +2562,21 @@ function _agendaSendReservationMsg() {
     const msg = window._agendaPendingMessage;
     if (!msg) return;
 
+    const _reloadAgenda = () => {
+        if (typeof loadAgenda === 'function' && _agendaCurrentCompanyId && _agendaCurrentUserId) {
+            loadAgenda(_agendaCurrentCompanyId, _agendaCurrentUserId);
+        }
+    };
+
+    const _hideSendBtn = () => {
+        const btn = document.getElementById('agendaBtnSendMsg') || document.querySelector('.agenda-btn-send-msg');
+        if (btn) {
+            btn.style.transition = 'opacity 0.4s ease, max-height 0.4s ease';
+            btn.style.opacity = '0';
+            setTimeout(() => { btn.style.display = 'none'; }, 400);
+        }
+    };
+
     // Intentar inyectar en el input del chat del panel principal
     const chatInput = document.getElementById('messageInput') ||
                       document.querySelector('.message-input') ||
@@ -2406,28 +2587,24 @@ function _agendaSendReservationMsg() {
         chatInput.dispatchEvent(new Event('input', { bubbles: true }));
         chatInput.focus();
 
-        // Mostrar feedback
-        const btn = document.querySelector('.agenda-btn-send-msg');
+        const btn = document.getElementById('agendaBtnSendMsg') || document.querySelector('.agenda-btn-send-msg');
         if (btn) {
             btn.innerHTML = '<i class="fas fa-check"></i> Mensaje cargado en el chat';
             btn.style.background = '#10b981';
-            setTimeout(() => {
-                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar instrucciones al paciente';
-                btn.style.background = '';
-            }, 3000);
+            btn.style.color = '#fff';
+            btn.style.borderColor = '#10b981';
         }
+        setTimeout(() => { _hideSendBtn(); _reloadAgenda(); }, 2500);
     } else {
-        // Fallback: copiar al clipboard
         navigator.clipboard.writeText(msg).then(() => {
-            const btn = document.querySelector('.agenda-btn-send-msg');
+            const btn = document.getElementById('agendaBtnSendMsg') || document.querySelector('.agenda-btn-send-msg');
             if (btn) {
                 btn.innerHTML = '<i class="fas fa-check"></i> Copiado al portapapeles';
                 btn.style.background = '#10b981';
-                setTimeout(() => {
-                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar instrucciones al paciente';
-                    btn.style.background = '';
-                }, 3000);
+                btn.style.color = '#fff';
+                btn.style.borderColor = '#10b981';
             }
+            setTimeout(() => { _hideSendBtn(); _reloadAgenda(); }, 2500);
         });
     }
 }

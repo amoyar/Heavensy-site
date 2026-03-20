@@ -145,6 +145,13 @@ async function _calLoadMonth() {
 
 function _calBuild(container) {
     container.innerHTML = '';
+    container.style.opacity = '0';
+    container.style.transition = 'opacity 0.25s ease';
+    requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+            container.style.opacity = '1';
+        });
+    });
 
     // Agrupar citas por fecha (aplicar filtro de especialista al grid también)
     const byDate = {};
@@ -214,7 +221,16 @@ function _calBuild(container) {
     // Contenedor colapsable del grid
     const gridWrapper = document.createElement('div');
     gridWrapper.id = 'calGridWrapper';
-    gridWrapper.style.display = _calGridCollapsed ? 'none' : 'block';
+    if (_calGridCollapsed) {
+        gridWrapper.style.display    = 'none';
+        gridWrapper.style.maxHeight  = '0px';
+        gridWrapper.style.opacity    = '0';
+        gridWrapper.style.overflow   = 'hidden';
+        gridWrapper.style.transition = 'max-height 0.28s ease, opacity 0.24s ease';
+        gridWrapper._rpSlideInit = true;
+    } else {
+        gridWrapper.style.display = 'block';
+    }
     cal.appendChild(gridWrapper);
 
     // Cabecera días semana
@@ -296,7 +312,7 @@ function _calBuild(container) {
             window._calGridCollapsed = !window._calGridCollapsed;
             const gw = document.getElementById('calGridWrapper');
             const tb = document.getElementById('calGridToggleBtn');
-            if (gw) gw.style.display = window._calGridCollapsed ? 'none' : 'block';
+            if (gw) rpSlide(gw, !window._calGridCollapsed);
             if (tb) tb.innerHTML = window._calGridCollapsed ? '<i class="fas fa-chevron-down"></i>' : '<i class="fas fa-chevron-up"></i>';
         });
     }
@@ -353,7 +369,15 @@ function _calBuild(container) {
         if (_calSpecialistFilter) selectedAppts = selectedAppts.filter(a => a.resource_id === _calSpecialistFilter);
         if (_calActiveFilter) selectedAppts = selectedAppts.filter(a => a.status === _calActiveFilter);
         const panel = _calBuildDayPanel(_calSelected, selectedAppts);
+        // Fade-in suave
+        panel.style.opacity   = '0';
+        panel.style.transform = 'translateY(6px)';
+        panel.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
         container.appendChild(panel);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            panel.style.opacity   = '1';
+            panel.style.transform = 'translateY(0)';
+        }));
     }
 
     // ── Leyenda estática (todos los estados posibles) ──
@@ -567,6 +591,16 @@ function _calInjectStyles() {
     .cal-appt-service { font-size:11px; font-weight:600; color:#1f2937; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .cal-appt-contact { font-size:10px; color:#6b7280; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .cal-appt-badge   { font-size:9.5px; font-weight:600; padding:2px 7px; border-radius:20px; border:1px solid; background:#fff; white-space:nowrap; }
+        .cal-appt-item    { transition: background 0.3s ease; }
+        .cal-appt-badge   { transition: color 0.3s, border-color 0.3s, background 0.3s; }
+        .cal-confirm-btn  { transition: opacity 0.25s, transform 0.25s; }
+        .cal-confirm-btn.fading { opacity: 0; transform: scale(0.8); }
+        .cal-inline-msg   { animation: calFadeIn 0.3s ease; }
+        .cal-appt-item    { animation: calFadeIn 0.25s ease; }
+        @keyframes calFadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+        .cal-inline-confirm { animation: calFadeIn 0.25s ease; }
+        .agenda-pending-banner { transition: opacity 0.3s, max-height 0.4s, margin 0.3s; overflow:hidden; }
+        .agenda-pending-banner.hiding { opacity:0; max-height:0; margin-bottom:0; }
 
     /* Leyenda */
     .cal-summary { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
@@ -592,37 +626,50 @@ function _calInjectStyles() {
 }
 
 function _calShowConfirmModal(appointmentId) {
-    var appt = _calAppointments.find(function(a){ return a._id === appointmentId; });
-    if (!appt) return;
-
     // Cerrar cualquier panel inline previo
-    var prev = document.querySelector('.cal-inline-confirm');
+    const prev = document.querySelector('.cal-inline-confirm');
     if (prev) prev.remove();
 
-    var btn = document.querySelector('[data-confirm-id="' + appointmentId + '"]');
-    if (!btn) return;
-    var item = btn.closest('.cal-appt-item');
-    if (!item) return;
+    const calBtn = document.querySelector('[data-confirm-id="' + appointmentId + '"]');
+    const anchor = calBtn ? calBtn.closest('.cal-appt-item') : null;
 
-    var dateStr = new Date(appt.date + 'T12:00:00').toLocaleDateString('es-CL', {weekday:'short',day:'numeric',month:'short'});
-    var price = appt.price ? ('$' + Number(appt.price).toLocaleString('es-CL') + ' CLP') : '';
+    const banner = document.querySelector('.agenda-pending-banner');
+    const canConfirm = banner && typeof window._agendaConfirmPayment === 'function';
 
-    var panel = document.createElement('div');
+    const panel = document.createElement('div');
     panel.className = 'cal-inline-confirm';
-    panel.style.cssText = 'background:#f0fdf4;border:0.5px solid #bbf7d0;border-radius:8px;padding:8px 10px;margin-top:6px;font-size:11px;';
-    panel.innerHTML = '<div style="color:#166534;margin-bottom:6px;">'
-        + '<strong>' + (appt.contact_name||'—') + '</strong> · ' + (appt.service_name||'—') + '<br>'
-        + dateStr + ' · ' + appt.start + '–' + appt.end
-        + (price ? ' · ' + price : '')
-        + '</div>'
-        + '<div style="display:flex;gap:6px;">'
-        + '<button class="cal-inline-cancel" style="flex:1;padding:4px 0;font-size:11px;color:#6b7280;background:#fff;border:0.5px solid #e5e7eb;border-radius:6px;cursor:pointer;">Cancelar</button>'
-        + '<button class="cal-inline-confirm-btn" style="flex:1;padding:4px 0;font-size:11px;font-weight:600;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;">Confirmar</button>'
-        + '</div>';
 
-    item.after(panel);
-    panel.querySelector('.cal-inline-cancel').addEventListener('click', function(){ panel.remove(); });
-    panel.querySelector('.cal-inline-confirm-btn').addEventListener('click', function(){ _calConfirmReservation(appointmentId, panel); });
+    if (canConfirm) {
+        // ── Flujo normal: pedir confirmación ──
+        panel.style.cssText = 'background:#f0fdf4;border:0.5px solid #bbf7d0;border-radius:8px;padding:8px 10px;margin-top:6px;font-size:11px;animation:calFadeIn 0.2s ease;';
+        panel.innerHTML = ''
+            + '<div style="color:#166534;font-weight:600;margin-bottom:8px;"><i class="fas fa-check-circle" style="margin-right:4px;"></i>¿Confirmar pago recibido?</div>'
+            + '<div style="display:flex;gap:6px;">'
+            + '<button class="cal-inline-cancel" style="flex:1;padding:4px 0;font-size:11px;color:#6b7280;background:#fff;border:0.5px solid #e5e7eb;border-radius:6px;cursor:pointer;">Cancelar</button>'
+            + '<button class="cal-inline-confirm-btn" style="flex:1;padding:4px 0;font-size:11px;font-weight:600;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;">Sí, confirmar</button>'
+            + '</div>';
+
+        if (anchor) anchor.after(panel); else banner.before(panel);
+
+        panel.querySelector('.cal-inline-cancel').addEventListener('click', () => panel.remove());
+        panel.querySelector('.cal-inline-confirm-btn').addEventListener('click', () => {
+            panel.remove();
+            banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            window._agendaConfirmPayment(appointmentId);
+        });
+    } else {
+        // ── Sin reserva activa: aviso inline ──
+        panel.style.cssText = 'background:#fef9c3;border:0.5px solid #fde047;border-radius:8px;padding:8px 10px;margin-top:6px;font-size:11px;animation:calFadeIn 0.2s ease;display:flex;align-items:center;justify-content:space-between;gap:8px;';
+        panel.innerHTML = ''
+            + '<span style="color:#92400e;"><i class="fas fa-exclamation-circle" style="margin-right:4px;color:#d97706;"></i>No hay reserva activa para confirmar.</span>'
+            + '<button class="cal-inline-cancel" style="padding:2px 8px;font-size:10px;color:#6b7280;background:#fff;border:0.5px solid #e5e7eb;border-radius:5px;cursor:pointer;flex-shrink:0;">OK</button>';
+
+        if (anchor) anchor.after(panel); else document.querySelector('#contactCalendarContainer')?.appendChild(panel);
+
+        panel.querySelector('.cal-inline-cancel').addEventListener('click', () => panel.remove());
+        // Auto-cerrar a los 4 segundos
+        setTimeout(() => { if (panel.parentNode) panel.remove(); }, 4000);
+    }
 }
 
 async function _calConfirmReservation(appointmentId, overlay) {
@@ -639,13 +686,68 @@ async function _calConfirmReservation(appointmentId, overlay) {
         if (data.success) {
             var appt = _calAppointments.find(function(a){ return a._id === appointmentId; });
             if (appt) appt.status = 'confirmed';
+            // Cerrar todos los banners de reserva pendiente en Agenda
+            document.querySelectorAll('.agenda-pending-banner').forEach(function(b) {
+                b.classList.add('hiding');
+                setTimeout(function() { if (b.parentNode) b.remove(); }, 400);
+            });
+            // Render completo del calendario para actualizar contadores, filtros y dots
             var container = document.getElementById('contactCalendarContainer');
             if (container) _calBuild(container);
+            // Refrescar Agenda si está abierta
+            if (typeof loadAgenda === 'function' && window._agendaCurrentUserId && window._agendaCurrentCompanyId) {
+                loadAgenda(window._agendaCurrentCompanyId, window._agendaCurrentUserId);
+            }
         } else {
-            alert(data.error || 'Error al confirmar');
+            _calShowMsg(data.error || 'Error al confirmar', 'error');
         }
     } catch(e) {
         if (overlay) overlay.remove();
-        alert('Error de conexión');
+        _calShowMsg('Error de conexión', 'error');
+    }
+}
+
+// ============================================
+// ACTUALIZACIÓN QUIRÚRGICA DE ITEM
+// ============================================
+function _calUpdateItemStatus(appointmentId, newStatus) {
+    var cfg = _CAL_STATUS[newStatus] || { label: newStatus, color: '#6b7280', bg: '#f9fafb' };
+
+    // Actualizar badge
+    var badge = document.querySelector('[data-confirm-id="' + appointmentId + '"]');
+    if (badge) {
+        var item = badge.closest('.cal-appt-item');
+        if (item) {
+            // Fade out el botón confirmar
+            badge.classList.add('fading');
+            setTimeout(function() {
+                badge.remove();
+                // Actualizar badge de status
+                var badgeEl = item.querySelector('.cal-appt-badge');
+                if (badgeEl) {
+                    badgeEl.style.color = cfg.color;
+                    badgeEl.style.borderColor = cfg.color;
+                    badgeEl.textContent = cfg.label;
+                }
+                // Actualizar bg del item
+                item.style.background = cfg.bg;
+            }, 250);
+        }
+    } else {
+        // Si no encuentra el botón, rebuild completo como fallback
+        var container = document.getElementById('contactCalendarContainer');
+        if (container) _calBuild(container);
+    }
+
+    // Actualizar filtros de resumen sin rebuild
+    var summaryBtn = document.querySelector('.cal-filter-btn[data-status="reserved"]');
+    if (summaryBtn) {
+        var count = _calAppointments.filter(function(a){ return a.status === 'reserved'; }).length;
+        var dot = summaryBtn.querySelector('.cal-chip-dot');
+        if (count === 0 && summaryBtn.parentNode) {
+            summaryBtn.style.transition = 'opacity 0.3s';
+            summaryBtn.style.opacity = '0';
+            setTimeout(function(){ summaryBtn.remove(); }, 300);
+        }
     }
 }

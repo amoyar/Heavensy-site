@@ -256,18 +256,15 @@ window.onConversationSelectedForContacts = function(waId, phone, name, companyId
   // La agenda se carga lazy al abrir la sección (ver toggleRightSection más abajo)
 };
 
-// Abrir/cerrar sección agenda — disparar carga lazy
-const _origToggle = window.toggleRightSection;
-if (typeof _origToggle === "function") {
-  window.toggleRightSection = function(sectionId) {
-    _origToggle(sectionId);
-    if (sectionId === "contactAgendaSection") {
-      const section = document.getElementById("contactAgendaSection");
-      if (section && !section.classList.contains("hidden")) {
-        if (typeof loadAgenda === "function") {
-          loadAgenda(serviciosState.companyId, serviciosState.waId);
-        }
-      }
+// ── Hook de carga lazy: Agenda ────────────────────────────────
+// Se engancha al sistema de toggleRightSection definido en conv-state.js
+// sin redefinirla — usa el hook extensible _onToggleRightSection
+const _prevRightHook = window._onToggleRightSection;
+window._onToggleRightSection = function(sectionId, isNowOpen) {
+  if (typeof _prevRightHook === 'function') _prevRightHook(sectionId, isNowOpen);
+  if (sectionId === 'contactAgendaSection' && isNowOpen) {
+    if (typeof loadAgenda === 'function') {
+      loadAgenda(serviciosState.companyId, serviciosState.waId);
     }
-  };
-}
+  }
+};

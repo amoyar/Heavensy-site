@@ -235,20 +235,84 @@ function toggleLeftSection(sectionId) {
     }
 }
 
+// Inyectar CSS de transiciones una sola vez
+(function _injectRightSectionStyles() {
+    if (document.getElementById('_rpSectionStyles')) return;
+    const style = document.createElement('style');
+    style.id = '_rpSectionStyles';
+    style.textContent = `
+        .rp-section {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.32s ease, opacity 0.25s ease;
+        }
+        .rp-section.rp-open {
+            opacity: 1;
+        }
+        .rp-chevron {
+            transition: transform 0.25s ease;
+            display: inline-block;
+        }
+        .rp-chevron.rp-rotated {
+            transform: rotate(180deg);
+        }
+    `;
+    document.head.appendChild(style);
+})();
+
+/**
+ * toggleRightSection(sectionId)
+ * Abre/cierra secciones del panel derecho con animación max-height + opacity.
+ *
+ * Convenciones HTML:
+ *   Sección:  <div id="contactXxxSection" class="rp-section">…</div>
+ *   Chevron:  <i id="contactXxxIcon" class="rp-chevron fas fa-chevron-down"></i>
+ *             (usa el patrón clásico sectionId + 'Icon')
+ */
 function toggleRightSection(sectionId) {
     const section = document.getElementById(sectionId);
-    const icon = document.getElementById(sectionId + 'Icon');
-    if (!section || !icon) return;
+    if (!section) return;
 
-    const isHidden = section.classList.contains('hidden');
-    if (isHidden) {
-        section.classList.remove('hidden');
-        icon.classList.remove('fa-chevron-right');
-        icon.classList.add('fa-chevron-down');
+    // Asegurar clase base (idempotente, por si venía con 'hidden' de Tailwind)
+    section.classList.remove('hidden');
+    section.classList.add('rp-section');
+
+    const icon = document.getElementById(sectionId + 'Icon');
+    const isOpen = section.classList.contains('rp-open');
+
+    if (isOpen) {
+        // ── Cerrar ──
+        // Re-bloquear overflow antes de animar (puede estar 'visible' si estaba abierto)
+        section.style.overflow = 'hidden';
+        // Fijar altura actual antes de animar a 0
+        section.style.maxHeight = section.scrollHeight + 'px';
+        section.getBoundingClientRect(); // forzar reflow
+        section.style.maxHeight = '0px';
+        section.classList.remove('rp-open');
+        if (icon) icon.classList.remove('rp-rotated');
     } else {
-        section.classList.add('hidden');
-        icon.classList.remove('fa-chevron-down');
-        icon.classList.add('fa-chevron-right');
+        // ── Abrir ──
+        section.style.overflow = 'hidden'; // mantener durante la animación
+        section.classList.add('rp-open');
+        section.style.maxHeight = section.scrollHeight + 'px';
+        if (icon) icon.classList.add('rp-rotated');
+
+        // Al terminar la transición: soltar max-height Y overflow
+        // para que el contenido dinámico y el scroll del padre funcionen
+        const onEnd = () => {
+            if (section.classList.contains('rp-open')) {
+                section.style.maxHeight = 'none';
+                section.style.overflow = 'visible';
+            }
+            section.removeEventListener('transitionend', onEnd);
+        };
+        section.addEventListener('transitionend', onEnd);
+    }
+
+    // Hook extensible para otros módulos (ej: carga lazy de agenda)
+    if (typeof window._onToggleRightSection === 'function') {
+        window._onToggleRightSection(sectionId, !isOpen);
     }
 }
 
@@ -281,6 +345,65 @@ function resetChatAndContactPanel() {
     if (metaEl) metaEl.innerHTML = "";
 }
 
+/**
+ * rpSlide(el, show, opts)
+ * Anima apertura/cierre de cualquier elemento inline con max-height + opacity.
+ * Úsalo en lugar de `style.display = 'none'/'block'`.
+ *
+ * @param {HTMLElement} el
+ * @param {boolean}     show   - true = abrir, false = cerrar
+ * @param {object}      opts
+ *   displayType {string}  - valor de display al abrir ('block'|'flex'|...) default 'block'
+ *   duration    {number}  - ms de la transición (default 280)
+ */
+function rpSlide(el, show, opts = {}) {
+    if (!el) return;
+    const displayType = opts.displayType || 'block';
+    const dur         = opts.duration    || 280;
+
+    // Aplicar transición si no la tiene aún
+    if (!el._rpSlideInit) {
+        el.style.transition  = `max-height ${dur}ms ease, opacity ${dur * 0.85}ms ease`;
+        el.style.overflow    = 'hidden';
+        el._rpSlideInit = true;
+    }
+
+    if (show) {
+        // Mostrar: primero poner display, luego animar
+        el.style.display    = displayType;
+        el.style.maxHeight  = '0px';
+        el.style.opacity    = '0';
+        // Forzar reflow
+        el.getBoundingClientRect();
+        el.style.maxHeight  = el.scrollHeight + 'px';
+        el.style.opacity    = '1';
+        // Al terminar: soltar max-height para contenido dinámico
+        const onEnd = () => {
+            if (el.style.opacity !== '0') {
+                el.style.maxHeight = 'none';
+                el.style.overflow  = 'visible';
+            }
+            el.removeEventListener('transitionend', onEnd);
+        };
+        el.addEventListener('transitionend', onEnd);
+    } else {
+        // Cerrar: bloquear overflow, fijar altura actual y animar a 0
+        el.style.overflow   = 'hidden';
+        el.style.maxHeight  = el.scrollHeight + 'px';
+        el.getBoundingClientRect();
+        el.style.maxHeight  = '0px';
+        el.style.opacity    = '0';
+        const onEnd = () => {
+            if (el.style.opacity === '0') {
+                el.style.display = 'none';
+            }
+            el.removeEventListener('transitionend', onEnd);
+        };
+        el.addEventListener('transitionend', onEnd);
+    }
+}
+
 // Exponer globales
+window.rpSlide            = rpSlide;
 window.toggleRightSection = toggleRightSection;
-window.toggleLeftSection = toggleLeftSection;
+window.toggleLeftSection  = toggleLeftSection;

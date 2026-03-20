@@ -120,11 +120,13 @@ function _segRender() {
         setTimeout(() => {
             const body    = document.getElementById('segFormBody');
             const chevron = document.getElementById('segFormChevron');
-            if (body) body.style.display = 'block';
+            if (body) rpSlide(body, true);
             if (chevron) chevron.style.transform = 'rotate(90deg)';
-            const dateVal = document.getElementById('segDate')?.value || new Date().toISOString().slice(0,10);
-            _segMountCalendar(dateVal);
-            _segMountTimePicker();
+            setTimeout(() => {
+                const dateVal = document.getElementById('segDate')?.value || new Date().toISOString().slice(0,10);
+                _segMountCalendar(dateVal);
+                _segMountTimePicker();
+            }, 60);
         }, 0);
     }
 }
@@ -251,14 +253,16 @@ function _segToggleFormBody() {
     const body    = document.getElementById('segFormBody');
     const chevron = document.getElementById('segFormChevron');
     if (!body) return;
-    const isOpen = body.style.display !== 'none';
-    body.style.display = isOpen ? 'none' : 'block';
+    const isOpen = body.style.display !== 'none' && body.style.opacity !== '0';
+    rpSlide(body, !isOpen);
     if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
     if (!isOpen) {
-        // Al abrir, montar calendario
-        const dateVal = document.getElementById('segDate')?.value || new Date().toISOString().slice(0,10);
-        _segMountCalendar(dateVal);
-        _segMountTimePicker();
+        // Al abrir, montar calendario (pequeño delay para que el DOM sea visible)
+        setTimeout(() => {
+            const dateVal = document.getElementById('segDate')?.value || new Date().toISOString().slice(0,10);
+            _segMountCalendar(dateVal);
+            _segMountTimePicker();
+        }, 50);
     }
 }
 
