@@ -101,6 +101,8 @@ async function initConversacionesPage() {
 function setupConversacionesEventListeners() {
     console.log('🔧 Configurando event listeners...');
 
+    initCompanyDropdown();
+
     // Cambio de empresa
     const companySelect = document.getElementById('conversacionesCompanyFilter');
     if (companySelect) {
@@ -114,14 +116,6 @@ function setupConversacionesEventListeners() {
                 renderConversations();
                 mostrarEstadoSinEmpresaSeleccionada();
                 setInputBarEnabled(false);
-                // Deshabilitar filtros avanzados
-                const btnAdv = document.getElementById('advancedFiltersToggle');
-                if (btnAdv) { btnAdv.disabled = true; btnAdv.classList.add('opacity-40','cursor-not-allowed'); }
-                // Cerrar panel si estaba abierto
-                document.getElementById('advancedFiltersPanel')?.classList.add('hidden');
-                // Ocultar botón colapsar
-                const btnColl2 = document.getElementById('btnCollapseLeft');
-                if (btnColl2) btnColl2.style.visibility = 'hidden';
 
                 if (typeof hideContactPanel === "function") {
                 hideContactPanel();
@@ -131,15 +125,9 @@ function setupConversacionesEventListeners() {
 
             currentCompanyId = companyId;
             resetChatAndContactPanel();
-            // Ocultar botón colapsar hasta que se seleccione un contacto
-            const btnColl3 = document.getElementById('btnCollapseLeft');
-            if (btnColl3) btnColl3.style.visibility = 'hidden';
             await cargarConversacionesPorEmpresa(companyId);
             mostrarEstadoSinConversacionSeleccionada();
             setInputBarEnabled(true);
-            // Habilitar filtros avanzados
-            const btnAdv = document.getElementById('advancedFiltersToggle');
-            if (btnAdv) { btnAdv.disabled = false; btnAdv.classList.remove('opacity-40','cursor-not-allowed'); }
         });
     }
 
@@ -164,35 +152,17 @@ function setupConversacionesEventListeners() {
             if (p) p.classList.add('panel-hidden');
         });
     }
-    // ── Panel izquierdo: colapsar/expandir ──
-    // Función centralizada — la usan btnCollapseLeft (header izq) y btnToggleLeft (chatHeader)
-    function _toggleLeftPanel(e) {
-        if (e) e.stopPropagation();
-        const lp        = document.getElementById('convLeftPanel');
-        const btnExpand = document.getElementById('btnExpandLeft');
-        const btnL      = document.getElementById('btnToggleLeft');
-        const btnColl   = document.getElementById('btnCollapseLeft');
-        if (!lp) return;
-
-        const isHidden = lp.classList.toggle('panel-hidden');
-
-        // Sincronizar íconos en ambos botones
-        if (btnL)    btnL.querySelector('i').className    = isHidden ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
-        if (btnColl) btnColl.querySelector('i').className = isHidden ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
-
-        // Botón flotante: visible solo cuando está colapsado
-        if (btnExpand) btnExpand.style.display = isHidden ? 'flex' : 'none';
-    }
-
-    const btnL    = document.getElementById('btnToggleLeft');
-    const btnColl = document.getElementById('btnCollapseLeft');
-    const btnExp  = document.getElementById('btnExpandLeft');
-    if (btnL)    btnL.addEventListener('click',    _toggleLeftPanel);
-    if (btnColl) btnColl.addEventListener('click', _toggleLeftPanel);
-    if (btnExp)  btnExp.addEventListener('click',  _toggleLeftPanel);
-
-    // ── Panel derecho (contacto): colapsar/expandir ──
+    const btnL = document.getElementById('btnToggleLeft');
     const btnR = document.getElementById('btnToggleRight');
+    if (btnL) {
+        btnL.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const lp = document.getElementById('convLeftPanel');
+            lp.classList.toggle('panel-hidden');
+            btnL.querySelector('i').className = lp.classList.contains('panel-hidden')
+                ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+        });
+    }
     if (btnR) {
         btnR.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -239,3 +209,79 @@ window.conversacionesAPI = {
 };
 
 console.log('📱 Módulo de conversaciones listo');
+// ============================================
+// DROPDOWN CUSTOM — SELECTOR DE EMPRESA
+// ============================================
+function initCompanyDropdown() {
+    var btn   = document.getElementById('companyDropdownBtn');
+    var list  = document.getElementById('companyDropdownList');
+    var items = document.getElementById('companyDropdownItems');
+    var label = document.getElementById('companyDropdownLabel');
+    var icon  = document.getElementById('companyDropdownIcon');
+    var sel   = document.getElementById('conversacionesCompanyFilter');
+    if (!btn || !sel) return;
+
+    function buildItems() {
+        items.innerHTML = '';
+        Array.from(sel.options).forEach(function(opt) {
+            var div = document.createElement('div');
+            div.textContent = opt.text;
+            div.dataset.value = opt.value;
+            div.style.cssText = 'padding:7px 12px;font-size:13px;cursor:pointer;color:' + (opt.value ? '#374151' : '#9ca3af') + ';';
+            div.addEventListener('mouseover', function() { this.style.background = '#EFF6FF'; });
+            div.addEventListener('mouseout',  function() { this.style.background = sel.value === this.dataset.value ? '#EFF6FF' : ''; });
+            div.addEventListener('click', function() {
+                sel.value = this.dataset.value;
+                label.textContent = this.textContent;
+                label.style.color = this.dataset.value ? '#374151' : '#9ca3af';
+                list.style.display = 'none';
+                icon.style.transform = '';
+                highlightSelected();
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+            items.appendChild(div);
+        });
+        highlightSelected();
+    }
+
+    function highlightSelected() {
+        Array.from(items.children).forEach(function(d) {
+            var active = d.dataset.value === sel.value && sel.value !== '';
+            d.style.background  = active ? '#EFF6FF' : '';
+            d.style.color       = active ? '#7D84C1' : (d.dataset.value ? '#374151' : '#9ca3af');
+            d.style.fontWeight  = active ? '600' : '400';
+            d.style.borderLeft  = active ? '2px solid #7D84C1' : '';
+            d.style.paddingLeft = active ? '10px' : '12px';
+        });
+    }
+
+    btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var open = list.style.display === 'block';
+        list.style.display = open ? 'none' : 'block';
+        icon.style.transform = open ? '' : 'rotate(180deg)';
+    });
+
+    document.addEventListener('click', function(e) {
+        var wrap = document.getElementById('companyDropdownWrap');
+        if (wrap && !wrap.contains(e.target)) {
+            list.style.display = 'none';
+            icon.style.transform = '';
+        }
+    });
+
+    // Detectar cuando poblarSelectorEmpresas llena el select oculto
+    new MutationObserver(function() {
+        buildItems();
+        label.textContent = 'Seleccione una empresa';
+        label.style.color = '#9ca3af';
+    }).observe(sel, { childList: true });
+
+    // Si el select ya tiene opciones (recarga de página), construir inmediatamente
+    if (sel.options.length > 1) {
+        buildItems();
+        var cur = sel.options[sel.selectedIndex];
+        label.textContent = (cur && cur.value) ? cur.text : 'Seleccione una empresa';
+        label.style.color = (cur && cur.value) ? '#374151' : '#9ca3af';
+    }
+}
