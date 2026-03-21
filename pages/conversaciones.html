@@ -58,54 +58,24 @@
   </button>
 </div>
 
-<!-- Filtros rápidos — icono + número + tooltip -->
-<div class="flex flex-wrap gap-1.5 mt-2" id="filterChipsContainer" style="overflow:visible;position:relative;z-index:10;">
+<!-- Filtros rápidos — texto + número, estilo chip violeta -->
+<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;margin-top:4px;"><span style="width:4px;height:4px;border-radius:50%;background:#7D84C1;flex-shrink:0;display:inline-block;"></span><span style="font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.07em;">Estado</span></div>
+<div class="flex flex-wrap gap-1.5 mt-1" id="filterChipsContainer">
 
   <button class="filter-chip active" data-filter="all">
-    <svg width="15" height="12" viewBox="0 0 15 12" fill="none" class="filter-chip-icon">
-      <circle cx="7.5" cy="2.8" r="2" fill="currentColor"/>
-      <circle cx="3.5" cy="3.8" r="1.6" fill="currentColor"/>
-      <circle cx="11.5" cy="3.8" r="1.6" fill="currentColor"/>
-      <path d="M0.5 11.5c0-2 1.2-3.2 3-3.2.4 0 .8.1 1.1.3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <path d="M14.5 11.5c0-2-1.2-3.2-3-3.2-.4 0-.8.1-1.1.3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <path d="M4 11.5c0-2.3 1.6-3.6 3.5-3.6s3.5 1.3 3.5 3.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-    </svg>
-    <span class="filter-count">0</span>
-    <span class="filter-chip-tooltip">Todas</span>
+    TODAS <span class="filter-count">0</span>
   </button>
 
   <button class="filter-chip" data-filter="unread">
-    <svg width="15" height="12" viewBox="0 0 15 12" fill="none" class="filter-chip-icon">
-      <circle cx="6.5" cy="3.5" r="2.2" stroke="currentColor" stroke-width="1.2"/>
-      <path d="M1 11.5c0-2.5 2.2-4 5.5-4s5.5 1.5 5.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      <circle cx="12.5" cy="1.5" r="2.5" fill="currentColor"/>
-    </svg>
-    <span class="filter-count">0</span>
-    <span class="filter-chip-tooltip">Sin leer</span>
+    SIN LEER <span class="filter-count">0</span>
   </button>
 
   <button class="filter-chip" data-filter="no_reply">
-    <svg width="15" height="12" viewBox="0 0 15 12" fill="none" class="filter-chip-icon">
-      <circle cx="6.5" cy="3.5" r="2.2" stroke="currentColor" stroke-width="1.2"/>
-      <path d="M1 11.5c0-2.5 2.2-4 5.5-4s5.5 1.5 5.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      <path d="M12.5 1v3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-      <circle cx="12.5" cy="5.5" r=".9" fill="currentColor"/>
-    </svg>
-    <span class="filter-count">0</span>
-    <span class="filter-chip-tooltip">Sin resp.</span>
+    SIN RESP. <span class="filter-count">0</span>
   </button>
 
   <button class="filter-chip" data-filter="ia_off">
-    <svg width="15" height="12" viewBox="0 0 15 12" fill="none" class="filter-chip-icon">
-      <circle cx="5.5" cy="3.5" r="2.2" stroke="currentColor" stroke-width="1.2"/>
-      <path d="M1 11.5c0-2.5 1.8-4 4.5-4s4.5 1.5 4.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      <rect x="10" y="7" width="5" height="4" rx="1.5" stroke="currentColor" stroke-width="1.1"/>
-      <path d="M11 7V6.2a1.5 1.5 0 013 0V7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="13.3" y1="5" x2="14.5" y2="3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-      <line x1="14.5" y1="5" x2="13.3" y2="3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-    </svg>
-    <span class="filter-count">0</span>
-    <span class="filter-chip-tooltip">IA Off</span>
+    IA OFF <span class="filter-count">0</span>
   </button>
 
 </div>
@@ -113,35 +83,34 @@
 
 <!-- Filtros avanzados (colapsable) -->
 <button id="advancedFiltersToggle" onclick="toggleAdvancedFilters()"
-  class="w-full flex items-center justify-between mt-2 px-3 py-2 text-[11px] rounded-xl transition-all"
-  style="background:#f8f9ff;border:0.5px solid #dde3f5;color:#7D84C1;font-weight:500;letter-spacing:0.01em;">
+  class="w-full flex items-center justify-between mt-2 px-3 py-2 text-[12px] rounded-xl transition-all"
+  style="background:#eff4fe;border:0.5px solid #d0dcf5;color:#6B7AB5;font-weight:600;letter-spacing:0.01em;">
   <span class="flex items-center gap-2">
     <svg width="13" height="11" viewBox="0 0 13 11" fill="none">
-      <line x1="1" y1="2" x2="12" y2="2" stroke="#7D84C1" stroke-width="1.3" stroke-linecap="round"/>
-      <line x1="3" y1="5.5" x2="10" y2="5.5" stroke="#7D84C1" stroke-width="1.3" stroke-linecap="round"/>
-      <line x1="5" y1="9" x2="8" y2="9" stroke="#7D84C1" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="1" y1="2" x2="12" y2="2" stroke="#6B7AB5" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="3" y1="5.5" x2="10" y2="5.5" stroke="#6B7AB5" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="5" y1="9" x2="8" y2="9" stroke="#6B7AB5" stroke-width="1.3" stroke-linecap="round"/>
     </svg>
     Filtros avanzados
   </span>
-  <i id="advancedFiltersIcon" class="fas fa-chevron-down transition-transform" style="font-size:9px;color:#9ca3af;"></i>
+  <i id="advancedFiltersIcon" class="fas fa-chevron-down transition-transform" style="font-size:9px;color:#6B7AB5;"></i>
 </button>
 
 <div id="advancedFiltersPanel" class="hidden mt-1 mx-1 space-y-2">
   <!-- Por Plan -->
   <div>
-    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider ml-1">Plan</span>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;margin-top:4px;"><span style="width:4px;height:4px;border-radius:50%;background:#7D84C1;flex-shrink:0;display:inline-block;"></span><span style="font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.07em;">Plan</span></div>
     <div class="bg-white border border-gray-200 rounded-xl px-2 pb-2 pt-1.5 mt-1">
       <div class="flex gap-1 flex-wrap" id="planFilters">
-        <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-purple-100 text-purple-700 font-semibold transition-all" data-plan="">Todos</button>
-        <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Premium">Premium</button>
-        <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Basic">Basic</button>
-        <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Free">Free</button>
+        <button class="plan-filter-chip" data-plan="">TODOS</button>
+        <button class="plan-filter-chip" data-plan="client">CLIENTES</button>
+        <button class="plan-filter-chip" data-plan="contact">CONTACTOS</button>
       </div>
     </div>
   </div>
   <!-- Por Tags (dinámico) -->
   <div>
-    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider ml-1">Tags</span>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;margin-top:4px;"><span style="width:4px;height:4px;border-radius:50%;background:#7D84C1;flex-shrink:0;display:inline-block;"></span><span style="font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.07em;">Tags</span></div>
     <div class="bg-white border border-gray-200 rounded-xl px-2 pb-2 pt-1.5 mt-1">
       <div class="flex gap-1 flex-wrap" id="tagFilters">
         <!-- Se llena dinámicamente desde JS -->
@@ -444,21 +413,53 @@
 
   <h3 id="contactHeaderName" class="font-bold text-gray-900 text-sm mb-1">—</h3>
 
-  <div id="contactHeaderMeta" class="flex items-center justify-center gap-2 text-xs">
+  <!-- Teléfono inline bajo el nombre -->
+  <div class="flex items-center justify-center gap-1.5 mb-2">
+    <div class="w-4 h-4 rounded flex items-center justify-center flex-shrink-0" style="background:#25D366;">
+      <i class="fab fa-whatsapp text-white" style="font-size:10px;"></i>
+    </div>
+    <p id="contactPhone" class="text-xs font-semibold text-gray-500">—</p>
   </div>
 
-  <!-- BOTON CONECTAR -->
-  <button id="connectPartnerBtn"
-    class="mt-2 flex items-center border border-gray-300 rounded-full gap-2 px-3 py-1.5 bg-gray-100 hover:bg-blue-50 text-gray-700 rounded-full text-xs transition-all shadow-sm">
+  <!-- Estrellas + rating (sin badge plan) -->
+  <div id="contactHeaderMeta" class="flex items-center justify-center gap-2 text-xs mb-3">
+  </div>
 
-    <img src="assets/img/logo_no_socio.png"
-         class="w-6 h-6 object-contain">
-
-    <span>Conectar</span>
-
-  </button>
+  <!-- Botones Cliente VIP y Aliarme -->
+  <div class="flex gap-1.5 w-full px-1">
+    <button id="btnClienteVIP"
+      class="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-semibold transition-all hover:opacity-75"
+      style="background:#EFF6FF;border:0.5px solid #C9D9FF;color:#7D84C1;font-size:11px;white-space:nowrap;"
+      onclick="_toggleContactBtn(this, {bg:'#E1DEFF', border:'#9961FF', color:'#9961FF', bgOff:'#EFF6FF', borderOff:'#C9D9FF', colorOff:'#7D84C1'})">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" class="btn-icon">
+        <rect x="3" y="8" width="18" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
+        <path d="M12 8v13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M3 13h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M8 8c0 0-2-4 4-4s0 4 0 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M16 8c0 0 2-4-4-4s0 4 0 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      Cliente VIP
+    </button>
+    <button id="btnAliarme"
+      class="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-semibold transition-all hover:opacity-75"
+      style="background:white;border:0.5px solid #C9D9FF;color:#7D84C1;font-size:11px;white-space:nowrap;"
+      onclick="_toggleContactBtn(this, {bg:'#E1DEFF', border:'#9961FF', color:'#9961FF', bgOff:'white', borderOff:'#C9D9FF', colorOff:'#7D84C1'})">
+      <img src="assets/img/handshake.png" class="w-4 h-4 object-contain"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'"/>
+      <svg style="display:none;" width="14" height="13" viewBox="0 0 32 26" fill="none" class="btn-icon">
+        <path d="M2 10c1-3 3-5 6-5l4 2 2-2 4 2 2-2 4 2c3 1 5 3 6 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 7l-4 9 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M24 7l4 9-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 22l4 3 4-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M10 13l2 2 4-4 4 4 2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Aliarme
+    </button>
+  </div>
 
 </div>
+
+
 
 
 <!-- ============================= -->
@@ -478,55 +479,6 @@ class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:b
 <div id="contactGroup" class="rp-section rp-open" style="max-height:none;overflow:visible;">
 
 
-<!-- INFORMACIÓN -->
-<div class="border-b border-gray-200">
-
-<button onclick="toggleRightSection('contactSection')"
-class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] transition-colors">
-<div class="flex items-center gap-2.5">
-  <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
-    <i class="fas fa-info-circle text-[#9961FF] text-[13px]"></i>
-  </div>
-  <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Información</span>
-</div>
-<i id="contactSectionIcon" class="rp-chevron rp-rotated fas fa-chevron-right text-xs text-gray-400"></i>
-</button>
-
-
-<div id="contactSection" class="rp-section rp-open" style="max-height:none;overflow:visible;">
-
-<div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
-
-<div class="bg-white border border-gray-100 rounded-lg p-3">
-
-<div class="flex items-center gap-2.5">
-
-<div class="w-9 h-9 rounded-lg bg-green-500 flex items-center justify-center">
-<i class="fab fa-whatsapp text-white"></i>
-</div>
-
-<div>
-<p id="contactPhone" class="text-sm font-bold text-gray-900">—</p>
-<p class="text-xs text-gray-500">Principal</p>
-</div>
-
-</div>
-</div>
-
-<div id="contactStatus"
-class="flex items-center gap-2 text-xs bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1.5">
-
-<div class="w-2 h-2 rounded-full bg-gray-400"></div>
-<span class="text-gray-600 font-semibold">Sin estado</span>
-
-</div>
-
-</div>
-
-</div>
-</div>
-
-
 <!-- EMBUDOS -->
 <div class="border-b border-gray-200">
 
@@ -537,9 +489,11 @@ class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] t
     <i class="fas fa-filter text-[#9961FF] text-[13px]"></i>
   </div>
   <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Embudos</span>
-  <span id="funnelsCounter" class="ml-2 text-[10px] bg-[#E1DEFF] text-[#9961FF] px-1.5 py-0.5 rounded-full font-semibold">0</span>
 </div>
-<i id="funnelsSectionIcon" class="rp-chevron fas fa-chevron-right text-xs text-gray-400"></i>
+<div class="flex items-center gap-2">
+  <span id="funnelsCounter" class="text-[10px] bg-[#E1DEFF] text-[#9961FF] px-1.5 py-0.5 rounded-full font-semibold">0</span>
+  <i id="funnelsSectionIcon" class="rp-chevron fas fa-chevron-right text-xs text-gray-400"></i>
+</div>
 </button>
 
 
@@ -568,9 +522,11 @@ class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] t
     <i class="fas fa-tags text-[#9961FF] text-[13px]"></i>
   </div>
   <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Tags</span>
-  <span id="tagsCounter" class="ml-2 text-[10px] bg-[#E1DEFF] text-[#9961FF] px-1.5 py-0.5 rounded-full font-semibold">0</span>
 </div>
-<i id="contactTagsSectionIcon" class="rp-chevron fas fa-chevron-right text-xs text-gray-400"></i>
+<div class="flex items-center gap-2">
+  <span id="tagsCounter" class="text-[10px] bg-[#E1DEFF] text-[#9961FF] px-1.5 py-0.5 rounded-full font-semibold">0</span>
+  <i id="contactTagsSectionIcon" class="rp-chevron fas fa-chevron-right text-xs text-gray-400"></i>
+</div>
 </button>
 
 
@@ -612,9 +568,11 @@ class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] t
     <i class="fas fa-sticky-note text-[#9961FF] text-[13px]"></i>
   </div>
   <span data-section="notes" class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Notas</span>
-  <span id="notesCounter" class="ml-2 text-[10px] bg-[#E1DEFF] text-[#9961FF] px-1.5 py-0.5 rounded-full font-semibold">0</span>
 </div>
-<i id="notesSectionIcon" class="rp-chevron fas fa-chevron-right text-xs text-gray-400"></i>
+<div class="flex items-center gap-2">
+  <span id="notesCounter" class="text-[10px] bg-[#E1DEFF] text-[#9961FF] px-1.5 py-0.5 rounded-full font-semibold">0</span>
+  <i id="notesSectionIcon" class="rp-chevron fas fa-chevron-right text-xs text-gray-400"></i>
+</div>
 </button>
 
 
@@ -650,9 +608,11 @@ class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] t
     <i class="fas fa-clock text-[#9961FF] text-[13px]"></i>
   </div>
   <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Seguimiento</span>
-  <span id="seguimientoCounter" class="ml-2 text-[10px] bg-[#E1DEFF] text-[#9961FF] px-1.5 py-0.5 rounded-full font-semibold" style="display:none;">0</span>
 </div>
-<i id="seguimientoSectionIcon" class="rp-chevron fas fa-chevron-right text-xs text-gray-400"></i>
+<div class="flex items-center gap-2">
+  <span id="seguimientoCounter" class="text-[10px] bg-[#E1DEFF] text-[#9961FF] px-1.5 py-0.5 rounded-full font-semibold" style="display:none;">0</span>
+  <i id="seguimientoSectionIcon" class="rp-chevron fas fa-chevron-right text-xs text-gray-400"></i>
+</div>
 </button>
 
 <div id="seguimientoSection" class="rp-section">
@@ -867,66 +827,38 @@ class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:b
 [data-tooltip]:hover::before,
 [data-tooltip]:hover::after { display: block; }
 
-/* ── Filter chips — icono + número + tooltip ── */
+/* ── Filter chips — estilo tag violeta Heavensy ── */
 .filter-chip {
-  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
+  gap: 4px;
+  padding: 2px 8px;
+  height: 20px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   cursor: pointer;
   white-space: nowrap;
-  border: 1.5px solid #C9D9FF;
-  background: white;
+  border: 1.5px solid #e0e7ff;
+  background: #f5f3ff;
   color: #7D84C1;
-  transition: background .15s, border-color .15s;
+  transition: background .15s, border-color .15s, color .15s;
   flex-shrink: 0;
   outline: none;
 }
-.filter-chip:hover { background: #EFF6FF; }
-.filter-chip.active { background: #C9D9FF; border-color: #C9D9FF; color: #4B5B8F; }
-
-.filter-chip[data-filter="no_reply"] { border-color: #fde68a; color: #b45309; }
-.filter-chip[data-filter="no_reply"]:hover { background: #fefce8; }
-.filter-chip[data-filter="no_reply"].active { background: #fef9c3; border-color: #fde68a; }
-.filter-chip[data-filter="no_reply"] .filter-count { background: #fef9c3; color: #b45309; }
-
-.filter-chip[data-filter="ia_off"] { border-color: #fca5a5; color: #b91c1c; }
-.filter-chip[data-filter="ia_off"]:hover { background: #fff1f1; }
-.filter-chip[data-filter="ia_off"].active { background: #fee2e2; border-color: #fca5a5; }
-.filter-chip[data-filter="ia_off"] .filter-count { background: #fee2e2; color: #b91c1c; }
-
+.filter-chip:hover { background: #ede9fe; border-color: #ede9fe; color: #6D28D9; }
+.filter-chip.active { background: #ede9fe; border-color: #ede9fe; color: #6D28D9; }
 .filter-chip .filter-count {
-  font-size: 10px; font-weight: 700;
-  border-radius: 999px; padding: 0 5px; line-height: 1.5;
-  background: #EFF6FF; color: #7D84C1;
+  font-size: 9px; font-weight: 700;
+  border-radius: 999px; padding: 0 5px; line-height: 1.6;
+  background: #ede9fe; color: #7D84C1;
 }
-.filter-chip.active .filter-count { background: rgba(75,91,143,0.15); color: #4B5B8F; }
-
-.filter-chip-tooltip {
-  display: none;
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%; transform: translateX(-50%);
-  background: white; color: #374151;
-  border: 0.5px solid #e0e7ff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  font-size: 10px; font-weight: 500;
-  padding: 3px 9px; border-radius: 6px;
-  white-space: nowrap; pointer-events: none; z-index: 9999;
-}
-.filter-chip-tooltip::after {
-  content: ''; position: absolute;
-  top: 100%; left: 50%; transform: translateX(-50%);
-  border: 4px solid transparent; border-top-color: white;
-}
-.filter-chip:hover .filter-chip-tooltip { display: block; }
+.filter-chip.active .filter-count { background: rgba(109,40,217,0.15); color: #6D28D9; }
 
 /* Botón filtros avanzados hover */
-#advancedFiltersToggle:hover { background: #eef1fb !important; border-color: #c5cce8 !important; }
+#advancedFiltersToggle:hover { background: #e5edfb !important; border-color: #c0cef0 !important; }
 
 #filterChipsContainer::-webkit-scrollbar { display: none; }
 

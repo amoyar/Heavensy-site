@@ -131,6 +131,15 @@ function updatePanelCounters(counts){
 // --------------------------------------------
 // TAGS
 // --------------------------------------------
+// Helper: hex → rgba
+function _hexToRgba(hex, alpha) {
+    const h = hex.replace('#', '');
+    const r = parseInt(h.substring(0,2), 16);
+    const g = parseInt(h.substring(2,4), 16);
+    const b = parseInt(h.substring(4,6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+
 function renderTags(tags) {
     const container = document.getElementById("contactTagsContainer");
     if (!container) return;
@@ -143,10 +152,12 @@ function renderTags(tags) {
     }
 
     tags.forEach(tag => {
+        const hex = tag.color || "#9ca3af";
         const span = document.createElement("span");
-        span.className = "px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 border bg-white transition-all";
-        span.style.borderColor = tag.color || "#9ca3af";
-        span.style.color = tag.color || "#6b7280";
+        span.className = "px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 transition-all";
+        span.style.border   = `1.5px solid ${_hexToRgba(hex, 0.18)}`;
+        span.style.color    = hex;
+        span.style.background = _hexToRgba(hex, 0.07);
 
         span.innerHTML = `
             ${escapeHtml(tag.label)}
@@ -297,29 +308,15 @@ function renderContactHeader(contact) {
     if (nameEl) nameEl.textContent = name;
     if (phoneEl) phoneEl.textContent = contact.user_id || "—";
 
-    // ✅ Renderizar rating y plan
+    // ✅ Renderizar solo rating (sin badge plan)
     if (metaEl) {
         const rating = contact.rating || 0;
-        const plan = contact.plan || "";
 
         let starsHtml = "";
         for (let i = 1; i <= 5; i++) {
-            if (i <= rating) {
-                starsHtml += '<i class="fas fa-star text-yellow-500"></i>';
-            } else {
-                starsHtml += '<i class="fas fa-star text-gray-300"></i>';
-            }
-        }
-
-        let planHtml = "";
-        if (plan) {
-            const planColors = {
-                "Premium": "bg-purple-100 text-purple-700",
-                "Basic": "bg-blue-100 text-blue-700",
-                "Free": "bg-gray-100 text-gray-600"
-            };
-            const colorClass = planColors[plan] || "bg-gray-100 text-gray-600";
-            planHtml = `<span class="px-2 py-0.5 rounded-full ${colorClass} font-bold text-[10px]">${plan}</span>`;
+            starsHtml += i <= rating
+                ? '<i class="fas fa-star text-yellow-500"></i>'
+                : '<i class="fas fa-star text-gray-300"></i>';
         }
 
         metaEl.innerHTML = `
@@ -327,7 +324,6 @@ function renderContactHeader(contact) {
                 ${starsHtml}
                 <span class="text-gray-600 font-semibold ml-1">${rating}</span>
             </div>
-            ${planHtml}
         `;
     }
 

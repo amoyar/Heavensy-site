@@ -11,6 +11,25 @@
 // ============================================
 
 console.log('✅ conversaciones.js (orquestador) cargado');
+
+// ============================================
+// TOGGLE BOTONES CONTACTO (VIP / Aliarme)
+// ============================================
+function _toggleContactBtn(btn, c) {
+    const isActive = btn.dataset.active === '1';
+    if (isActive) {
+        btn.style.background  = c.bgOff;
+        btn.style.borderColor = c.borderOff;
+        btn.style.color       = c.colorOff;
+        btn.dataset.active    = '0';
+    } else {
+        btn.style.background  = c.bg;
+        btn.style.borderColor = c.border;
+        btn.style.color       = c.color;
+        btn.dataset.active    = '1';
+    }
+}
+window._toggleContactBtn = _toggleContactBtn;
 // ============================================
 // CONTROL BARRA DE INPUT
 // ============================================

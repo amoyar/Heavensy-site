@@ -29,23 +29,21 @@ function setupFilterChips() {
 // SETUP: Filtros de plan
 // ============================================
 function setupPlanFilters() {
-    // Paleta de colores por plan — estilo Heavensy
     const planStyles = {
-        '':        { color: '#7D84C1', border: '#7D84C1', bg: '#EFF6FF' }, // Todos
-        'Premium': { color: '#9961FF', border: '#9961FF', bg: '#F5F0FF' },
-        'Basic':   { color: '#0ea5e9', border: '#0ea5e9', bg: '#EFF9FF' },
-        'Free':    { color: '#10b981', border: '#10b981', bg: '#F0FDF4' },
+        '':        { color: '#3B4B8F', border: '#7D84C1', bg: '#C9D9FF' }, // TODOS activo
+        'client':  { color: '#7D84C1', border: '#C9D9FF', bg: '#EFF6FF' }, // CLIENTES
+        'contact': { color: '#7D84C1', border: '#C9D9FF', bg: '#EFF6FF' }, // CONTACTOS
     };
 
     const applyStyle = (chip, active) => {
         const plan = chip.dataset.plan;
-        const s = planStyles[plan] || { color: '#6b7280', border: '#e5e7eb', bg: '#f9fafb' };
+        const s = planStyles[plan] || { color: '#7D84C1', border: '#C9D9FF', bg: '#EFF6FF' };
         chip.style.cssText = `
-            display:inline-flex;align-items:center;padding:2px 10px;
+            display:inline-flex;align-items:center;padding:2px 10px;height:20px;
             border-radius:999px;font-size:10px;font-weight:700;
-            border:1.5px solid ${active ? s.border : '#e5e7eb'};
-            color:${active ? s.color : '#9ca3af'};
-            background:${active ? s.bg : '#fff'};
+            border:1.5px solid ${active ? (plan === '' ? '#7D84C1' : s.border) : '#C9D9FF'};
+            color:${active ? (plan === '' ? '#3B4B8F' : '#7D84C1') : '#7D84C1'};
+            background:${active ? (plan === '' ? '#C9D9FF' : '#EFF6FF') : '#EFF6FF'};
             cursor:pointer;transition:all .15s;letter-spacing:0.04em;
             text-transform:uppercase;
         `;
@@ -95,24 +93,37 @@ function buildTagFilters() {
 
     allTags.forEach((color, label) => {
         const hex = mapTagColor(color);
+
+        // Helper local para rgba
+        const toRgba = (h, a) => {
+            const c = h.replace('#','');
+            const r = parseInt(c.substring(0,2),16);
+            const g = parseInt(c.substring(2,4),16);
+            const b = parseInt(c.substring(4,6),16);
+            return `rgba(${r},${g},${b},${a})`;
+        };
+
         const btn = document.createElement('button');
         btn.className = 'tag-filter-chip';
-        btn.style.cssText = `
-            display:inline-flex;align-items:center;gap:4px;
-            padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;
-            border:1.5px solid ${hex};color:${hex};background:#fff;
-            cursor:pointer;transition:background .15s,color .15s,transform .1s;
-            white-space:nowrap;letter-spacing:0.01em;
-        `;
-        btn.textContent = label;
         btn.dataset.tag   = label;
         btn.dataset.color = hex;
+        btn.textContent   = label;
 
-        // Estado activo si ya estaba seleccionado
-        if (currentTagFilters.includes(label)) {
-            btn.style.background = hex;
-            btn.style.color = '#fff';
-        }
+        const isActive = currentTagFilters.includes(label);
+
+        const setStyle = (active) => {
+            btn.style.cssText = `
+                display:inline-flex;align-items:center;gap:4px;
+                padding:2px 9px;border-radius:999px;font-size:10px;font-weight:600;
+                border:1.5px solid ${active ? toRgba(hex, 0.45) : toRgba(hex, 0.18)};
+                color:${hex};
+                background:${active ? toRgba(hex, 0.13) : toRgba(hex, 0.07)};
+                cursor:pointer;transition:all .15s;
+                white-space:nowrap;letter-spacing:0.01em;
+            `;
+        };
+
+        setStyle(isActive);
 
         btn.addEventListener('mouseenter', () => {
             if (!currentTagFilters.includes(label)) btn.style.opacity = '0.75';
@@ -123,12 +134,10 @@ function buildTagFilters() {
             const idx = currentTagFilters.indexOf(label);
             if (idx === -1) {
                 currentTagFilters.push(label);
-                btn.style.background = hex;
-                btn.style.color = '#fff';
+                setStyle(true);
             } else {
                 currentTagFilters.splice(idx, 1);
-                btn.style.background = '#fff';
-                btn.style.color = hex;
+                setStyle(false);
             }
             applyAllFilters();
         });
@@ -157,8 +166,10 @@ function applyAllFilters() {
     }
 
     // 2. Filtro por plan
-    if (currentPlanFilter) {
-        filtered = filtered.filter(c => c.plan === currentPlanFilter);
+    if (currentPlanFilter === 'client') {
+        filtered = filtered.filter(c => c.is_client === true || c.plan === 'client');
+    } else if (currentPlanFilter === 'contact') {
+        filtered = filtered.filter(c => !c.is_client && c.plan !== 'client');
     }
 
     // 3. Filtro por tags
