@@ -17,13 +17,9 @@ function setupFilterChips() {
     const chips = document.querySelectorAll('.filter-chip');
     chips.forEach(chip => {
         chip.addEventListener('click', () => {
-            chips.forEach(c => c.classList.remove("active"));
-            chip.classList.add("active");
-
-            const filter = chip.dataset.filter;
-            console.log("🔎 Filtro seleccionado:", filter);
-
-            currentQuickFilter = filter;
+            chips.forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            currentQuickFilter = chip.dataset.filter;
             applyAllFilters();
         });
     });
@@ -33,15 +29,41 @@ function setupFilterChips() {
 // SETUP: Filtros de plan
 // ============================================
 function setupPlanFilters() {
+    // Paleta de colores por plan — estilo Heavensy
+    const planStyles = {
+        '':        { color: '#7D84C1', border: '#7D84C1', bg: '#EFF6FF' }, // Todos
+        'Premium': { color: '#9961FF', border: '#9961FF', bg: '#F5F0FF' },
+        'Basic':   { color: '#0ea5e9', border: '#0ea5e9', bg: '#EFF9FF' },
+        'Free':    { color: '#10b981', border: '#10b981', bg: '#F0FDF4' },
+    };
+
+    const applyStyle = (chip, active) => {
+        const plan = chip.dataset.plan;
+        const s = planStyles[plan] || { color: '#6b7280', border: '#e5e7eb', bg: '#f9fafb' };
+        chip.style.cssText = `
+            display:inline-flex;align-items:center;padding:2px 10px;
+            border-radius:999px;font-size:10px;font-weight:700;
+            border:1.5px solid ${active ? s.border : '#e5e7eb'};
+            color:${active ? s.color : '#9ca3af'};
+            background:${active ? s.bg : '#fff'};
+            cursor:pointer;transition:all .15s;letter-spacing:0.04em;
+            text-transform:uppercase;
+        `;
+    };
+
     document.querySelectorAll('.plan-filter-chip').forEach(chip => {
+        applyStyle(chip, chip.dataset.plan === currentPlanFilter);
+
+        chip.addEventListener('mouseenter', () => {
+            if (chip.dataset.plan !== currentPlanFilter) chip.style.opacity = '0.75';
+        });
+        chip.addEventListener('mouseleave', () => { chip.style.opacity = '1'; });
+
         chip.addEventListener('click', () => {
             currentPlanFilter = chip.dataset.plan;
-
-            document.querySelectorAll('.plan-filter-chip').forEach(c => {
-                c.className = 'plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all';
-            });
-            chip.className = 'plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-purple-100 text-purple-700 font-semibold transition-all';
-
+            document.querySelectorAll('.plan-filter-chip').forEach(c =>
+                applyStyle(c, c.dataset.plan === currentPlanFilter)
+            );
             applyAllFilters();
         });
     });
@@ -72,32 +94,41 @@ function buildTagFilters() {
     container.innerHTML = '';
 
     allTags.forEach((color, label) => {
+        const hex = mapTagColor(color);
         const btn = document.createElement('button');
-        btn.className = 'tag-filter-chip px-2 py-0.5 rounded-full text-[10px] transition-all border bg-white text-gray-600 hover:opacity-80';
-        btn.style.borderColor = color;
+        btn.className = 'tag-filter-chip';
+        btn.style.cssText = `
+            display:inline-flex;align-items:center;gap:4px;
+            padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;
+            border:1.5px solid ${hex};color:${hex};background:#fff;
+            cursor:pointer;transition:background .15s,color .15s,transform .1s;
+            white-space:nowrap;letter-spacing:0.01em;
+        `;
         btn.textContent = label;
-        btn.dataset.tag = label;
-        btn.dataset.color = color;
+        btn.dataset.tag   = label;
+        btn.dataset.color = hex;
 
-        // ✅ Restaurar estado visual si este tag ya estaba activo
+        // Estado activo si ya estaba seleccionado
         if (currentTagFilters.includes(label)) {
-            btn.style.background = color;
-            btn.style.color = 'white';
-            btn.classList.add('font-semibold');
+            btn.style.background = hex;
+            btn.style.color = '#fff';
         }
+
+        btn.addEventListener('mouseenter', () => {
+            if (!currentTagFilters.includes(label)) btn.style.opacity = '0.75';
+        });
+        btn.addEventListener('mouseleave', () => { btn.style.opacity = '1'; });
 
         btn.addEventListener('click', () => {
             const idx = currentTagFilters.indexOf(label);
             if (idx === -1) {
                 currentTagFilters.push(label);
-                btn.style.background = color;
-                btn.style.color = 'white';
-                btn.classList.add('font-semibold');
+                btn.style.background = hex;
+                btn.style.color = '#fff';
             } else {
                 currentTagFilters.splice(idx, 1);
-                btn.style.background = 'white';
-                btn.style.color = '#4b5563';
-                btn.classList.remove('font-semibold');
+                btn.style.background = '#fff';
+                btn.style.color = hex;
             }
             applyAllFilters();
         });
@@ -176,25 +207,21 @@ function applyConversationFilter(filter) {
 // ACTUALIZAR CONTADORES
 // ============================================
 function updateFilterCounts() {
-    // Siempre contar desde la fuente de verdad
     const base = (window.conversacionesAPI && window.conversacionesAPI.getState)
         ? (window.conversacionesAPI.getState().conversations || [])
         : (typeof conversations !== "undefined" ? conversations : []);
 
     const counts = {
-        all: base.length,
-        unread: base.filter(c => (c.unread || 0) > 0).length,
+        all:      base.length,
+        unread:   base.filter(c => (c.unread || 0) > 0).length,
         no_reply: base.filter(c => c.has_unanswered === true).length,
-        ia_off: base.filter(c => c.ia_enabled === false).length
+        ia_off:   base.filter(c => c.ia_enabled === false).length
     };
 
-    console.log('📊 Contadores filtros:', counts);
-
     document.querySelectorAll('.filter-chip').forEach(chip => {
-        const filter = chip.dataset.filter;
         const countEl = chip.querySelector('.filter-count');
-        if (countEl && counts[filter] !== undefined) {
-            countEl.textContent = counts[filter];
+        if (countEl && counts[chip.dataset.filter] !== undefined) {
+            countEl.textContent = counts[chip.dataset.filter];
         }
     });
 }
@@ -208,16 +235,24 @@ function toggleAdvancedFilters() {
     if (!companyId) return;
 
     const panel = document.getElementById('advancedFiltersPanel');
-    const icon = document.getElementById('advancedFiltersIcon');
+    const icon  = document.getElementById('advancedFiltersIcon');
     if (!panel) return;
 
-    panel.classList.toggle('hidden');
-    if (icon) icon.style.transform = panel.classList.contains('hidden') ? '' : 'rotate(180deg)';
+    const isOpen = panel.classList.contains('rp-open') ||
+        (panel.style.display !== 'none' && !panel.classList.contains('hidden'));
 
-    // Recargar tags cada vez que se abre
-    if (!panel.classList.contains('hidden')) {
-        buildTagFilters();
+    // Quitar hidden de Tailwind si quedó del HTML original
+    panel.classList.remove('hidden');
+
+    if (typeof rpSlide === 'function') {
+        rpSlide(panel, !isOpen);
+    } else {
+        panel.style.display = isOpen ? 'none' : 'block';
     }
+
+    if (icon) icon.style.transform = isOpen ? '' : 'rotate(180deg)';
+
+    if (!isOpen) buildTagFilters();
 }
 
 // ============================================
@@ -226,23 +261,8 @@ function toggleAdvancedFilters() {
 function clearAdvancedFilters() {
     currentPlanFilter = '';
     currentTagFilters = [];
-
-    // Reset plan chips
-    document.querySelectorAll('.plan-filter-chip').forEach((c, i) => {
-        if (i === 0) {
-            c.className = 'plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-purple-100 text-purple-700 font-semibold transition-all';
-        } else {
-            c.className = 'plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all';
-        }
-    });
-
-    // Reset tag chips
-    document.querySelectorAll('.tag-filter-chip').forEach(c => {
-        c.style.background = 'white';
-        c.style.color = '#4b5563';
-        c.classList.remove('font-semibold');
-    });
-
+    setupPlanFilters();
+    buildTagFilters();
     applyAllFilters();
 }
 
@@ -272,3 +292,42 @@ function filterConversations(searchTerm) {
 window.toggleAdvancedFilters = toggleAdvancedFilters;
 window.clearAdvancedFilters = clearAdvancedFilters;
 window.updateFilterCounts = updateFilterCounts;
+
+// ── Inyectar estilos panel izquierdo ─────────────────────────────────────────
+(function _injectLeftPanelStyles() {
+    if (document.getElementById('_leftPanelStyles')) return;
+    const s = document.createElement('style');
+    s.id = '_leftPanelStyles';
+    s.textContent = `
+        /* ── Filtros avanzados panel ── */
+        #advancedFiltersPanel {
+            overflow: hidden;
+        }
+
+        /* ── Botón filtros avanzados ── */
+        #advancedFiltersToggle {
+            transition: background .15s, border-color .15s;
+        }
+
+        /* ── TAG chips ── */
+        .tag-filter-chip {
+            transition: background .15s, color .15s, opacity .15s, transform .1s !important;
+        }
+        .tag-filter-chip:active { transform: scale(0.95); }
+
+        /* ── PLAN chips ── */
+        .plan-filter-chip:active { transform: scale(0.95); }
+
+        /* ── Dropdown empresa ── */
+        #companyDropdownList {
+            transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+
+        /* ── Buscador focus glow ── */
+        #searchConversations:focus {
+            border-color: #7D84C1 !important;
+            box-shadow: 0 0 0 2px #C9D9FF !important;
+        }
+    `;
+    document.head.appendChild(s);
+})();

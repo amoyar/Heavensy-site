@@ -14,7 +14,7 @@
         <h2 class="text-sm font-semibold text-gray-800 flex-1">Conversaciones</h2>
         <!-- Botón colapsar panel izquierdo (siempre visible) -->
         <button id="btnCollapseLeft"
-          title="Colapsar panel"
+          data-tooltip="Colapsar panel"
           style="display:none;">
           <i class="fas fa-chevron-left"></i>
         </button>
@@ -58,27 +58,54 @@
   </button>
 </div>
 
-<!-- Filtros rápidos (chips) -->
-<div class="flex flex-wrap gap-1.5 mt-2" id="filterChipsContainer">
-  
-  <button class="filter-chip active flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="all">
-    Todos
-    <span class="filter-count text-[9px] px-1 rounded-full bg-white/30 leading-none"></span>
+<!-- Filtros rápidos — icono + número + tooltip -->
+<div class="flex flex-wrap gap-1.5 mt-2" id="filterChipsContainer" style="overflow:visible;position:relative;z-index:10;">
+
+  <button class="filter-chip active" data-filter="all">
+    <svg width="15" height="12" viewBox="0 0 15 12" fill="none" class="filter-chip-icon">
+      <circle cx="7.5" cy="2.8" r="2" fill="currentColor"/>
+      <circle cx="3.5" cy="3.8" r="1.6" fill="currentColor"/>
+      <circle cx="11.5" cy="3.8" r="1.6" fill="currentColor"/>
+      <path d="M0.5 11.5c0-2 1.2-3.2 3-3.2.4 0 .8.1 1.1.3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <path d="M14.5 11.5c0-2-1.2-3.2-3-3.2-.4 0-.8.1-1.1.3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <path d="M4 11.5c0-2.3 1.6-3.6 3.5-3.6s3.5 1.3 3.5 3.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>
+    <span class="filter-count">0</span>
+    <span class="filter-chip-tooltip">Todas</span>
   </button>
 
-  <button class="filter-chip flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="unread">
-    No leídos
-    <span class="filter-count text-[9px] px-1 rounded-full bg-gray-200 leading-none"></span>
+  <button class="filter-chip" data-filter="unread">
+    <svg width="15" height="12" viewBox="0 0 15 12" fill="none" class="filter-chip-icon">
+      <circle cx="6.5" cy="3.5" r="2.2" stroke="currentColor" stroke-width="1.2"/>
+      <path d="M1 11.5c0-2.5 2.2-4 5.5-4s5.5 1.5 5.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <circle cx="12.5" cy="1.5" r="2.5" fill="currentColor"/>
+    </svg>
+    <span class="filter-count">0</span>
+    <span class="filter-chip-tooltip">Sin leer</span>
   </button>
 
-  <button class="filter-chip flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="no_reply">
-    Sin responder
-    <span class="filter-count text-[9px] px-1 rounded-full bg-gray-200 leading-none"></span>
+  <button class="filter-chip" data-filter="no_reply">
+    <svg width="15" height="12" viewBox="0 0 15 12" fill="none" class="filter-chip-icon">
+      <circle cx="6.5" cy="3.5" r="2.2" stroke="currentColor" stroke-width="1.2"/>
+      <path d="M1 11.5c0-2.5 2.2-4 5.5-4s5.5 1.5 5.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M12.5 1v3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="12.5" cy="5.5" r=".9" fill="currentColor"/>
+    </svg>
+    <span class="filter-count">0</span>
+    <span class="filter-chip-tooltip">Sin resp.</span>
   </button>
 
-  <button class="filter-chip flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="ia_off">
-    IA Off
-    <span class="filter-count text-[9px] px-1 rounded-full bg-gray-200 leading-none"></span>
+  <button class="filter-chip" data-filter="ia_off">
+    <svg width="15" height="12" viewBox="0 0 15 12" fill="none" class="filter-chip-icon">
+      <circle cx="5.5" cy="3.5" r="2.2" stroke="currentColor" stroke-width="1.2"/>
+      <path d="M1 11.5c0-2.5 1.8-4 4.5-4s4.5 1.5 4.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <rect x="10" y="7" width="5" height="4" rx="1.5" stroke="currentColor" stroke-width="1.1"/>
+      <path d="M11 7V6.2a1.5 1.5 0 013 0V7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="13.3" y1="5" x2="14.5" y2="3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="14.5" y1="5" x2="13.3" y2="3.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+    </svg>
+    <span class="filter-count">0</span>
+    <span class="filter-chip-tooltip">IA Off</span>
   </button>
 
 </div>
@@ -86,11 +113,17 @@
 
 <!-- Filtros avanzados (colapsable) -->
 <button id="advancedFiltersToggle" onclick="toggleAdvancedFilters()"
-  class="w-full flex items-center justify-between mt-1.5 px-3 py-1.5 text-[11px] text-[#7D84C1] bg-[#EFF6FF] hover:bg-[#e4eeff] border border-[#7D84C1] rounded-lg transition-all">
-  <span class="flex items-center gap-1.5 font-medium">
-    <i class="fas fa-sliders-h"></i> Filtros avanzados
+  class="w-full flex items-center justify-between mt-2 px-3 py-2 text-[11px] rounded-xl transition-all"
+  style="background:#f8f9ff;border:0.5px solid #dde3f5;color:#7D84C1;font-weight:500;letter-spacing:0.01em;">
+  <span class="flex items-center gap-2">
+    <svg width="13" height="11" viewBox="0 0 13 11" fill="none">
+      <line x1="1" y1="2" x2="12" y2="2" stroke="#7D84C1" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="3" y1="5.5" x2="10" y2="5.5" stroke="#7D84C1" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="5" y1="9" x2="8" y2="9" stroke="#7D84C1" stroke-width="1.3" stroke-linecap="round"/>
+    </svg>
+    Filtros avanzados
   </span>
-  <i id="advancedFiltersIcon" class="fas fa-chevron-down text-[9px] transition-transform"></i>
+  <i id="advancedFiltersIcon" class="fas fa-chevron-down transition-transform" style="font-size:9px;color:#9ca3af;"></i>
 </button>
 
 <div id="advancedFiltersPanel" class="hidden mt-1 mx-1 space-y-2">
@@ -147,7 +180,7 @@
   <div class="flex items-center justify-between w-full">
     <div class="flex items-center gap-2">
       <!-- TOGGLE LEFT PANEL -->
-      <button id="btnToggleLeft" title="Mostrar/ocultar conversaciones" style="background:none;border:none;cursor:pointer;color:#193d6d;font-size:13px;padding:2px 6px;flex-shrink:0;line-height:1;"><i class="fas fa-chevron-left"></i></button>
+      <button id="btnToggleLeft" data-tooltip="Mostrar/ocultar conversaciones" style="background:none;border:none;cursor:pointer;color:#193d6d;font-size:13px;padding:2px 6px;flex-shrink:0;line-height:1;"><i class="fas fa-chevron-left"></i></button>
       <!-- AVATAR DINÁMICO -->
       <div class="relative">
         <div id="chatHeaderAvatar" class="w-8 h-8 rounded-full overflow-hidden"></div>
@@ -168,7 +201,7 @@
       <!-- IA Toggle Switch -->
       <div id="iaToggleBtn" onclick="toggleIAForConversation()"
         class="flex items-center gap-1 cursor-pointer select-none px-1.5 py-0.5 rounded-full transition-all bg-[#dbe4f0] hover:bg-[#c8d5e8]"
-        title="Desactivar respuestas automáticas de IA">
+        data-tooltip="Activar / desactivar IA">
         <i class="fas fa-robot text-[10px] text-[#5a7baa]"></i>
         <div class="relative w-6 h-3.5 rounded-full bg-[#8faed4] transition-all">
           <div id="iaToggleDot" class="absolute top-0.5 left-3 w-2.5 h-2.5 rounded-full bg-white shadow transition-all"></div>
@@ -176,7 +209,7 @@
       </div>
 
       <button id="toggleMessageOrder" onclick="toggleMessageOrder()"
-        class="p-2 hover:bg-blue-50 rounded-xl transition-all group" title="Cambiar orden">
+        class="p-2 hover:bg-blue-50 rounded-xl transition-all group" data-tooltip="Cambiar orden mensajes">
         <i class="fas fa-arrow-down-short-wide text-gray-500 group-hover:text-purple-600 text-sm"></i>
       </button>
       <button class="p-2 hover:bg-gray-100 rounded-xl transition-all">
@@ -185,7 +218,7 @@
       <button class="p-2 hover:bg-gray-100 rounded-xl transition-all">
         <i class="fas fa-ellipsis-v text-gray-500 text-sm"></i>
       </button>
-      <button id="btnToggleRight" title="Mostrar/ocultar panel contacto" style="background:none;border:none;cursor:pointer;color:#193d6d;font-size:13px;padding:2px 6px;flex-shrink:0;line-height:1;"><i class="fas fa-chevron-right"></i></button>
+      <button id="btnToggleRight" data-tooltip="Mostrar / ocultar contacto" style="background:none;border:none;cursor:pointer;color:#193d6d;font-size:13px;padding:2px 6px;flex-shrink:0;line-height:1;"><i class="fas fa-chevron-right"></i></button>
     </div>
 
   </div>
@@ -273,13 +306,13 @@
     <div class="flex items-center gap-1 mb-1 px-1">
       <span class="text-[10px] text-gray-400 mr-1">Formato WA:</span>
       <button type="button" onclick="qrFormatWrap('*')"
-        class="w-6 h-6 flex items-center justify-center rounded text-xs font-bold text-gray-600 hover:bg-gray-200 transition" title="Negrita (*texto*)">B</button>
+        class="w-6 h-6 flex items-center justify-center rounded text-xs font-bold text-gray-600 hover:bg-gray-200 transition" data-tooltip="Negrita">B</button>
       <button type="button" onclick="qrFormatWrap('_')"
-        class="w-6 h-6 flex items-center justify-center rounded text-xs italic text-gray-600 hover:bg-gray-200 transition" title="Cursiva (_texto_)">I</button>
+        class="w-6 h-6 flex items-center justify-center rounded text-xs italic text-gray-600 hover:bg-gray-200 transition" data-tooltip="Cursiva">I</button>
       <button type="button" onclick="qrFormatWrap('~')"
-        class="w-6 h-6 flex items-center justify-center rounded text-xs line-through text-gray-600 hover:bg-gray-200 transition" title="Tachado (~texto~)">S</button>
+        class="w-6 h-6 flex items-center justify-center rounded text-xs line-through text-gray-600 hover:bg-gray-200 transition" data-tooltip="Tachado">S</button>
       <button type="button" onclick="qrFormatInsertNewline()"
-        class="w-6 h-6 flex items-center justify-center rounded text-xs text-gray-600 hover:bg-gray-200 transition" title="Salto de línea">↵</button>
+        class="w-6 h-6 flex items-center justify-center rounded text-xs text-gray-600 hover:bg-gray-200 transition" data-tooltip="Salto de línea">↵</button>
     </div>
 
     <!-- Fila 3: textarea -->
@@ -324,7 +357,7 @@
   <!-- ⚡ Respuestas rápidas -->
   <button id="quickRepliesBtn"
     class="p-1.5 hover:bg-yellow-50 rounded-full transition-all flex-shrink-0"
-    title="Respuestas rápidas">
+    data-tooltip="Respuestas rápidas">
     <i class="fas fa-bolt text-yellow-500 text-lg"></i>
   </button>
 
@@ -342,7 +375,7 @@
 
   <!-- Adjuntar -->
   <button onclick="document.getElementById('fileInput').click()"
-    class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0" title="Adjuntar">
+    class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0" data-tooltip="Adjuntar archivo">
     <i class="fas fa-paperclip text-gray-400 text-lg"></i>
   </button>
 
@@ -358,14 +391,14 @@
     onmousedown="startRecording()" onmouseup="stopRecording()"
     ontouchstart="startRecording()" ontouchend="stopRecording()"
     class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0 group"
-    title="Mantener presionado para grabar audio">
+    data-tooltip="Grabar audio">
     <i id="micIcon" class="fas fa-microphone text-gray-400 group-hover:text-purple-500 text-sm"></i>
   </button>
 
   <!-- Preview de audio grabado -->
   <div id="audioPreview" class="hidden items-center gap-1">
     <audio id="audioPlayer" class="h-7" style="max-width:120px;" controls></audio>
-    <button onclick="clearAudioRecording()" class="p-1 text-red-400 hover:text-red-600" title="Descartar audio">
+    <button onclick="clearAudioRecording()" class="p-1 text-red-400 hover:text-red-600" data-tooltip="Descartar audio">
       <i class="fas fa-times text-xs"></i>
     </button>
   </div>
@@ -398,7 +431,7 @@
 
 <!-- HEADER CONTACTO -->
 <div class="p-3 border-b border-gray-200 text-center flex flex-col items-center" style="position:relative;">
-  <button id="btnCloseContactPanel" title="Cerrar panel"
+  <button id="btnCloseContactPanel" data-tooltip="Cerrar panel"
     style="position:absolute;top:6px;left:6px;background:none;border:none;cursor:pointer;color:#193d6d;font-size:13px;padding:4px;display:none;">
     <i class="fas fa-chevron-right"></i>
   </button>
@@ -796,6 +829,105 @@ class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:b
 <!-- Animaciones panel derecho: gestionadas por conv-state.js (rp-section / rp-open) -->
 
 <style>
+/* ── Tooltip global — data-tooltip ── */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::before {
+  content: attr(data-tooltip);
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  color: #374151;
+  border: 0.5px solid #e0e7ff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+}
+[data-tooltip]::after {
+  content: '';
+  display: none;
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-bottom-color: white;
+  pointer-events: none;
+  z-index: 100;
+}
+[data-tooltip]:hover::before,
+[data-tooltip]:hover::after { display: block; }
+
+/* ── Filter chips — icono + número + tooltip ── */
+.filter-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1.5px solid #C9D9FF;
+  background: white;
+  color: #7D84C1;
+  transition: background .15s, border-color .15s;
+  flex-shrink: 0;
+  outline: none;
+}
+.filter-chip:hover { background: #EFF6FF; }
+.filter-chip.active { background: #C9D9FF; border-color: #C9D9FF; color: #4B5B8F; }
+
+.filter-chip[data-filter="no_reply"] { border-color: #fde68a; color: #b45309; }
+.filter-chip[data-filter="no_reply"]:hover { background: #fefce8; }
+.filter-chip[data-filter="no_reply"].active { background: #fef9c3; border-color: #fde68a; }
+.filter-chip[data-filter="no_reply"] .filter-count { background: #fef9c3; color: #b45309; }
+
+.filter-chip[data-filter="ia_off"] { border-color: #fca5a5; color: #b91c1c; }
+.filter-chip[data-filter="ia_off"]:hover { background: #fff1f1; }
+.filter-chip[data-filter="ia_off"].active { background: #fee2e2; border-color: #fca5a5; }
+.filter-chip[data-filter="ia_off"] .filter-count { background: #fee2e2; color: #b91c1c; }
+
+.filter-chip .filter-count {
+  font-size: 10px; font-weight: 700;
+  border-radius: 999px; padding: 0 5px; line-height: 1.5;
+  background: #EFF6FF; color: #7D84C1;
+}
+.filter-chip.active .filter-count { background: rgba(75,91,143,0.15); color: #4B5B8F; }
+
+.filter-chip-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%; transform: translateX(-50%);
+  background: white; color: #374151;
+  border: 0.5px solid #e0e7ff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  font-size: 10px; font-weight: 500;
+  padding: 3px 9px; border-radius: 6px;
+  white-space: nowrap; pointer-events: none; z-index: 9999;
+}
+.filter-chip-tooltip::after {
+  content: ''; position: absolute;
+  top: 100%; left: 50%; transform: translateX(-50%);
+  border: 4px solid transparent; border-top-color: white;
+}
+.filter-chip:hover .filter-chip-tooltip { display: block; }
+
+/* Botón filtros avanzados hover */
+#advancedFiltersToggle:hover { background: #eef1fb !important; border-color: #c5cce8 !important; }
+
 #filterChipsContainer::-webkit-scrollbar { display: none; }
 
 @media (max-height: 500px) and (orientation: landscape) {
@@ -816,9 +948,8 @@ class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:b
 }
 </style>
 
-<!-- Botón flotante para re-expandir panel izquierdo cuando está colapsado -->
 <button id="btnExpandLeft"
-  title="Mostrar conversaciones"
+  data-tooltip="Mostrar conversaciones"
   style="position:absolute;top:50%;left:0;transform:translateY(-50%);z-index:20;
          background:#C9D9FF;border:1px solid #b2c4fb;border-left:none;
          border-radius:0 6px 6px 0;width:18px;height:48px;

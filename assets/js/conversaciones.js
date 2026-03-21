@@ -257,15 +257,30 @@ function initCompanyDropdown() {
 
     btn.addEventListener('click', function(e) {
         e.stopPropagation();
-        var open = list.style.display === 'block';
-        list.style.display = open ? 'none' : 'block';
+        var open = list.style.display === 'block' && list.style.opacity !== '0';
+        if (open) {
+            list.style.opacity = '0';
+            list.style.transform = 'translateY(-4px)';
+            setTimeout(() => { list.style.display = 'none'; }, 180);
+        } else {
+            list.style.display = 'block';
+            list.style.opacity = '0';
+            list.style.transform = 'translateY(-4px)';
+            list.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                list.style.opacity = '1';
+                list.style.transform = 'translateY(0)';
+            }));
+        }
         icon.style.transform = open ? '' : 'rotate(180deg)';
     });
 
     document.addEventListener('click', function(e) {
         var wrap = document.getElementById('companyDropdownWrap');
         if (wrap && !wrap.contains(e.target)) {
-            list.style.display = 'none';
+            list.style.opacity = '0';
+            list.style.transform = 'translateY(-4px)';
+            setTimeout(() => { list.style.display = 'none'; }, 180);
             icon.style.transform = '';
         }
     });
