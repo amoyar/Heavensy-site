@@ -211,7 +211,7 @@ function _calBuild(container) {
         <button class="cal-nav-btn" id="calPrevBtn"><i class="fas fa-chevron-left"></i></button>
         <span class="cal-nav-title" id="calNavTitle" style="cursor:pointer;user-select:none;">${_CAL_MONTHS[_calMonth]} ${_calYear}</span>
         <button class="cal-nav-btn" id="calNextBtn"><i class="fas fa-chevron-right"></i></button>
-        <button class="cal-nav-btn cal-toggle-btn" id="calGridToggleBtn" title="Colapsar calendario"><i class="fas fa-chevron-up"></i></button>
+        <button class="cal-nav-btn cal-toggle-btn" id="calGridToggleBtn" data-tooltip="Colapsar calendario"><i class="fas fa-chevron-up"></i></button>
     `;
     cal.appendChild(nav);
 
@@ -513,6 +513,20 @@ function calToggleLoad() {
         }
     }, 0);
 }
+
+// Refresh manual del calendario
+window._calRefresh = function(el) {
+    if (el) {
+        el.classList.add('spinning');
+        setTimeout(() => el.classList.remove('spinning'), 450);
+    }
+    const cid = _calCompanyId
+        || window._agendaCurrentCompanyId
+        || window._currentCompanyId
+        || window.currentCompanyId
+        || null;
+    if (cid) _calLoadAndRender(cid);
+};
 
 
 // ============================================

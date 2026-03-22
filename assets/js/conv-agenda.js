@@ -12,6 +12,40 @@
 
 console.log('✅ conv-agenda.js cargado');
 
+// ── Paleta colores por especialista ──────────────────────
+const _agendaSpecColors = [
+    { border: '#c4b5fd', text: '#9961FF', bg: '#f5f3ff' },
+    { border: '#7dd3fc', text: '#0ea5e9', bg: '#f0f9ff' },
+    { border: '#6ee7b7', text: '#059669', bg: '#f0fdf4' },
+    { border: '#fca5a5', text: '#ef4444', bg: '#fff1f2' },
+    { border: '#fcd34d', text: '#d97706', bg: '#fffbeb' },
+    { border: '#f9a8d4', text: '#ec4899', bg: '#fdf2f8' },
+];
+const _agendaSpecColorMap = {};
+let _agendaSpecColorIdx  = 0;
+
+function _agendaGetSpecColor(resourceId) {
+    if (!resourceId) return _agendaSpecColors[0];
+    if (!_agendaSpecColorMap[resourceId]) {
+        _agendaSpecColorMap[resourceId] = _agendaSpecColors[_agendaSpecColorIdx % _agendaSpecColors.length];
+        _agendaSpecColorIdx++;
+    }
+    return _agendaSpecColorMap[resourceId];
+}
+
+function _agendaAbbrevName(fullName) {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0];
+    // "Dra. Juana Machuca" → "J. Machuca"
+    // Ignorar prefijos como Dra/Dr/Sr/Sra
+    const prefixes = ['dra.','dr.','sr.','sra.','lic.','mg.','ing.'];
+    let filtered = parts.filter(p => !prefixes.includes(p.toLowerCase()));
+    if (filtered.length === 1) return filtered[0];
+    return filtered[0][0] + '. ' + filtered.slice(1).join(' ');
+}
+
+
 // ─── Estado del módulo ────────────────────────────────────────────────────────
 let _agendaCurrentUserId    = null;
 let _agendaCurrentCompanyId = null;
@@ -19,6 +53,7 @@ let _agendaMyResource       = null;   // recurso del profesional logueado
 let _agendaMyServices       = [];     // servicios del profesional
 let _agendaCountdownTimer   = null;   // timer del countdown activo
 const _svcColors = ['#7c3aed','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899','#8b5cf6','#14b8a6'];
+let _agendaSelectedSvcGroup = null;   // grupo de servicio activo (todos sus especialistas)
 let _agendaSelectedService  = null;   // servicio seleccionado
 let _agendaSelectedDate     = null;   // fecha seleccionada en el calendario
 let _agendaCalendarMonth    = null;   // mes visible (Date primer día del mes)
@@ -123,6 +158,7 @@ async function loadAgenda(companyId, userId) {
         _agendaSchedulingMode  = data.scheduling_mode || 'sequential';
         _agendaReservationTtl  = data.reservation_ttl || 30;
         _agendaPaymentMode     = data.payment_mode || 'manual';
+
 
         // Usar primer especialista del primer servicio como recurso de referencia
         const firstSpec = _agendaCompanyServices[0]?.specialists?.[0];
@@ -341,7 +377,7 @@ async function _agendaRenderPanel() {
     calToggle.id = 'agendaCalToggle';
     calToggle.innerHTML = `
         <button class="agenda-btn-search-day" onclick="_agendaToggleCalendar()">
-            <i class="fas fa-calendar-search"></i> Buscar otro día
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1.5" fill="currentColor"/><path d="M12 13v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Ver más fechas
         </button>
     `;
     container.appendChild(calToggle);
@@ -404,19 +440,26 @@ async function _agendaRenderMultiSpecialist(container) {
             <span class="agenda-next-svc-duration">${svcGroup.duration} min</span>
             <i class="fas fa-chevron-${isOpen ? 'down' : 'right'} agenda-next-svc-chevron"></i>
         `;
-        svcName.style.background   = isOpen ? '#E1DEFF' : '#EFF6FF';
-        svcName.style.border       = isOpen ? '0.5px solid #9961FF' : '0.5px solid #C9D9FF';
+        if (isOpen) {
+            svcName.style.background   = svcColor + '14';
+            svcName.style.border       = `1px solid ${svcColor}4D`;
+        } else {
+            svcName.style.background   = '#EFF6FF';
+            svcName.style.border       = '0.5px solid #C9D9FF';
+        }
         svcName.style.borderRadius = '5px';
         if (isOpen) svcName.classList.add('open');
 
         svcName.addEventListener('mouseenter', () => {
             if (!svcName.classList.contains('open')) {
-                svcName.style.background = '#dce8ff';
+                svcName.style.background = svcColor + '0D';
+                svcName.style.borderColor = svcColor + '33';
             }
         });
         svcName.addEventListener('mouseleave', () => {
             if (!svcName.classList.contains('open')) {
                 svcName.style.background = '#EFF6FF';
+                svcName.style.borderColor = '#C9D9FF';
             }
         });
 
@@ -436,13 +479,18 @@ async function _agendaRenderMultiSpecialist(container) {
                 btn.className = 'agenda-next-slot-pill';
                 btn.dataset.start = slot.start;
                 btn.dataset.date  = slot.date;
-                btn.style.borderTopColor = svcColor;
-                btn.style.borderTopWidth = '2px';
+                // ✅ Borde del color del SERVICIO, no del especialista
+                btn.style.border        = `1.5px solid ${svcColor}40`;
+                btn.style.borderTop     = `2px solid ${svcColor}`;
+                const _gsc = _agendaGetSpecColor(slot.resource_id);
+                const _gAbbrev = _agendaAbbrevName(slot.resource_name || '');
+                const _gFullName = slot.resource_name || '';
                 btn.innerHTML = `
                     <span class="agenda-next-slot-date">${_agendaFormatDateShort(slot.date)}</span>
                     <span class="agenda-next-slot-time">${slot.start}</span>
+                    ${_gAbbrev ? `<span class="agenda-next-slot-spec" style="color:${svcColor};" title="${_gFullName}">${_gAbbrev}</span>` : ''}
+                    ${_gFullName ? `<span class="agenda-slot-tt">${_gFullName}</span>` : ''}
                 `;
-                // El slot ya tiene resource_id y service_id del especialista
                 const svc = {
                     service_id:   slot.service_id,
                     name:         svcGroup.name,
@@ -492,8 +540,8 @@ async function _agendaRenderMultiSpecialist(container) {
                         btn.className = 'agenda-next-slot-pill agenda-next-slot-pill--sm';
                         btn.dataset.start = slot.start;
                         btn.dataset.date  = slot.date;
-                        btn.style.borderTopColor = svcColor;
-                        btn.style.borderTopWidth = '2px';
+                        btn.style.border    = `1.5px solid ${svcColor}40`;
+                        btn.style.borderTop = `2px solid ${svcColor}`;
                         btn.innerHTML = `
                             <span class="agenda-next-slot-date">${_agendaFormatDateShort(slot.date)}</span>
                             <span class="agenda-next-slot-time">${slot.start}</span>
@@ -533,19 +581,56 @@ async function _agendaRenderMultiSpecialist(container) {
 
         // ── Toggle independiente ───────────────
         svcName.addEventListener('click', () => {
-            const chev = svcName.querySelector('.agenda-next-svc-chevron');
+            // Si ya está abierto, no hacer nada
             const isNowOpen = svcContent.style.display !== 'none' && svcContent.style.opacity !== '0';
-            rpSlide(svcContent, !isNowOpen);
-            chev.className = `fas fa-chevron-${isNowOpen ? 'right' : 'down'} agenda-next-svc-chevron`;
-            svcName.style.background   = isNowOpen ? '#EFF6FF' : '#E1DEFF';
-            svcName.style.border       = isNowOpen ? '0.5px solid #C9D9FF' : '0.5px solid #9961FF';
+            if (isNowOpen) return;
+
+            const chev = svcName.querySelector('.agenda-next-svc-chevron');
+            rpSlide(svcContent, true);
+            chev.className = 'fas fa-chevron-down agenda-next-svc-chevron';
+            svcName.style.background   = svcColor + '14';
+            svcName.style.border       = `1px solid ${svcColor}4D`;
             svcName.style.borderRadius = '5px';
-            if (!isNowOpen) {
-                _agendaSelectedService = {
-                    service_id: svcGroup.specialists[0]?.service_id,
-                    name: svcGroup.name, duration: svcGroup.duration, price: svcGroup.price
-                };
+            svcName.classList.add('open');
+
+            // Cerrar y desactivar los demás
+            section.querySelectorAll('.agenda-next-svc-name--toggle').forEach(other => {
+                if (other !== svcName && other.classList.contains('open')) {
+                    const otherTarget = document.getElementById(other.dataset.target);
+                    const otherChev   = other.querySelector('.agenda-next-svc-chevron');
+                    other.classList.remove('open');
+                    other.style.background   = '#EFF6FF';
+                    other.style.border       = '0.5px solid #C9D9FF';
+                    if (otherTarget) rpSlide(otherTarget, false);
+                    if (otherChev) otherChev.className = 'fas fa-chevron-right agenda-next-svc-chevron';
+                }
+            });
+
+            _agendaSelectedService = {
+                service_id: svcGroup.specialists[0]?.service_id,
+                name: svcGroup.name, duration: svcGroup.duration, price: svcGroup.price
+            };
+            _agendaSelectedSvcGroup = svcGroup;
+
+            // Si hay fecha seleccionada y calendario abierto → recargar slots
+            const _calWrapper = document.getElementById('agendaCalWrapper');
+            const _calOpen = _calWrapper && _calWrapper.style.display !== 'none' && _calWrapper.style.opacity !== '0';
+            if (_calOpen && _agendaSelectedDate) {
+                const _slotsDiv = document.getElementById('agendaSlotsContainer');
+                if (_slotsDiv) _agendaRenderSlots(_slotsDiv);
             }
+        });
+
+        // ✅ Chevron colapsa el servicio abierto
+        svcName.querySelector('.agenda-next-svc-chevron').addEventListener('click', (e) => {
+            const isNowOpen = svcContent.style.display !== 'none' && svcContent.style.opacity !== '0';
+            if (!isNowOpen) return;
+            e.stopPropagation();
+            rpSlide(svcContent, false);
+            svcName.querySelector('.agenda-next-svc-chevron').className = 'fas fa-chevron-right agenda-next-svc-chevron';
+            svcName.style.background   = '#EFF6FF';
+            svcName.style.border       = '0.5px solid #C9D9FF';
+            svcName.classList.remove('open');
         });
 
         svcBlock.appendChild(svcName);
@@ -603,26 +688,56 @@ async function _agendaRenderNextSlotsByService(container) {
             const open = row.style.display !== 'none' && row.style.opacity !== '0';
             rpSlide(row, !open, { displayType: 'flex' });
             chev.className = `fas fa-chevron-${open ? 'right' : 'down'} agenda-next-svc-chevron`;
-            svcName.style.background   = open ? '#EFF6FF' : '#E1DEFF';
-            svcName.style.border       = open ? '0.5px solid #C9D9FF' : '0.5px solid #9961FF';
+            if (!open) {
+                // Activando — color del servicio (viene del closure svcColor)
+                svcName.style.background   = svcColor + '14';
+                svcName.style.border       = `1px solid ${svcColor}4D`;
+            } else {
+                // Desactivando — volver a inactivo
+                svcName.style.background   = '#EFF6FF';
+                svcName.style.border       = '0.5px solid #C9D9FF';
+            }
             svcName.style.borderRadius = '5px';
-            if (!open) { svcName.classList.add('open'); _agendaSelectedService = svc; }
-            else        { svcName.classList.remove('open'); }
+            if (!open) { 
+                svcName.classList.add('open'); 
+                _agendaSelectedService = svc;
+                // ✅ Trackear el svcGroup completo
+                _agendaSelectedSvcGroup = _agendaCompanyServices.find(g =>
+                    g.specialists?.some(s => s.service_id === svc.service_id) ||
+                    g.name === svc.name
+                ) || null;
+
+                // ✅ Si hay fecha seleccionada y calendario abierto → recargar slots inmediatamente
+                const _calWrapper = document.getElementById('agendaCalWrapper');
+                const _calOpen = _calWrapper && _calWrapper.style.display !== 'none' && _calWrapper.style.opacity !== '0';
+                if (_calOpen && _agendaSelectedDate) {
+                    const _slotsDiv = document.getElementById('agendaSlotsContainer');
+                    if (_slotsDiv) _agendaRenderSlots(_slotsDiv);
+                }
+            }
+            else { svcName.classList.remove('open'); }
         });
         // Color base siempre visible; activo más fuerte
-        svcName.style.background   = isOpen ? '#E1DEFF' : '#EFF6FF';
-        svcName.style.border       = isOpen ? '0.5px solid #9961FF' : '0.5px solid #C9D9FF';
+        if (isOpen) {
+            svcName.style.background   = svcColor + '14';
+            svcName.style.border       = `1px solid ${svcColor}4D`;
+        } else {
+            svcName.style.background   = '#EFF6FF';
+            svcName.style.border       = '0.5px solid #C9D9FF';
+        }
         svcName.style.borderRadius = '5px';
         if (isOpen) svcName.classList.add('open');
 
         svcName.addEventListener('mouseenter', () => {
             if (!svcName.classList.contains('open')) {
-                svcName.style.background = '#dce8ff';
+                svcName.style.background = svcColor + '0D';
+                svcName.style.borderColor = svcColor + '33';
             }
         });
         svcName.addEventListener('mouseleave', () => {
             if (!svcName.classList.contains('open')) {
                 svcName.style.background = '#EFF6FF';
+                svcName.style.borderColor = '#C9D9FF';
             }
         });
 
@@ -703,6 +818,15 @@ function _agendaOnNextSlotClick(svc, slot, btn, color = '#7c3aed') {
     _agendaSelectedService = svc;
     _agendaSelectedDate    = slot.date;
 
+    // ✅ Actualizar _agendaMyResource al especialista del slot seleccionado
+    if (svc.resource_id) {
+        _agendaMyResource = { _id: svc.resource_id, resource_name: svc.resource_name || '' };
+    }
+
+    // ✅ Trackear el svcGroup completo para "Ver más fechas"
+    _agendaSelectedSvcGroup = _agendaCompanyServices.find(g => g.specialists?.some(s => s.service_id === svc.service_id || s.resource_id === svc.resource_id)) || null;
+
+
     // Desmarcar todos los slots
     document.querySelectorAll('.agenda-next-slot-pill').forEach(b => {
         b.classList.remove('agenda-next-slot-pill--selected');
@@ -735,6 +859,10 @@ function _agendaToggleCalendar() {
 // MINI CALENDARIO
 // ============================================
 
+
+// ── Color del servicio activo (para calendario) ───────────────────────────────
+
+
 function _agendaBuildCalendar() {
     const wrapper = document.createElement('div');
     wrapper.className = 'agenda-calendar';
@@ -750,7 +878,7 @@ function _agendaBuildCalendar() {
         <button class="agenda-cal-nav" id="agendaCalPrev"><i class="fas fa-chevron-left"></i></button>
         <span class="agenda-cal-title">${MESES[month]} ${year}</span>
         <button class="agenda-cal-nav" id="agendaCalNext"><i class="fas fa-chevron-right"></i></button>
-        <button class="agenda-cal-nav agenda-cal-toggle-btn" id="agendaCalGridToggle" title="Colapsar"><i class="fas fa-chevron-${window._agendaCalCollapsed ? 'down' : 'up'}"></i></button>
+        <button class="agenda-cal-nav agenda-cal-toggle-btn" id="agendaCalGridToggle" data-tooltip="Colapsar"><i class="fas fa-chevron-${window._agendaCalCollapsed ? 'down' : 'up'}"></i></button>
     `;
     wrapper.appendChild(header);
 
@@ -811,6 +939,7 @@ function _agendaBuildCalendar() {
             (isPast   ? ' agenda-cal-cell--past'  : '') +
             (isSel    ? ' agenda-cal-cell--selected' : '');
         cell.textContent = day;
+
 
         if (!isPast) {
             cell.addEventListener('click', () => _agendaOnDateClick(dateStr));
@@ -877,7 +1006,9 @@ async function _agendaOnDateClick(dateStr) {
         const mon  = _agendaCalendarMonth.getMonth();
         if (!isNaN(day)) {
             const str = _agendaDateStr(new Date(year, mon, day));
-            if (str === dateStr) el.classList.add('agenda-cal-cell--selected');
+            if (str === dateStr) {
+            el.classList.add('agenda-cal-cell--selected');
+        }
         }
     });
 
@@ -893,32 +1024,66 @@ async function _agendaOnDateClick(dateStr) {
 async function _agendaRenderSlots(container) {
     if (!_agendaSelectedService || !_agendaSelectedDate) return;
 
+    // Determinar qué especialistas buscar
+    const svcGroup = _agendaSelectedSvcGroup ||
+        _agendaCompanyServices.find(g =>
+            g.specialists?.some(s =>
+                s.service_id === _agendaSelectedService.service_id ||
+                s.resource_id === _agendaSelectedService.resource_id
+            ) ||
+            g.name === _agendaSelectedService.name  // fallback por nombre
+        ) || null;
+
+    const specialists = svcGroup?.specialists?.length > 0
+        ? svcGroup.specialists
+        : [{ resource_id: _agendaSelectedService.resource_id || _agendaMyResource?._id,
+             resource_name: _agendaSelectedService.resource_name || '',
+             service_id: _agendaSelectedService.service_id }];
+
+    const svcName = svcGroup?.name || _agendaSelectedService?.name || '';
+
     container.innerHTML = `
         <div class="agenda-slots-header">
             <span><i class="fas fa-calendar-day"></i> ${_agendaFormatDate(_agendaSelectedDate)}</span>
         </div>
+        ${svcName ? `<div class="agenda-slots-context"><span class="agenda-slots-svc-name">● ${svcName}</span></div>` : ''}
         <div class="agenda-slots-loading">
             <i class="fas fa-spinner fa-spin"></i> Cargando horarios...
         </div>
     `;
 
     try {
-        const res = await fetch(
-            `${API_BASE_URL || ''}/api/agenda/availability/${_agendaMyResource._id}/${_agendaSelectedService.service_id}?date=${_agendaSelectedDate}`,
-            { headers: _agendaAuthHeaders() }
-        );
+        // ✅ Fetch en paralelo para todos los especialistas del servicio
+        const results = await Promise.all(specialists.map(async spec => {
+            try {
+                const res = await fetch(
+                    `${API_BASE_URL || ''}/api/agenda/availability/${spec.resource_id}/${spec.service_id}?date=${_agendaSelectedDate}`,
+                    { headers: _agendaAuthHeaders() }
+                );
+                if (!res.ok) return { spec, slots: [] };
+                const data = await res.json();
+                return { spec, slots: data.slots || [] };
+            } catch { return { spec, slots: [] }; }
+        }));
 
-        const data = await res.json();
-        _agendaSlots = data.slots || [];
+        // Aplanar para _agendaSlots (usado en confirmación)
+        _agendaSlots = results.flatMap(r => r.slots.map(s => ({
+            ...s,
+            resource_id:   s.resource_id   || r.spec.resource_id,
+            resource_name: s.resource_name || r.spec.resource_name
+        })));
+
+        const totalSlots = _agendaSlots.length;
 
         container.innerHTML = `
             <div class="agenda-slots-header">
                 <span><i class="fas fa-calendar-day"></i> ${_agendaFormatDate(_agendaSelectedDate)}</span>
-                <span class="agenda-slots-count">${_agendaSlots.length} disponible${_agendaSlots.length !== 1 ? 's' : ''}</span>
+                <span class="agenda-slots-count">${totalSlots} disponible${totalSlots !== 1 ? 's' : ''}</span>
             </div>
+            ${svcName ? `<div class="agenda-slots-context"><span class="agenda-slots-svc-name">● ${svcName}</span></div>` : ''}
         `;
 
-        if (_agendaSlots.length === 0) {
+        if (totalSlots === 0) {
             container.innerHTML += `
                 <div class="agenda-no-slots">
                     <i class="fas fa-calendar-times"></i>
@@ -931,22 +1096,62 @@ async function _agendaRenderSlots(container) {
             return;
         }
 
-        const grid = document.createElement('div');
-        grid.className = 'agenda-slots-grid';
+        // ✅ Renderizar agrupado por especialista
+        results.forEach(({ spec, slots }) => {
+            if (!slots.length) return;
 
-        _agendaSlots.forEach(slot => {
-            const btn = document.createElement('button');
-            btn.className = 'agenda-slot-btn';
-            btn.textContent = slot.start;
-            btn.dataset.start = slot.start;
-            btn.dataset.end   = slot.end;
-            btn.addEventListener('click', () => _agendaOnSlotClick(slot, btn));
-            grid.appendChild(btn);
+            const specColor = _agendaGetSpecColor(spec.resource_id);
+            const abbrev    = _agendaAbbrevName(spec.resource_name);
+
+            // Header del especialista
+            const specHeader = document.createElement('div');
+            specHeader.className = 'agenda-slots-spec-header';
+            specHeader.innerHTML = `
+                <span class="agenda-slots-spec-dot" style="background:${specColor.border};"></span>
+                <span class="agenda-slots-spec-label" style="color:${specColor.text};">${spec.resource_name || 'Especialista'}</span>
+            `;
+            container.appendChild(specHeader);
+
+            // Grid de slots del especialista
+            const grid = document.createElement('div');
+            grid.className = 'agenda-slots-grid';
+
+            slots.forEach(slot => {
+                const enrichedSlot = {
+                    ...slot,
+                    resource_id:   slot.resource_id   || spec.resource_id,
+                    resource_name: slot.resource_name || spec.resource_name,
+                    service_id:    slot.service_id    || spec.service_id
+                };
+                const btn = document.createElement('button');
+                btn.className = 'agenda-slot-btn';
+                btn.dataset.start = slot.start;
+                btn.dataset.end   = slot.end;
+                btn.style.borderColor = specColor.border;
+                btn.innerHTML = `
+                    <span class="agenda-slot-time-txt">${slot.start}</span>
+                    ${spec.resource_name ? `<span class="agenda-slot-tt">${spec.resource_name}</span>` : ''}
+                `;
+                btn.addEventListener('click', () => {
+                    // Al seleccionar, setear servicio correcto de este especialista
+                    _agendaSelectedService = {
+                        service_id:    spec.service_id,
+                        name:          svcName,
+                        duration:      svcGroup?.duration || _agendaSelectedService?.duration,
+                        price:         svcGroup?.price    || _agendaSelectedService?.price,
+                        resource_id:   spec.resource_id,
+                        resource_name: spec.resource_name
+                    };
+                    _agendaMyResource = { _id: spec.resource_id, resource_name: spec.resource_name };
+                    _agendaOnSlotClick(enrichedSlot, btn);
+                });
+                grid.appendChild(btn);
+            });
+
+            container.appendChild(grid);
         });
 
-        container.appendChild(grid);
-
-        // Panel de confirmación (oculto inicialmente)
+        // Panel de confirmación
         const confirmDiv = document.createElement('div');
         confirmDiv.id        = 'agendaConfirmPanel';
         confirmDiv.className = 'agenda-confirm-panel agenda-confirm-panel--hidden';
@@ -1248,7 +1453,7 @@ async function _agendaLoadContactAppointments(container) {
                     <span class="agenda-appt-service">${appt.service_id}</span>
                     <span class="agenda-appt-status ${statusClass}">${statusLabel}</span>
                 </div>
-                <button class="agenda-appt-cancel-btn" title="Cancelar cita"
+                <button class="agenda-appt-cancel-btn" data-tooltip="Cancelar cita"
                     onclick="_agendaCancelAppointment('${appt._id}', this)">
                     <i class="fas fa-times"></i>
                 </button>
@@ -1511,9 +1716,10 @@ function _agendaRenderError() {
         cursor: default;
     }
     .agenda-cal-cell--selected {
-        background: #9961FF !important;
-        color: #fff !important;
-        font-weight: 600;
+        background: rgba(153,97,255,0.12) !important;
+        color: #9961FF !important;
+        font-weight: 700;
+        border: 1px solid rgba(153,97,255,0.35) !important;
     }
     .agenda-cal-cell--empty { cursor: default; }
 
@@ -1541,21 +1747,28 @@ function _agendaRenderError() {
         padding: 10px 0;
     }
     .agenda-slots-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 4px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
         margin-bottom: 8px;
     }
     .agenda-slot-btn {
-        padding: 5px 0;
-        border: 1px solid #e5e7eb;
-        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 4px 6px;
+        width: 64px;
+        flex-shrink: 0;
+        border: 1.5px solid #e0e7ff;
+        border-radius: 8px;
         background: #fff;
         font-size: 11px;
         color: #374151;
         cursor: pointer;
         text-align: center;
         transition: all .12s;
+        position: relative;
+        box-sizing: border-box;
     }
     .agenda-slot-btn:hover {
         border-color: #9961FF;
@@ -1876,13 +2089,17 @@ function _agendaRenderError() {
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 5px 8px;
-        border: 1px solid #e5e7eb;
-        border-radius: 7px;
+        padding: 4px 6px;
+        border: 1.5px solid #e0e7ff;
+        border-top-width: 2px;
+        border-radius: 8px;
         background: #fff;
         cursor: pointer;
         transition: all .12s;
-        min-width: 52px;
+        width: 64px;
+        flex-shrink: 0;
+        position: relative;
+        box-sizing: border-box;
     }
     .agenda-next-slot-pill:hover {
         border-color: #9961FF;
@@ -1914,21 +2131,23 @@ function _agendaRenderError() {
         text-align: center;
     }
     .agenda-btn-search-day {
-        padding: 3px 10px;
-        border: 1px dashed #c4b5fd;
-        border-radius: 6px;
-        background: #EFF6FF;
-        color: #9961FF;
+        padding: 5px 14px;
+        border: 1px solid #e0e7ff;
+        border-radius: 999px;
+        background: #fff;
+        color: #7D84C1;
         font-size: 11px;
+        font-weight: 600;
         cursor: pointer;
         transition: all .12s;
         display: inline-flex;
         align-items: center;
-        gap: 5px;
+        gap: 6px;
     }
     .agenda-btn-search-day:hover {
-        background: #E1DEFF;
-        border-color: #9961FF;
+        background: #f5f3ff;
+        border-color: #c4b5fd;
+        color: #9961FF;
     }
 
 
@@ -1976,6 +2195,85 @@ function _agendaRenderError() {
         margin-left: 0;
         gap: 4px;
     }
+
+    /* ── Contexto servicio/especialista en slots ── */
+    .agenda-slots-context {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 8px 6px;
+        font-size: 10.5px;
+        flex-wrap: wrap;
+    }
+    .agenda-slots-svc-name {
+        font-weight: 600;
+        color: #7c3aed;
+    }
+    .agenda-slots-spec-name {
+        font-weight: 600;
+        font-size: 10px;
+        background: #f5f3ff;
+        border-radius: 999px;
+        padding: 1px 8px;
+    }
+
+    /* ── Header especialista en grid de slots ── */
+    .agenda-slots-spec-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 2px 3px;
+        font-size: 10.5px;
+    }
+    .agenda-slots-spec-dot {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+    .agenda-slots-spec-label {
+        font-weight: 700;
+        font-size: 10.5px;
+    }
+
+    /* ── Nombre especialista en slot ── */
+    .agenda-next-slot-spec,
+    .agenda-slot-spec-txt {
+        font-size: 8.5px;
+        font-weight: 700;
+        margin-top: 2px;
+        width: 52px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-align: center;
+    }
+    .agenda-slot-time-txt {
+        font-size: 12px;
+        font-weight: 700;
+        color: #374151;
+    }
+    /* Tooltip bonito para slots */
+    .agenda-slot-tt {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 50%; transform: translateX(-50%);
+        background: white; color: #374151;
+        border: 0.5px solid #e0e7ff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        font-size: 10px; font-weight: 500;
+        padding: 3px 9px; border-radius: 6px;
+        white-space: nowrap; pointer-events: none; z-index: 99;
+    }
+    .agenda-slot-tt::after {
+        content: ''; position: absolute;
+        top: 100%; left: 50%; transform: translateX(-50%);
+        border: 4px solid transparent; border-top-color: white;
+    }
+    .agenda-next-slot-pill:hover .agenda-slot-tt,
+    .agenda-slot-btn:hover .agenda-slot-tt { display: block; }
+
     .agenda-next-slot-pill--sm {
         min-width: 58px !important;
         padding: 3px 5px !important;
@@ -2039,31 +2337,31 @@ function _agendaRenderError() {
         .agenda-slot-btn:active { transform: scale(0.97); }
         .agenda-reservation-success {
         text-align: center;
-        padding: 12px 8px;
+        padding: 8px 8px 10px;
         background: #f0fdf4;
         border: 1px solid #bbf7d0;
         border-radius: 10px;
         margin-bottom: 8px;
     }
     .agenda-reservation-success-icon {
-        font-size: 28px;
+        font-size: 22px;
         color: #10b981;
-        margin-bottom: 6px;
+        margin-bottom: 3px;
     }
     .agenda-reservation-success-title {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
         color: #065f46;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
     .agenda-reservation-success-ttl {
-        font-size: 11px;
+        font-size: 10.5px;
         color: #6b7280;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 5px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
     .agenda-countdown {
         font-size: 16px;
@@ -2410,6 +2708,10 @@ async function _agendaConfirmReservation(start, end) {
         }
 
         // Éxito → mostrar panel post-reserva con countdown y mensaje
+        if (_agendaSelectedService) {
+            _agendaSelectedService._lastSlotStart = start;
+            _agendaSelectedService._lastSlotEnd   = end;
+        }
         _agendaShowReservationSuccess(data);
         _agendaRefreshCalendarIfOpen();
 
@@ -2433,11 +2735,30 @@ function _agendaShowReservationSuccess(data) {
                 <i class="fas fa-calendar-check"></i>
             </div>
             <div class="agenda-reservation-success-title">¡Hora reservada!</div>
-            ${svcName || specName ? `
-            <div style="font-size:11px;color:#166534;margin-bottom:4px;text-align:center;">
-                ${svcName ? `<span style="font-weight:600;">${svcName}</span>` : ''}
-                ${specName ? `<span style="color:#4ade80;"> · ${specName}</span>` : ''}
-            </div>` : ''}
+
+            <div style="background:white;border:1px solid #bbf7d0;border-radius:8px;padding:7px 10px;text-align:left;font-size:11px;color:#374151;margin:4px 0 6px;">
+                ${svcName ? `<div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
+                    <i class="fas fa-stethoscope" style="color:#10b981;width:12px;flex-shrink:0;"></i>
+                    <span style="font-weight:600;">${svcName}</span>
+                </div>` : ''}
+                ${specName ? `<div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
+                    <i class="fas fa-user-md" style="color:#10b981;width:12px;flex-shrink:0;"></i>
+                    <span>${specName}</span>
+                </div>` : ''}
+                ${_agendaSelectedDate ? `<div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
+                    <i class="fas fa-calendar-day" style="color:#10b981;width:12px;flex-shrink:0;"></i>
+                    <span style="text-transform:capitalize;">${new Date(_agendaSelectedDate + 'T12:00:00').toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long' })}</span>
+                </div>` : ''}
+                ${_agendaSelectedService?._lastSlotStart ? `<div style="display:flex;align-items:center;gap:7px;">
+                    <i class="fas fa-clock" style="color:#10b981;width:12px;flex-shrink:0;"></i>
+                    <span style="font-weight:700;">${_agendaSelectedService._lastSlotStart}${_agendaSelectedService._lastSlotEnd ? ` – ${_agendaSelectedService._lastSlotEnd}` : ''}</span>
+                </div>` : ''}
+                ${_agendaSelectedService?.price ? `<div style="display:flex;align-items:center;gap:7px;margin-top:4px;">
+                    <i class="fas fa-tag" style="color:#10b981;width:12px;flex-shrink:0;"></i>
+                    <span style="font-weight:700;">$${Number(_agendaSelectedService.price).toLocaleString('es-CL')}</span>
+                </div>` : ''}
+            </div>
+
             <div class="agenda-reservation-success-ttl">
                 <i class="fas fa-hourglass-half"></i>
                 Tiempo para confirmar reserva:
@@ -2445,9 +2766,15 @@ function _agendaShowReservationSuccess(data) {
             </div>
             <div class="agenda-reservation-actions">
                 ${data.payment_mode === 'manual' ? `
-                <button class="agenda-btn-confirm-payment" onclick="_agendaBannerAskConfirm('direct','pay')">
-                    <i class="fas fa-check-circle"></i> Confirmar hora
-                </button>
+                <div style="display:flex;gap:6px;">
+                    <button class="agenda-btn-confirm-payment" style="flex:1;" onclick="_agendaBannerAskConfirm('direct','pay')">
+                        <i class="fas fa-check-circle"></i> Confirmar
+                    </button>
+                    <button onclick="_agendaBannerAskConfirm('direct','cancel')"
+                        style="flex:1;padding:8px;border:1px solid rgba(239,68,68,0.3);background:white;color:#ef4444;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
                 <div id="bannerConfirm_direct" style="display:none;margin-top:6px;"></div>` : `
                 <div class="agenda-waiting-payment">
                     <i class="fas fa-spinner fa-spin"></i> Esperando confirmación de reserva...
@@ -2478,6 +2805,14 @@ function _agendaShowReservationSuccess(data) {
         'responde este mensaje para confirmar');
     window._agendaPendingMessage = msg;
     window._agendaPendingAppointmentId = data.appointment_id;
+    // ✅ Guardar datos para mostrar en panel de confirmación
+    window._agendaPendingBookingInfo = {
+        svcName:  svcName,
+        specName: specName,
+        date:     _agendaSelectedDate,
+        start:    _agendaSelectedService?._lastSlotStart || data.start_time || '',
+        end:      _agendaSelectedService?._lastSlotEnd   || data.end_time   || ''
+    };
 
     // Iniciar countdown
     _agendaStartCountdown('agendaCountdown', reservedUntil, () => {
@@ -2526,6 +2861,12 @@ async function _agendaConfirmPayment(appointmentId) {
             _agendaHideBannerById(appointmentId);
             setTimeout(function() {
                 _agendaShowConfirmedSuccess();
+                // ✅ Recargar agenda para reflejar la hora confirmada
+                setTimeout(function() {
+                    if (typeof loadAgenda === 'function' && _agendaCurrentCompanyId && _agendaCurrentUserId) {
+                        loadAgenda(_agendaCurrentCompanyId, _agendaCurrentUserId);
+                    }
+                }, 1800);
             }, 350);
             _agendaRefreshCalendarIfOpen();
         } else {
@@ -2542,18 +2883,56 @@ async function _agendaConfirmPayment(appointmentId) {
 window._agendaConfirmPayment  = _agendaConfirmPayment;
 window._agendaHideBannerById  = _agendaHideBannerById;
 
+// Refresh manual de la agenda
+window._agendaRefresh = function(el) {
+    if (el) {
+        el.classList.add('spinning');
+        setTimeout(() => el.classList.remove('spinning'), 450);
+    }
+    if (_agendaCurrentCompanyId && _agendaCurrentUserId) {
+        loadAgenda(_agendaCurrentCompanyId, _agendaCurrentUserId);
+    }
+};
+
 function _agendaShowConfirmedSuccess() {
     const container = document.getElementById('contactAgendaContainer');
     if (!container) return;
 
+    const info = window._agendaPendingBookingInfo || {};
+    const dateStr = info.date ? new Date(info.date + 'T12:00:00').toLocaleDateString('es-CL', {
+        weekday: 'long', day: 'numeric', month: 'long'
+    }) : '';
+
     container.innerHTML = `
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;text-align:center;">
-            <div style="font-size:28px;margin-bottom:8px;">✅</div>
-            <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:4px;">¡Hora confirmada!</div>
-            <div style="font-size:11px;color:#4ade80;margin-bottom:16px;">Reserva confirmada correctamente.</div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px;text-align:center;">
+            <div style="font-size:24px;margin-bottom:6px;">✅</div>
+            <div style="font-size:13px;font-weight:700;color:#166534;margin-bottom:10px;">¡Hora confirmada!</div>
+            ${info.svcName || info.specName || dateStr || info.start ? `
+            <div style="background:white;border:1px solid #bbf7d0;border-radius:8px;padding:10px;text-align:left;font-size:11px;color:#374151;margin-bottom:12px;">
+                ${info.svcName ? `<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;">
+                    <i class="fas fa-stethoscope" style="color:#10b981;width:12px;"></i>
+                    <span style="font-weight:600;">${info.svcName}</span>
+                </div>` : ''}
+                ${info.specName ? `<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;">
+                    <i class="fas fa-user-md" style="color:#10b981;width:12px;"></i>
+                    <span>${info.specName}</span>
+                </div>` : ''}
+                ${dateStr ? `<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;">
+                    <i class="fas fa-calendar-day" style="color:#10b981;width:12px;"></i>
+                    <span style="text-transform:capitalize;">${dateStr}</span>
+                </div>` : ''}
+                ${info.start ? `<div style="display:flex;align-items:center;gap:7px;">
+                    <i class="fas fa-clock" style="color:#10b981;width:12px;"></i>
+                    <span style="font-weight:700;font-size:12px;">${info.start}${info.end ? ` – ${info.end}` : ''}</span>
+                </div>` : ''}
+            </div>` : ''}
             <button onclick="_agendaRenderPanel()" 
                 style="font-size:11px;padding:6px 16px;background:#10b981;color:#fff;border:none;border-radius:8px;cursor:pointer;">
                 Ver agenda
+            </button>
+            <button onclick="_agendaCancelActiveReservation()"
+                style="font-size:11px;padding:6px 16px;background:white;color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:8px;cursor:pointer;margin-top:6px;width:100%;">
+                <i class="fas fa-times"></i> Cancelar reserva
             </button>
         </div>`;
 }

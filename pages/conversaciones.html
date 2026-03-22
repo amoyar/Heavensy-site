@@ -650,16 +650,23 @@ class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:b
   <!-- ============================= -->
   <div class="border-b border-gray-200">
 
-    <button onclick="toggleRightSection('contactAgendaSection')"
-      class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] transition-colors">
+    <div class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] transition-colors cursor-pointer" onclick="toggleRightSection('contactAgendaSection')">
       <div class="flex items-center gap-2">
         <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
           <i class="fas fa-calendar-alt text-[#9961FF] text-[13px]"></i>
         </div>
         <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Agenda</span>
       </div>
-      <i id="contactAgendaSectionIcon" class="rp-chevron fas fa-chevron-right text-xs text-gray-400"></i>
-    </button>
+      <div class="flex items-center gap-2">
+        <span data-tooltip="Refrescar agenda" onclick="event.stopPropagation();_agendaRefresh(this)" class="rp-refresh-btn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <path d="M23 4v6h-6" stroke="#7D84C1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" stroke="#7D84C1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <i id="contactAgendaSectionIcon" class="rp-chevron fas fa-chevron-right text-xs text-gray-400"></i>
+      </div>
+    </div>
 
     <div id="contactAgendaSection" class="rp-section">
       <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
@@ -676,16 +683,23 @@ class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:b
   <!-- ============================= -->
   <div class="border-b border-gray-200">
 
-    <button onclick="toggleRightSection('contactCalendarSection'); calToggleLoad();"
-      class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] transition-colors">
+    <div class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] transition-colors cursor-pointer" onclick="toggleRightSection('contactCalendarSection'); calToggleLoad();">
       <div class="flex items-center gap-2">
         <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
           <i class="fas fa-calendar-check text-[#9961FF] text-[13px]"></i>
         </div>
         <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Calendario</span>
       </div>
-      <i id="contactCalendarSectionIcon" class="rp-chevron fas fa-chevron-right text-xs text-gray-400"></i>
-    </button>
+      <div class="flex items-center gap-2">
+        <span data-tooltip="Refrescar calendario" onclick="event.stopPropagation();_calRefresh(this)" class="rp-refresh-btn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <path d="M23 4v6h-6" stroke="#7D84C1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" stroke="#7D84C1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <i id="contactCalendarSectionIcon" class="rp-chevron fas fa-chevron-right text-xs text-gray-400"></i>
+      </div>
+    </div>
 
     <div id="contactCalendarSection" class="rp-section">
       <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
@@ -856,6 +870,24 @@ class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:b
   background: #ede9fe; color: #7D84C1;
 }
 .filter-chip.active .filter-count { background: rgba(109,40,217,0.15); color: #6D28D9; }
+
+/* ── Botón refresh panel derecho ── */
+.rp-refresh-btn {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 1px solid #d0dcf5;
+  background: #eff4fe;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, transform .4s ease;
+  flex-shrink: 0;
+  outline: none;
+  position: relative;
+  box-shadow: 0 1px 4px rgba(125,132,193,0.10);
+}
+.rp-refresh-btn:hover { background: #e5edfb; border-color: #c0cef0; }
+.rp-refresh-btn.spinning svg { animation: rp-spin .4s ease forwards; }
+@keyframes rp-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 /* Botón filtros avanzados hover */
 #advancedFiltersToggle:hover { background: #e5edfb !important; border-color: #c0cef0 !important; }
