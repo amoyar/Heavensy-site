@@ -20,6 +20,7 @@ let _calMonth       = null;  // 0-11
 let _calSelected    = null;  // 'YYYY-MM-DD'
 let _calActiveFilter     = null;  // status filtrado, null = todos
 let _calSpecialistFilter = null;  // resource_id filtrado, null = todos
+let _calServiceFilter    = null;  // service name (lowercase) filtrado, null = todos
 let _calAppointments = [];   // todas las citas del mes cargado
 let _calSummary      = {};   // resumen por status del mes
 let _calResources    = [];   // lista de {resource_id, name} de la empresa
@@ -150,14 +151,22 @@ function _calBuild(container) {
     requestAnimationFrame(function() {
         requestAnimationFrame(function() {
             container.style.opacity = '1';
+            // Ajustar max-height de la sección tras inyectar contenido dinámico
+            const _sec = document.getElementById('contactCalendarSection');
+            if (_sec && _sec.classList.contains('rp-open')) {
+                _sec.style.maxHeight = _sec.scrollHeight + 'px';
+            }
         });
     });
 
-    // Agrupar citas por fecha (aplicar filtro de especialista al grid también)
+    // Agrupar citas por fecha — aplicar los 3 filtros
     const byDate = {};
-    const filteredAppts = _calSpecialistFilter
-        ? _calAppointments.filter(a => a.resource_id === _calSpecialistFilter)
-        : _calAppointments;
+    const filteredAppts = _calAppointments.filter(a => {
+        if (_calSpecialistFilter && a.resource_id !== _calSpecialistFilter) return false;
+        if (_calServiceFilter && (a.service_name || a.service_id || '').toLowerCase().trim() !== _calServiceFilter) return false;
+        if (_calActiveFilter  && a.status !== _calActiveFilter) return false;
+        return true;
+    });
     filteredAppts.forEach(a => {
         if (!byDate[a.date]) byDate[a.date] = [];
         byDate[a.date].push(a);
@@ -171,34 +180,184 @@ function _calBuild(container) {
         summary[s]++;
     });
 
-    // ── Filtro por especialista (sobre el calendario) ──
-    if (_calResources.length > 1) {
-        const specBar = document.createElement('div');
-        specBar.className = 'cal-summary';
-        specBar.style.marginBottom = '4px';
+    // ── Filtros: Prestador / Servicio / Estado ──────────────────────────
+    const _calColorPalette = ['#7c3aed','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899','#8b5cf6','#14b8a6'];
+    const _calSectionState = window._calSectionState || { prestador: true, servicio: true, estado: true };
+    window._calSectionState = _calSectionState;
 
-        const allSpecBtn = document.createElement('button');
-        allSpecBtn.className = 'cal-filter-btn' + (_calSpecialistFilter === null ? ' cal-filter-btn--active' : '');
-        allSpecBtn.style.cssText = '--filter-color:#374151;--filter-bg:#f3f4f6;';
-        allSpecBtn.textContent = 'Todos';
-        allSpecBtn.addEventListener('click', () => { _calSpecialistFilter = null; _calBuild(container); });
-        specBar.appendChild(allSpecBtn);
+    function _calMakeSection(key, label, buildContent) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'cal-filter-section';
+        const isOpen = _calSectionState[key] !== false;
+        const header = document.createElement('div');
+        header.className = 'cal-filter-section-header';
+        header.style.cssText = 'display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;padding:3px 2px;border-radius:6px;';
+        header.innerHTML = `
+            <span style="width:4px;height:4px;border-radius:50%;background:#9ca3af;display:inline-block;flex-shrink:0;margin-right:2px;"></span>
+            <span style="flex:1;font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;">${label}</span>
+            <i class="fas fa-chevron-down" style="font-size:8px;color:#9ca3af;transition:transform 0.25s ease;"></i>
+        `;
 
-        _calResources.forEach((spec, idx) => {
-            const specColor = ['#7c3aed','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899'][idx % 6];
-            const btn = document.createElement('button');
-            btn.className = 'cal-filter-btn' + (_calSpecialistFilter === spec.resource_id ? ' cal-filter-btn--active' : '');
-            btn.style.cssText = `--filter-color:${specColor};--filter-bg:${specColor}14;`;
-            const shortName = spec.name.split(' ').slice(-2).join(' ');
-            btn.innerHTML = `<span class="cal-chip-dot" style="background:${specColor}"></span>${shortName}`;
-            btn.addEventListener('click', () => {
-                _calSpecialistFilter = _calSpecialistFilter === spec.resource_id ? null : spec.resource_id;
-                _calBuild(container);
+        // Contenido siempre renderizado — se anima con max-height
+        const content = document.createElement('div');
+        content.style.cssText = 'padding:2px 0 4px 11px;overflow:hidden;transition:max-height 0.28s ease, opacity 0.22s ease;';
+        buildContent(content);
+        wrapper.appendChild(header);
+        wrapper.appendChild(content);
+
+        const chev = header.querySelector('i');
+
+        // Estado inicial sin animación
+        if (!isOpen) {
+            content.style.maxHeight = '0px';
+            content.style.opacity = '0';
+            if (chev) chev.style.transform = 'rotate(-90deg)';
+        } else {
+            requestAnimationFrame(() => {
+                content.style.maxHeight = content.scrollHeight + 'px';
+                content.style.opacity = '1';
+                if (chev) chev.style.transform = 'rotate(0deg)';
             });
-            specBar.appendChild(btn);
+        }
+
+        header.addEventListener('click', () => {
+            const nowOpen = _calSectionState[key] !== false;
+            _calSectionState[key] = !nowOpen;
+            if (nowOpen) {
+                content.style.maxHeight = '0px';
+                content.style.opacity = '0';
+                if (chev) chev.style.transform = 'rotate(-90deg)';
+            } else {
+                content.style.maxHeight = content.scrollHeight + 'px';
+                content.style.opacity = '1';
+                if (chev) chev.style.transform = 'rotate(0deg)';
+            }
         });
-        container.appendChild(specBar);
+
+        return wrapper;
     }
+
+    // Calcular opciones visibles (filtros cruzados)
+    const _visibleSpecIds = _calServiceFilter
+        ? new Set(_calAppointments.filter(a => (a.service_name || a.service_id || '').toLowerCase().trim() === _calServiceFilter).map(a => a.resource_id))
+        : null;
+    const _visibleSvcNames = _calSpecialistFilter
+        ? new Set(_calAppointments.filter(a => a.resource_id === _calSpecialistFilter).map(a => (a.service_name || a.service_id || '').toLowerCase().trim()))
+        : null;
+
+    const filtersWrapper = document.createElement('div');
+    filtersWrapper.className = 'cal-filters-wrapper';
+
+    // ── 1. PRESTADOR ──
+    const visibleResources = _calResources.filter(r => !_visibleSpecIds || _visibleSpecIds.has(r.resource_id));
+    if (visibleResources.length > 0) {
+        filtersWrapper.appendChild(_calMakeSection('prestador', 'Prestador', (content) => {
+            const scroll = document.createElement('div');
+            scroll.className = 'cal-filter-scroll';
+            const allBtn = document.createElement('button');
+            allBtn.className = 'cal-filter-row-btn' + (_calSpecialistFilter === null ? ' active' : '');
+            allBtn.textContent = 'Todos';
+            allBtn.addEventListener('click', () => { _calSpecialistFilter = null; _calBuild(container); });
+            scroll.appendChild(allBtn);
+            visibleResources.forEach((spec) => {
+                const gi = _calResources.indexOf(spec);
+                const agendaC = !spec.color && window._agendaGetSpecColor ? window._agendaGetSpecColor(spec.resource_id)?.text : null;
+                const specColor = spec.color || agendaC || _calColorPalette[gi % _calColorPalette.length];
+                const isActive = _calSpecialistFilter === spec.resource_id;
+                const btn = document.createElement('button');
+                btn.className = 'cal-filter-row-btn' + (isActive ? ' active' : '');
+                if (isActive) { btn.style.background = '#dce8ff'; btn.style.border = '1px solid #C9D9FF'; btn.style.color = '#7D84C1'; }
+                btn.innerHTML = `<span class="cal-filter-row-dot" style="background:${specColor}"></span>${spec.name}`;
+                btn.addEventListener('click', () => { _calSpecialistFilter = _calSpecialistFilter === spec.resource_id ? null : spec.resource_id; _calBuild(container); });
+                scroll.appendChild(btn);
+            });
+            content.appendChild(scroll);
+            setTimeout(() => { const a = scroll.querySelector('.cal-filter-row-btn.active:not(:first-child)'); if (a) a.scrollIntoView({ block: 'nearest' }); }, 0);
+        }));
+    }
+
+    // ── 2. SERVICIO ──
+    // Mapa color por nombre de servicio: prioridad BD (service_color en cita) → _agendaCompanyServices
+    const svcColorMap = {};
+    _calAppointments.forEach(a => {
+        const key = (a.service_name || a.service_id || '').toLowerCase().trim();
+        if (key && a.service_color && !svcColorMap[key]) svcColorMap[key] = a.service_color;
+    });
+    if (window._agendaCompanyServices) {
+        window._agendaCompanyServices.forEach(g => {
+            const key = (g.name || '').toLowerCase().trim();
+            if (key && g.color && !svcColorMap[key]) svcColorMap[key] = g.color;
+        });
+    }
+
+    const allServices = [...new Map(
+        _calAppointments.filter(a => a.service_name || a.service_id)
+            .map(a => { const n = a.service_name || a.service_id; return [n.toLowerCase().trim(), { id: n.toLowerCase().trim(), name: n }]; })
+    ).values()];
+
+    // Ordenar igual que Agenda (según _agendaCompanyServices si está disponible)
+    if (window._agendaCompanyServices?.length) {
+        const agendaOrder = window._agendaCompanyServices.map(g => (g.name || '').toLowerCase().trim());
+        allServices.sort((a, b) => {
+            const ai = agendaOrder.indexOf(a.id);
+            const bi = agendaOrder.indexOf(b.id);
+            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+        });
+    }
+    const visibleServices = allServices.filter(s => !_visibleSvcNames || _visibleSvcNames.has(s.id));
+
+    filtersWrapper.appendChild(_calMakeSection('servicio', 'Servicio', (content) => {
+        if (visibleServices.length === 0) {
+            const msg = document.createElement('p');
+            msg.style.cssText = 'font-size:10.5px;color:#9ca3af;padding:4px 2px;font-style:italic;';
+            msg.textContent = 'Sin servicios para el prestador seleccionado';
+            content.appendChild(msg);
+            return;
+        }
+        const scroll = document.createElement('div');
+        scroll.className = 'cal-filter-scroll';
+        const allBtn = document.createElement('button');
+        allBtn.className = 'cal-filter-row-btn cal-filter-row-btn--svc' + (_calServiceFilter === null ? ' active' : '');
+        allBtn.textContent = 'Todos';
+        allBtn.addEventListener('click', () => { _calServiceFilter = null; _calBuild(container); });
+        scroll.appendChild(allBtn);
+        visibleServices.forEach((svc, idx) => {
+            const svcColor = svcColorMap[svc.id] || _calColorPalette[idx % _calColorPalette.length];
+            const isActive = _calServiceFilter === svc.id;
+            const btn = document.createElement('button');
+            btn.className = 'cal-filter-row-btn cal-filter-row-btn--svc' + (isActive ? ' active' : '');
+            if (isActive) { btn.style.background = '#dce8ff'; btn.style.border = '1px solid #C9D9FF'; btn.style.color = '#7D84C1'; }
+            btn.innerHTML = `<span class="cal-filter-row-dot" style="background:${svcColor}"></span>${svc.name}`;
+            btn.addEventListener('click', () => { _calServiceFilter = _calServiceFilter === svc.id ? null : svc.id; _calBuild(container); });
+            scroll.appendChild(btn);
+        });
+        content.appendChild(scroll);
+        setTimeout(() => { const a = scroll.querySelector('.cal-filter-row-btn.active:not(:first-child)'); if (a) a.scrollIntoView({ block: 'nearest' }); }, 0);
+    }));
+
+    // ── 3. ESTADO ──
+    filtersWrapper.appendChild(_calMakeSection('estado', 'Estado', (content) => {
+        const statusBar = document.createElement('div');
+        statusBar.className = 'cal-summary';
+        statusBar.style.marginBottom = '0';
+        const allBtn = document.createElement('button');
+        allBtn.className = 'cal-filter-btn' + (_calActiveFilter === null ? ' cal-filter-btn--active' : '');
+        allBtn.style.cssText = '--filter-color:#374151;--filter-bg:#f3f4f6;';
+        allBtn.textContent = 'Todos';
+        allBtn.addEventListener('click', () => { _calActiveFilter = null; _calBuild(container); });
+        statusBar.appendChild(allBtn);
+        Object.entries(_CAL_STATUS).forEach(([key, cfg]) => {
+            const btn = document.createElement('button');
+            btn.className = 'cal-filter-btn' + (_calActiveFilter === key ? ' cal-filter-btn--active' : '');
+            btn.style.cssText = `--filter-color:${cfg.color};--filter-bg:${cfg.bg};`;
+            btn.innerHTML = `<span class="cal-chip-dot" style="background:${cfg.dot}"></span>${cfg.label}`;
+            btn.addEventListener('click', () => { _calActiveFilter = _calActiveFilter === key ? null : key; _calBuild(container); });
+            statusBar.appendChild(btn);
+        });
+        content.appendChild(statusBar);
+    }));
+
+    container.appendChild(filtersWrapper);
 
     // ── Calendario ────────────────────────────
     const cal = document.createElement('div');
@@ -336,38 +495,13 @@ function _calBuild(container) {
         _calBuild(container);
     });
 
-    // ── Botones de filtro ────────────────────
-    if (Object.keys(summary).length > 0) {
-        const filterBar = document.createElement('div');
-        filterBar.className = 'cal-summary';
-
-        const allBtn = document.createElement('button');
-        allBtn.className = 'cal-filter-btn' + (_calActiveFilter === null ? ' cal-filter-btn--active' : '');
-        allBtn.style.cssText = '--filter-color:#374151;--filter-bg:#f3f4f6;';
-        allBtn.textContent = 'Todas';
-        allBtn.addEventListener('click', () => { _calActiveFilter = null; _calBuild(container); });
-        filterBar.appendChild(allBtn);
-
-        Object.entries(summary).filter(([,v]) => v > 0).forEach(([status, count]) => {
-            const cfg = _CAL_STATUS[status] || { label: status, color: '#6b7280', bg: '#f3f4f6', dot: '#9ca3af' };
-            const btn = document.createElement('button');
-            btn.className = 'cal-filter-btn' + (_calActiveFilter === status ? ' cal-filter-btn--active' : '');
-            btn.style.cssText = `--filter-color:${cfg.color};--filter-bg:${cfg.bg};`;
-            btn.innerHTML = `<span class="cal-chip-dot" style="background:${cfg.dot}"></span>${count} ${cfg.label}${count > 1 ? 's' : ''}`;
-            btn.addEventListener('click', () => {
-                _calActiveFilter = _calActiveFilter === status ? null : status;
-                _calBuild(container);
-            });
-            filterBar.appendChild(btn);
-        });
-        container.appendChild(filterBar);
-    }
 
     // ── Panel día seleccionado ─────────────────
     if (_calSelected) {
         let selectedAppts = (byDate[_calSelected] || []).sort((a,b) => a.start.localeCompare(b.start));
         if (_calSpecialistFilter) selectedAppts = selectedAppts.filter(a => a.resource_id === _calSpecialistFilter);
-        if (_calActiveFilter) selectedAppts = selectedAppts.filter(a => a.status === _calActiveFilter);
+        if (_calServiceFilter)    selectedAppts = selectedAppts.filter(a => (a.service_name || a.service_id || '').toLowerCase().trim() === _calServiceFilter);
+        if (_calActiveFilter)     selectedAppts = selectedAppts.filter(a => a.status === _calActiveFilter);
         const panel = _calBuildDayPanel(_calSelected, selectedAppts);
         // Fade-in suave
         panel.style.opacity   = '0';
@@ -418,9 +552,12 @@ function _calBuildDayPanel(dateStr, appts) {
     list.className = 'cal-appt-list';
 
     // Asignar color por especialista
-    const specColors = ['#7c3aed','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899'];
+    const _calCP = ['#7c3aed','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899','#8b5cf6','#14b8a6'];
     const specColorMap = {};
-    _calResources.forEach((r, i) => { specColorMap[r.resource_id] = specColors[i % specColors.length]; });
+    _calResources.forEach((r, i) => {
+        const agendaC = !r.color && window._agendaGetSpecColor ? window._agendaGetSpecColor(r.resource_id)?.text : null;
+        specColorMap[r.resource_id] = r.color || agendaC || _calCP[i % _calCP.length];
+    });
 
     appts.forEach(appt => {
         const cfg       = _CAL_STATUS[appt.status] || { label: appt.status, color: '#6b7280', bg: '#f9fafb', dot: '#9ca3af' };
@@ -501,6 +638,11 @@ window.onConversationSelectedForContacts = function(waId, phone, name, companyId
 // Llamada directa desde el botón en el HTML
 function calToggleLoad() {
     const section = document.getElementById('contactCalendarSection');
+    // Dar un max-height inicial generoso para que la animación de apertura sea visible
+    // (el contenido se carga async, por eso scrollHeight era 0 al abrir)
+    if (section && section.classList.contains('rp-open') && section.style.maxHeight === '0px') {
+        section.style.maxHeight = '600px';
+    }
     setTimeout(() => {
         if (section && !section.classList.contains('hidden')) {
             // Fallbacks para obtener companyId si el hook aún no corrió
@@ -539,6 +681,18 @@ function _calInjectStyles() {
     style.id = 'calStyles';
     style.textContent = `
     .cal-loading { text-align:center; padding:16px; font-size:11px; color:#9ca3af; }
+    .cal-filters-wrapper { background:#fff;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.07);overflow:hidden;margin-bottom:8px;padding:7px 10px; }
+    .cal-filter-section { margin-bottom:2px; }
+    .cal-filter-scroll { display:flex;flex-direction:column;gap:2px;max-height:80px;overflow-y:auto;margin-bottom:2px;padding-right:3px;scrollbar-width:thin;scrollbar-color:#e0e7ff transparent; }
+    .cal-filter-scroll::-webkit-scrollbar { width:3px; }
+    .cal-filter-scroll::-webkit-scrollbar-thumb { background:#e0e7ff;border-radius:999px; }
+    .cal-filter-row-btn { display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;font-size:10.5px;font-weight:600;border:0.5px solid #C9D9FF;background:#EFF6FF;color:#7D84C1;cursor:pointer;white-space:nowrap;width:100%;text-align:left;transition:all .15s; }
+    .cal-filter-row-btn.active { background:#dce8ff;border-color:#C9D9FF;color:#7D84C1; }
+    .cal-filter-row-btn:hover:not(.active) { background:#E5EDFB;border-color:#C0CEF0; }
+    .cal-filter-row-btn.active:hover { background:#C9D9FF;border-color:#C9D9FF;color:#7D84C1; }
+    .cal-filter-row-btn--svc { border-color:#C9D9FF;background:#EFF6FF;color:#7D84C1; }
+    .cal-filter-row-dot { width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0; }
+
     .cal-empty   { text-align:center; padding:12px; font-size:11px; color:#d1d5db; font-style:italic; }
 
     /* Chips resumen */
@@ -573,14 +727,22 @@ function _calInjectStyles() {
 
     /* Días */
     .cal-day { position:relative; text-align:center; padding:2px 1px; border-radius:5px; border:1.5px solid transparent; transition:all .12s; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .cal-day:not(.cal-day--past):hover {
+    background: #eff6ff;
+    border: 1px solid #C9D9FF;
+    cursor: pointer; }
     .cal-day--has-citas { cursor:pointer; }
-    .cal-day--has-citas:hover { background:#f5f3ff; }
-    .cal-day--today { border-color:#9961FF; background:#EFF6FF; }
-    .cal-day--selected { background:#9961FF !important; border-color:#9961FF !important; }
+    .cal-day--has-citas:hover { background:#eff6ff; border: 1px solid #C9D9FF; }
+    .cal-day--today { border-color:#C9D9FF; }
+    .cal-day--selected {
+    background: #eff6ff;
+    border: 1px solid #C9D9FF;
+    color: #7D84C1;
+}
     .cal-day-num { font-size:11px; line-height:1.2; }
     .cal-day--has-citas .cal-day-num { font-weight:700; color:#1f2937; }
-    .cal-day--today .cal-day-num    { color:#9961FF; font-weight:700; }
-    .cal-day--selected .cal-day-num { color:#fff !important; }
+    .cal-day--today .cal-day-num    { color:#7D84C1; font-weight:700; }
+    .cal-day--selected .cal-day-num { color: #7D84C1; }
     .cal-day:not(.cal-day--has-citas):not(.cal-day--past) .cal-day-num { color:#6b7280; }
     .cal-day--past .cal-day-num { color:#d1d5db; cursor:default; }
 
@@ -593,7 +755,7 @@ function _calInjectStyles() {
     .cal-day-panel { background:#fff; border-radius:12px; box-shadow:0 1px 6px rgba(0,0,0,.07); overflow:hidden; margin-bottom:8px; }
     .cal-day-panel-header { display:flex; align-items:center; justify-content:space-between; padding:9px 12px 7px; border-bottom:1px solid #f3f4f6; }
     .cal-day-panel-title  { font-size:11.5px; font-weight:700; color:#1f2937; text-transform:capitalize; }
-    .cal-day-panel-count  { font-size:10px; background:#ede9fe; color:#7c3aed; padding:2px 8px; border-radius:20px; font-weight:600; }
+    .cal-day-panel-count  { font-size:10px; background:#e0f2fe; color:#0284c7; padding:2px 8px; border-radius:20px; font-weight:600; }
 
     /* Lista citas */
     .cal-appt-list { padding:6px 8px; display:flex; flex-direction:column; gap:5px; max-height:280px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#e5e7eb transparent; }

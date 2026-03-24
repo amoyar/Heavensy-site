@@ -218,6 +218,51 @@ function mostrarEstadoVacio(mensaje) {
     }
 }
 
+function mostrarCargandoConversaciones() {
+    const container = document.getElementById('conversationsList');
+    if (!container) return;
+    container.innerHTML = `
+        <div style="padding:40px 16px;text-align:center;">
+            <div style="display:inline-flex;flex-direction:column;align-items:center;gap:12px;">
+                <div style="width:32px;height:32px;position:relative;">
+                    <svg viewBox="0 0 40 40" style="width:32px;height:32px;animation:convSpin .9s linear infinite;">
+                        <circle cx="20" cy="6" r="3" fill="#9961FF" opacity="1"/>
+                        <circle cx="30.1" cy="9.9" r="3" fill="#9961FF" opacity="0.87"/>
+                        <circle cx="34" cy="20" r="3" fill="#9961FF" opacity="0.75"/>
+                        <circle cx="30.1" cy="30.1" r="3" fill="#9961FF" opacity="0.62"/>
+                        <circle cx="20" cy="34" r="3" fill="#9961FF" opacity="0.5"/>
+                        <circle cx="9.9" cy="30.1" r="3" fill="#9961FF" opacity="0.37"/>
+                        <circle cx="6" cy="20" r="3" fill="#9961FF" opacity="0.25"/>
+                        <circle cx="9.9" cy="9.9" r="3" fill="#9961FF" opacity="0.12"/>
+                    </svg>
+                </div>
+                <span style="font-size:12px;font-weight:500;color:#7D84C1;">Cargando conversaciones...</span>
+            </div>
+            <style>@keyframes convSpin{to{transform:rotate(360deg)}}</style>
+        </div>
+    `;
+}
+
+function mostrarErrorConversaciones(msg) {
+    const container = document.getElementById('conversationsList');
+    if (!container) return;
+    container.innerHTML = `
+        <div style="padding:32px 16px;text-align:center;">
+            <div style="display:inline-flex;flex-direction:column;align-items:center;gap:10px;">
+                <div style="width:40px;height:40px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-exclamation-triangle" style="color:#ef4444;font-size:16px;"></i>
+                </div>
+                <span style="font-size:12px;font-weight:600;color:#374151;">Error al cargar</span>
+                <span style="font-size:11px;color:#9ca3af;max-width:180px;line-height:1.4;">${msg || 'No se pudieron cargar las conversaciones'}</span>
+                <button onclick="location.reload()"
+                    style="margin-top:4px;padding:5px 14px;background:#EFF6FF;border:1px solid #C9D9FF;border-radius:8px;font-size:11px;font-weight:600;color:#7D84C1;cursor:pointer;">
+                    <i class="fas fa-redo" style="margin-right:4px;font-size:10px;"></i>Reintentar
+                </button>
+            </div>
+        </div>
+    `;
+}
+
 function toggleLeftSection(sectionId) {
     const section = document.getElementById(sectionId);
     const icon = document.getElementById(sectionId + 'Icon');
@@ -281,19 +326,23 @@ function toggleRightSection(sectionId) {
     const icon = document.getElementById(sectionId + 'Icon');
     const isOpen = section.classList.contains('rp-open');
 
+    // Duración dinámica: secciones más altas necesitan más tiempo (min 0.32s, max 0.55s)
+    const _rpHeight = section.scrollHeight || 0;
+    const _rpDur    = Math.min(0.55, Math.max(0.32, _rpHeight / 1400)).toFixed(2);
+    const _rpDurOp  = Math.min(0.45, Math.max(0.25, _rpHeight / 1800)).toFixed(2);
+    section.style.transition = `max-height ${_rpDur}s cubic-bezier(0.4,0,0.2,1), opacity ${_rpDurOp}s ease`;
+
     if (isOpen) {
         // ── Cerrar ──
-        // Re-bloquear overflow antes de animar (puede estar 'visible' si estaba abierto)
         section.style.overflow = 'hidden';
-        // Fijar altura actual antes de animar a 0
-        section.style.maxHeight = section.scrollHeight + 'px';
+        section.style.maxHeight = _rpHeight + 'px';
         section.getBoundingClientRect(); // forzar reflow
         section.style.maxHeight = '0px';
         section.classList.remove('rp-open');
         if (icon) icon.classList.remove('rp-rotated');
     } else {
         // ── Abrir ──
-        section.style.overflow = 'hidden'; // mantener durante la animación
+        section.style.overflow = 'hidden';
         section.classList.add('rp-open');
         section.style.maxHeight = section.scrollHeight + 'px';
         if (icon) icon.classList.add('rp-rotated');

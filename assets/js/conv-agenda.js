@@ -155,6 +155,18 @@ async function loadAgenda(companyId, userId) {
         }
 
         _agendaCompanyServices = data.services || [];
+        // ✅ Precargar colores de prestadores desde BD en el mapa
+        (_agendaCompanyServices || []).forEach(svcGroup => {
+            (svcGroup.specialists || []).forEach(spec => {
+                if (spec.resource_id && spec.resource_color && !_agendaSpecColorMap[spec.resource_id]) {
+                    _agendaSpecColorMap[spec.resource_id] = {
+                        text:   spec.resource_color,
+                        border: spec.resource_color + '4D',
+                        bg:     spec.resource_color + '14'
+                    };
+                }
+            });
+        });
         _agendaSchedulingMode  = data.scheduling_mode || 'sequential';
         _agendaReservationTtl  = data.reservation_ttl || 30;
         _agendaPaymentMode     = data.payment_mode || 'manual';
@@ -422,7 +434,7 @@ async function _agendaRenderMultiSpecialist(container) {
     section.appendChild(title);
 
     _agendaCompanyServices.forEach((svcGroup, idx) => {
-        const svcColor = _svcColors[idx % _svcColors.length];
+        const svcColor = svcGroup.color || _svcColors[idx % _svcColors.length];
         const svcId    = `agendaSvc_${idx}`;
         const isOpen   = idx === 0;
 
@@ -668,7 +680,7 @@ async function _agendaRenderNextSlotsByService(container) {
 
         const svcName = document.createElement('div');
         svcName.className = 'agenda-next-svc-name';
-        const svcColor = _svcColors[idx % _svcColors.length];
+        const svcColor = svc.color || _svcColors[idx % _svcColors.length];
         const svcId = `agendaSvc_${idx}`;
         // Primer servicio abierto, resto colapsados
         const isOpen = idx === 0;
@@ -1636,8 +1648,8 @@ function _agendaRenderError() {
     /* ── Calendario ─────────────────────────── */
     .agenda-calendar {
         background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
+        border-radius: 12px;
+        box-shadow: 0 1px 6px rgba(0,0,0,.07);
         overflow: hidden;
         margin-bottom: 8px;
     }
@@ -1647,7 +1659,7 @@ function _agendaRenderError() {
         gap: 4px;
         padding: 5px 12px 5px;
         background: #EFF6FF;
-        border-radius: 8px 8px 0 0;
+        border-radius: 12px 12px 0 0;
         border-bottom: 1px solid #C9D9FF;
         margin-bottom: 0;
     }
@@ -1676,7 +1688,8 @@ function _agendaRenderError() {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
         gap: 2px;
-        margin-bottom: 3px;
+        padding: 4px 4px 0;
+        margin-bottom: 0;
     }
     .agenda-cal-dayname {
         text-align: center;
@@ -1689,6 +1702,7 @@ function _agendaRenderError() {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
         gap: 2px;
+        padding: 0 4px 4px;
     }
     .agenda-cal-cell {
         aspect-ratio: 1;
@@ -1697,29 +1711,29 @@ function _agendaRenderError() {
         justify-content: center;
         font-size: 11px;
         border-radius: 5px;
+        border: 1.5px solid transparent;
         cursor: pointer;
         color: #374151;
         transition: background .12s, color .12s;
         user-select: none;
     }
     .agenda-cal-cell:not(.agenda-cal-cell--past):not(.agenda-cal-cell--empty):hover {
-        background: #E1DEFF;
-        color: #9961FF;
+        background:#eff6ff; border: 1px solid #C9D9FF;
     }
     .agenda-cal-cell--today {
         font-weight: 700;
-        color: #9961FF;
-        border: 1px solid #9961FF;
+        color: #7D84C1;
+        border: 1.5px solid #C9D9FF !important;
     }
     .agenda-cal-cell--past {
         color: #d1d5db;
         cursor: default;
     }
     .agenda-cal-cell--selected {
-        background: rgba(153,97,255,0.12) !important;
-        color: #9961FF !important;
+        background: #eff6ff !important;
+        color: #7D84C1 !important;
         font-weight: 700;
-        border: 1px solid rgba(153,97,255,0.35) !important;
+        border: 1px solid #C9D9FF !important;
     }
     .agenda-cal-cell--empty { cursor: default; }
 
@@ -1734,8 +1748,8 @@ function _agendaRenderError() {
         margin-bottom: 6px;
     }
     .agenda-slots-count {
-        background: #E1DEFF;
-        color: #9961FF;
+        background: #e0f2fe;
+        color: #0ea5e9;
         padding: 1px 7px;
         border-radius: 10px;
         font-size: 10px;
@@ -1771,14 +1785,14 @@ function _agendaRenderError() {
         box-sizing: border-box;
     }
     .agenda-slot-btn:hover {
-        border-color: #9961FF;
-        color: #9961FF;
-        background: #EFF6FF;
+        border-color: #0ea5e9;
+        color: #0ea5e9;
+        background: #f0f9ff;
     }
     .agenda-slot-btn--selected {
-        background: #9961FF !important;
+        background: #0ea5e9 !important;
         color: #fff !important;
-        border-color: #9961FF !important;
+        border-color: #0ea5e9 !important;
         font-weight: 600;
     }
 
@@ -2514,7 +2528,7 @@ async function _agendaRenderConcurrent(container) {
         resources.forEach((resource, idx) => {
             const block = document.createElement('div');
             block.className = 'agenda-next-svc-block';
-            const color = _svcColors[idx % _svcColors.length];
+            const color = resource.resource_color || _svcColors[idx % _svcColors.length];
 
             const nameRow = document.createElement('div');
             nameRow.className = 'agenda-next-svc-name';

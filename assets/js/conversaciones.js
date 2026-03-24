@@ -99,7 +99,12 @@ async function initConversacionesPage() {
         console.log('🔄 Re-inicializando página (navegación SPA)...');
         resetChatAndContactPanel();
         setupConversacionesEventListeners();
-        await cargarEmpresasYConversaciones();
+        try {
+            await cargarEmpresasYConversaciones();
+        } catch(err) {
+            mostrarErrorConversaciones(err?.message);
+            return;
+        }
         if (typeof reinitQuickReplies === 'function') reinitQuickReplies();
         setTimeout(() => setInputBarEnabled(false), 150);
         return;
@@ -107,7 +112,12 @@ async function initConversacionesPage() {
 
     window.ConversacionesModuleInitialized = true;
 
-    await cargarEmpresasYConversaciones();
+    try {
+        await cargarEmpresasYConversaciones();
+    } catch(err) {
+        mostrarErrorConversaciones(err?.message);
+        return;
+    }
     setupConversacionesEventListeners();
     setTimeout(() => setInputBarEnabled(false), 150);
 
@@ -144,7 +154,13 @@ function setupConversacionesEventListeners() {
 
             currentCompanyId = companyId;
             resetChatAndContactPanel();
-            await cargarConversacionesPorEmpresa(companyId);
+            mostrarCargandoConversaciones();
+            try {
+                await cargarConversacionesPorEmpresa(companyId);
+            } catch(err) {
+                mostrarErrorConversaciones(err?.message);
+                return;
+            }
             mostrarEstadoSinConversacionSeleccionada();
             setInputBarEnabled(true);
         });

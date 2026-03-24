@@ -37,51 +37,7 @@
         </select>
       </div>
 
-      <!-- Barra de búsqueda de contactos -->
-<!-- Buscador -->
-<div class="relative">
-  <input
-    type="text"
-    id="searchConversations"
-    placeholder="Buscar contacto..."
-    class="w-full pl-9 pr-7 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm transition-all"
-    style="outline:none;"
-    onfocus="this.style.borderColor='#7D84C1';this.style.boxShadow='0 0 0 2px #C9D9FF';document.getElementById('searchClearBtn').style.display=this.value?'flex':'none';"
-    onblur="this.style.borderColor='#e5e7eb';this.style.boxShadow='none';"
-    oninput="document.getElementById('searchClearBtn').style.display=this.value?'flex':'none';"
-  />
-  <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-  <button id="searchClearBtn"
-    style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9ca3af;align-items:center;justify-content:center;padding:0;font-size:11px;"
-    onclick="document.getElementById('searchConversations').value='';this.style.display='none';document.getElementById('searchConversations').dispatchEvent(new Event('input'));document.getElementById('searchConversations').focus();">
-    <i class="fas fa-times"></i>
-  </button>
-</div>
-
-<!-- Filtros rápidos — texto + número, estilo chip violeta -->
-<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;margin-top:4px;"><span style="width:4px;height:4px;border-radius:50%;background:#7D84C1;flex-shrink:0;display:inline-block;"></span><span style="font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.07em;">Estado</span></div>
-<div class="flex flex-wrap gap-1.5 mt-1" id="filterChipsContainer">
-
-  <button class="filter-chip active" data-filter="all">
-    TODAS <span class="filter-count">0</span>
-  </button>
-
-  <button class="filter-chip" data-filter="unread">
-    SIN LEER <span class="filter-count">0</span>
-  </button>
-
-  <button class="filter-chip" data-filter="no_reply">
-    SIN RESP. <span class="filter-count">0</span>
-  </button>
-
-  <button class="filter-chip" data-filter="ia_off">
-    IA OFF <span class="filter-count">0</span>
-  </button>
-
-</div>
-
-
-<!-- Filtros avanzados (colapsable) -->
+<!-- Filtros avanzados (colapsable) — contiene todo -->
 <button id="advancedFiltersToggle" onclick="toggleAdvancedFilters()"
   class="w-full flex items-center justify-between mt-2 px-3 py-2 text-[12px] rounded-xl transition-all"
   style="background:#eff4fe;border:0.5px solid #d0dcf5;color:#6B7AB5;font-weight:600;letter-spacing:0.01em;">
@@ -97,26 +53,59 @@
 </button>
 
 <div id="advancedFiltersPanel" class="hidden mt-1 mx-1 space-y-2">
+
+  <!-- Buscar -->
+  <div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;margin-top:4px;"><span style="width:4px;height:4px;border-radius:50%;background:#7D84C1;flex-shrink:0;display:inline-block;"></span><span style="font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.07em;">Buscar</span></div>
+    <div class="relative">
+      <input
+        type="text"
+        id="searchConversations"
+        placeholder="Buscar contacto..."
+        class="w-full pl-9 pr-7 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm transition-all"
+        style="outline:none;"
+        onfocus="this.style.borderColor='#7D84C1';this.style.boxShadow='0 0 0 2px #C9D9FF';document.getElementById('searchClearBtn').style.display=this.value?'flex':'none';"
+        onblur="this.style.borderColor='#e5e7eb';this.style.boxShadow='none';"
+        oninput="document.getElementById('searchClearBtn').style.display=this.value?'flex':'none';"
+      />
+      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+      <button id="searchClearBtn"
+        style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9ca3af;align-items:center;justify-content:center;padding:0;font-size:11px;"
+        onclick="document.getElementById('searchConversations').value='';this.style.display='none';document.getElementById('searchConversations').dispatchEvent(new Event('input'));document.getElementById('searchConversations').focus();">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
   <!-- Por Plan -->
   <div>
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;margin-top:4px;"><span style="width:4px;height:4px;border-radius:50%;background:#7D84C1;flex-shrink:0;display:inline-block;"></span><span style="font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.07em;">Plan</span></div>
-    <div class="bg-white border border-gray-200 rounded-xl px-2 pb-2 pt-1.5 mt-1">
-      <div class="flex gap-1 flex-wrap" id="planFilters">
-        <button class="plan-filter-chip" data-plan="">TODOS</button>
-        <button class="plan-filter-chip" data-plan="client">CLIENTES</button>
-        <button class="plan-filter-chip" data-plan="contact">CONTACTOS</button>
-      </div>
+    <div class="flex gap-1 flex-wrap" id="planFilters">
+      <button class="plan-filter-chip" data-plan="">TODOS</button>
+      <button class="plan-filter-chip" data-plan="client">CLIENTES</button>
+      <button class="plan-filter-chip" data-plan="contact">CONTACTOS</button>
     </div>
   </div>
+
+  <!-- Estado -->
+  <div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;margin-top:4px;"><span style="width:4px;height:4px;border-radius:50%;background:#7D84C1;flex-shrink:0;display:inline-block;"></span><span style="font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.07em;">Estado</span></div>
+    <div class="flex flex-wrap gap-1.5" id="filterChipsContainer">
+      <button class="filter-chip active" data-filter="all">TODAS <span class="filter-count">0</span></button>
+      <button class="filter-chip" data-filter="unread">SIN LEER <span class="filter-count">0</span></button>
+      <button class="filter-chip" data-filter="no_reply">SIN RESP. <span class="filter-count">0</span></button>
+      <button class="filter-chip" data-filter="ia_off">IA OFF <span class="filter-count">0</span></button>
+    </div>
+  </div>
+
   <!-- Por Tags (dinámico) -->
   <div>
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;margin-top:4px;"><span style="width:4px;height:4px;border-radius:50%;background:#7D84C1;flex-shrink:0;display:inline-block;"></span><span style="font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.07em;">Tags</span></div>
-    <div class="bg-white border border-gray-200 rounded-xl px-2 pb-2 pt-1.5 mt-1">
-      <div class="flex gap-1 flex-wrap" id="tagFilters">
-        <!-- Se llena dinámicamente desde JS -->
-      </div>
+    <div class="flex gap-1 flex-wrap" id="tagFilters">
+      <!-- Se llena dinámicamente desde JS -->
     </div>
   </div>
+
   <!-- Limpiar -->
   <button id="clearAdvancedFilters" onclick="clearAdvancedFilters()" class="hidden text-[10px] text-red-400 hover:text-red-600 transition-all">
     <i class="fas fa-times"></i> Limpiar filtros
@@ -426,36 +415,33 @@
   </div>
 
   <!-- Botones Cliente VIP y Aliarme -->
-  <div class="flex gap-1.5 w-full px-1">
-    <button id="btnClienteVIP"
-      class="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-semibold transition-all hover:opacity-75"
-      style="background:#EFF6FF;border:0.5px solid #C9D9FF;color:#7D84C1;font-size:11px;white-space:nowrap;"
-      onclick="_toggleContactBtn(this, {bg:'#E1DEFF', border:'#9961FF', color:'#9961FF', bgOff:'#EFF6FF', borderOff:'#C9D9FF', colorOff:'#7D84C1'})">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" class="btn-icon">
-        <rect x="3" y="8" width="18" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
-        <path d="M12 8v13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M3 13h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M8 8c0 0-2-4 4-4s0 4 0 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        <path d="M16 8c0 0 2-4-4-4s0 4 0 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-      </svg>
-      Cliente VIP
-    </button>
-    <button id="btnAliarme"
-      class="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-semibold transition-all hover:opacity-75"
-      style="background:white;border:0.5px solid #C9D9FF;color:#7D84C1;font-size:11px;white-space:nowrap;"
-      onclick="_toggleContactBtn(this, {bg:'#E1DEFF', border:'#9961FF', color:'#9961FF', bgOff:'white', borderOff:'#C9D9FF', colorOff:'#7D84C1'})">
-      <img src="assets/img/handshake.png" class="w-4 h-4 object-contain"
-        onerror="this.style.display='none';this.nextElementSibling.style.display='inline-block'"/>
-      <svg style="display:none;" width="14" height="13" viewBox="0 0 32 26" fill="none" class="btn-icon">
-        <path d="M2 10c1-3 3-5 6-5l4 2 2-2 4 2 2-2 4 2c3 1 5 3 6 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M8 7l-4 9 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M24 7l4 9-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12 22l4 3 4-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M10 13l2 2 4-4 4 4 2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      Aliarme
-    </button>
-  </div>
+<div class="flex gap-1.5 w-full px-1">
+
+<div class="flex gap-2 w-full">
+  <!-- CLIENTE VIP -->
+  <button id="btnClienteVIP" 
+          class="flex-1 flex items-center justify-left gap-1.0 py-1 px-1 rounded-lg font-semibold transition-all hover:opacity-85 shadow-sm" 
+          style="background: #b2c4fb; border: 1.5px solid #91a8e6; color: #ffffff; font-size: 14px; white-space: nowrap;" 
+          onclick="_toggleContactBtn(this, { border:'#9961FF', color:'#9961FF', bgOff:'#b2c4fb', borderOff:'#91a8e6', colorOff:'#ffffff'})" 
+          data-active="0">
+      <img src="assets/img/regalo.png" class="w-7 h-7 object-contain flex-shrink-0">
+      <span class="leading-none">Cliente VIP</span>
+  </button>
+
+  <!-- ALIARME -->
+  <button id="btnAliarme"
+          class="flex-1 flex items-center justify-left gap-1 py-1 px-1 rounded-lg font-semibold transition-all hover:opacity-85 shadow-sm"
+          style="background: white; border: 1.5px solid #C9D9FF; color: #7492eb; font-size: 14px; white-space: nowrap;"
+          onclick="_toggleContactBtn(this, { border:'#9961FF', color:'#9961FF', bgOff:'white', borderOff:'#C9D9FF', colorOff:'#7D84C1'})"
+          data-active="0">
+      <img src="assets/img/handshake.png" class="w-7 h-7 object-contain flex-shrink-0">
+      <span class="leading-none">Aliarme</span>
+  </button>
+</div>
+
+
+
+</div>
 
 </div>
 
@@ -470,7 +456,7 @@
 class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:bg-[#bdd0f7] transition-colors border-b border-[#b0c8f8]">
 <div class="flex items-center gap-2.5">
   <i class="fas fa-user text-[#7D84C1] text-[13px] flex-shrink-0"></i>
-  <span class="text-xs font-extrabold text-[#7D84C1] uppercase tracking-wide">Contact · Lead</span>
+  <span class="text-xs font-bold text-[#7D84C1] uppercase tracking-wide">Contact · Lead</span>
 </div>
 <i id="contactGroupIcon" class="rp-chevron rp-rotated fas fa-chevron-down text-[10px] text-[#7D84C1]"></i>
 </button>
@@ -637,7 +623,7 @@ class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] t
 class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:bg-[#bdd0f7] transition-colors border-b border-[#b0c8f8] mt-1">
 <div class="flex items-center gap-2.5">
   <i class="fas fa-bolt text-[#7D84C1] text-[13px] flex-shrink-0"></i>
-  <span class="text-xs font-extrabold text-[#7D84C1] uppercase tracking-wide">Mis Servicios</span>
+  <span class="text-xs font-bold text-[#7D84C1] uppercase tracking-wide">Mis Servicios</span>
 </div>
 <i id="servicesGroupIcon" class="rp-chevron rp-rotated fas fa-chevron-down text-[10px] text-[#7D84C1]"></i>
 </button>
@@ -803,7 +789,9 @@ class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:b
 <!-- Animaciones panel derecho: gestionadas por conv-state.js (rp-section / rp-open) -->
 
 <style>
-/* ── Tooltip global — data-tooltip ── */
+
+
+
 [data-tooltip] {
   position: relative;
 }
