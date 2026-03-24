@@ -259,15 +259,22 @@ function _calBuild(container) {
             allBtn.textContent = 'Todos';
             allBtn.addEventListener('click', () => { _calSpecialistFilter = null; _calBuild(container); });
             scroll.appendChild(allBtn);
-            visibleResources.forEach((spec) => {
+            const sortedResources = [...visibleResources].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+            sortedResources.forEach((spec) => {
                 const gi = _calResources.indexOf(spec);
                 const agendaC = !spec.color && window._agendaGetSpecColor ? window._agendaGetSpecColor(spec.resource_id)?.text : null;
                 const specColor = spec.color || agendaC || _calColorPalette[gi % _calColorPalette.length];
                 const isActive = _calSpecialistFilter === spec.resource_id;
                 const btn = document.createElement('button');
                 btn.className = 'cal-filter-row-btn' + (isActive ? ' active' : '');
-                if (isActive) { btn.style.background = '#dce8ff'; btn.style.border = '1px solid #C9D9FF'; btn.style.color = '#7D84C1'; }
+                if (isActive) {
+                    btn.style.background = specColor + '14';
+                    btn.style.border = '1px solid ' + specColor + '4D';
+                    btn.style.color = specColor;
+                }
                 btn.innerHTML = `<span class="cal-filter-row-dot" style="background:${specColor}"></span>${spec.name}`;
+                btn.addEventListener('mouseover', () => { if (!btn.classList.contains('active')) { btn.style.background = specColor + '14'; btn.style.border = '1px solid ' + specColor + '4D'; btn.style.color = specColor; } });
+                btn.addEventListener('mouseout',  () => { if (!btn.classList.contains('active')) { btn.style.background = ''; btn.style.border = ''; btn.style.color = ''; } });
                 btn.addEventListener('click', () => { _calSpecialistFilter = _calSpecialistFilter === spec.resource_id ? null : spec.resource_id; _calBuild(container); });
                 scroll.appendChild(btn);
             });
@@ -321,13 +328,20 @@ function _calBuild(container) {
         allBtn.textContent = 'Todos';
         allBtn.addEventListener('click', () => { _calServiceFilter = null; _calBuild(container); });
         scroll.appendChild(allBtn);
-        visibleServices.forEach((svc, idx) => {
+        const sortedServices = [...visibleServices].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+        sortedServices.forEach((svc, idx) => {
             const svcColor = svcColorMap[svc.id] || _calColorPalette[idx % _calColorPalette.length];
             const isActive = _calServiceFilter === svc.id;
             const btn = document.createElement('button');
             btn.className = 'cal-filter-row-btn cal-filter-row-btn--svc' + (isActive ? ' active' : '');
-            if (isActive) { btn.style.background = '#dce8ff'; btn.style.border = '1px solid #C9D9FF'; btn.style.color = '#7D84C1'; }
+            if (isActive) {
+                btn.style.background = svcColor + '14';
+                btn.style.border = '1px solid ' + svcColor + '4D';
+                btn.style.color = svcColor;
+            }
             btn.innerHTML = `<span class="cal-filter-row-dot" style="background:${svcColor}"></span>${svc.name}`;
+            btn.addEventListener('mouseover', () => { if (!btn.classList.contains('active')) { btn.style.background = svcColor + '14'; btn.style.border = '1px solid ' + svcColor + '4D'; btn.style.color = svcColor; } });
+            btn.addEventListener('mouseout',  () => { if (!btn.classList.contains('active')) { btn.style.background = ''; btn.style.border = ''; btn.style.color = ''; } });
             btn.addEventListener('click', () => { _calServiceFilter = _calServiceFilter === svc.id ? null : svc.id; _calBuild(container); });
             scroll.appendChild(btn);
         });
@@ -683,15 +697,15 @@ function _calInjectStyles() {
     .cal-loading { text-align:center; padding:16px; font-size:11px; color:#9ca3af; }
     .cal-filters-wrapper { background:#fff;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.07);overflow:hidden;margin-bottom:8px;padding:7px 10px; }
     .cal-filter-section { margin-bottom:2px; }
-    .cal-filter-scroll { display:flex;flex-direction:column;gap:2px;max-height:80px;overflow-y:auto;margin-bottom:2px;padding-right:3px;scrollbar-width:thin;scrollbar-color:#e0e7ff transparent; }
+    .cal-filter-scroll { display:flex;flex-direction:column;gap:2px;max-height:120px;overflow-y:auto;margin-bottom:2px;padding-right:3px;scrollbar-width:thin;scrollbar-color:#e0e7ff transparent; }
     .cal-filter-scroll::-webkit-scrollbar { width:3px; }
     .cal-filter-scroll::-webkit-scrollbar-thumb { background:#e0e7ff;border-radius:999px; }
-    .cal-filter-row-btn { display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;font-size:10.5px;font-weight:600;border:0.5px solid #C9D9FF;background:#EFF6FF;color:#7D84C1;cursor:pointer;white-space:nowrap;width:100%;text-align:left;transition:all .15s; }
+    .cal-filter-row-btn { display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;font-size:11.5px;font-weight:600;border:0.5px solid #C9D9FF;background:#EFF6FF;color:#7D84C1;cursor:pointer;white-space:nowrap;width:100%;text-align:left;transition:all .15s; }
     .cal-filter-row-btn.active { background:#dce8ff;border-color:#C9D9FF;color:#7D84C1; }
     .cal-filter-row-btn:hover:not(.active) { background:#E5EDFB;border-color:#C0CEF0; }
     .cal-filter-row-btn.active:hover { background:#C9D9FF;border-color:#C9D9FF;color:#7D84C1; }
     .cal-filter-row-btn--svc { border-color:#C9D9FF;background:#EFF6FF;color:#7D84C1; }
-    .cal-filter-row-dot { width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0; }
+    .cal-filter-row-dot { width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0; }
 
     .cal-empty   { text-align:center; padding:12px; font-size:11px; color:#d1d5db; font-style:italic; }
 

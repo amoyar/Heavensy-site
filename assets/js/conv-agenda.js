@@ -524,9 +524,11 @@ async function _agendaRenderMultiSpecialist(container) {
             const specsWrapper = document.createElement('div');
             specsWrapper.className = 'agenda-specialists-wrapper';
 
-            svcGroup.specialists.forEach(spec => {
+            svcGroup.specialists.forEach((spec, specIdx) => {
                 const specBlock = document.createElement('div');
                 specBlock.className = 'agenda-specialist-block';
+
+                const specIsOpen = specIdx === 0;
 
                 // Iniciales del especialista
                 const initials = spec.resource_name.split(' ')
@@ -535,16 +537,17 @@ async function _agendaRenderMultiSpecialist(container) {
 
                 const specHeader = document.createElement('div');
                 specHeader.className = 'agenda-specialist-header';
+                specHeader.style.cursor = 'pointer';
                 specHeader.innerHTML = `
                     <div class="agenda-specialist-avatar" style="background:${svcColor}">${initials}</div>
                     <span class="agenda-specialist-name">${spec.resource_name}</span>
-                    <i class="fas fa-chevron-right agenda-specialist-chev"></i>
+                    <i class="fas fa-chevron-down agenda-specialist-chev" style="font-size:9px;color:#9ca3af;transition:transform 0.25s ease;margin-left:auto;${specIsOpen ? '' : 'transform:rotate(-90deg);'}"></i>
                 `;
 
                 // Slots del especialista
                 const specSlots = document.createElement('div');
                 specSlots.className = 'agenda-next-slots-row agenda-specialist-slots';
-                specSlots.style.display = 'flex';
+                specSlots.style.cssText = `display:flex;overflow:hidden;transition:max-height 0.28s ease, opacity 0.24s ease;max-height:${specIsOpen ? '400px' : '0px'};opacity:${specIsOpen ? '1' : '0'};`;
 
                 if (spec.next_slots && spec.next_slots.length > 0) {
                     spec.next_slots.forEach(slot => {
@@ -572,6 +575,21 @@ async function _agendaRenderMultiSpecialist(container) {
                 } else {
                     specSlots.innerHTML = `<span class="agenda-next-empty">Sin disponibilidad</span>`;
                 }
+
+                // Toggle colapso especialista
+                specHeader.addEventListener('click', () => {
+                    const chev = specHeader.querySelector('.agenda-specialist-chev');
+                    const isNowOpen = specSlots.style.opacity === '1';
+                    if (isNowOpen) {
+                        specSlots.style.maxHeight = '0px';
+                        specSlots.style.opacity   = '0';
+                        if (chev) chev.style.transform = 'rotate(-90deg)';
+                    } else {
+                        specSlots.style.maxHeight = specSlots.scrollHeight + 'px';
+                        specSlots.style.opacity   = '1';
+                        if (chev) chev.style.transform = 'rotate(0deg)';
+                    }
+                });
 
                 specBlock.appendChild(specHeader);
                 specBlock.appendChild(specSlots);
@@ -1109,24 +1127,28 @@ async function _agendaRenderSlots(container) {
         }
 
         // ✅ Renderizar agrupado por especialista
-        results.forEach(({ spec, slots }) => {
+        results.forEach(({ spec, slots }, specIdx) => {
             if (!slots.length) return;
 
-            const specColor = _agendaGetSpecColor(spec.resource_id);
-            const abbrev    = _agendaAbbrevName(spec.resource_name);
+            const specColor  = _agendaGetSpecColor(spec.resource_id);
+            const abbrev     = _agendaAbbrevName(spec.resource_name);
+            const specIsOpen = specIdx === 0;
 
-            // Header del especialista
+            // Header del especialista (colapsable)
             const specHeader = document.createElement('div');
             specHeader.className = 'agenda-slots-spec-header';
+            specHeader.style.cursor = 'pointer';
             specHeader.innerHTML = `
                 <span class="agenda-slots-spec-dot" style="background:${specColor.border};"></span>
                 <span class="agenda-slots-spec-label" style="color:${specColor.text};">${spec.resource_name || 'Especialista'}</span>
+                <i class="fas fa-chevron-down" style="font-size:9px;color:#9ca3af;margin-left:auto;transition:transform 0.25s ease;${specIsOpen ? '' : 'transform:rotate(-90deg);'}"></i>
             `;
             container.appendChild(specHeader);
 
             // Grid de slots del especialista
             const grid = document.createElement('div');
             grid.className = 'agenda-slots-grid';
+            grid.style.cssText = `overflow:hidden;transition:max-height 0.28s ease, opacity 0.24s ease;max-height:${specIsOpen ? '600px' : '0px'};opacity:${specIsOpen ? '1' : '0'};`;
 
             slots.forEach(slot => {
                 const enrichedSlot = {
@@ -1158,6 +1180,21 @@ async function _agendaRenderSlots(container) {
                     _agendaOnSlotClick(enrichedSlot, btn);
                 });
                 grid.appendChild(btn);
+            });
+
+            // Toggle colapso
+            specHeader.addEventListener('click', () => {
+                const chev = specHeader.querySelector('i');
+                const isNowOpen = grid.style.opacity === '1';
+                if (isNowOpen) {
+                    grid.style.maxHeight = '0px';
+                    grid.style.opacity   = '0';
+                    if (chev) chev.style.transform = 'rotate(-90deg)';
+                } else {
+                    grid.style.maxHeight = grid.scrollHeight + 'px';
+                    grid.style.opacity   = '1';
+                    if (chev) chev.style.transform = 'rotate(0deg)';
+                }
             });
 
             container.appendChild(grid);
@@ -2030,6 +2067,11 @@ function _agendaRenderError() {
     /* ── Próximos cupos por servicio ────────── */
     .agenda-next-slots-section {
         margin-bottom: 0;
+        max-height: 320px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #C9D9FF transparent;
+        padding-right: 3px;
     }
     .agenda-next-slots-title {
         font-size: 10.5px;
