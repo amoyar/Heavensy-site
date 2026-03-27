@@ -86,6 +86,41 @@ function setInputBarEnabled(enabled) {
 // ============================================
 // INICIALIZACIÓN
 // ============================================
+// ============================================
+// APLICAR LABELS DINÁMICOS SEGÚN RUBRO
+// ============================================
+function applyCompanyLabels() {
+    if (typeof getCompanyLabel !== 'function') return;
+
+    const labels = {
+        'label-seccion-lateral': getCompanyLabel('seccion_lateral', 'Mis Servicios'),
+        'label-tab-agenda':      getCompanyLabel('tab_agenda', 'Agenda'),
+        'label-tab-calendario':  getCompanyLabel('tab_calendario', 'Calendario'),
+    };
+
+    Object.entries(labels).forEach(([id, text]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    });
+
+    // Ocultar módulos deshabilitados
+    if (typeof isModuleEnabled === 'function') {
+        // Agenda
+        const agendaSection = document.querySelector('[onclick*="contactAgendaSection"]')?.closest('.border-b');
+        if (agendaSection) agendaSection.style.display = isModuleEnabled('agenda') ? '' : 'none';
+
+        // Calendario
+        const calSection = document.querySelector('[onclick*="contactCalendarSection"]')?.closest('.border-b');
+        if (calSection) calSection.style.display = isModuleEnabled('calendario') ? '' : 'none';
+
+        // Servicios (sección lateral)
+        const svcBtn = document.querySelector('[onclick*="servicesGroup"]');
+        if (svcBtn) svcBtn.parentElement.style.display = isModuleEnabled('servicios') ? '' : 'none';
+    }
+
+    console.log('✅ Labels de conversaciones aplicados');
+}
+
 async function initConversacionesPage() {
     console.log('🚀 Inicializando página de conversaciones');
 
@@ -99,6 +134,7 @@ async function initConversacionesPage() {
         console.log('🔄 Re-inicializando página (navegación SPA)...');
         resetChatAndContactPanel();
         setupConversacionesEventListeners();
+        applyCompanyLabels();
         try {
             await cargarEmpresasYConversaciones();
         } catch(err) {
@@ -112,6 +148,7 @@ async function initConversacionesPage() {
 
     window.ConversacionesModuleInitialized = true;
 
+    applyCompanyLabels();
     try {
         await cargarEmpresasYConversaciones();
     } catch(err) {
@@ -149,11 +186,13 @@ function setupConversacionesEventListeners() {
                 if (typeof hideContactPanel === "function") {
                 hideContactPanel();
 }
+                _setCollapseLeftVisible(false);
                 return;
             }
 
             currentCompanyId = companyId;
             resetChatAndContactPanel();
+            _setCollapseLeftVisible(false);
             mostrarCargandoConversaciones();
             try {
                 await cargarConversacionesPorEmpresa(companyId);
@@ -189,6 +228,21 @@ function setupConversacionesEventListeners() {
     }
     const btnL = document.getElementById('btnToggleLeft');
     const btnR = document.getElementById('btnToggleRight');
+    // Sincronizar ícono inicial según estado real del panel derecho
+    if (btnR) {
+        const _cp = document.getElementById('contactPanel');
+        const _isHidden = !_cp || _cp.classList.contains('hidden') || _cp.classList.contains('panel-hidden');
+        btnR.querySelector('i').className = _isHidden ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+    }
+    const btnCL = document.getElementById('btnCollapseLeft');
+    if (btnCL) {
+        btnCL.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const lp = document.getElementById('convLeftPanel');
+            lp.classList.add('panel-hidden');
+            if (btnL) btnL.querySelector('i').className = 'fas fa-chevron-right';
+        });
+    }
     if (btnL) {
         btnL.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -210,12 +264,36 @@ function setupConversacionesEventListeners() {
         });
     }
 
+    // Mostrar btnCollapseLeft cuando hay conversación activa (observa chatHeader)
+    const chatHeader = document.getElementById('chatHeader');
+    if (chatHeader) {
+        new MutationObserver(() => {
+            const hasConv = !chatHeader.classList.contains('hidden');
+            _setCollapseLeftVisible(hasConv);
+        }).observe(chatHeader, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    // Sincronizar ícono de btnToggleRight cuando contactPanel cambia de clase
+    const contactPanelEl = document.getElementById('contactPanel');
+    if (contactPanelEl && btnR) {
+        new MutationObserver(() => {
+            const isHidden = contactPanelEl.classList.contains('hidden') || contactPanelEl.classList.contains('panel-hidden');
+            btnR.querySelector('i').className = isHidden ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+        }).observe(contactPanelEl, { attributes: true, attributeFilter: ['class'] });
+    }
+
     console.log('✅ Event listeners configurados');
 }
 
 // ============================================
 // EXPONER FUNCIONES GLOBALMENTE
 // ============================================
+// Mostrar/ocultar btnCollapseLeft según si hay conversación activa
+function _setCollapseLeftVisible(visible) {
+    const btn = document.getElementById('btnCollapseLeft');
+    if (btn) btn.style.display = visible ? 'inline-flex' : 'none';
+}
+window._setCollapseLeftVisible = _setCollapseLeftVisible;
 window.initConversacionesPage = initConversacionesPage;
 window.setInputBarEnabled = setInputBarEnabled;
 window.setInputBarEnabled = setInputBarEnabled;

@@ -1,0 +1,881 @@
+/* ============================================
+   conv-agenda.css
+   Estilos del módulo de Agenda
+   Extraído de conv-agenda.js
+============================================ */
+
+/* ── Contenedor general ─────────────────── */
+    #contactAgendaContainer {
+        padding: 4px 0 2px 0;
+        font-size: 12px;
+        color: #374151;
+    }
+
+    /* ── Estado genérico ────────────────────── */
+    .agenda-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 16px 0;
+        color: #9961FF;
+        font-size: 12px;
+    }
+    .agenda-state i { font-size: 18px; }
+    .agenda-state--muted { color: #9ca3af; }
+    .agenda-state--error { color: #ef4444; }
+
+    /* ── Selector de servicio ───────────────── */
+    .agenda-service-row { margin-bottom: 8px; }
+    .agenda-service-select {
+        width: 100%;
+        padding: 5px 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 11.5px;
+        color: #374151;
+        background: #fafafa;
+        cursor: pointer;
+        outline: none;
+    }
+    .agenda-service-select:focus { border-color: #9961FF; }
+    .agenda-service-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        color: #9961FF;
+        background: #E1DEFF;
+        padding: 3px 8px;
+        border-radius: 20px;
+        margin-bottom: 2px;
+    }
+
+    /* ── Calendario ─────────────────────────── */
+    .agenda-calendar {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 1px 6px rgba(0,0,0,.07);
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+    .agenda-cal-header {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 5px 12px 5px;
+        background: #EFF6FF;
+        border-radius: 12px 12px 0 0;
+        border-bottom: 1px solid #C9D9FF;
+        margin-bottom: 0;
+    }
+    .agenda-cal-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #7D84C1;
+        flex: 1;
+        text-align: center;
+    }
+    .agenda-cal-nav {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #9961FF;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-size: 11px;
+        transition: background .15s;
+    }
+    .agenda-cal-nav:hover { background: #E1DEFF; }
+    .agenda-cal-toggle-btn { margin-left: 2px; color: #9961FF; }
+    .agenda-cal-toggle-btn:hover { color: #7D84C1; background: #E1DEFF; }
+
+    .agenda-cal-days-row {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+        padding: 4px 4px 0;
+        margin-bottom: 0;
+    }
+    .agenda-cal-dayname {
+        text-align: center;
+        font-size: 10px;
+        font-weight: 600;
+        color: #9ca3af;
+        padding: 2px 0;
+    }
+    .agenda-cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+        padding: 0 4px 4px;
+    }
+    .agenda-cal-cell {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        border-radius: 5px;
+        border: 1.5px solid transparent;
+        cursor: pointer;
+        color: #374151;
+        transition: background .12s, color .12s;
+        user-select: none;
+    }
+    .agenda-cal-cell:not(.agenda-cal-cell--past):not(.agenda-cal-cell--empty):hover {
+        background:#eff6ff; border: 1px solid #C9D9FF;
+    }
+    .agenda-cal-cell--today {
+        font-weight: 700;
+        color: #7D84C1;
+        border: 1.5px solid #C9D9FF !important;
+    }
+    .agenda-cal-cell--past {
+        color: #d1d5db;
+        cursor: default;
+    }
+    .agenda-cal-cell--selected {
+        background: #eff6ff !important;
+        color: #7D84C1 !important;
+        font-weight: 700;
+        border: 1px solid #C9D9FF !important;
+    }
+    .agenda-cal-cell--empty { cursor: default; }
+
+    /* ── Slots ──────────────────────────────── */
+    .agenda-slots-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 6px;
+    }
+    .agenda-slots-count {
+        background: #e0f2fe;
+        color: #0ea5e9;
+        padding: 1px 7px;
+        border-radius: 10px;
+        font-size: 10px;
+    }
+    .agenda-slots-loading {
+        text-align: center;
+        color: #9ca3af;
+        font-size: 11px;
+        padding: 10px 0;
+    }
+    .agenda-slots-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-bottom: 8px;
+    }
+    .agenda-slot-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 4px 6px;
+        width: 64px;
+        flex-shrink: 0;
+        border: 1.5px solid #e0e7ff;
+        border-radius: 8px;
+        background: #fff;
+        font-size: 11px;
+        color: #374151;
+        cursor: pointer;
+        text-align: center;
+        transition: all .12s;
+        position: relative;
+        box-sizing: border-box;
+    }
+    .agenda-slot-btn:hover {
+        border-color: #0ea5e9;
+        color: #0ea5e9;
+        background: #f0f9ff;
+    }
+    .agenda-slot-btn--selected {
+        background: #0ea5e9 !important;
+        color: #fff !important;
+        border-color: #0ea5e9 !important;
+        font-weight: 600;
+    }
+
+    /* ── Panel de confirmación ──────────────── */
+    .agenda-confirm-panel {
+        background: #EFF6FF;
+        border: 1px solid #c4b5fd;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 4px;
+        animation: agendaFadeIn .15s ease;
+    }
+    .agenda-confirm-panel--hidden { display: none; }
+    .agenda-confirm-info { margin-bottom: 8px; }
+    .agenda-confirm-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11.5px;
+        color: #4b5563;
+        margin-bottom: 3px;
+    }
+    .agenda-confirm-row i { color: #9961FF; width: 12px; }
+    .agenda-notes-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 5px 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 5px;
+        font-size: 11px;
+        color: #374151;
+        margin-bottom: 8px;
+        outline: none;
+    }
+    .agenda-notes-input:focus { border-color: #9961FF; }
+    .agenda-confirm-actions {
+        display: flex;
+        gap: 6px;
+    }
+    .agenda-btn-cancel-confirm {
+        flex: 1;
+        padding: 6px;
+        border: 1px solid #e5e7eb;
+        border-radius: 5px;
+        background: #fff;
+        font-size: 11px;
+        color: #6b7280;
+        cursor: pointer;
+    }
+    .agenda-btn-cancel-confirm:hover { background: #f9fafb; }
+    .agenda-btn-confirm {
+        flex: 2;
+        padding: 6px;
+        border: none;
+        border-radius: 5px;
+        background: #9961FF;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .12s;
+    }
+    .agenda-btn-confirm:hover:not(:disabled) { background: #7D84C1; }
+    .agenda-btn-confirm:disabled { opacity: .6; cursor: default; }
+
+    /* ── Éxito ──────────────────────────────── */
+    .agenda-success {
+        text-align: center;
+        padding: 12px 8px;
+        animation: agendaFadeIn .2s ease;
+    }
+    .agenda-success-icon { font-size: 28px; color: #22c55e; margin-bottom: 6px; }
+    .agenda-success-title { font-size: 13px; font-weight: 700; color: #1f2937; margin-bottom: 4px; }
+    .agenda-success-detail { font-size: 11px; color: #6b7280; margin-bottom: 10px; line-height: 1.6; }
+    .agenda-btn-new {
+        padding: 6px 14px;
+        border: 1px dashed #9961FF;
+        border-radius: 6px;
+        background: #fff;
+        color: #9961FF;
+        font-size: 11px;
+        cursor: pointer;
+        transition: background .12s;
+    }
+    .agenda-btn-new:hover { background: #EFF6FF; }
+
+    /* ── Sin horarios + waitlist ────────────── */
+    .agenda-no-slots {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 12px 0;
+        color: #9ca3af;
+        font-size: 11px;
+    }
+    .agenda-no-slots i { font-size: 20px; }
+    .agenda-btn-waitlist {
+        padding: 5px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 5px;
+        background: #fff;
+        font-size: 11px;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all .12s;
+    }
+    .agenda-btn-waitlist:hover { border-color: #9961FF; color: #9961FF; }
+
+    /* ── Hint ───────────────────────────────── */
+    .agenda-hint {
+        text-align: center;
+        color: #9ca3af;
+        font-size: 11px;
+        padding: 10px 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+    }
+
+    /* ── Error inline ───────────────────────── */
+    .agenda-error-inline {
+        margin-top: 6px;
+        padding: 5px 8px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 5px;
+        font-size: 11px;
+        color: #dc2626;
+        display: flex;
+        gap: 5px;
+        align-items: center;
+    }
+    .agenda-error-msg {
+        text-align: center;
+        color: #ef4444;
+        font-size: 11px;
+        padding: 8px 0;
+        margin: 0;
+    }
+
+    /* ── Citas del contacto ─────────────────── */
+    .agenda-contact-appts {
+        margin-top: 8px;
+        border-top: 1px solid #f3f4f6;
+        padding-top: 8px;
+    }
+    .agenda-appts-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: #374151;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 6px;
+    }
+    .agenda-appts-title i { color: #9961FF; }
+    .agenda-appts-loading {
+        text-align: center;
+        color: #9ca3af;
+        font-size: 11px;
+        padding: 6px 0;
+    }
+    .agenda-appt-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 6px;
+        border-radius: 6px;
+        margin-bottom: 3px;
+        transition: background .1s;
+    }
+    .agenda-appt-item:hover { background: #f9fafb; }
+    .agenda-appt-date {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 36px;
+    }
+    .agenda-appt-day {
+        font-size: 11px;
+        font-weight: 700;
+        color: #9961FF;
+        line-height: 1.2;
+    }
+    .agenda-appt-time {
+        font-size: 10px;
+        color: #9ca3af;
+    }
+    .agenda-appt-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+    .agenda-appt-service {
+        font-size: 11px;
+        color: #374151;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .agenda-appt-status {
+        font-size: 10px;
+        padding: 1px 6px;
+        border-radius: 10px;
+        display: inline-block;
+        width: fit-content;
+    }
+    .agenda-status--scheduled   { background: #E1DEFF; color: #9961FF; }
+    .agenda-status--confirmed   { background: #d1fae5; color: #059669; }
+    .agenda-status--arrived     { background: #dbeafe; color: #2563eb; }
+    .agenda-status--inprogress  { background: #fef3c7; color: #d97706; }
+    .agenda-status--completed   { background: #f3f4f6; color: #6b7280; }
+    .agenda-status--noshow      { background: #fee2e2; color: #dc2626; }
+    .agenda-status--cancelled   { background: #f3f4f6; color: #9ca3af; }
+    .agenda-appt-cancel-btn {
+        background: none;
+        border: none;
+        color: #d1d5db;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-size: 10px;
+        transition: color .1s;
+        flex-shrink: 0;
+    }
+    .agenda-appt-cancel-btn:hover { color: #ef4444; }
+
+
+    /* ── Próximos cupos por servicio ────────── */
+    .agenda-next-slots-section {
+        margin-bottom: 0;
+        max-height: 320px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #C9D9FF transparent;
+        padding-right: 3px;
+    }
+    .agenda-next-slots-title {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: #9961FF;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 8px;
+    }
+    .agenda-next-svc-block {
+        margin-bottom: 8px;
+    }
+    .agenda-next-svc-name {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #7D84C1;
+        margin-bottom: 5px;
+    }
+    .agenda-next-svc-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .agenda-next-svc-name--toggle {
+        cursor: pointer;
+        user-select: none;
+        border-radius: 5px;
+        padding: 5px 8px;
+        margin: 0;
+        background: #EFF6FF;
+        border: 0.5px solid #C9D9FF;
+        transition: background .1s;
+    }
+    .agenda-next-svc-name--toggle:hover { background: #dce8ff; border-color: #9961FF; }
+    .agenda-next-svc-chevron {
+        font-size: 9px;
+        color: #9ca3af;
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+    .agenda-next-svc-duration {
+        font-size: 10px;
+        color: #9ca3af;
+        font-weight: 400;
+        margin-left: auto;
+    }
+    .agenda-next-slots-row {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        padding-top: 6px;
+    }
+    .agenda-next-loading {
+        font-size: 11px;
+        color: #9ca3af;
+        padding: 4px 0;
+    }
+    .agenda-next-empty {
+        font-size: 11px;
+        color: #d1d5db;
+        font-style: italic;
+    }
+    .agenda-next-slot-pill {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 4px 6px;
+        border: 1.5px solid #e0e7ff;
+        border-top-width: 2px;
+        border-radius: 8px;
+        background: #fff;
+        cursor: pointer;
+        transition: all .12s;
+        width: 64px;
+        flex-shrink: 0;
+        position: relative;
+        box-sizing: border-box;
+    }
+    .agenda-next-slot-pill:hover {
+        border-color: #9961FF;
+        background: #EFF6FF;
+    }
+    .agenda-next-slot-pill--selected {
+        border-color: #9961FF !important;
+        background: #9961FF !important;
+    }
+    .agenda-next-slot-pill--selected .agenda-next-slot-date,
+    .agenda-next-slot-pill--selected .agenda-next-slot-time {
+        color: #fff !important;
+    }
+    .agenda-next-slot-date {
+        font-size: 9.5px;
+        color: #9ca3af;
+        line-height: 1.2;
+    }
+    .agenda-next-slot-time {
+        font-size: 12px;
+        font-weight: 700;
+        color: #374151;
+        line-height: 1.3;
+    }
+
+    /* ── Botón buscar otro día ──────────────── */
+    .agenda-cal-toggle {
+        margin: 2px 0 4px 0;
+        text-align: center;
+    }
+    .agenda-btn-search-day {
+        padding: 5px 14px;
+        border: 1px solid #e0e7ff;
+        border-radius: 999px;
+        background: #fff;
+        color: #7D84C1;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .12s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .agenda-btn-search-day:hover {
+        background: #f5f3ff;
+        border-color: #c4b5fd;
+        color: #9961FF;
+    }
+
+
+    /* ── Multi-especialista ─────────────────── */
+    .agenda-specialists-wrapper {
+        margin-top: 4px;
+        border-left: 2px solid #e5e7eb;
+        margin-left: 8px;
+        padding-left: 8px;
+    }
+    .agenda-specialist-block {
+        margin-bottom: 8px;
+    }
+    .agenda-specialist-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 0;
+        margin-bottom: 4px;
+        cursor: default;
+    }
+    .agenda-specialist-avatar {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8px;
+        color: #fff;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .agenda-specialist-name {
+        font-size: 11px;
+        color: #374151;
+        flex: 1;
+        font-weight: 500;
+    }
+    .agenda-specialist-chev {
+        font-size: 8px;
+        color: #d1d5db;
+    }
+    .agenda-specialist-slots {
+        margin-left: 0;
+        gap: 4px;
+    }
+
+    /* ── Contexto servicio/especialista en slots ── */
+    .agenda-slots-context {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 8px 6px;
+        font-size: 10.5px;
+        flex-wrap: wrap;
+    }
+    .agenda-slots-svc-name {
+        font-weight: 600;
+        color: #7c3aed;
+    }
+    .agenda-slots-spec-name {
+        font-weight: 600;
+        font-size: 10px;
+        background: #f5f3ff;
+        border-radius: 999px;
+        padding: 1px 8px;
+    }
+
+    /* ── Header especialista en grid de slots ── */
+    .agenda-slots-spec-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 2px 3px;
+        font-size: 10.5px;
+    }
+    .agenda-slots-spec-dot {
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+    .agenda-slots-spec-label {
+        font-weight: 700;
+        font-size: 10.5px;
+    }
+
+    /* ── Nombre especialista en slot ── */
+    .agenda-next-slot-spec,
+    .agenda-slot-spec-txt {
+        font-size: 8.5px;
+        font-weight: 700;
+        margin-top: 2px;
+        width: 52px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-align: center;
+    }
+    .agenda-slot-time-txt {
+        font-size: 12px;
+        font-weight: 700;
+        color: #374151;
+    }
+    /* Tooltip bonito para slots */
+    .agenda-slot-tt {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 50%; transform: translateX(-50%);
+        background: white; color: #374151;
+        border: 0.5px solid #e0e7ff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        font-size: 10px; font-weight: 500;
+        padding: 3px 9px; border-radius: 6px;
+        white-space: nowrap; pointer-events: none; z-index: 99;
+    }
+    .agenda-slot-tt::after {
+        content: ''; position: absolute;
+        top: 100%; left: 50%; transform: translateX(-50%);
+        border: 4px solid transparent; border-top-color: white;
+    }
+    .agenda-next-slot-pill:hover .agenda-slot-tt,
+    .agenda-slot-btn:hover .agenda-slot-tt { display: block; }
+
+    .agenda-next-slot-pill--sm {
+        min-width: 58px !important;
+        padding: 3px 5px !important;
+    }
+    .agenda-next-slot-pill--sm .agenda-next-slot-date { font-size: 9px !important; }
+    .agenda-next-slot-pill--sm .agenda-next-slot-time { font-size: 11px !important; }
+
+    /* ── Confirm inline citas ──────────────── */
+    .agenda-appt-confirm-inline {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 6px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 6px;
+        font-size: 11px;
+        color: #dc2626;
+        margin-top: 4px;
+        animation: agendaFadeIn .15s ease;
+    }
+    .agenda-appt-confirm-inline span { flex: 1; }
+    .agenda-appt-confirm-yes {
+        padding: 2px 8px;
+        background: #dc2626;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    .agenda-appt-confirm-yes:hover { background: #b91c1c; }
+    .agenda-appt-confirm-no {
+        padding: 2px 8px;
+        background: #fff;
+        color: #6b7280;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+    }
+    .agenda-appt-confirm-no:hover { background: #f9fafb; }
+
+
+    /* ── Reserva success ────────────────────── */
+    .agenda-pending-banner {
+            transition: opacity 0.35s ease, max-height 0.4s ease, margin-bottom 0.35s ease, padding 0.35s ease;
+            overflow: hidden;
+        }
+        .agenda-pending-banner.hiding {
+            opacity: 0;
+            max-height: 0 !important;
+            margin-bottom: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+        .agenda-slot-btn {
+            transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+        }
+        .agenda-slot-btn:active { transform: scale(0.97); }
+        .agenda-reservation-success {
+        text-align: center;
+        padding: 8px 8px 10px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        margin-bottom: 8px;
+    }
+    .agenda-reservation-success-icon {
+        font-size: 22px;
+        color: #10b981;
+        margin-bottom: 3px;
+    }
+    .agenda-reservation-success-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: #065f46;
+        margin-bottom: 6px;
+    }
+    .agenda-reservation-success-ttl {
+        font-size: 10.5px;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        margin-bottom: 8px;
+    }
+    .agenda-countdown {
+        font-size: 16px;
+        font-weight: 800;
+        color: #10b981;
+        font-variant-numeric: tabular-nums;
+        min-width: 48px;
+        display: inline-block;
+    }
+    .agenda-reservation-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .agenda-btn-confirm-payment {
+        padding: 7px 12px;
+        background: #10b981;
+        color: #fff;
+        border: none;
+        border-radius: 7px;
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        width: 100%;
+        transition: background .12s;
+    }
+    .agenda-btn-confirm-payment:hover { background: #059669; }
+    .agenda-btn-confirm-payment:disabled { opacity: .6; cursor: default; }
+    .agenda-btn-banner-sm-cancel {
+        flex: 1;
+        padding: 5px 6px;
+        font-size: 10px;
+        font-weight: 500;
+        color: #9ca3af;
+        background: #fff;
+        border: 0.5px solid #e5e7eb;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        transition: background .12s, color .12s, border-color .12s;
+    }
+    .agenda-btn-banner-sm-cancel:hover {
+        background: #fee2e2;
+        color: #ef4444;
+        border-color: #fca5a5;
+    }
+    .agenda-btn-send-msg {
+        padding: 6px 12px;
+        background: #E1DEFF;
+        color: #9961FF;
+        border: 1px solid #c4b5fd;
+        border-radius: 7px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        width: 100%;
+        transition: all .12s;
+    }
+    .agenda-btn-send-msg:hover { background: #ddd6fe; }
+    .agenda-waiting-payment {
+        font-size: 11px;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 6px;
+    }
+    .agenda-ttl-row {
+        background: #fffbeb;
+        border-radius: 5px;
+        padding: 4px 6px;
+        font-size: 10.5px;
+        color: #92400e;
+    }
+
+    /* ── Animación ──────────────────────────── */
+    @keyframes agendaFadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }

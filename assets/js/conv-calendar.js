@@ -1,3 +1,8 @@
+// ── Labels dinámicos según rubro ──────────────────────────────
+function _calLabel(key, fallback) {
+    return (typeof getCompanyLabel === 'function') ? getCompanyLabel(key, fallback) : fallback;
+}
+
 /**
  * conv-calendar.js
  * Módulo de Calendario de Citas — Heavensy
@@ -58,7 +63,6 @@ async function _calLoadAndRender(companyId) {
         return;
     }
 
-    _calInjectStyles();
     container.innerHTML = '<div class="cal-loading"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>';
 
     // Resolver resource_id: usar el de agenda si ya está, sino llamar /api/agenda/my
@@ -151,11 +155,6 @@ function _calBuild(container) {
     requestAnimationFrame(function() {
         requestAnimationFrame(function() {
             container.style.opacity = '1';
-            // Ajustar max-height de la sección tras inyectar contenido dinámico
-            const _sec = document.getElementById('contactCalendarSection');
-            if (_sec && _sec.classList.contains('rp-open')) {
-                _sec.style.maxHeight = _sec.scrollHeight + 'px';
-            }
         });
     });
 
@@ -195,45 +194,20 @@ function _calBuild(container) {
         header.innerHTML = `
             <span style="width:4px;height:4px;border-radius:50%;background:#9ca3af;display:inline-block;flex-shrink:0;margin-right:2px;"></span>
             <span style="flex:1;font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.07em;">${label}</span>
-            <i class="fas fa-chevron-down" style="font-size:8px;color:#9ca3af;transition:transform 0.25s ease;"></i>
+            <i class="fas fa-chevron-${isOpen ? 'up' : 'down'}" style="font-size:8px;color:#9ca3af;"></i>
         `;
-
-        // Contenido siempre renderizado — se anima con max-height
-        const content = document.createElement('div');
-        content.style.cssText = 'padding:2px 0 4px 11px;overflow:hidden;transition:max-height 0.28s ease, opacity 0.22s ease;';
-        buildContent(content);
-        wrapper.appendChild(header);
-        wrapper.appendChild(content);
-
-        const chev = header.querySelector('i');
-
-        // Estado inicial sin animación
-        if (!isOpen) {
-            content.style.maxHeight = '0px';
-            content.style.opacity = '0';
-            if (chev) chev.style.transform = 'rotate(-90deg)';
-        } else {
-            requestAnimationFrame(() => {
-                content.style.maxHeight = content.scrollHeight + 'px';
-                content.style.opacity = '1';
-                if (chev) chev.style.transform = 'rotate(0deg)';
-            });
-        }
-
         header.addEventListener('click', () => {
-            const nowOpen = _calSectionState[key] !== false;
-            _calSectionState[key] = !nowOpen;
-            if (nowOpen) {
-                content.style.maxHeight = '0px';
-                content.style.opacity = '0';
-                if (chev) chev.style.transform = 'rotate(-90deg)';
-            } else {
-                content.style.maxHeight = content.scrollHeight + 'px';
-                content.style.opacity = '1';
-                if (chev) chev.style.transform = 'rotate(0deg)';
-            }
+            _calSectionState[key] = !_calSectionState[key];
+            _calBuild(container);
         });
-
+        wrapper.appendChild(header);
+        if (isOpen) {
+            const content = document.createElement('div');
+            content.style.paddingLeft = '11px';
+            content.style.padding = '2px 0 4px 11px';
+            buildContent(content);
+            wrapper.appendChild(content);
+        }
         return wrapper;
     }
 
@@ -251,7 +225,7 @@ function _calBuild(container) {
     // ── 1. PRESTADOR ──
     const visibleResources = _calResources.filter(r => !_visibleSpecIds || _visibleSpecIds.has(r.resource_id));
     if (visibleResources.length > 0) {
-        filtersWrapper.appendChild(_calMakeSection('prestador', 'Prestador', (content) => {
+        filtersWrapper.appendChild(_calMakeSection('prestador', _calLabel('recurso', 'Prestador'), (content) => {
             const scroll = document.createElement('div');
             scroll.className = 'cal-filter-scroll';
             const allBtn = document.createElement('button');
@@ -259,22 +233,15 @@ function _calBuild(container) {
             allBtn.textContent = 'Todos';
             allBtn.addEventListener('click', () => { _calSpecialistFilter = null; _calBuild(container); });
             scroll.appendChild(allBtn);
-            const sortedResources = [...visibleResources].sort((a, b) => a.name.localeCompare(b.name, 'es'));
-            sortedResources.forEach((spec) => {
+            visibleResources.forEach((spec) => {
                 const gi = _calResources.indexOf(spec);
                 const agendaC = !spec.color && window._agendaGetSpecColor ? window._agendaGetSpecColor(spec.resource_id)?.text : null;
                 const specColor = spec.color || agendaC || _calColorPalette[gi % _calColorPalette.length];
                 const isActive = _calSpecialistFilter === spec.resource_id;
                 const btn = document.createElement('button');
                 btn.className = 'cal-filter-row-btn' + (isActive ? ' active' : '');
-                if (isActive) {
-                    btn.style.background = specColor + '14';
-                    btn.style.border = '1px solid ' + specColor + '4D';
-                    btn.style.color = specColor;
-                }
+                if (isActive) { btn.style.background = specColor + '14'; btn.style.border = `1px solid ${specColor}4D`; btn.style.color = specColor; }
                 btn.innerHTML = `<span class="cal-filter-row-dot" style="background:${specColor}"></span>${spec.name}`;
-                btn.addEventListener('mouseover', () => { if (!btn.classList.contains('active')) { btn.style.background = specColor + '14'; btn.style.border = '1px solid ' + specColor + '4D'; btn.style.color = specColor; } });
-                btn.addEventListener('mouseout',  () => { if (!btn.classList.contains('active')) { btn.style.background = ''; btn.style.border = ''; btn.style.color = ''; } });
                 btn.addEventListener('click', () => { _calSpecialistFilter = _calSpecialistFilter === spec.resource_id ? null : spec.resource_id; _calBuild(container); });
                 scroll.appendChild(btn);
             });
@@ -284,40 +251,17 @@ function _calBuild(container) {
     }
 
     // ── 2. SERVICIO ──
-    // Mapa color por nombre de servicio: prioridad BD (service_color en cita) → _agendaCompanyServices
-    const svcColorMap = {};
-    _calAppointments.forEach(a => {
-        const key = (a.service_name || a.service_id || '').toLowerCase().trim();
-        if (key && a.service_color && !svcColorMap[key]) svcColorMap[key] = a.service_color;
-    });
-    if (window._agendaCompanyServices) {
-        window._agendaCompanyServices.forEach(g => {
-            const key = (g.name || '').toLowerCase().trim();
-            if (key && g.color && !svcColorMap[key]) svcColorMap[key] = g.color;
-        });
-    }
-
     const allServices = [...new Map(
         _calAppointments.filter(a => a.service_name || a.service_id)
             .map(a => { const n = a.service_name || a.service_id; return [n.toLowerCase().trim(), { id: n.toLowerCase().trim(), name: n }]; })
     ).values()];
-
-    // Ordenar igual que Agenda (según _agendaCompanyServices si está disponible)
-    if (window._agendaCompanyServices?.length) {
-        const agendaOrder = window._agendaCompanyServices.map(g => (g.name || '').toLowerCase().trim());
-        allServices.sort((a, b) => {
-            const ai = agendaOrder.indexOf(a.id);
-            const bi = agendaOrder.indexOf(b.id);
-            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-        });
-    }
     const visibleServices = allServices.filter(s => !_visibleSvcNames || _visibleSvcNames.has(s.id));
 
-    filtersWrapper.appendChild(_calMakeSection('servicio', 'Servicio', (content) => {
+    filtersWrapper.appendChild(_calMakeSection('servicio', _calLabel('servicio', 'Servicio'), (content) => {
         if (visibleServices.length === 0) {
             const msg = document.createElement('p');
             msg.style.cssText = 'font-size:10.5px;color:#9ca3af;padding:4px 2px;font-style:italic;';
-            msg.textContent = 'Sin servicios para el prestador seleccionado';
+            msg.textContent = 'Sin ' + _calLabel('servicios', 'servicios') + ' para el ' + _calLabel('recurso', 'prestador').toLowerCase() + ' seleccionado';
             content.appendChild(msg);
             return;
         }
@@ -328,20 +272,13 @@ function _calBuild(container) {
         allBtn.textContent = 'Todos';
         allBtn.addEventListener('click', () => { _calServiceFilter = null; _calBuild(container); });
         scroll.appendChild(allBtn);
-        const sortedServices = [...visibleServices].sort((a, b) => a.name.localeCompare(b.name, 'es'));
-        sortedServices.forEach((svc, idx) => {
-            const svcColor = svcColorMap[svc.id] || _calColorPalette[idx % _calColorPalette.length];
+        visibleServices.forEach((svc, idx) => {
+            const svcColor = _calColorPalette[idx % _calColorPalette.length];
             const isActive = _calServiceFilter === svc.id;
             const btn = document.createElement('button');
             btn.className = 'cal-filter-row-btn cal-filter-row-btn--svc' + (isActive ? ' active' : '');
-            if (isActive) {
-                btn.style.background = svcColor + '14';
-                btn.style.border = '1px solid ' + svcColor + '4D';
-                btn.style.color = svcColor;
-            }
+            if (isActive) { btn.style.background = svcColor + '14'; btn.style.border = `1px solid ${svcColor}4D`; btn.style.color = svcColor; }
             btn.innerHTML = `<span class="cal-filter-row-dot" style="background:${svcColor}"></span>${svc.name}`;
-            btn.addEventListener('mouseover', () => { if (!btn.classList.contains('active')) { btn.style.background = svcColor + '14'; btn.style.border = '1px solid ' + svcColor + '4D'; btn.style.color = svcColor; } });
-            btn.addEventListener('mouseout',  () => { if (!btn.classList.contains('active')) { btn.style.background = ''; btn.style.border = ''; btn.style.color = ''; } });
             btn.addEventListener('click', () => { _calServiceFilter = _calServiceFilter === svc.id ? null : svc.id; _calBuild(container); });
             scroll.appendChild(btn);
         });
@@ -652,11 +589,6 @@ window.onConversationSelectedForContacts = function(waId, phone, name, companyId
 // Llamada directa desde el botón en el HTML
 function calToggleLoad() {
     const section = document.getElementById('contactCalendarSection');
-    // Dar un max-height inicial generoso para que la animación de apertura sea visible
-    // (el contenido se carga async, por eso scrollHeight era 0 al abrir)
-    if (section && section.classList.contains('rp-open') && section.style.maxHeight === '0px') {
-        section.style.maxHeight = '600px';
-    }
     setTimeout(() => {
         if (section && !section.classList.contains('hidden')) {
             // Fallbacks para obtener companyId si el hook aún no corrió
@@ -689,255 +621,4 @@ window._calRefresh = function(el) {
 // ESTILOS
 // ============================================
 
-function _calInjectStyles() {
-    if (document.getElementById('calStyles')) return;
-    const style = document.createElement('style');
-    style.id = 'calStyles';
-    style.textContent = `
-    .cal-loading { text-align:center; padding:16px; font-size:11px; color:#9ca3af; }
-    .cal-filters-wrapper { background:#fff;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.07);overflow:hidden;margin-bottom:8px;padding:7px 10px; }
-    .cal-filter-section { margin-bottom:2px; }
-    .cal-filter-scroll { display:flex;flex-direction:column;gap:2px;max-height:120px;overflow-y:auto;margin-bottom:2px;padding-right:3px;scrollbar-width:thin;scrollbar-color:#e0e7ff transparent; }
-    .cal-filter-scroll::-webkit-scrollbar { width:3px; }
-    .cal-filter-scroll::-webkit-scrollbar-thumb { background:#e0e7ff;border-radius:999px; }
-    .cal-filter-row-btn { display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;font-size:11.5px;font-weight:600;border:0.5px solid #C9D9FF;background:#EFF6FF;color:#7D84C1;cursor:pointer;white-space:nowrap;width:100%;text-align:left;transition:all .15s; }
-    .cal-filter-row-btn.active { background:#dce8ff;border-color:#C9D9FF;color:#7D84C1; }
-    .cal-filter-row-btn:hover:not(.active) { background:#E5EDFB;border-color:#C0CEF0; }
-    .cal-filter-row-btn.active:hover { background:#C9D9FF;border-color:#C9D9FF;color:#7D84C1; }
-    .cal-filter-row-btn--svc { border-color:#C9D9FF;background:#EFF6FF;color:#7D84C1; }
-    .cal-filter-row-dot { width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0; }
-
-    .cal-empty   { text-align:center; padding:12px; font-size:11px; color:#d1d5db; font-style:italic; }
-
-    /* Chips resumen */
-    .cal-summary { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px; }
-    .cal-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:20px; font-size:10px; font-weight:600; }
-    .cal-chip-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
-
-    /* Caja calendario */
-    .cal-box { background:#fff; border-radius:12px; box-shadow:0 1px 6px rgba(0,0,0,.07); overflow:hidden; margin-bottom:8px; }
-
-    /* Nav */
-    .cal-nav { display:flex; align-items:center; gap:4px; padding:5px 12px 5px; background:#EFF6FF; border-radius:10px 10px 0 0; border-bottom:1px solid #C9D9FF; }
-    .cal-nav-title { font-size:13px; font-weight:700; color:#7D84C1; flex:1; text-align:center; }
-    .cal-toggle-btn {
-        margin-left: auto;
-        font-size: 11px;
-        color: #9ca3af;
-        transition: color 0.15s, transform 0.2s;
-        padding: 2px 6px;
-        border-radius: 6px;
-    }
-    .cal-toggle-btn:hover { color: #374151; background: #f3f4f6; }
-    .cal-nav-btn { background:none; border:none; cursor:pointer; color:#9961FF; padding:2px 5px; border-radius:4px; font-size:11px; transition:background .15s; display:flex; align-items:center; justify-content:center; }
-    .cal-nav-btn:hover { background:#E1DEFF; }
-    .cal-toggle-btn { margin-left:2px; color:#9961FF; }
-    .cal-toggle-btn:hover { color:#7D84C1; background:#E1DEFF; }
-
-    /* Grid */
-    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); padding:4px 4px 2px; }
-    .cal-days-grid { padding:0 4px 4px; gap:2px; }
-    .cal-day-header { text-align:center; font-size:10px; font-weight:600; color:#9ca3af; padding:2px 0; }
-
-    /* Días */
-    .cal-day { position:relative; text-align:center; padding:2px 1px; border-radius:5px; border:1.5px solid transparent; transition:all .12s; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-    .cal-day:not(.cal-day--past):hover {
-    background: #eff6ff;
-    border: 1px solid #C9D9FF;
-    cursor: pointer; }
-    .cal-day--has-citas { cursor:pointer; }
-    .cal-day--has-citas:hover { background:#eff6ff; border: 1px solid #C9D9FF; }
-    .cal-day--today { border-color:#C9D9FF; }
-    .cal-day--selected {
-    background: #eff6ff;
-    border: 1px solid #C9D9FF;
-    color: #7D84C1;
-}
-    .cal-day-num { font-size:11px; line-height:1.2; }
-    .cal-day--has-citas .cal-day-num { font-weight:700; color:#1f2937; }
-    .cal-day--today .cal-day-num    { color:#7D84C1; font-weight:700; }
-    .cal-day--selected .cal-day-num { color: #7D84C1; }
-    .cal-day:not(.cal-day--has-citas):not(.cal-day--past) .cal-day-num { color:#6b7280; }
-    .cal-day--past .cal-day-num { color:#d1d5db; cursor:default; }
-
-    /* Dots */
-    .cal-dots { display:flex; gap:2px; margin-top:2px; justify-content:center; }
-    .cal-dot   { width:4px; height:4px; border-radius:50%; display:inline-block; }
-    .cal-day--selected .cal-dot { outline: 1.5px solid rgba(255,255,255,0.6); outline-offset: 0.5px; }
-
-    /* Panel día */
-    .cal-day-panel { background:#fff; border-radius:12px; box-shadow:0 1px 6px rgba(0,0,0,.07); overflow:hidden; margin-bottom:8px; }
-    .cal-day-panel-header { display:flex; align-items:center; justify-content:space-between; padding:9px 12px 7px; border-bottom:1px solid #f3f4f6; }
-    .cal-day-panel-title  { font-size:11.5px; font-weight:700; color:#1f2937; text-transform:capitalize; }
-    .cal-day-panel-count  { font-size:10px; background:#e0f2fe; color:#0284c7; padding:2px 8px; border-radius:20px; font-weight:600; }
-
-    /* Lista citas */
-    .cal-appt-list { padding:6px 8px; display:flex; flex-direction:column; gap:5px; max-height:280px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#e5e7eb transparent; }
-    .cal-appt-item { display:flex; align-items:center; gap:8px; padding:7px 9px; border-radius:8px; }
-    .cal-appt-time { text-align:center; min-width:34px; }
-    .cal-appt-start { display:block; font-size:11px; font-weight:800; color:#1f2937; }
-    .cal-appt-end   { display:block; font-size:9px; color:#9ca3af; }
-    .cal-appt-info  { flex:1; min-width:0; }
-    .cal-appt-service { font-size:11px; font-weight:600; color:#1f2937; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .cal-appt-contact { font-size:10px; color:#6b7280; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .cal-appt-badge   { font-size:9.5px; font-weight:600; padding:2px 7px; border-radius:20px; border:1px solid; background:#fff; white-space:nowrap; }
-        .cal-appt-item    { transition: background 0.3s ease; }
-        .cal-appt-badge   { transition: color 0.3s, border-color 0.3s, background 0.3s; }
-        .cal-confirm-btn  { transition: opacity 0.25s, transform 0.25s; }
-        .cal-confirm-btn.fading { opacity: 0; transform: scale(0.8); }
-        .cal-inline-msg   { animation: calFadeIn 0.3s ease; }
-        .cal-appt-item    { animation: calFadeIn 0.25s ease; }
-        @keyframes calFadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
-        .cal-inline-confirm { animation: calFadeIn 0.25s ease; }
-        .agenda-pending-banner { transition: opacity 0.3s, max-height 0.4s, margin 0.3s; overflow:hidden; }
-        .agenda-pending-banner.hiding { opacity:0; max-height:0; margin-bottom:0; }
-
-    /* Leyenda */
-    .cal-summary { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
-    .cal-legend { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; padding:6px 0 2px; }
-    .cal-legend-item { display:inline-flex; align-items:center; gap:3px; font-size:9px; color:#9ca3af; }
-    .cal-filter-btn {
-        display: inline-flex; align-items: center; gap: 4px;
-        font-size: 10px; font-weight: 600; padding: 4px 10px;
-        border-radius: 20px; cursor: pointer; transition: all .15s;
-        border: 1.5px solid var(--filter-color, #d1d5db);
-        background: #fff;
-        color: var(--filter-color, #6b7280);
-        opacity: 0.5;
-    }
-    .cal-filter-btn:hover { opacity: 0.8; }
-    .cal-filter-btn--active {
-        background: var(--filter-bg, #f3f4f6);
-        opacity: 1;
-        box-shadow: 0 1px 3px 0 rgba(0,0,0,.08);
-    }
-    `;
-    document.head.appendChild(style);
-}
-
-function _calShowConfirmModal(appointmentId) {
-    // Cerrar cualquier panel inline previo
-    const prev = document.querySelector('.cal-inline-confirm');
-    if (prev) prev.remove();
-
-    const calBtn = document.querySelector('[data-confirm-id="' + appointmentId + '"]');
-    const anchor = calBtn ? calBtn.closest('.cal-appt-item') : null;
-
-    const banner = document.querySelector('.agenda-pending-banner');
-    const canConfirm = banner && typeof window._agendaConfirmPayment === 'function';
-
-    const panel = document.createElement('div');
-    panel.className = 'cal-inline-confirm';
-
-    if (canConfirm) {
-        // ── Flujo normal: pedir confirmación ──
-        panel.style.cssText = 'background:#f0fdf4;border:0.5px solid #bbf7d0;border-radius:8px;padding:8px 10px;margin-top:6px;font-size:11px;animation:calFadeIn 0.2s ease;';
-        panel.innerHTML = ''
-            + '<div style="color:#166534;font-weight:600;margin-bottom:8px;"><i class="fas fa-check-circle" style="margin-right:4px;"></i>¿Confirmar pago recibido?</div>'
-            + '<div style="display:flex;gap:6px;">'
-            + '<button class="cal-inline-cancel" style="flex:1;padding:4px 0;font-size:11px;color:#6b7280;background:#fff;border:0.5px solid #e5e7eb;border-radius:6px;cursor:pointer;">Cancelar</button>'
-            + '<button class="cal-inline-confirm-btn" style="flex:1;padding:4px 0;font-size:11px;font-weight:600;background:#10b981;color:#fff;border:none;border-radius:6px;cursor:pointer;">Sí, confirmar</button>'
-            + '</div>';
-
-        if (anchor) anchor.after(panel); else banner.before(panel);
-
-        panel.querySelector('.cal-inline-cancel').addEventListener('click', () => panel.remove());
-        panel.querySelector('.cal-inline-confirm-btn').addEventListener('click', () => {
-            panel.remove();
-            banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            window._agendaConfirmPayment(appointmentId);
-        });
-    } else {
-        // ── Sin reserva activa: aviso inline ──
-        panel.style.cssText = 'background:#fef9c3;border:0.5px solid #fde047;border-radius:8px;padding:8px 10px;margin-top:6px;font-size:11px;animation:calFadeIn 0.2s ease;display:flex;align-items:center;justify-content:space-between;gap:8px;';
-        panel.innerHTML = ''
-            + '<span style="color:#92400e;"><i class="fas fa-exclamation-circle" style="margin-right:4px;color:#d97706;"></i>No hay reserva activa para confirmar.</span>'
-            + '<button class="cal-inline-cancel" style="padding:2px 8px;font-size:10px;color:#6b7280;background:#fff;border:0.5px solid #e5e7eb;border-radius:5px;cursor:pointer;flex-shrink:0;">OK</button>';
-
-        if (anchor) anchor.after(panel); else document.querySelector('#contactCalendarContainer')?.appendChild(panel);
-
-        panel.querySelector('.cal-inline-cancel').addEventListener('click', () => panel.remove());
-        // Auto-cerrar a los 4 segundos
-        setTimeout(() => { if (panel.parentNode) panel.remove(); }, 4000);
-    }
-}
-
-async function _calConfirmReservation(appointmentId, overlay) {
-    var btn = overlay ? overlay.querySelector('#calModalConfirm') : null;
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
-    try {
-        const res = await fetch(`${API_BASE_URL || ''}/api/agenda/reservations/${appointmentId}/confirm`, {
-            method: 'PATCH',
-            headers: { ..._agendaAuthHeaders(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ payment_reference: 'manual' })
-        });
-        var data = await res.json();
-        if (overlay) overlay.remove();
-        if (data.success) {
-            var appt = _calAppointments.find(function(a){ return a._id === appointmentId; });
-            if (appt) appt.status = 'confirmed';
-            // Cerrar todos los banners de reserva pendiente en Agenda
-            document.querySelectorAll('.agenda-pending-banner').forEach(function(b) {
-                b.classList.add('hiding');
-                setTimeout(function() { if (b.parentNode) b.remove(); }, 400);
-            });
-            // Render completo del calendario para actualizar contadores, filtros y dots
-            var container = document.getElementById('contactCalendarContainer');
-            if (container) _calBuild(container);
-            // Refrescar Agenda si está abierta
-            if (typeof loadAgenda === 'function' && window._agendaCurrentUserId && window._agendaCurrentCompanyId) {
-                loadAgenda(window._agendaCurrentCompanyId, window._agendaCurrentUserId);
-            }
-        } else {
-            _calShowMsg(data.error || 'Error al confirmar', 'error');
-        }
-    } catch(e) {
-        if (overlay) overlay.remove();
-        _calShowMsg('Error de conexión', 'error');
-    }
-}
-
-// ============================================
-// ACTUALIZACIÓN QUIRÚRGICA DE ITEM
-// ============================================
-function _calUpdateItemStatus(appointmentId, newStatus) {
-    var cfg = _CAL_STATUS[newStatus] || { label: newStatus, color: '#6b7280', bg: '#f9fafb' };
-
-    // Actualizar badge
-    var badge = document.querySelector('[data-confirm-id="' + appointmentId + '"]');
-    if (badge) {
-        var item = badge.closest('.cal-appt-item');
-        if (item) {
-            // Fade out el botón confirmar
-            badge.classList.add('fading');
-            setTimeout(function() {
-                badge.remove();
-                // Actualizar badge de status
-                var badgeEl = item.querySelector('.cal-appt-badge');
-                if (badgeEl) {
-                    badgeEl.style.color = cfg.color;
-                    badgeEl.style.borderColor = cfg.color;
-                    badgeEl.textContent = cfg.label;
-                }
-                // Actualizar bg del item
-                item.style.background = cfg.bg;
-            }, 250);
-        }
-    } else {
-        // Si no encuentra el botón, rebuild completo como fallback
-        var container = document.getElementById('contactCalendarContainer');
-        if (container) _calBuild(container);
-    }
-
-    // Actualizar filtros de resumen sin rebuild
-    var summaryBtn = document.querySelector('.cal-filter-btn[data-status="reserved"]');
-    if (summaryBtn) {
-        var count = _calAppointments.filter(function(a){ return a.status === 'reserved'; }).length;
-        var dot = summaryBtn.querySelector('.cal-chip-dot');
-        if (count === 0 && summaryBtn.parentNode) {
-            summaryBtn.style.transition = 'opacity 0.3s';
-            summaryBtn.style.opacity = '0';
-            setTimeout(function(){ summaryBtn.remove(); }, 300);
-        }
-    }
-}
+// Estilos en assets/css/conv-calendar.css;

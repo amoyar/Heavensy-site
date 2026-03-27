@@ -193,6 +193,27 @@ function handleNewMessage(data) {
     } else {
         showMessageNotification(data, state);
     }
+
+    // 3. Refrescar Agenda y Calendario cuando hay nueva reserva
+    const esRespuestaAgenda = data.is_agenda_response ||
+        (data.text && (
+            data.text.includes('Reserva creada') ||
+            data.text.includes('reservada por') ||
+            data.text.includes('Datos de pago')
+        ));
+
+    if (esRespuestaAgenda && state.currentConversation?.id === msgUserId) {
+        setTimeout(() => {
+            if (typeof window._reloadAgenda === 'function') {
+                window._reloadAgenda();
+                console.log('📅 [realtime] Agenda refreshed');
+            }
+            if (typeof window._reloadCalendar === 'function') {
+                window._reloadCalendar();
+                console.log('📅 [realtime] Calendario refreshed');
+            }
+        }, 1200);
+    }
 }
 
 // ============================================
