@@ -13,6 +13,91 @@
 console.log('✅ conversaciones.js (orquestador) cargado');
 
 // ============================================
+// TOGGLE CONVERSACIONES / SEGUIMIENTO
+// ============================================
+
+var _convMode = 'conv';
+
+function setConvMode(mode) {
+  _convMode = mode;
+
+  // Chips
+  var chipConv = document.getElementById('mode-chip-conv');
+  var chipSeg  = document.getElementById('mode-chip-seg');
+  if (chipConv) {
+    chipConv.style.background   = mode === 'conv' ? '#fff'         : 'transparent';
+    chipConv.style.color        = mode === 'conv' ? '#9961FF'      : '#6b7280';
+    chipConv.style.boxShadow    = mode === 'conv' ? '0 1px 4px rgba(0,0,0,.1)' : 'none';
+  }
+  if (chipSeg) {
+    chipSeg.style.background    = mode === 'seg'  ? '#fff'         : 'transparent';
+    chipSeg.style.color         = mode === 'seg'  ? '#9961FF'      : '#6b7280';
+    chipSeg.style.boxShadow     = mode === 'seg'  ? '0 1px 4px rgba(0,0,0,.1)' : 'none';
+  }
+
+  // Filtros avanzados — solo en conversaciones
+  var filtersBtn = document.getElementById('advancedFiltersToggle');
+  if (filtersBtn) filtersBtn.style.display = mode === 'conv' ? '' : 'none';
+  var filtersPanel = document.getElementById('advancedFiltersPanel');
+  if (filtersPanel && mode === 'seg') filtersPanel.classList.add('hidden');
+
+  // Lista de conversaciones vs lista de clientes seguimiento
+  var convList   = document.getElementById('conversationsList');
+  var convSearch = document.getElementById('searchConversations');
+  var segPanel   = document.getElementById('seg-clientes-panel');
+
+  if (convList)   convList.style.display   = mode === 'conv' ? '' : 'none';
+  if (convSearch) {
+    convSearch.closest('.relative') && (convSearch.closest('.relative').style.display = mode === 'conv' ? '' : 'none');
+  }
+
+  // Panel de seguimiento en el área principal
+  var convWrapper = document.getElementById('convWrapper');
+  var segWrapper  = document.getElementById('seguimientoWrapper');
+
+  if (mode === 'seg') {
+    if (convWrapper) convWrapper.style.display = 'none';
+    if (!segWrapper) {
+      _initSeguimientoPanel();
+    } else {
+      segWrapper.style.display = '';
+    }
+  } else {
+    if (convWrapper) convWrapper.style.display = '';
+    if (segWrapper)  segWrapper.style.display  = 'none';
+  }
+}
+
+function _initSeguimientoPanel() {
+  // Crear el wrapper del módulo de seguimiento si no existe
+  var main = document.getElementById('app') || document.body;
+  var wrapper = document.createElement('div');
+  wrapper.id = 'seguimientoWrapper';
+  wrapper.style.cssText = 'height:100%;display:flex;overflow:hidden;';
+
+  // Cargar el HTML del módulo de seguimiento via fetch
+  fetch('./assets/seguimiento-conv.html')
+    .then(function(r){ return r.text(); })
+    .then(function(html){
+      wrapper.innerHTML = html;
+      main.appendChild(wrapper);
+      // Inicializar el módulo
+      if (typeof initSeguimientoModule === 'function') {
+        initSeguimientoModule();
+      }
+    })
+    .catch(function(e){
+      console.error('❌ Error cargando módulo seguimiento:', e);
+      wrapper.innerHTML = '<div style="padding:20px;color:#ef4444">Error cargando módulo de seguimiento</div>';
+      main.appendChild(wrapper);
+    });
+}
+
+window.setConvMode = setConvMode;
+
+
+
+// ============================================
 // TOGGLE BOTONES CONTACTO (VIP / Aliarme)
 // ============================================
 function _toggleContactBtn(btn, c) {

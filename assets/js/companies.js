@@ -1,598 +1,662 @@
 // ============================================
-// COMPANIES COMPLETE - HEAVENSY ADMIN
+// COMPANIES.JS — Módulo de Empresas
+// Heavensy Admin
 // ============================================
 
-let companies = [];
-let editingCompanyId = null;
-let AVAILABLE_PLANS = [];
+console.log('✅ companies.js cargado');
 
-// Paginación
-let currentPageCompanies = 1;
-let itemsPerPageCompanies = 10;
-let totalCompanies = 0;
+// ── Estado ────────────────────────────────────
+let _companies       = [];      // lista completa desde API
+let _companiesFiltered = [];    // lista filtrada
+let _editingCompanyId  = null;  // null = nueva empresa
+let _currentStep       = 0;
+let _selectedRubro     = 'salud';
+let _rubroConfig       = null;  // config del template seleccionado
+
+// ── Constantes ────────────────────────────────
+const RUBRO_LABELS = {
+  salud:        { icon: '🏥', name: 'Salud' },
+  cabanas:      { icon: '🏕️', name: 'Cabañas' },
+  cowork:       { icon: '💼', name: 'Cowork' },
+  fitness:      { icon: '💪', name: 'Fitness' },
+  educacion:    { icon: '📚', name: 'Academia' },
+  propiedades:  { icon: '🏠', name: 'Propiedades' },
+};
+
+const AVAILABILITY_LABELS = {
+  por_hora:              'Disponibilidad por hora (con almuerzo)',
+  por_hora_sin_almuerzo: 'Disponibilidad por hora (sin pausa)',
+  por_dia:               'Disponibilidad por días (check-in/out)',
+  por_visita:            'Disponibilidad por visitas',
+};
 
 // ============================================
-// INIT
+// INICIALIZACIÓN
 // ============================================
 
-function initCompaniesPage() {
-  console.log('✅ Página de empresas iniciada');
-  fetchSubscriptionPlans();
-  fetchCompanies();
-  
-  const form = document.getElementById('companyForm');
-  if (form) {
-    form.addEventListener('submit', handleSaveCompany);
-  }
+async function initCompaniesPage() {
+  console.log('🚀 Inicializando módulo de empresas');
+  await fetchCompanies();
 }
 
 // ============================================
-// FETCH SUBSCRIPTION PLANS
-// ============================================
-
-async function fetchSubscriptionPlans() {
-  try {
-    // IMPORTANTE: Sin barra final para evitar redirect en OPTIONS
-    const res = await apiCall('/api/subscription-plans');
-
-    if (res && res.ok && res.data) {
-      // El backend retorna array directo en res.data
-      AVAILABLE_PLANS = Array.isArray(res.data) ? res.data : [];
-      console.log('✅ Planes de suscripción cargados:', AVAILABLE_PLANS.length);
-    } else {
-      console.warn('⚠️ No se pudieron cargar planes del API, usando valores por defecto');
-      useFallbackPlans();
-    }
-  } catch (error) {
-    console.warn('⚠️ Error al cargar planes, usando valores por defecto:', error);
-    useFallbackPlans();
-  }
-}
-
-function useFallbackPlans() {
-  AVAILABLE_PLANS = [
-    { plan_id: 'FREE', plan_name: 'Plan Gratuito', monthly_message_limit: 1000 },
-    { plan_id: 'BASIC', plan_name: 'Plan Básico', monthly_message_limit: 5000 },
-    { plan_id: 'PREMIUM', plan_name: 'Plan Premium', monthly_message_limit: 10000 },
-    { plan_id: 'ENTERPRISE', plan_name: 'Plan Empresarial', monthly_message_limit: 50000 }
-  ];
-}
-
-// ============================================
-// FETCH COMPANIES
+// LISTADO
 // ============================================
 
 async function fetchCompanies() {
-  const res = await apiCall('/api/companies', {
-    loaderMessage: 'Cargando empresas...'
-  });
+  const tbody   = document.getElementById('companies-tbody');
+  const loading = document.getElementById('companies-loading');
+  const empty   = document.getElementById('companies-empty');
 
-  if (!res || !res.ok) {
+  if (loading) loading.style.display = 'flex';
+  if (empty)   empty.style.display   = 'none';
+  if (tbody)   tbody.innerHTML       = '';
+
+  const res = await apiCall('/api/companies', { loaderMessage: 'Cargando empresas...' });
+
+  if (loading) loading.style.display = 'none';
+
+  if (!res.ok) {
     showToast('Error cargando empresas', 'error');
     return;
   }
 
-  companies = res.data.companies || res.data || [];
-  totalCompanies = companies.length;
-  
-  updateCompaniesStats();
+  _companies         = res.data.companies || [];
+  _companiesFiltered = [..._companies];
   renderCompanies();
-  renderCompaniesPagination();
+  updateStats();
 }
-
-// ============================================
-// STATS
-// ============================================
-
-function updateCompaniesStats() {
-  const total = companies.length;
-  const active = companies.filter(c => c.status === 'A').length;
-  const inactive = total - active;
-
-  const totalEl = document.getElementById('totalCompanies');
-  const activeEl = document.getElementById('activeCompanies');
-  const inactiveEl = document.getElementById('inactiveCompanies');
-
-  if (totalEl) totalEl.textContent = total;
-  if (activeEl) activeEl.textContent = active;
-  if (inactiveEl) inactiveEl.textContent = inactive;
-}
-
-// ============================================
-// TOGGLE STATUS
-// ============================================
-
-async function toggleCompanyStatus(companyId, currentStatus) {
-  const newStatus = currentStatus === 'A' ? 'I' : 'A';
-  
-  try {
-    const res = await apiCall(`/api/companies/${companyId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ status: newStatus }),
-      loaderMessage: 'Actualizando estado...'
-    });
-
-    if (res && res.ok) {
-      showToast(`Empresa ${newStatus === 'A' ? 'activada' : 'desactivada'} correctamente`, 'success');
-      
-      const company = companies.find(c => c.company_id === companyId);
-      if (company) {
-        company.status = newStatus;
-      }
-      
-      updateCompaniesStats();
-      renderCompanies();
-    } else {
-      showToast(res.data?.msg || 'Error al cambiar estado', 'error');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    showToast('Error de conexión', 'error');
-  }
-}
-
-// ============================================
-// DELETE COMPANY
-// ============================================
-
-function confirmDeleteCompany(companyId) {
-  const company = companies.find(c => c.company_id === companyId);
-  const companyName = company ? company.name || companyId : companyId;
-  
-  const modal = document.createElement('div');
-  modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50';
-  modal.innerHTML = `
-    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
-      <div class="p-6">
-        <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
-          <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
-        </div>
-        <h3 class="text-xl font-bold text-gray-900 text-center mb-2">¿Eliminar Empresa?</h3>
-        <p class="text-gray-600 text-center mb-2">
-          Estás a punto de eliminar la empresa:
-        </p>
-        <p class="text-lg font-semibold text-gray-900 text-center mb-4">
-          ${escapeHtml(companyName)}
-        </p>
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-          <div class="flex">
-            <i class="fas fa-exclamation-circle text-yellow-400 mt-0.5 mr-3"></i>
-            <div class="text-sm text-yellow-700">
-              <p class="font-medium mb-1">¡Advertencia!</p>
-              <p>Esta acción eliminará permanentemente la empresa y todos sus datos asociados de la base de datos. Esta operación no se puede deshacer.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="flex gap-3 px-6 py-4 bg-gray-50 rounded-b-xl">
-        <button
-          onclick="this.closest('.fixed').remove()"
-          class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-        >
-          Cancelar
-        </button>
-        <button
-          onclick="deleteCompany('${companyId}'); this.closest('.fixed').remove();"
-          class="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
-        >
-          Sí, eliminar
-        </button>
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(modal);
-}
-
-async function deleteCompany(companyId) {
-  try {
-    const res = await apiCall(`/api/companies/${companyId}`, {
-      method: 'DELETE',
-      loaderMessage: 'Eliminando empresa...'
-    });
-
-    if (res && res.ok) {
-      showToast('Empresa eliminada correctamente', 'success');
-      
-      companies = companies.filter(c => c.company_id !== companyId);
-      totalCompanies = companies.length;
-      
-      const totalPages = Math.ceil(totalCompanies / itemsPerPageCompanies);
-      if (currentPageCompanies > totalPages && currentPageCompanies > 1) {
-        currentPageCompanies--;
-      }
-      
-      updateCompaniesStats();
-      renderCompanies();
-      renderCompaniesPagination();
-    } else {
-      showToast(res.data?.msg || 'Error al eliminar empresa', 'error');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    showToast('Error de conexión', 'error');
-  }
-}
-
-// ============================================
-// RENDER COMPANIES WITH PAGINATION
-// ============================================
 
 function renderCompanies() {
-  const tbody = document.getElementById('companiesTable');
+  const tbody = document.getElementById('companies-tbody');
+  const empty = document.getElementById('companies-empty');
   if (!tbody) return;
 
   tbody.innerHTML = '';
 
-  const startIndex = (currentPageCompanies - 1) * itemsPerPageCompanies;
-  const endIndex = startIndex + itemsPerPageCompanies;
-  const paginatedCompanies = companies.slice(startIndex, endIndex);
-
-  const showingFrom = document.getElementById('showingFromCompanies');
-  const showingTo = document.getElementById('showingToCompanies');
-  const totalRecords = document.getElementById('totalRecordsCompanies');
-
-  if (showingFrom) showingFrom.textContent = totalCompanies > 0 ? startIndex + 1 : 0;
-  if (showingTo) showingTo.textContent = Math.min(endIndex, totalCompanies);
-  if (totalRecords) totalRecords.textContent = totalCompanies;
-
-  if (paginatedCompanies.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
-          <i class="fas fa-building text-4xl mb-3"></i>
-          <p>No hay empresas registradas</p>
-        </td>
-      </tr>
-    `;
+  if (_companiesFiltered.length === 0) {
+    if (empty) empty.style.display = 'flex';
     return;
   }
+  if (empty) empty.style.display = 'none';
 
-  paginatedCompanies.forEach(c => {
+  _companiesFiltered.forEach(company => {
     const tr = document.createElement('tr');
-    tr.className = 'hover:bg-gray-50';
-
-    const isActive = c.status === 'A';
-    
-    // Obtener nombre del plan
-    const plan = AVAILABLE_PLANS.find(p => p.plan_id === c.plan_id);
-    const planName = plan ? plan.plan_name : c.plan_id || '-';
+    const isActive    = company.active !== false;
+    const rubro       = company.business_config?.template || '—';
+    const rubroInfo   = RUBRO_LABELS[rubro] || { icon: '🏢', name: rubro };
+    const hasWa       = !!(company.whatsapp_config?.phone_number_id || company.phone_number_id);
+    const plan        = company.plan_id || '—';
 
     tr.innerHTML = `
-      <td class="px-6 py-4 text-sm font-medium text-gray-900">${escapeHtml(c.company_id)}</td>
-      <td class="px-6 py-4 text-sm text-gray-900">${escapeHtml(c.name || '')}</td>
-      <td class="px-6 py-4 text-sm text-gray-700">${escapeHtml(c.contact_email || '')}</td>
-      <td class="px-6 py-4 text-sm text-gray-700">${escapeHtml(c.contact_phone || '-')}</td>
-      <td class="px-6 py-4 text-sm text-center text-gray-700">${escapeHtml(planName)}</td>
-      <td class="px-6 py-4">
-        <button
-          onclick="toggleCompanyStatus('${c.company_id}', '${c.status}')"
-          class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-            isActive ? 'bg-green-500' : 'bg-gray-300'
-          }"
-          title="${isActive ? 'Click para desactivar' : 'Click para activar'}"
-        >
-          <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            isActive ? 'translate-x-6' : 'translate-x-1'
-          }"></span>
-        </button>
-        <span class="ml-2 text-sm font-medium ${
-          isActive ? 'text-green-700' : 'text-gray-500'
-        }">
-          ${isActive ? 'Activa' : 'Inactiva'}
+      <td>
+        <div class="company-name-cell">${escapeHtml(company.name || company.company_id)}</div>
+        <div class="company-id-cell">${escapeHtml(company.company_id)}</div>
+      </td>
+      <td>
+        <span class="badge-rubro">${rubroInfo.icon} ${rubroInfo.name}</span>
+      </td>
+      <td><span class="badge-plan">${escapeHtml(plan)}</span></td>
+      <td>
+        <span class="wa-indicator ${hasWa ? 'ok' : 'miss'}">
+          <i class="fab fa-whatsapp"></i>
+          ${hasWa ? 'Configurado' : 'Sin config'}
         </span>
       </td>
-      <td class="px-6 py-4 text-right">
-        <button 
-          onclick="openCompanyModal('${c.company_id}')"
-          class="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
-          title="Editar empresa"
-        >
-          <i class="fas fa-edit"></i>
+      <td>
+        <label class="switch">
+          <input type="checkbox" ${isActive ? 'checked' : ''}
+            onchange="toggleCompanyStatus('${company.company_id}', ${isActive}, this)" />
+          <span class="slider"></span>
+        </label>
+      </td>
+      <td>
+        <button class="btn-icon" title="Editar" onclick="openWizard('${company.company_id}')">
+          <i class="fas fa-pen"></i>
         </button>
-        <button 
-          onclick="confirmDeleteCompany('${c.company_id}')"
-          class="text-red-600 hover:text-red-800 text-sm font-medium"
-          title="Eliminar empresa"
-        >
+        <button class="btn-icon danger" title="Eliminar" onclick="confirmDeleteCompany('${company.company_id}')">
           <i class="fas fa-trash"></i>
         </button>
       </td>
     `;
-
     tbody.appendChild(tr);
   });
 }
 
-// ============================================
-// PAGINATION
-// ============================================
+function updateStats() {
+  const total    = _companies.length;
+  const active   = _companies.filter(c => c.active !== false).length;
+  const inactive = total - active;
 
-function renderCompaniesPagination() {
-  const container = document.getElementById('paginationControlsCompanies');
-  if (!container) return;
+  const el = id => document.getElementById(id);
+  if (el('st-total'))    el('st-total').textContent    = total;
+  if (el('st-active'))   el('st-active').textContent   = active;
+  if (el('st-inactive')) el('st-inactive').textContent = inactive;
+}
 
-  const totalPages = Math.ceil(totalCompanies / itemsPerPageCompanies);
-  
-  let html = '';
+// ── Filtros ───────────────────────────────────
 
-  html += `
-    <div class="flex items-center gap-2">
-      <span class="text-sm text-gray-600">Mostrar:</span>
-      <select 
-        onchange="changeItemsPerPageCompanies(this.value)" 
-        class="border rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500"
-      >
-        <option value="5" ${itemsPerPageCompanies === 5 ? 'selected' : ''}>5</option>
-        <option value="10" ${itemsPerPageCompanies === 10 ? 'selected' : ''}>10</option>
-        <option value="20" ${itemsPerPageCompanies === 20 ? 'selected' : ''}>20</option>
-        <option value="50" ${itemsPerPageCompanies === 50 ? 'selected' : ''}>50</option>
-      </select>
+function filterCompanies() {
+  const search   = (document.getElementById('f-search')?.value   || '').toLowerCase();
+  const plan     = (document.getElementById('f-plan')?.value     || '');
+  const status   = (document.getElementById('f-status')?.value   || '');
+  const template = (document.getElementById('f-template')?.value || '');
+
+  _companiesFiltered = _companies.filter(c => {
+    const matchSearch = !search ||
+      c.company_id?.toLowerCase().includes(search) ||
+      c.name?.toLowerCase().includes(search) ||
+      c.contact_email?.toLowerCase().includes(search);
+
+    const matchPlan   = !plan   || c.plan_id === plan;
+    const matchStatus = !status ||
+      (status === 'active'   && c.active !== false) ||
+      (status === 'inactive' && c.active === false);
+    const matchTemplate = !template || c.business_config?.template === template;
+
+    return matchSearch && matchPlan && matchStatus && matchTemplate;
+  });
+
+  renderCompanies();
+}
+
+function clearCompanyFilters() {
+  ['f-search','f-plan','f-status','f-template'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  _companiesFiltered = [..._companies];
+  renderCompanies();
+}
+
+// ── Toggle activo ─────────────────────────────
+
+async function toggleCompanyStatus(companyId, currentActive, checkbox) {
+  const newActive = !currentActive;
+  const res = await apiCall(`/api/companies/${companyId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ active: newActive }),
+  });
+
+  if (res.ok) {
+    const company = _companies.find(c => c.company_id === companyId);
+    if (company) company.active = newActive;
+    updateStats();
+    showToast(`Empresa ${newActive ? 'activada' : 'desactivada'}`, 'success');
+  } else {
+    checkbox.checked = currentActive; // revertir
+    showToast('Error actualizando empresa', 'error');
+  }
+}
+
+// ── Eliminar ──────────────────────────────────
+
+function confirmDeleteCompany(companyId) {
+  const company = _companies.find(c => c.company_id === companyId);
+  const name    = company?.name || companyId;
+
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:12px;padding:24px;max-width:380px;width:100%;margin:0 16px">
+      <div style="font-size:14px;font-weight:700;color:#3b4a6b;margin-bottom:8px">
+        ¿Desactivar empresa?
+      </div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:20px">
+        La empresa <strong>${escapeHtml(name)}</strong> quedará inactiva. Esta acción es reversible.
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="this.closest('.fixed').remove()"
+          style="padding:7px 16px;border:1px solid #e5e7eb;border-radius:7px;font-size:12px;cursor:pointer;background:#fff">
+          Cancelar
+        </button>
+        <button onclick="deleteCompany('${companyId}');this.closest('.fixed').remove()"
+          style="padding:7px 16px;border:none;border-radius:7px;font-size:12px;cursor:pointer;background:#ef4444;color:#fff;font-weight:600">
+          Desactivar
+        </button>
+      </div>
     </div>
   `;
+  document.body.appendChild(modal);
+}
 
-  if (totalPages <= 1) {
-    container.innerHTML = html;
+async function deleteCompany(companyId) {
+  const res = await apiCall(`/api/companies/${companyId}`, { method: 'DELETE' });
+  if (res.ok) {
+    showToast('Empresa desactivada', 'success');
+    await fetchCompanies();
+  } else {
+    showToast('Error desactivando empresa', 'error');
+  }
+}
+
+// ============================================
+// WIZARD
+// ============================================
+
+async function openWizard(companyId = null) {
+  _editingCompanyId = companyId;
+  _currentStep      = 0;
+  _selectedRubro    = 'salud';
+  _rubroConfig      = null;
+
+  // Limpiar formulario
+  clearWizardForm();
+
+  // Título
+  const titleEl = document.getElementById('wizard-title');
+  if (titleEl) titleEl.textContent = companyId ? 'Editar empresa' : 'Nueva empresa';
+
+  const saveBtnText = document.getElementById('save-btn-text');
+  if (saveBtnText) saveBtnText.textContent = companyId ? 'Guardar cambios' : 'Crear empresa';
+
+  // Si edición: cargar datos
+  if (companyId) {
+    await loadCompanyIntoWizard(companyId);
+  } else {
+    // Nueva empresa: cargar template salud por defecto
+    await loadRubroTemplate('salud');
+  }
+
+  // Mostrar vista wizard
+  showView('view-wizard');
+  wGoStep(0);
+}
+
+function closeWizard() {
+  showView('view-list');
+  _editingCompanyId = null;
+}
+
+function showView(viewId) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const view = document.getElementById(viewId);
+  if (view) view.classList.add('active');
+}
+
+// ── Cargar empresa en wizard ──────────────────
+
+async function loadCompanyIntoWizard(companyId) {
+  const [resCompany, resConfig] = await Promise.all([
+    apiCall(`/api/companies/${companyId}`),
+    apiCall(`/api/companies/${companyId}/config`),
+  ]);
+
+  if (!resCompany.ok) {
+    showToast('Error cargando empresa', 'error');
     return;
   }
 
-  html += '<div class="flex gap-2">';
+  const company = resCompany.data.company;
+  const config  = resConfig.ok ? resConfig.data.config : null;
 
-  html += `
-    <button 
-      onclick="changePageCompanies(${currentPageCompanies - 1})"
-      ${currentPageCompanies === 1 ? 'disabled' : ''}
-      class="px-3 py-1 rounded border ${
-        currentPageCompanies === 1
-          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          : 'bg-white text-gray-700 hover:bg-gray-50'
-      }"
-    >
-      <i class="fas fa-chevron-left"></i>
-    </button>
-  `;
+  // Paso 1: Datos básicos
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = !!val; };
 
-  const maxVisible = 5;
-  let startPage = Math.max(1, currentPageCompanies - Math.floor(maxVisible / 2));
-  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+  set('w-company_id',       company.company_id);
+  set('w-name',             company.name);
+  set('w-legal_name',       company.legal_name);
+  set('w-rut',              company.rut);
+  set('w-description',      company.description);
+  set('w-contact_email',    company.contact_email);
+  set('w-contact_phone',    company.contact_phone);
+  set('w-address',          company.address);
+  set('w-website',          company.website);
+  set('w-plan_id',          company.plan_id);
+  setChk('w-active',        company.active !== false);
 
-  if (endPage - startPage < maxVisible - 1) {
-    startPage = Math.max(1, endPage - maxVisible + 1);
-  }
-
-  if (startPage > 1) {
-    html += `
-      <button onclick="changePageCompanies(1)" class="px-3 py-1 rounded border bg-white text-gray-700 hover:bg-gray-50">1</button>
-    `;
-    if (startPage > 2) {
-      html += `<span class="px-2 text-gray-400">...</span>`;
-    }
-  }
-
-  for (let i = startPage; i <= endPage; i++) {
-    html += `
-      <button 
-        onclick="changePageCompanies(${i})"
-        class="px-3 py-1 rounded border ${
-          i === currentPageCompanies
-            ? 'bg-blue-600 text-white'
-            : 'bg-white text-gray-700 hover:bg-gray-50'
-        }"
-      >
-        ${i}
-      </button>
-    `;
-  }
-
-  if (endPage < totalPages) {
-    if (endPage < totalPages - 1) {
-      html += `<span class="px-2 text-gray-400">...</span>`;
-    }
-    html += `
-      <button onclick="changePageCompanies(${totalPages})" class="px-3 py-1 rounded border bg-white text-gray-700 hover:bg-gray-50">${totalPages}</button>
-    `;
-  }
-
-  html += `
-    <button 
-      onclick="changePageCompanies(${currentPageCompanies + 1})"
-      ${currentPageCompanies === totalPages ? 'disabled' : ''}
-      class="px-3 py-1 rounded border ${
-        currentPageCompanies === totalPages
-          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          : 'bg-white text-gray-700 hover:bg-gray-50'
-      }"
-    >
-      <i class="fas fa-chevron-right"></i>
-    </button>
-  `;
-
-  html += '</div>';
-
-  container.innerHTML = html;
-}
-
-function changePageCompanies(page) {
-  const totalPages = Math.ceil(totalCompanies / itemsPerPageCompanies);
-  
-  if (page < 1 || page > totalPages) return;
-  
-  currentPageCompanies = page;
-  renderCompanies();
-  renderCompaniesPagination();
-}
-
-function changeItemsPerPageCompanies(value) {
-  itemsPerPageCompanies = parseInt(value);
-  currentPageCompanies = 1;
-  renderCompanies();
-  renderCompaniesPagination();
-}
-
-// ============================================
-// MODAL
-// ============================================
-
-function openCompanyModal(companyId = null) {
-  editingCompanyId = companyId;
-
-  const modal = document.getElementById('companyModal');
-  const form = document.getElementById('companyForm');
-  const title = document.getElementById('companyModalTitle');
-
-  if (!modal || !form) return;
-
-  modal.classList.remove('hidden');
-  form.reset();
-  
-  // Renderizar opciones de planes (con fallback si no hay)
-  renderPlanOptions();
-
-  if (companyId) {
-    title.textContent = 'Editar empresa';
-
-    const company = companies.find(c => c.company_id === companyId);
-    if (company) {
-      // Campos básicos
-      document.getElementById('company_id').value = company.company_id || '';
-      document.getElementById('company_id').disabled = true;
-      document.getElementById('name').value = company.name || '';
-      document.getElementById('legal_name').value = company.legal_name || '';
-      document.getElementById('rut').value = company.rut || '';
-      document.getElementById('description').value = company.description || '';
-      
-      // Contacto
-      document.getElementById('contact_email').value = company.contact_email || '';
-      document.getElementById('contact_phone').value = company.contact_phone || '';
-      document.getElementById('address').value = company.address || '';
-      document.getElementById('website').value = company.website || '';
-      
-      // Plan
-      document.getElementById('plan_id').value = company.plan_id || '';
-      
-      // WhatsApp Config
-      document.getElementById('phone_number_id').value = company.phone_number_id || '';
-      if (company.whatsapp_config) {
-        document.getElementById('wa_phone_number_id').value = company.whatsapp_config.phone_number_id || '';
-        document.getElementById('wa_access_token').value = company.whatsapp_config.access_token || '';
-        document.getElementById('wa_verify_token').value = company.whatsapp_config.verify_token || '';
-        document.getElementById('wa_webhook_url').value = company.whatsapp_config.webhook_url || '';
-      }
-      
-      // Bot Config
-      if (company.bot_config) {
-        document.getElementById('bot_name').value = company.bot_config.bot_name || '';
-        document.getElementById('greeting_message').value = company.bot_config.greeting_message || '';
-        document.getElementById('max_messages').value = company.bot_config.max_messages || '';
-        document.getElementById('bot_active').checked = company.bot_config.active !== false;
-      }
-      
-      // Status
-      document.getElementById('company_status').checked = company.status === 'A';
-      
-      // Fechas (solo lectura)
-      if (company.created_at) {
-        document.getElementById('created_at').value = formatDate(company.created_at);
-      }
-      if (company.updated_at) {
-        document.getElementById('updated_at').value = formatDate(company.updated_at);
-      }
-    }
-  } else {
-    title.textContent = 'Nueva empresa';
-    document.getElementById('company_id').disabled = false;
-    document.getElementById('created_at').value = '';
-    document.getElementById('updated_at').value = '';
-  }
-}
-
-function renderPlanOptions() {
-  const select = document.getElementById('plan_id');
-  if (!select) return;
-  
-  select.innerHTML = '<option value="">Seleccionar plan</option>';
-  
-  if (AVAILABLE_PLANS.length === 0) {
-    // Si no hay planes, usar fallback
-    useFallbackPlans();
-  }
-  
-  AVAILABLE_PLANS.forEach(plan => {
-    const option = document.createElement('option');
-    option.value = plan.plan_id;
-    const limit = plan.monthly_message_limit || 0;
-    option.textContent = `${plan.plan_name} (${limit.toLocaleString()} msgs/mes)`;
-    select.appendChild(option);
+  // Paso 2: Rubro
+  const template = config?.template || 'salud';
+  _selectedRubro = template;
+  document.querySelectorAll('.rubro-card').forEach(card => {
+    card.classList.toggle('active', card.dataset.key === template);
   });
+  await loadRubroTemplate(template);
+
+  // Paso 3: WhatsApp
+  const wa = company.whatsapp_config || {};
+  set('w-phone_number_id',  company.phone_number_id || wa.phone_number_id);
+  set('w-wa_webhook_url',   wa.webhook_url);
+  set('w-wa_access_token',  ''); // no mostrar token por seguridad
+  set('w-wa_verify_token',  '');
+
+  // Paso 4: Bot
+  const bot = company.bot_config || {};
+  set('w-bot_name',          bot.name || company.bot_name);
+  set('w-max_messages',      bot.max_messages || company.max_messages);
+  set('w-greeting_message',  bot.greeting_message || company.greeting_message);
+  setChk('w-bot_active',     bot.active !== false);
+
+  // Deshabilitar company_id en edición
+  const cidEl = document.getElementById('w-company_id');
+  if (cidEl) { cidEl.disabled = true; cidEl.style.background = '#f9fafb'; }
 }
 
-function closeCompanyModal() {
-  const modal = document.getElementById('companyModal');
-  if (modal) {
-    modal.classList.add('hidden');
+function clearWizardForm() {
+  const fields = ['w-company_id','w-name','w-legal_name','w-rut','w-description',
+    'w-contact_email','w-contact_phone','w-address','w-website',
+    'w-phone_number_id','w-wa_webhook_url','w-wa_access_token','w-wa_verify_token',
+    'w-bot_name','w-max_messages','w-greeting_message'];
+
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.disabled = false; el.style.background = ''; }
+  });
+
+  const wActive   = document.getElementById('w-active');
+  const botActive = document.getElementById('w-bot_active');
+  if (wActive)   wActive.checked   = true;
+  if (botActive) botActive.checked = true;
+
+  // Reset rubro
+  document.querySelectorAll('.rubro-card').forEach(card => {
+    card.classList.toggle('active', card.dataset.key === 'salud');
+  });
+  _selectedRubro = 'salud';
+
+  // Limpiar error
+  const errEl = document.getElementById('wizard-error');
+  if (errEl) errEl.style.display = 'none';
+}
+
+// ── Navegación de pasos ───────────────────────
+
+function wGoStep(step) {
+  _currentStep = step;
+
+  // Actualizar step indicators
+  document.querySelectorAll('.step').forEach((el, i) => {
+    el.classList.remove('active', 'done');
+    if (i < step)  el.classList.add('done');
+    if (i === step) el.classList.add('active');
+  });
+
+  // Mostrar panel correcto
+  document.querySelectorAll('.wizard-panel').forEach((el, i) => {
+    el.classList.toggle('active', i === step);
+  });
+
+  // Al llegar a revisión: construir el resumen
+  if (step === 4) buildReview();
+}
+
+function wNext(currentStep) {
+  // Validar paso actual
+  if (!validateStep(currentStep)) return;
+  wGoStep(currentStep + 1);
+}
+
+function validateStep(step) {
+  const errEl = document.getElementById('wizard-error');
+  if (errEl) errEl.style.display = 'none';
+
+  if (step === 0) {
+    const cid   = document.getElementById('w-company_id')?.value?.trim();
+    const name  = document.getElementById('w-name')?.value?.trim();
+    const email = document.getElementById('w-contact_email')?.value?.trim();
+
+    if (!_editingCompanyId && !cid) {
+      showWizardError('El ID de empresa es requerido');
+      return false;
+    }
+    if (!name) {
+      showWizardError('El nombre comercial es requerido');
+      return false;
+    }
+    if (!email || !email.includes('@')) {
+      showWizardError('El email de contacto es requerido y debe ser válido');
+      return false;
+    }
   }
-  editingCompanyId = null;
+  return true;
 }
 
-// ============================================
-// SAVE COMPANY
-// ============================================
+function showWizardError(msg) {
+  const errEl = document.getElementById('wizard-error');
+  if (!errEl) return;
+  errEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${escapeHtml(msg)}`;
+  errEl.style.display = 'flex';
+}
 
-async function handleSaveCompany(e) {
-  e.preventDefault();
+// ── Rubro ─────────────────────────────────────
 
-  const companyData = {
-    company_id: document.getElementById('company_id').value,
-    name: document.getElementById('name').value,
-    legal_name: document.getElementById('legal_name').value,
-    rut: document.getElementById('rut').value,
-    description: document.getElementById('description').value,
-    contact_email: document.getElementById('contact_email').value,
-    contact_phone: document.getElementById('contact_phone').value,
-    address: document.getElementById('address').value,
-    website: document.getElementById('website').value,
-    phone_number_id: document.getElementById('phone_number_id').value,
-    plan_id: document.getElementById('plan_id').value,
-    whatsapp_config: {
-      phone_number_id: document.getElementById('wa_phone_number_id').value,
-      access_token: document.getElementById('wa_access_token').value,
-      verify_token: document.getElementById('wa_verify_token').value,
-      webhook_url: document.getElementById('wa_webhook_url').value
-    },
-    bot_config: {
-      bot_name: document.getElementById('bot_name').value,
-      greeting_message: document.getElementById('greeting_message').value,
-      max_messages: parseInt(document.getElementById('max_messages').value) || 0,
-      active: document.getElementById('bot_active').checked
-    },
-    status: document.getElementById('company_status').checked ? 'A' : 'I'
-  };
+async function selectRubro(key, card) {
+  _selectedRubro = key;
+  document.querySelectorAll('.rubro-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  await loadRubroTemplate(key);
+}
+
+async function loadRubroTemplate(key) {
+  const res = await apiCall(`/api/companies/templates/${key}`);
+  if (!res.ok) return;
+
+  _rubroConfig = res.data.config;
+  renderTemplatePreview(_rubroConfig);
+}
+
+function renderTemplatePreview(config) {
+  if (!config) return;
+
+  const badgeEl   = document.getElementById('tp-badge');
+  const modeEl    = document.getElementById('tp-mode');
+  const labelsEl  = document.getElementById('tp-labels');
+  const modulesEl = document.getElementById('tp-modules');
+
+  if (badgeEl) {
+    const l = config.labels || {};
+    badgeEl.textContent = `${l.recurso || '—'} · ${l.servicio || '—'}`;
+  }
+  if (modeEl) {
+    modeEl.textContent = AVAILABILITY_LABELS[config.availability_mode] || config.availability_mode;
+  }
+  if (labelsEl) {
+    const l = config.labels || {};
+    const items = [
+      ['Recurso', l.recurso], ['Servicio', l.servicio],
+      ['Sección', l.seccion_lateral], ['Tab agenda', l.tab_agenda],
+    ];
+    labelsEl.innerHTML = items.map(([k, v]) =>
+      `<div class="tp-label-chip">${k}: <span>${escapeHtml(v || '—')}</span></div>`
+    ).join('');
+  }
+  if (modulesEl) {
+    const m = config.modules || {};
+    const mods = ['agenda','calendario','especialidad','servicios','inventario','pagos'];
+    modulesEl.innerHTML = mods.map(mod =>
+      `<span class="tp-module ${m[mod] ? 'on' : 'off'}">
+        <i class="fas fa-${m[mod] ? 'check' : 'times'}"></i> ${mod}
+      </span>`
+    ).join('');
+  }
+}
+
+// ── Revisión ──────────────────────────────────
+
+function buildReview() {
+  const container = document.getElementById('review-content');
+  if (!container) return;
+
+  const get    = id => document.getElementById(id)?.value || '';
+  const getChk = id => document.getElementById(id)?.checked;
+  const rubro  = RUBRO_LABELS[_selectedRubro] || { icon: '🏢', name: _selectedRubro };
+
+  container.innerHTML = `
+    <div class="review-section">
+      <div class="review-section-title"><i class="fas fa-building"></i> Datos básicos</div>
+      <div class="review-grid">
+        <div class="review-row">
+          <span class="review-label">ID Empresa</span>
+          <span class="review-val ${!get('w-company_id') ? 'empty' : ''}">${escapeHtml(get('w-company_id')) || '(sin ID)'}</span>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Nombre</span>
+          <span class="review-val">${escapeHtml(get('w-name')) || '—'}</span>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Email</span>
+          <span class="review-val">${escapeHtml(get('w-contact_email')) || '—'}</span>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Plan</span>
+          <span class="review-val">${escapeHtml(get('w-plan_id')) || '—'}</span>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Estado</span>
+          <span class="review-val">${getChk('w-active') ? '✅ Activa' : '⏸ Inactiva'}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="review-section">
+      <div class="review-section-title"><i class="fas fa-th-large"></i> Rubro</div>
+      <div class="review-val">${rubro.icon} ${rubro.name}</div>
+      ${_rubroConfig ? `
+        <div style="margin-top:8px;font-size:11px;color:#7D84C1">
+          ${_rubroConfig.labels?.recurso || '—'} · ${_rubroConfig.labels?.servicio || '—'} ·
+          ${AVAILABILITY_LABELS[_rubroConfig.availability_mode] || _rubroConfig.availability_mode}
+        </div>` : ''}
+    </div>
+
+    <div class="review-section">
+      <div class="review-section-title"><i class="fab fa-whatsapp"></i> WhatsApp</div>
+      <div class="review-grid">
+        <div class="review-row">
+          <span class="review-label">Phone Number ID</span>
+          <span class="review-val ${!get('w-phone_number_id') ? 'empty' : ''}">${escapeHtml(get('w-phone_number_id')) || 'Sin configurar'}</span>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Access Token</span>
+          <span class="review-val ${!get('w-wa_access_token') ? 'empty' : ''}">${get('w-wa_access_token') ? '••••••••' : 'Sin configurar'}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="review-section">
+      <div class="review-section-title"><i class="fas fa-robot"></i> Bot</div>
+      <div class="review-grid">
+        <div class="review-row">
+          <span class="review-label">Nombre</span>
+          <span class="review-val">${escapeHtml(get('w-bot_name')) || '—'}</span>
+        </div>
+        <div class="review-row">
+          <span class="review-label">Estado</span>
+          <span class="review-val">${getChk('w-bot_active') ? '✅ Activo' : '⏸ Inactivo'}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ── Guardar ───────────────────────────────────
+
+async function saveCompany() {
+  const saveBtn = document.getElementById('save-btn');
+  if (saveBtn) { saveBtn.disabled = true; }
+
+  const errEl = document.getElementById('wizard-error');
+  if (errEl) errEl.style.display = 'none';
 
   try {
-    let res;
-    if (editingCompanyId) {
-      res = await apiCall(`/api/companies/${editingCompanyId}`, {
+    const get    = id => document.getElementById(id)?.value?.trim() || null;
+    const getChk = id => document.getElementById(id)?.checked ?? true;
+
+    // Construir payload empresa
+    const companyData = {
+      name:          get('w-name'),
+      legal_name:    get('w-legal_name'),
+      rut:           get('w-rut'),
+      description:   get('w-description'),
+      contact_email: get('w-contact_email'),
+      contact_phone: get('w-contact_phone'),
+      address:       get('w-address'),
+      website:       get('w-website'),
+      plan_id:       get('w-plan_id'),
+      active:        getChk('w-active'),
+      phone_number_id: get('w-phone_number_id'),
+      whatsapp_config: {
+        phone_number_id: get('w-phone_number_id'),
+        webhook_url:     get('w-wa_webhook_url'),
+        ...(get('w-wa_access_token') ? { access_token: get('w-wa_access_token') } : {}),
+        ...(get('w-wa_verify_token') ? { verify_token: get('w-wa_verify_token') } : {}),
+      },
+      bot_config: {
+        name:             get('w-bot_name'),
+        max_messages:     parseInt(get('w-max_messages')) || 150,
+        greeting_message: get('w-greeting_message'),
+        active:           getChk('w-bot_active'),
+      },
+    };
+
+    let companyId = _editingCompanyId;
+
+    if (_editingCompanyId) {
+      // ── EDITAR ──
+      const res = await apiCall(`/api/companies/${_editingCompanyId}`, {
         method: 'PUT',
-        body: JSON.stringify(companyData),
-        loaderMessage: 'Actualizando empresa...'
+        body:   JSON.stringify(companyData),
       });
+      if (!res.ok) {
+        showWizardError(res.data?.error || 'Error actualizando empresa');
+        return;
+      }
     } else {
-      res = await apiCall('/api/companies', {
+      // ── CREAR ──
+      companyData.company_id = get('w-company_id');
+      const res = await apiCall('/api/companies', {
         method: 'POST',
-        body: JSON.stringify(companyData),
-        loaderMessage: 'Creando empresa...'
+        body:   JSON.stringify(companyData),
+      });
+      if (!res.ok) {
+        showWizardError(res.data?.error || 'Error creando empresa');
+        return;
+      }
+      companyId = res.data.company_id;
+    }
+
+    // ── Guardar business_config ──
+    if (_rubroConfig && companyId) {
+      const configPayload = {
+        template:          _selectedRubro,
+        labels:            _rubroConfig.labels,
+        modules:           _rubroConfig.modules,
+        resource_defaults: _rubroConfig.resource_defaults,
+        availability_mode: _rubroConfig.availability_mode,
+      };
+      await apiCall(`/api/companies/${companyId}/config`, {
+        method: 'PUT',
+        body:   JSON.stringify(configPayload),
       });
     }
 
-    if (res && res.ok) {
-      showToast(editingCompanyId ? 'Empresa actualizada' : 'Empresa creada', 'success');
-      closeCompanyModal();
-      fetchCompanies();
-    } else {
-      showToast(res.data?.msg || 'Error al guardar empresa', 'error');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    showToast('Error de conexión', 'error');
+    showToast(
+      _editingCompanyId ? 'Empresa actualizada ✅' : 'Empresa creada ✅',
+      'success'
+    );
+    closeWizard();
+    await fetchCompanies();
+
+  } catch (err) {
+    showWizardError('Error inesperado: ' + err.message);
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
   }
 }
+
+// ============================================
+// EXPONER GLOBALMENTE
+// ============================================
+
+window.initCompaniesPage    = initCompaniesPage;
+window.openWizard           = openWizard;
+window.closeWizard          = closeWizard;
+window.wGoStep              = wGoStep;
+window.wNext                = wNext;
+window.selectRubro          = selectRubro;
+window.saveCompany          = saveCompany;
+window.filterCompanies      = filterCompanies;
+window.clearCompanyFilters  = clearCompanyFilters;
+window.toggleCompanyStatus  = toggleCompanyStatus;
+window.confirmDeleteCompany = confirmDeleteCompany;
+window.deleteCompany        = deleteCompany;

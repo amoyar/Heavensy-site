@@ -1,0 +1,565 @@
+<!-- pages/seguimiento.html — Sin estilos inline, todo en seguimiento.css -->
+<div id="page-seguimiento">
+
+  <!-- PANEL IZQUIERDO -->
+  <div class="seg-left-panel">
+
+    <div class="seg-lp-header">
+      <div class="seg-lp-title-row">
+        <div class="seg-lp-icon"><i class="fas fa-notes-medical"></i></div>
+        <span class="seg-lp-title">Seguimiento</span>
+      </div>
+
+      <!-- Selector de Empresa — mismo patrón que conversaciones -->
+      <div class="seg-company-dropdown-wrap" id="segCompanyDropdownWrap" style="position:relative;margin-bottom:9px;">
+        <button id="segCompanyDropdownBtn" type="button"
+          style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:#fff;border:0.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:13px;color:#9ca3af;text-align:left;">
+          <span id="segCompanyDropdownLabel">Cargando empresas...</span>
+          <i class="fas fa-chevron-down" id="segCompanyDropdownIcon" style="font-size:10px;color:#7D84C1;transition:transform .2s;"></i>
+        </button>
+        <div id="segCompanyDropdownList"
+          style="display:none;position:absolute;z-index:50;width:100%;margin-top:3px;background:#fff;border:0.5px solid #e5e7eb;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08);">
+          <div style="max-height:200px;overflow-y:auto;" id="segCompanyDropdownItems"></div>
+        </div>
+        <select id="segCompanyFilter" style="display:none;">
+          <option value="">Cargando empresas...</option>
+        </select>
+      </div>
+
+      <div class="seg-search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" class="seg-search-input" id="seg-search"
+          placeholder="Buscar..." oninput="segBuscar(this.value)" />
+      </div>
+    </div>
+
+    <div class="seg-entity-list" id="seg-entity-list">
+      <div class="seg-list-empty" id="seg-list-empty-state">
+        <i class="fas fa-building"></i>
+        Selecciona una empresa para ver los registros
+      </div>
+    </div>
+
+    <div class="seg-list-legend">
+      <div class="seg-legend-row">
+        <div class="seg-entity-dot dot-active"></div>
+        <span id="lbl-legend-active">Registro en curso</span>
+      </div>
+      <div class="seg-legend-row">
+        <div class="seg-entity-dot dot-pending"></div>
+        <span id="lbl-legend-pending">Pendiente de envío</span>
+      </div>
+      <div class="seg-legend-row">
+        <div class="seg-entity-dot dot-sent"></div>
+        <span id="lbl-legend-sent">Enviado</span>
+      </div>
+    </div>
+
+  </div><!-- /.seg-left-panel -->
+
+
+  <!-- ÁREA PRINCIPAL -->
+  <div class="seg-main-area">
+
+    <!-- Empty state -->
+    <div class="seg-empty-state" id="seg-empty-main">
+      <i class="fas fa-notes-medical"></i>
+      <p>Selecciona un registro</p>
+      <span>Elige una empresa y luego un <span id="lbl-empty-cliente">cliente</span> del panel izquierdo</span>
+    </div>
+
+    <!-- Loading state — mientras carga el contexto -->
+    <div class="seg-loading-main seg-hidden" id="seg-loading-main">
+      <div class="seg-spinner"></div>
+      <span>Cargando...</span>
+    </div>
+
+    <!-- Vista de registro (oculta hasta seleccionar) -->
+    <div class="seg-registro-wrap seg-hidden" id="seg-registro-wrap">
+
+      <!-- HERO -->
+      <div class="seg-hero">
+        <div class="seg-hero-avatar" id="seg-hero-avatar">😊</div>
+        <div class="seg-hero-info">
+          <div class="seg-hero-name" id="seg-hero-name">—</div>
+          <div class="seg-hero-sub"  id="seg-hero-sub">—</div>
+          <div class="seg-hero-chips" id="seg-hero-chips"></div>
+          <div class="seg-hero-nota seg-hidden" id="seg-hero-nota"></div>
+        </div>
+        <span class="seg-hero-status seg-hidden" id="seg-hero-status"></span>
+      </div>
+
+      <!-- TIMELINE -->
+      <div class="seg-tl-wrap">
+        <div class="seg-tl-bar" onclick="segToggleTL()">
+          <i class="fas fa-stream seg-tl-bar-icon"></i>
+          <span class="seg-tl-bar-title" id="seg-tl-titulo">Historial</span>
+          <i class="fas fa-chevron-down seg-tl-chevron" id="seg-tl-chev"></i>
+        </div>
+        <div class="seg-tl-content" id="seg-tl-content">
+          <div class="seg-tl-events" id="seg-tl-events"></div>
+          <button class="seg-tl-add-btn" onclick="segAddEvento()">+ evento</button>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="seg-tabs-bar">
+        <div class="seg-tab active done" id="seg-tab-notas" onclick="segSetTab('notas', this)">
+          <div class="seg-tab-num"><i class="fas fa-check seg-tab-check-icon"></i></div>
+          <span id="lbl-tab-notas">Notas de sesión</span>
+        </div>
+        <div class="seg-tab" id="seg-tab-cliente" onclick="segSetTab('cliente', this)">
+          <div class="seg-tab-num">2</div>
+          Para el <span id="lbl-tab-cliente" class="seg-tab-label-inline">cliente</span>
+        </div>
+        <div class="seg-tab" id="seg-tab-prog" onclick="segSetTab('prog', this)">
+          <i class="fas fa-paper-plane seg-tab-icon"></i>
+          Programados
+        </div>
+        <div class="seg-tabs-spacer"></div>
+        <div class="seg-tab seg-tab-secondary" id="seg-tab-timeline-edit" onclick="segSetTab('timeline-edit', this)">
+          <i class="fas fa-stream seg-tab-icon"></i>
+          Línea de tiempo
+        </div>
+      </div>
+
+      <!-- CUERPO DE TABS -->
+      <div class="seg-body">
+
+        <!-- TAB 1: Notas -->
+        <div class="seg-tab-panel active" id="seg-panel-notas">
+
+          <div class="seg-col-main">
+
+            <div class="seg-date-row">
+              <!-- Date picker custom -->
+              <div class="seg-picker-wrap" id="seg-fecha-wrap">
+                <button class="seg-picker-btn" id="seg-fecha-btn"
+                  onclick="segToggleDatePicker()" type="button">
+                  <i class="fas fa-calendar-alt" style="color:#9961FF;font-size:11px"></i>
+                  <span id="seg-fecha-display">—</span>
+                </button>
+                <div class="seg-datepicker seg-hidden" id="seg-datepicker">
+                  <div class="cal-nav">
+                    <button class="cal-nav-btn" onclick="segCalNavMes(-1)" type="button"><i class="fas fa-chevron-left"></i></button>
+                    <span class="cal-nav-title" id="seg-cal-titulo"></span>
+                    <button class="cal-nav-btn" onclick="segCalNavMes(1)" type="button"><i class="fas fa-chevron-right"></i></button>
+                  </div>
+                  <div class="cal-grid" style="padding:4px 4px 2px">
+                    <div class="cal-day-header">Lun</div><div class="cal-day-header">Mar</div>
+                    <div class="cal-day-header">Mié</div><div class="cal-day-header">Jue</div>
+                    <div class="cal-day-header">Vie</div><div class="cal-day-header">Sáb</div>
+                    <div class="cal-day-header">Dom</div>
+                  </div>
+                  <div class="cal-grid cal-days-grid" id="seg-cal-dias"></div>
+                </div>
+              </div>
+
+              <!-- Time picker custom -->
+              <div class="seg-picker-wrap" id="seg-hora-wrap">
+                <button class="seg-picker-btn" id="seg-hora-btn"
+                  onclick="segToggleTimePicker()" type="button">
+                  <i class="fas fa-clock" style="color:#6b7280;font-size:11px"></i>
+                  <span id="seg-hora-display">—</span>
+                </button>
+                <div class="seg-timepicker seg-hidden" id="seg-timepicker">
+                  <div class="seg-tp-cols">
+                    <div class="seg-tp-col-wrap">
+                      <div class="seg-timepicker-header">Hora</div>
+                      <div class="seg-tp-col" id="seg-tp-horas"></div>
+                    </div>
+                    <div class="seg-tp-sep">:</div>
+                    <div class="seg-tp-col-wrap">
+                      <div class="seg-timepicker-header">Min</div>
+                      <div class="seg-tp-col" id="seg-tp-minutos"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Campos ocultos para el payload -->
+              <input type="hidden" id="seg-campo-fecha" />
+              <input type="hidden" id="seg-campo-hora" />
+
+              <span class="seg-badge-cur" id="seg-badge-estado"></span>
+              <div class="seg-actions-spacer"></div>
+              <!-- Botón nueva sesión junto al calendario -->
+              <button class="seg-btn-nueva-sesion-inline" id="seg-btn-nueva-sesion"
+                onclick="segNuevaSesion()" title="Nueva sesión">
+                <i class="fas fa-plus"></i>
+                Nueva <span id="lbl-nueva-sesion">sesión</span>
+              </button>
+            </div>
+
+            <div class="seg-field-card">
+              <div class="seg-field-label">
+                <i class="fas fa-lock"></i>
+                <span id="lbl-notas-internas">Notas internas</span>
+                <span class="seg-notas-solo-ti">Solo para ti</span>
+              </div>
+              <!-- Chips de etiquetas activas -->
+              <div class="seg-etiquetas-chips" id="seg-etiquetas-chips"></div>
+              <!-- Textarea con sistema /slash -->
+              <div class="seg-notas-wrap" style="position:relative">
+                <textarea
+                  class="seg-textarea seg-notas-textarea"
+                  id="seg-campo-notas"
+                  placeholder="Notas privadas... Escribe /palabra + espacio para crear etiquetas"
+                  oninput="segNotasInput(this); segMarcarCambios()"
+                  onkeydown="segNotasKeydown(event)"
+                ></textarea>
+                <!-- Dropdown autocomplete -->
+                <div class="seg-slash-dropdown seg-hidden" id="seg-slash-dropdown">
+                  <div id="seg-slash-items"></div>
+                </div>
+              </div>
+            </div>
+
+
+            <!-- Campo: Contenido principal -->
+            <div class="seg-field-con-plantillas">
+              <div class="seg-field-label">
+                <i class="fas fa-pen-alt seg-icon-muted"></i>
+                <span id="lbl-contenido">Lo que se trabajó</span>
+                <span class="seg-field-badge seg-badge-ia">Base para IA</span>
+              </div>
+              <div class="seg-plantillas-panel" id="seg-plantillas-principal">
+                <div class="seg-plantillas-header">
+                  <span class="seg-plantillas-titulo">Mis plantillas</span>
+                  <button class="seg-btn-nueva-plantilla" onclick="segNuevaPlantilla('principal')">
+                    <i class="fas fa-plus"></i> Nueva plantilla
+                  </button>
+                </div>
+                <div class="seg-plantillas-chips" id="seg-chips-principal">
+                  <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                </div>
+              </div>
+              <textarea class="seg-textarea" id="seg-campo-contenido"
+                placeholder="Describe el contenido de esta sesión..."
+                oninput="segMarcarCambios()"></textarea>
+            </div>
+
+            <!-- Campo: Tareas -->
+            <div class="seg-field-con-plantillas">
+              <div class="seg-field-label">
+                <i class="fas fa-tasks seg-icon-muted"></i>
+                <span id="lbl-tareas">Tareas para el cliente</span>
+                <span class="seg-field-badge seg-badge-enviar">Se enviará</span>
+              </div>
+              <div class="seg-plantillas-panel" id="seg-plantillas-tareas">
+                <div class="seg-plantillas-header">
+                  <span class="seg-plantillas-titulo">Mis plantillas de tareas</span>
+                  <button class="seg-btn-nueva-plantilla" onclick="segNuevaPlantilla('tareas')">
+                    <i class="fas fa-plus"></i> Nueva plantilla
+                  </button>
+                </div>
+                <div class="seg-plantillas-chips" id="seg-chips-tareas">
+                  <span class="seg-plantillas-vacio">Aún no tienes plantillas de tareas.</span>
+                </div>
+              </div>
+              <textarea class="seg-textarea" id="seg-campo-tareas"
+                placeholder="Tareas o indicaciones..."
+                oninput="segMarcarCambios()"></textarea>
+            </div>
+
+            <!-- Campo: Próxima sesión -->
+            <div class="seg-field-con-plantillas">
+              <div class="seg-field-label">
+                <i class="fas fa-calendar-alt seg-icon-muted"></i>
+                <span id="lbl-proxima">Próxima sesión</span>
+                <span class="seg-field-badge seg-badge-enviar">Se enviará</span>
+              </div>
+              <div class="seg-plantillas-panel" id="seg-plantillas-proxima">
+                <div class="seg-plantillas-header">
+                  <span class="seg-plantillas-titulo">Mis plantillas de próxima sesión</span>
+                  <button class="seg-btn-nueva-plantilla" onclick="segNuevaPlantilla('proxima')">
+                    <i class="fas fa-plus"></i> Nueva plantilla
+                  </button>
+                </div>
+                <div class="seg-plantillas-chips" id="seg-chips-proxima">
+                  <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                </div>
+              </div>
+              <textarea class="seg-textarea seg-textarea-sm" id="seg-campo-proxima"
+                placeholder="Plan para la próxima vez..."
+                oninput="segMarcarCambios()"></textarea>
+            </div>
+
+            <!-- Adjuntos -->
+            <div class="seg-adjuntos-section">
+              <div class="seg-field-label">
+                <i class="fas fa-paperclip seg-icon-muted"></i>
+                <span>Adjuntos</span>
+              </div>
+              <div class="seg-dropzone" id="seg-dropzone"
+                ondragover="event.preventDefault();this.classList.add('seg-dropzone-over')"
+                ondragleave="this.classList.remove('seg-dropzone-over')"
+                ondrop="segDropArchivo(event)">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Arrastra archivos aquí o</span>
+                <label class="seg-dropzone-btn">
+                  selecciona
+                  <input type="file" id="seg-file-input" multiple
+                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
+                    onchange="segSeleccionarArchivos(this.files)" style="display:none" />
+                </label>
+              </div>
+              <div class="seg-adjuntos-lista" id="seg-adjuntos-lista"></div>
+            </div>
+
+            <!-- Botón Generar resumen IA — solo visible en Tab 1 -->
+            <div class="seg-generar-ia-wrap">
+              <button class="seg-btn-generar-ia-tab1" id="seg-btn-generar-ia" onclick="segGenerarResumen()">
+                <i class="fas fa-magic"></i>
+                Generar resumen IA
+              </button>
+            </div>
+
+          </div><!-- /.seg-col-main -->
+
+
+          <div class="seg-col-side">
+
+            <!-- Historial colapsable -->
+            <div class="seg-side-panel" id="seg-side-historial">
+              <div class="seg-side-panel-header" onclick="segToggleSidePanel('historial')">
+                <span class="seg-side-panel-title">Historial</span>
+                <i class="fas fa-chevron-down seg-side-panel-chev" id="seg-chev-historial"></i>
+              </div>
+              <div class="seg-side-panel-body" id="seg-body-historial">
+                <div class="seg-side-panel-scroll">
+                  <div id="seg-historial-list"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Etiquetas activas colapsable -->
+            <div class="seg-side-panel" id="seg-side-etiquetas">
+              <div class="seg-side-panel-header" onclick="segToggleSidePanel('etiquetas')">
+                <span class="seg-side-panel-title">Etiquetas activas</span>
+                <i class="fas fa-chevron-down seg-side-panel-chev" id="seg-chev-etiquetas"></i>
+              </div>
+              <div class="seg-side-panel-body" id="seg-body-etiquetas">
+                <div class="seg-side-panel-scroll">
+                  <div class="seg-etiquetas-wrap" id="seg-etiquetas-activas"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Plantillas colapsable -->
+            <div class="seg-side-panel" id="seg-side-plantillas">
+              <div class="seg-side-panel-header" onclick="segToggleSidePanel('plantillas')">
+                <span class="seg-side-panel-title">Plantillas</span>
+                <i class="fas fa-chevron-down seg-side-panel-chev" id="seg-chev-plantillas"></i>
+              </div>
+              <div class="seg-side-panel-body" id="seg-body-plantillas">
+                <div class="seg-side-panel-scroll">
+                  <div class="seg-side-card-plain" onclick="segVerPlantillas()">
+                    Mis plantillas <i class="fas fa-chevron-right"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div><!-- /#seg-panel-notas -->
+
+
+        <!-- TAB 2: Para el cliente -->
+        <div class="seg-tab-panel" id="seg-panel-cliente">
+
+          <div class="seg-col-main">
+
+            <!-- Selector de canal -->
+            <div class="seg-canal-section">
+              <div class="seg-field-label">
+                <i class="fas fa-share-alt seg-icon-muted"></i>
+                <span>Canal de envío</span>
+              </div>
+              <div class="seg-canal-chips" id="seg-canal-chips">
+                <button class="seg-canal-chip active" data-canal="whatsapp" onclick="segSetCanal('whatsapp', this)">
+                  <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+                <button class="seg-canal-chip" data-canal="chat" onclick="segSetCanal('chat', this)">
+                  <i class="fas fa-comment"></i> Chat Heavensy
+                </button>
+                <button class="seg-canal-chip" data-canal="email" onclick="segSetCanal('email', this)">
+                  <i class="fas fa-envelope"></i> Email
+                </button>
+              </div>
+            </div>
+
+            <!-- Resumen -->
+            <div class="seg-resumen-card" id="seg-resumen-wrap">
+              <div class="seg-field-label">
+                <i class="fas fa-magic"></i>
+                <span id="lbl-resumen">Resumen para el cliente</span>
+                <button class="seg-btn-volver-notas" onclick="segSetTab('notas', document.getElementById('seg-tab-notas'))">
+                  <i class="fas fa-arrow-left"></i> Volver a notas
+                </button>
+              </div>
+
+              <!-- Etiquetas sugeridas por IA -->
+              <div class="seg-etiquetas-ia seg-hidden" id="seg-etiquetas-ia-wrap">
+                <span class="seg-etiquetas-ia-titulo">Etiquetas sugeridas por IA:</span>
+                <div id="seg-etiquetas-ia-chips"></div>
+              </div>
+
+              <div class="seg-resumen-vacio" id="seg-resumen-vacio">
+                <i class="fas fa-magic seg-resumen-vacio-icon"></i>
+                Genera el resumen con IA desde la barra de acciones
+              </div>
+
+              <div class="seg-resumen-generando seg-hidden" id="seg-resumen-generando">
+                <div class="seg-spinner seg-spinner-centered"></div>
+                <span class="seg-generando-txt">Generando resumen...</span>
+              </div>
+
+              <div class="seg-resumen-text seg-hidden"
+                id="seg-resumen-text"
+                contenteditable="true"
+                oninput="segMarcarCambios()"></div>
+
+              <div class="seg-resumen-actions seg-hidden" id="seg-resumen-actions">
+                <button class="seg-btn-secondary" onclick="segRegenerarResumen()">
+                  <i class="fas fa-sync-alt seg-icon-mr-sm"></i>↺ Regenerar
+                </button>
+                <div class="seg-actions-spacer"></div>
+                <button class="seg-btn-enviar" id="seg-btn-enviar-cliente" onclick="segEnviarAlCliente()">
+                  <i class="fas fa-paper-plane seg-icon-mr-sm"></i>Enviar al cliente
+                </button>
+              </div>
+
+              <!-- Estado enviado -->
+              <div class="seg-enviado-badge seg-hidden" id="seg-enviado-badge">
+                <i class="fas fa-check-circle"></i>
+                <span id="seg-enviado-txt">Enviado por WhatsApp</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="seg-col-side">
+            <div class="seg-side-section-title">Mensajes programados</div>
+            <div class="seg-side-card-plain seg-side-card-dashed" id="seg-prog-count">
+              Sin mensajes pendientes
+            </div>
+          </div>
+
+        </div><!-- /#seg-panel-cliente -->
+
+
+        <!-- TAB 3: Programados -->
+        <div class="seg-tab-panel" id="seg-panel-prog">
+
+          <div class="seg-col-main">
+            <div class="seg-field-card">
+              <div class="seg-field-label">
+                <i class="fas fa-clock"></i>
+                Mensajes programados
+              </div>
+              <div class="seg-prog-empty" id="seg-prog-list">
+                <i class="fas fa-paper-plane"></i>
+                No hay mensajes programados para este <span id="lbl-prog-cliente">cliente</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="seg-col-side">
+            <button class="seg-btn-secondary seg-full-width" onclick="segNuevoMensajeProg()">
+              <i class="fas fa-plus seg-icon-mr-sm"></i>Programar mensaje
+            </button>
+          </div>
+
+        </div><!-- /#seg-panel-prog -->
+
+
+        <!-- TAB 4: Línea de tiempo -->
+        <div class="seg-tab-panel" id="seg-panel-timeline-edit">
+
+          <div class="seg-col-main">
+            <div class="seg-field-card">
+              <div class="seg-field-label">
+                <i class="fas fa-stream"></i>
+                <span id="lbl-tl-titulo-edit">Línea de tiempo</span>
+              </div>
+              <div class="seg-tl-edit-list" id="seg-tl-edit-list"></div>
+              <button class="seg-btn-secondary" onclick="segAddEvento()">
+                <i class="fas fa-plus seg-icon-mr-sm"></i>Agregar evento
+              </button>
+            </div>
+          </div>
+
+          <div class="seg-col-side">
+            <div class="seg-side-section-title">Sincronizar con IA</div>
+            <p class="seg-sync-desc">
+              Claude puede sugerir eventos relevantes basándose en las notas de sesión.
+            </p>
+            <button class="seg-btn-ai seg-full-width" onclick="segSyncTimeline()">
+              <i class="fas fa-magic"></i> Sync IA
+            </button>
+          </div>
+
+        </div><!-- /#seg-panel-timeline-edit -->
+
+      </div><!-- /.seg-body -->
+
+      <!-- BARRA DE ACCIONES -->
+      <div class="seg-actions-bar">
+        <button class="seg-btn-guardar-principal" id="seg-btn-guardar" onclick="segGuardar()">
+          <i class="fas fa-save seg-icon-mr"></i>Guardar <span id="lbl-btn-guardar">sesión</span>
+        </button>
+        <span class="seg-autosave" id="seg-autosave-indicator"></span>
+        <div class="seg-actions-spacer"></div>
+        <button class="seg-btn-promover seg-hidden" id="seg-btn-promover" onclick="segPromover()">
+          <i class="fas fa-arrow-up seg-icon-mr-sm"></i>Promover a <span id="lbl-promover-cliente">cliente</span>
+        </button>
+      </div>
+
+    </div><!-- /#seg-registro-wrap -->
+
+  </div><!-- /.seg-main-area -->
+
+</div><!-- /#page-seguimiento -->
+
+<div class="seg-toast" id="seg-toast">
+  <i class="fas fa-check-circle" id="seg-toast-icon"></i>
+  <span id="seg-toast-msg"></span>
+</div>
+
+<!-- Modal custom — reemplaza confirm/prompt nativos -->
+<div class="seg-modal-overlay seg-hidden" id="seg-modal-overlay">
+  <div class="seg-modal">
+    <p class="seg-modal-title" id="seg-modal-title"></p>
+    <p class="seg-modal-body" id="seg-modal-body"></p>
+    <div id="seg-modal-input-wrap" style="display:none">
+      <input type="text" class="seg-modal-input" id="seg-modal-input" />
+    </div>
+    <div class="seg-modal-actions">
+      <button class="seg-modal-btn seg-modal-btn-ghost" id="seg-modal-cancel">Cancelar</button>
+      <button class="seg-modal-btn seg-modal-btn-primary" id="seg-modal-ok">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal plantilla — crear/editar -->
+<div class="seg-modal-overlay seg-hidden" id="seg-plantilla-modal">
+  <div class="seg-modal seg-modal-plantilla">
+    <div class="seg-modal-plantilla-header">
+      <span id="seg-plantilla-modal-titulo">Nueva plantilla</span>
+      <button class="seg-modal-btn-close" onclick="segCerrarModalPlantilla()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <input type="text" class="seg-modal-input" id="seg-plantilla-nombre"
+      placeholder="Nombre de la plantilla..." style="margin-bottom:8px" />
+    <textarea class="seg-textarea" id="seg-plantilla-contenido"
+      placeholder="Contenido de la plantilla..."
+      style="min-height:100px;margin-bottom:14px"></textarea>
+    <div class="seg-modal-actions">
+      <button class="seg-modal-btn seg-modal-btn-ghost" onclick="segCerrarModalPlantilla()">Cancelar</button>
+      <button class="seg-modal-btn seg-modal-btn-primary" onclick="segGuardarPlantilla()">Guardar</button>
+    </div>
+  </div>
+</div>

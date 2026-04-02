@@ -1,0 +1,37 @@
+/* ═══════════════════════════════════════════════════════════
+   HEAVENSY — SIDEBAR
+   assets/css/sidebar.css
+   Estilos extraídos de layout/sidebar.html
+═══════════════════════════════════════════════════════════ */
+
+/* Base: texto gris, ícono azul */
+.sidebar-link {
+  color: #374151;
+}
+
+.sidebar-link i {
+  color: #3b82f6;
+}
+
+/* Hover */
+.sidebar-link:hover {
+  background-color: #ede9fe;
+}
+
+.sidebar-link:hover i {
+  color: #3b82f6;
+}
+
+/* Activo */
+.sidebar-link.active {
+  background-color: #ddd6fe !important;
+}
+
+.sidebar-link.active i {
+  color: #6d28d9 !important;
+}
+
+.sidebar-link.active span {
+  color: #6d28d9;
+  font-weight: 600;
+}

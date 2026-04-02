@@ -3,6 +3,11 @@
 // Depende de: API_BASE_URL, getToken() (de conversaciones.js)
 // ============================================================
 
+// ── Label helper ─────────────────────────────────────────────
+function _svcLabel(key, fallback) {
+  return (typeof getCompanyLabel === 'function') ? getCompanyLabel(key, fallback) : fallback;
+}
+
 const serviciosState = {
   companyId: null,
   waId: null,
@@ -82,7 +87,7 @@ function renderServicesPanel() {
 
   // ── Servicios asignados al contacto ──────────────────────
   if (contactServices.length === 0) {
-    html += `<p class="text-sm text-gray-400 px-1 mb-2">Sin servicios asignados.</p>`;
+    html += `<p class="text-sm text-gray-400 px-1 mb-2">Sin ${_svcLabel('servicios', 'servicios')} asignados.</p>`;
   } else {
     contactServices.forEach(svc => {
       const isOpen = !!serviciosState.expanded[svc.company_service_id];
@@ -105,7 +110,7 @@ function renderServicesPanel() {
               <i class="fas fa-plus"></i>
             </button>
             <button onclick="event.stopPropagation(); svcRemoveService('${csId}')"
-              class="text-xs text-gray-400 hover:text-red-500 p-0.5 rounded transition" title="Quitar servicio">
+              class="text-xs text-gray-400 hover:text-red-500 p-0.5 rounded transition" title="${'Quitar ' + _svcLabel('servicio', 'servicio')}">
               <i class="fas fa-times"></i>
             </button>
             <i class="fas fa-chevron-${isOpen ? "up" : "down"} text-[10px] text-gray-300"></i>
@@ -159,7 +164,7 @@ function renderServicesPanel() {
     <div class="flex gap-1">
       <select id="svcCompanySelect"
         class="flex-1 text-xs border border-gray-200 rounded px-1.5 py-1 focus:outline-none focus:border-purple-400">
-        <option value="">+ Asignar servicio...</option>
+        <option value="">+ Asignar ${_svcLabel('servicio', 'servicio')}...</option>
         ${available.map(cs => {
           const name = cs.name_override || cs._name || cs.effective_name || "";
           const area = cs._area || "";
@@ -170,7 +175,7 @@ function renderServicesPanel() {
         class="text-xs bg-purple-600 text-white rounded px-2 py-1 hover:bg-purple-700 transition">OK</button>
     </div>`;
   } else {
-    html += `<p class="text-xs text-gray-400">Todos los servicios de la empresa ya asignados.</p>`;
+    html += `<p class="text-xs text-gray-400">Todos los ${_svcLabel('servicios', 'servicios')} de la empresa ya asignados.</p>`;
   }
 
   html += `</div>`;

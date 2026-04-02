@@ -1,279 +1,344 @@
-<!-- COMPANIES PAGE -->
-<div class="container mx-auto">
-  <!-- Header -->
-  <div class="flex justify-between items-center mb-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-800">
-        <i class="fas fa-building text-blue-600"></i>
-        Empresas
-      </h1>
-      <p class="text-gray-600 mt-1">Administración de empresas del sistema</p>
+<!-- COMPANIES PAGE — Heavensy -->
+<div id="companiesRoot" class="companies-root">
+
+  <!-- ── VISTA LISTADO ──────────────────────────────── -->
+  <div class="view active" id="view-list">
+  <div class="list-content">
+
+    <div class="companies-header">
+      <div>
+        <div class="companies-title">Empresas</div>
+        <div class="companies-subtitle">Administración de empresas del sistema</div>
+      </div>
+      <button class="btn-primary" onclick="openWizard(null)">
+        <i class="fas fa-plus"></i> Nueva empresa
+      </button>
     </div>
 
-    <button
-      onclick="openCompanyModal()"
-      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
-    >
-      <i class="fas fa-plus"></i>
-      Nueva empresa
-    </button>
-  </div>
-
-  <!-- Stats Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-    <div class="bg-white rounded-lg shadow p-6">
-      <p class="text-sm text-gray-600">Total Empresas</p>
-      <p class="text-2xl font-bold" id="totalCompanies">0</p>
-    </div>
-    <div class="bg-white rounded-lg shadow p-6">
-      <p class="text-sm text-gray-600">Empresas Activas</p>
-      <p class="text-2xl font-bold text-green-700" id="activeCompanies">0</p>
-    </div>
-    <div class="bg-white rounded-lg shadow p-6">
-      <p class="text-sm text-gray-600">Empresas Inactivas</p>
-      <p class="text-2xl font-bold text-red-700" id="inactiveCompanies">0</p>
-    </div>
-  </div>
-
-  <!-- Table -->
-  <div class="bg-white rounded-lg shadow">
-    <div class="px-6 py-4 border-b">
-      <h3 class="text-lg font-semibold">Lista de Empresas</h3>
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Total empresas</div>
+        <div class="stat-val" id="st-total">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Activas</div>
+        <div class="stat-val green" id="st-active">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Inactivas</div>
+        <div class="stat-val red" id="st-inactive">0</div>
+      </div>
     </div>
 
-    <div class="overflow-x-auto table-wrap">
-      <table class="w-full">
-        <thead class="bg-gray-50">
+    <!-- FILTROS -->
+    <div class="filters-bar">
+      <input class="filter-input" id="f-search" placeholder="Buscar empresa..." oninput="filterCompanies()" />
+      <select class="filter-select" id="f-plan" onchange="filterCompanies()">
+        <option value="">Todos los planes</option>
+        <option value="basic">Basic</option>
+        <option value="pro">Pro</option>
+        <option value="enterprise">Enterprise</option>
+      </select>
+      <select class="filter-select" id="f-status" onchange="filterCompanies()">
+        <option value="">Todos los estados</option>
+        <option value="active">Activa</option>
+        <option value="inactive">Inactiva</option>
+      </select>
+      <select class="filter-select" id="f-template" onchange="filterCompanies()">
+        <option value="">Todos los rubros</option>
+        <option value="salud">🏥 Salud</option>
+        <option value="cabanas">🏕️ Cabañas</option>
+        <option value="cowork">💼 Cowork</option>
+        <option value="fitness">💪 Fitness</option>
+        <option value="educacion">📚 Academia</option>
+        <option value="propiedades">🏠 Propiedades</option>
+      </select>
+      <button class="btn-secondary" onclick="clearCompanyFilters()">
+        <i class="fas fa-times"></i> Limpiar
+      </button>
+    </div>
+
+    <!-- TABLA -->
+    <div class="table-wrap">
+      <table class="companies-table">
+        <thead>
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teléfono</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+            <th>Empresa</th>
+            <th>Rubro</th>
+            <th>Plan</th>
+            <th>WhatsApp</th>
+            <th>Activo</th>
+            <th>Acciones</th>
           </tr>
         </thead>
-        <tbody id="companiesTable" class="bg-white divide-y">
-          <!-- Empresas se cargarán aquí -->
+        <tbody id="companies-tbody">
+          <!-- Se llena dinámicamente -->
         </tbody>
       </table>
+      <div id="companies-empty" class="companies-empty" style="display:none">
+        <i class="fas fa-building"></i>
+        <p>No hay empresas que coincidan con los filtros.</p>
+      </div>
+      <div id="companies-loading" class="companies-loading" style="display:none">
+        <i class="fas fa-spinner fa-spin"></i> Cargando empresas...
+      </div>
     </div>
 
-    <!-- Paginación -->
-    <div class="px-6 py-4 border-t bg-gray-50 flex items-center justify-between">
-      <div class="text-sm text-gray-700">
-        Mostrando <span id="showingFromCompanies">0</span> a <span id="showingToCompanies">0</span> de <span id="totalRecordsCompanies">0</span> empresas
-      </div>
-      <div class="flex gap-2" id="paginationControlsCompanies">
-        <!-- Controles de paginación se cargarán aquí -->
-      </div>
-    </div>
   </div>
-</div>
+  </div><!-- /view-list -->
 
-<!-- COMPANY MODAL -->
-<div id="companyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-  <div class="bg-white w-full max-w-4xl rounded-xl shadow-xl max-h-[90vh] overflow-y-auto mx-4">
-    <!-- Header -->
-    <div class="flex justify-between items-center px-6 py-4 border-b sticky top-0 bg-white z-10">
-      <h2 id="companyModalTitle" class="text-lg font-semibold text-gray-800">Nueva empresa</h2>
-      <button onclick="closeCompanyModal()" class="text-gray-400 hover:text-gray-600">
-        <i class="fas fa-times"></i>
+  <!-- ── VISTA WIZARD ───────────────────────────────── -->
+  <div class="view" id="view-wizard">
+
+    <!-- Topbar wizard -->
+    <div class="wizard-topbar">
+      <button class="btn-secondary btn-sm" onclick="closeWizard()">
+        <i class="fas fa-arrow-left"></i> Volver
       </button>
+      <span class="wizard-topbar-title" id="wizard-title">Nueva empresa</span>
     </div>
 
-    <!-- Body -->
-    <form id="companyForm" class="px-6 py-5 space-y-6">
-      
-      <!-- Información Básica -->
-      <div>
-        <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          <i class="fas fa-building text-blue-600"></i>
-          Información Básica
-        </h3>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">ID Empresa *</label>
-            <input id="company_id" class="w-full border rounded-lg px-3 py-2 text-sm" required placeholder="COMPANY_001" />
-          </div>
+    <!-- Steps -->
+    <div class="wizard-steps" id="wizard-steps">
+      <div class="step active" id="step-0" onclick="wGoStep(0)">
+        <div class="step-num">1</div>
+        <div class="step-label">Datos básicos</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" id="step-1" onclick="wGoStep(1)">
+        <div class="step-num">2</div>
+        <div class="step-label">Rubro</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" id="step-2" onclick="wGoStep(2)">
+        <div class="step-num">3</div>
+        <div class="step-label">WhatsApp</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" id="step-3" onclick="wGoStep(3)">
+        <div class="step-num">4</div>
+        <div class="step-label">Bot</div>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" id="step-4" onclick="wGoStep(4)">
+        <div class="step-num">5</div>
+        <div class="step-label">Revisión</div>
+      </div>
+    </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre Comercial *</label>
-            <input id="name" class="w-full border rounded-lg px-3 py-2 text-sm" required placeholder="Mi Empresa" />
+    <!-- ── PANEL 1: Datos básicos ── -->
+    <div class="wizard-panel active" id="panel-0">
+      <div class="panel-content">
+        <div class="form-section-title"><i class="fas fa-building"></i> Información básica</div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>ID Empresa *</label>
+            <input id="w-company_id" placeholder="EMPRESA_001" />
+            <span class="form-hint">Sin espacios, solo mayúsculas y guiones bajos</span>
           </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Razón Social</label>
-            <input id="legal_name" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Mi Empresa SpA" />
+          <div class="form-group">
+            <label>Nombre comercial *</label>
+            <input id="w-name" placeholder="Mi Empresa" />
           </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">RUT</label>
-            <input id="rut" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="76999999-9" />
+          <div class="form-group">
+            <label>Razón social</label>
+            <input id="w-legal_name" placeholder="Mi Empresa SpA" />
           </div>
-
-          <div class="col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-            <textarea id="description" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Descripción de la empresa"></textarea>
+          <div class="form-group">
+            <label>RUT</label>
+            <input id="w-rut" placeholder="76.999.999-9" />
+          </div>
+          <div class="form-group form-full">
+            <label>Descripción</label>
+            <textarea id="w-description" rows="2" placeholder="Descripción de la empresa"></textarea>
           </div>
         </div>
-      </div>
 
-      <!-- Información de Contacto -->
-      <div class="border-t pt-4">
-        <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          <i class="fas fa-address-card text-blue-600"></i>
-          Información de Contacto
-        </h3>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Email de Contacto *</label>
-            <input id="contact_email" type="email" class="w-full border rounded-lg px-3 py-2 text-sm" required placeholder="contacto@empresa.com" />
+        <div class="form-section-title" style="margin-top:20px"><i class="fas fa-address-card"></i> Contacto</div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Email de contacto *</label>
+            <input id="w-contact_email" type="email" placeholder="contacto@empresa.com" />
           </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono de Contacto</label>
-            <input id="contact_phone" type="tel" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="+56912345678" />
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input id="w-contact_phone" type="tel" placeholder="+56912345678" />
           </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-            <input id="address" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Santiago, Chile" />
+          <div class="form-group">
+            <label>Dirección</label>
+            <input id="w-address" placeholder="Santiago, Chile" />
           </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Sitio Web</label>
-            <input id="website" type="url" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="https://empresa.com" />
+          <div class="form-group">
+            <label>Sitio web</label>
+            <input id="w-website" type="url" placeholder="https://empresa.com" />
           </div>
         </div>
-      </div>
 
-      <!-- Plan de Suscripción -->
-      <div class="border-t pt-4">
-        <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          <i class="fas fa-crown text-blue-600"></i>
-          Plan de Suscripción
-        </h3>
-        <div class="grid grid-cols-1 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Plan *</label>
-            <select id="plan_id" class="w-full border rounded-lg px-3 py-2 text-sm" required>
+        <div class="form-section-title" style="margin-top:20px"><i class="fas fa-crown"></i> Plan</div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Plan de suscripción *</label>
+            <select id="w-plan_id">
               <option value="">Seleccionar plan</option>
-              <!-- Las opciones se cargarán dinámicamente desde el API -->
+              <option value="basic">Basic</option>
+              <option value="pro">Pro</option>
+              <option value="enterprise">Enterprise</option>
             </select>
           </div>
-        </div>
-      </div>
-
-      <!-- Configuración de WhatsApp -->
-      <div class="border-t pt-4">
-        <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          <i class="fab fa-whatsapp text-green-600"></i>
-          Configuración de WhatsApp
-        </h3>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number ID (Principal)</label>
-            <input id="phone_number_id" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="123456789" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number ID (Config)</label>
-            <input id="wa_phone_number_id" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="492838720578038" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Webhook URL</label>
-            <input id="wa_webhook_url" type="url" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="https://api.empresa.com/webhook" />
-          </div>
-
-          <div class="col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Access Token</label>
-            <input id="wa_access_token" type="password" class="w-full border rounded-lg px-3 py-2 text-sm font-mono text-xs" placeholder="EAALbQzRvJKE..." />
-          </div>
-
-          <div class="col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Verify Token</label>
-            <input id="wa_verify_token" type="password" class="w-full border rounded-lg px-3 py-2 text-sm font-mono text-xs" placeholder="EAAVPQwHDdKk..." />
-          </div>
-        </div>
-      </div>
-
-      <!-- Configuración del Bot -->
-      <div class="border-t pt-4">
-        <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          <i class="fas fa-robot text-blue-600"></i>
-          Configuración del Bot
-        </h3>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Bot</label>
-            <input id="bot_name" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Alicia" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Máx. Mensajes</label>
-            <input id="max_messages" type="number" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="150" />
-          </div>
-
-          <div class="col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Mensaje de Bienvenida</label>
-            <textarea id="greeting_message" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="¡Hola! Soy el asistente virtual. ¿En qué puedo ayudarte?"></textarea>
-          </div>
-
-          <div class="col-span-2">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input id="bot_active" type="checkbox" checked class="w-4 h-4 text-blue-600" />
-              <span class="text-sm text-gray-700">Bot activo</span>
+          <div class="form-group form-check">
+            <label class="check-label">
+              <input type="checkbox" id="w-active" checked />
+              Empresa activa
             </label>
           </div>
         </div>
       </div>
-
-      <!-- Estado y Fechas -->
-      <div class="border-t pt-4">
-        <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          <i class="fas fa-info-circle text-blue-600"></i>
-          Estado y Fechas
-        </h3>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="col-span-2">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input id="company_status" type="checkbox" checked class="w-4 h-4 text-blue-600" />
-              <span class="text-sm text-gray-700 font-medium">Empresa activa</span>
-            </label>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-500 mb-1">Fecha de Creación</label>
-            <input id="created_at" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-600" readonly />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-500 mb-1">Última Actualización</label>
-            <input id="updated_at" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-600" readonly />
-          </div>
-        </div>
+      <div class="nav-footer">
+        <div></div>
+        <button class="btn-primary" onclick="wNext(0)">Siguiente <i class="fas fa-arrow-right"></i></button>
       </div>
-    </form>
-
-    <!-- Footer -->
-    <div class="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50 sticky bottom-0">
-      <button
-        type="button"
-        onclick="closeCompanyModal()"
-        class="px-4 py-2 rounded-lg text-sm border text-gray-600 hover:bg-gray-100"
-      >
-        Cancelar
-      </button>
-      <button
-        type="submit"
-        form="companyForm"
-        class="px-5 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white"
-      >
-        Guardar
-      </button>
     </div>
-  </div>
-</div>
+
+    <!-- ── PANEL 2: Rubro ── -->
+    <div class="wizard-panel" id="panel-1">
+      <div class="panel-content">
+        <div class="form-section-title"><i class="fas fa-th-large"></i> Rubro de la empresa</div>
+        <p class="form-hint" style="margin-bottom:16px">Selecciona el tipo de negocio. Esto configura automáticamente los labels, módulos y disponibilidad.</p>
+        <div class="rubro-grid" id="rubro-grid">
+          <div class="rubro-card active" data-key="salud" onclick="selectRubro('salud',this)">
+            <div class="rubro-icon">🏥</div>
+            <div class="rubro-name">Salud</div>
+            <div class="rubro-desc">Terapeutas, clínicas, consultas</div>
+          </div>
+          <div class="rubro-card" data-key="cabanas" onclick="selectRubro('cabanas',this)">
+            <div class="rubro-icon">🏕️</div>
+            <div class="rubro-name">Cabañas</div>
+            <div class="rubro-desc">Alojamiento, turismo</div>
+          </div>
+          <div class="rubro-card" data-key="cowork" onclick="selectRubro('cowork',this)">
+            <div class="rubro-icon">💼</div>
+            <div class="rubro-name">Cowork</div>
+            <div class="rubro-desc">Salas, espacios de trabajo</div>
+          </div>
+          <div class="rubro-card" data-key="fitness" onclick="selectRubro('fitness',this)">
+            <div class="rubro-icon">💪</div>
+            <div class="rubro-name">Fitness</div>
+            <div class="rubro-desc">Instructores, clases, gym</div>
+          </div>
+          <div class="rubro-card" data-key="educacion" onclick="selectRubro('educacion',this)">
+            <div class="rubro-icon">📚</div>
+            <div class="rubro-name">Academia</div>
+            <div class="rubro-desc">Profesores, cursos, clases</div>
+          </div>
+          <div class="rubro-card" data-key="propiedades" onclick="selectRubro('propiedades',this)">
+            <div class="rubro-icon">🏠</div>
+            <div class="rubro-name">Propiedades</div>
+            <div class="rubro-desc">Arriendos, visitas, inmobiliaria</div>
+          </div>
+        </div>
+
+        <!-- Preview del template seleccionado -->
+        <div class="template-preview" id="template-preview">
+          <div class="tp-header">
+            <span class="tp-badge" id="tp-badge">Terapeuta · Sesión</span>
+            <span class="tp-mode" id="tp-mode">Disponibilidad por hora</span>
+          </div>
+          <div class="tp-labels" id="tp-labels">
+            <!-- Se llena al seleccionar rubro -->
+          </div>
+          <div class="tp-modules" id="tp-modules">
+            <!-- Se llena al seleccionar rubro -->
+          </div>
+        </div>
+      </div>
+      <div class="nav-footer">
+        <button class="btn-secondary" onclick="wGoStep(0)"><i class="fas fa-arrow-left"></i> Volver</button>
+        <button class="btn-primary" onclick="wNext(1)">Siguiente <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- ── PANEL 3: WhatsApp ── -->
+    <div class="wizard-panel" id="panel-2">
+      <div class="panel-content">
+        <div class="form-section-title"><i class="fab fa-whatsapp"></i> Configuración WhatsApp Business</div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Phone Number ID</label>
+            <input id="w-phone_number_id" placeholder="492838720578038" />
+          </div>
+          <div class="form-group">
+            <label>Webhook URL</label>
+            <input id="w-wa_webhook_url" type="url" placeholder="https://api.empresa.com/webhook" />
+          </div>
+          <div class="form-group form-full">
+            <label>Access Token</label>
+            <input id="w-wa_access_token" type="password" placeholder="EAALbQzRvJKE..." class="font-mono" />
+          </div>
+          <div class="form-group form-full">
+            <label>Verify Token</label>
+            <input id="w-wa_verify_token" type="password" placeholder="mi_verify_token_secreto" class="font-mono" />
+          </div>
+        </div>
+        <div class="form-hint-box">
+          <i class="fas fa-info-circle"></i>
+          Estos datos se obtienen desde Meta Business Suite → WhatsApp → Configuración de API
+        </div>
+      </div>
+      <div class="nav-footer">
+        <button class="btn-secondary" onclick="wGoStep(1)"><i class="fas fa-arrow-left"></i> Volver</button>
+        <button class="btn-primary" onclick="wNext(2)">Siguiente <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- ── PANEL 4: Bot ── -->
+    <div class="wizard-panel" id="panel-3">
+      <div class="panel-content">
+        <div class="form-section-title"><i class="fas fa-robot"></i> Configuración del Bot</div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Nombre del bot</label>
+            <input id="w-bot_name" placeholder="Alicia" />
+          </div>
+          <div class="form-group">
+            <label>Máx. mensajes por sesión</label>
+            <input id="w-max_messages" type="number" placeholder="150" min="10" max="500" />
+          </div>
+          <div class="form-group form-full">
+            <label>Mensaje de bienvenida</label>
+            <textarea id="w-greeting_message" rows="3" placeholder="¡Hola! Soy el asistente virtual. ¿En qué puedo ayudarte?"></textarea>
+          </div>
+          <div class="form-group form-check">
+            <label class="check-label">
+              <input type="checkbox" id="w-bot_active" checked />
+              Bot activo
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="nav-footer">
+        <button class="btn-secondary" onclick="wGoStep(2)"><i class="fas fa-arrow-left"></i> Volver</button>
+        <button class="btn-primary" onclick="wNext(3)">Siguiente <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- ── PANEL 5: Revisión ── -->
+    <div class="wizard-panel" id="panel-4">
+      <div class="panel-content">
+        <div class="form-section-title"><i class="fas fa-check-circle"></i> Revisión final</div>
+        <div id="review-content">
+          <!-- Se llena dinámicamente en wGoStep(4) -->
+        </div>
+        <div id="wizard-error" class="wizard-error" style="display:none"></div>
+      </div>
+      <div class="nav-footer">
+        <button class="btn-secondary" onclick="wGoStep(3)"><i class="fas fa-arrow-left"></i> Volver</button>
+        <button class="btn-primary" id="save-btn" onclick="saveCompany()">
+          <i class="fas fa-check"></i> <span id="save-btn-text">Crear empresa</span>
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /view-wizard -->
+
+</div><!-- /companiesRoot -->

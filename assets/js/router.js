@@ -13,7 +13,7 @@ async function loadPage(page) {
     appEl.innerHTML = html;
 
     // Ajustar main según página
-    const fullscreenPages = ['conversaciones'];
+    const fullscreenPages = ['conversaciones', 'seguimiento'];
     if (fullscreenPages.includes(page)) {
       appEl.style.padding        = '0';
       appEl.style.overflow       = 'hidden';

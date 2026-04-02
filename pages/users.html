@@ -1,211 +1,255 @@
-<!-- USERS PAGE -->
-<div class="container mx-auto">
-  <!-- Header -->
-  <div class="flex justify-between items-center mb-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-800">
-        <i class="fas fa-users text-blue-600"></i>
-        Usuarios
-      </h1>
-      <p class="text-gray-600 mt-1">Administración de usuarios del sistema</p>
+<!-- USERS PAGE — Heavensy -->
+<div id="usersRoot" class="users-root">
+
+  <!-- ── VISTA LISTADO ──────────────────────────────── -->
+  <div class="view active" id="u-view-list">
+  <div class="u-list-content">
+
+    <div class="u-list-header">
+      <div>
+        <div class="u-list-title">Usuarios</div>
+        <div class="u-list-subtitle">Administración de usuarios del sistema</div>
+      </div>
+      <button class="u-btn-primary" onclick="openUserWizard(null)">
+        <i class="fas fa-plus"></i> Nuevo usuario
+      </button>
     </div>
 
-    <button
-      onclick="openUserModal()"
-      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
-    >
-      <i class="fas fa-plus"></i>
-      Nuevo usuario
-    </button>
-  </div>
-
-  <!-- Stats Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-    <div class="bg-white rounded-lg shadow p-6">
-      <p class="text-sm text-gray-600">Total Usuarios</p>
-      <p class="text-2xl font-bold" id="totalUsers">0</p>
-    </div>
-    <div class="bg-white rounded-lg shadow p-6">
-      <p class="text-sm text-gray-600">Usuarios Activos</p>
-      <p class="text-2xl font-bold text-green-700" id="activeUsers">0</p>
-    </div>
-    <div class="bg-white rounded-lg shadow p-6">
-      <p class="text-sm text-gray-600">Usuarios Inactivos</p>
-      <p class="text-2xl font-bold text-red-700" id="inactiveUsers">0</p>
-    </div>
-  </div>
-
-  <!-- Table -->
-  <div class="bg-white rounded-lg shadow">
-    <div class="px-6 py-4 border-b">
-      <h3 class="text-lg font-semibold">Lista de Usuarios</h3>
+    <!-- Stats -->
+    <div class="u-stats">
+      <div class="u-stat">
+        <div class="u-stat-label">Total usuarios</div>
+        <div class="u-stat-val" id="u-st-total">0</div>
+      </div>
+      <div class="u-stat">
+        <div class="u-stat-label">Activos</div>
+        <div class="u-stat-val green" id="u-st-active">0</div>
+      </div>
+      <div class="u-stat">
+        <div class="u-stat-label">Inactivos</div>
+        <div class="u-stat-val red" id="u-st-inactive">0</div>
+      </div>
     </div>
 
-    <div class="overflow-x-auto table-wrap">
-      <table class="w-full">
-        <thead class="bg-gray-50">
+    <!-- Filtros -->
+    <div class="u-filters-bar">
+      <input class="u-filter-input" id="u-f-search" placeholder="Buscar usuario..." oninput="filterUsers()"/>
+      <select class="u-filter-select" id="u-f-role" onchange="filterUsers()">
+        <option value="">Todos los roles</option>
+        <option value="ADMIN_ROL">Admin</option>
+        <option value="OPERATOR_ROL">Operador</option>
+        <option value="VIEWER_ROL">Viewer</option>
+      </select>
+      <select class="u-filter-select" id="u-f-status" onchange="filterUsers()">
+        <option value="">Todos los estados</option>
+        <option value="active">Activo</option>
+        <option value="inactive">Inactivo</option>
+      </select>
+      <select class="u-filter-select" id="u-f-resource" onchange="filterUsers()">
+        <option value="">Es recurso</option>
+        <option value="yes">Sí</option>
+        <option value="no">No</option>
+      </select>
+      <button class="u-btn-secondary u-btn-sm" onclick="clearUserFilters()">
+        <i class="fas fa-times"></i> Limpiar
+      </button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="u-table-wrap">
+      <table class="u-table">
+        <thead>
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teléfono</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Empresas</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Recurso</th>
+            <th>Empresa</th>
+            <th>Activo</th>
+            <th>Acciones</th>
           </tr>
         </thead>
-        <tbody id="usersTable" class="bg-white divide-y">
-          <!-- Usuarios se cargarán aquí -->
-        </tbody>
+        <tbody id="u-tbody"></tbody>
       </table>
+      <div id="u-empty" class="u-empty" style="display:none">
+        <i class="fas fa-users"></i>
+        <p>No hay usuarios que coincidan con los filtros.</p>
+      </div>
+      <div id="u-loading" class="u-loading" style="display:none">
+        <i class="fas fa-spinner fa-spin"></i> Cargando usuarios...
+      </div>
     </div>
 
-    <!-- Paginación -->
-    <div class="px-6 py-4 border-t bg-gray-50 flex items-center justify-between">
-      <div class="text-sm text-gray-700">
-        Mostrando <span id="showingFrom">0</span> a <span id="showingTo">0</span> de <span id="totalRecords">0</span> usuarios
-      </div>
-      <div class="flex gap-2" id="paginationControls">
-        <!-- Controles de paginación se cargarán aquí -->
-      </div>
-    </div>
   </div>
-</div>
+  </div><!-- /u-view-list -->
 
-<!-- USER MODAL -->
-<div id="userModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-  <div class="bg-white w-full max-w-3xl rounded-xl shadow-xl max-h-[90vh] overflow-y-auto mx-4">
-    <!-- Header -->
-    <div class="flex justify-between items-center px-6 py-4 border-b sticky top-0 bg-white z-10">
-      <h2 id="userModalTitle" class="text-lg font-semibold text-gray-800">Nuevo usuario</h2>
-      <button onclick="closeUserModal()" class="text-gray-400 hover:text-gray-600">
-        <i class="fas fa-times"></i>
+  <!-- ── VISTA WIZARD ───────────────────────────────── -->
+  <div class="view" id="u-view-wizard">
+
+    <!-- Topbar -->
+    <div class="u-wizard-topbar">
+      <button class="u-btn-secondary u-btn-sm" onclick="closeUserWizard()">
+        <i class="fas fa-arrow-left"></i> Volver
       </button>
+      <span class="u-wizard-topbar-title" id="u-wizard-title">Nuevo usuario</span>
     </div>
 
-    <!-- Body -->
-    <form id="userForm" class="px-6 py-5 space-y-6">
-      
-      <!-- Información Básica -->
-      <div>
-        <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          <i class="fas fa-user text-blue-600"></i>
-          Información Básica
-        </h3>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Username *</label>
-            <input id="username" class="w-full border rounded-lg px-3 py-2 text-sm" required placeholder="admin" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">User ID</label>
-            <input id="user_id" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Auto-generado si vacío" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-            <input id="first_name" class="w-full border rounded-lg px-3 py-2 text-sm" required placeholder="Juan" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Apellido *</label>
-            <input id="last_name" class="w-full border rounded-lg px-3 py-2 text-sm" required placeholder="Pérez" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-            <input id="email" type="email" class="w-full border rounded-lg px-3 py-2 text-sm" required placeholder="usuario@empresa.com" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-            <input id="phone" type="tel" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="+56912345678" />
-          </div>
-
-          <div class="col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-1">RUT</label>
-            <input id="rut" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="12345678-9" />
-          </div>
-        </div>
+    <!-- Steps -->
+    <div class="u-wizard-steps">
+      <div class="u-step active" id="u-step-0" onclick="uGoStep(0)">
+        <div class="u-step-num">1</div>
+        <div class="u-step-label">Datos personales</div>
       </div>
-
-      <!-- Contraseña (solo al crear) -->
-      <div id="passwordBlock">
-        <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          <i class="fas fa-lock text-blue-600"></i>
-          Contraseña
-        </h3>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña *</label>
-          <input id="password" type="password" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Mínimo 8 caracteres" />
-        </div>
+      <div class="u-step-line"></div>
+      <div class="u-step" id="u-step-1" onclick="uGoStep(1)">
+        <div class="u-step-num">2</div>
+        <div class="u-step-label">Empresa y Rol</div>
       </div>
-
-      <!-- Empresas y Roles -->
-      <div class="border-t pt-4">
-        <div class="flex justify-between items-center mb-3">
-          <h3 class="text-md font-semibold text-gray-800 flex items-center gap-2">
-            <i class="fas fa-building text-blue-600"></i>
-            Empresas y Roles
-          </h3>
-          <button
-            type="button"
-            onclick="addCompanyToUser()"
-            class="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
-          >
-            <i class="fas fa-plus"></i>
-            Agregar empresa
-          </button>
-        </div>
-        <div id="userCompanies" class="space-y-3">
-          <!-- Empresas del usuario se cargarán aquí -->
-        </div>
+      <div class="u-step-line"></div>
+      <div class="u-step" id="u-step-2" onclick="uGoStep(2)">
+        <div class="u-step-num">3</div>
+        <div class="u-step-label">Recurso</div>
       </div>
-
-      <!-- Estado y Fechas -->
-      <div class="border-t pt-4">
-        <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          <i class="fas fa-info-circle text-blue-600"></i>
-          Estado y Fechas
-        </h3>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="col-span-2">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input id="user_status" type="checkbox" checked class="w-4 h-4 text-blue-600" />
-              <span class="text-sm text-gray-700 font-medium">Usuario activo</span>
-            </label>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-500 mb-1">Fecha de Creación</label>
-            <input id="date_created" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-600" readonly />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-500 mb-1">Última Actualización</label>
-            <input id="date_updated" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-600" readonly />
-          </div>
-        </div>
+      <div class="u-step-line"></div>
+      <div class="u-step" id="u-step-3" onclick="uGoStep(3)">
+        <div class="u-step-num">4</div>
+        <div class="u-step-label">Revisión</div>
       </div>
-    </form>
-
-    <!-- Footer -->
-    <div class="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50 sticky bottom-0">
-      <button
-        type="button"
-        onclick="closeUserModal()"
-        class="px-4 py-2 rounded-lg text-sm border text-gray-600 hover:bg-gray-100"
-      >
-        Cancelar
-      </button>
-      <button
-        type="submit"
-        form="userForm"
-        class="px-5 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white"
-      >
-        Guardar
-      </button>
     </div>
-  </div>
-</div>
+
+    <!-- ── PANEL 1: Datos personales ── -->
+    <div class="u-wizard-panel active" id="u-panel-0">
+      <div class="u-panel-content">
+        <div class="u-form-section-title"><i class="fas fa-user"></i> Datos personales</div>
+        <div class="u-form-grid-2">
+          <div class="u-form-group">
+            <label>Nombre *</label>
+            <input id="u-first_name" placeholder="Juan"/>
+          </div>
+          <div class="u-form-group">
+            <label>Apellido *</label>
+            <input id="u-last_name" placeholder="Pérez"/>
+          </div>
+          <div class="u-form-group">
+            <label>Username *</label>
+            <input id="u-username" placeholder="juan.perez"/>
+            <span class="u-form-hint">Sin espacios ni caracteres especiales</span>
+          </div>
+          <div class="u-form-group">
+            <label>Email *</label>
+            <input id="u-email" type="email" placeholder="juan@empresa.com"/>
+          </div>
+          <div class="u-form-group">
+            <label>Teléfono</label>
+            <input id="u-phone" type="tel" placeholder="+56912345678"/>
+          </div>
+          <div class="u-form-group">
+            <label>RUT</label>
+            <input id="u-rut" placeholder="12.345.678-9"/>
+          </div>
+        </div>
+
+        <div class="u-form-section-title" style="margin-top:20px"><i class="fas fa-lock"></i> Acceso</div>
+        <div class="u-form-grid-2" id="u-password-block">
+          <div class="u-form-group">
+            <label>Contraseña *</label>
+            <input id="u-password" type="password" placeholder="Mínimo 8 caracteres"/>
+          </div>
+          <div class="u-form-group">
+            <label>Confirmar contraseña *</label>
+            <input id="u-password2" type="password" placeholder="Repetir contraseña"/>
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <label class="u-check-label">
+            <input type="checkbox" id="u-active" checked/>
+            Usuario activo
+          </label>
+        </div>
+      </div>
+      <div class="u-nav-footer">
+        <div></div>
+        <button class="u-btn-primary" onclick="uNext(0)">Siguiente <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- ── PANEL 2: Empresa y Rol ── -->
+    <div class="u-wizard-panel" id="u-panel-1">
+      <div class="u-panel-content">
+        <div class="u-form-section-title"><i class="fas fa-building"></i> Empresa y Rol</div>
+        <p class="u-form-hint" style="margin-bottom:16px">
+          Asigna el usuario a una o más empresas y define su rol en cada una.
+        </p>
+        <div id="u-empresas-list"></div>
+        <button class="u-add-empresa-btn" onclick="uAddEmpresa()">
+          <i class="fas fa-plus"></i> Agregar empresa
+        </button>
+        <div class="u-form-hint-box" style="margin-top:14px">
+          <i class="fas fa-info-circle"></i>
+          Los roles determinan qué puede hacer el usuario dentro de cada empresa.
+        </div>
+      </div>
+      <div class="u-nav-footer">
+        <button class="u-btn-secondary" onclick="uGoStep(0)"><i class="fas fa-arrow-left"></i> Volver</button>
+        <button class="u-btn-primary" onclick="uNext(1)">Siguiente <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- ── PANEL 3: Recurso ── -->
+    <div class="u-wizard-panel" id="u-panel-2">
+      <div class="u-panel-content">
+        <div class="u-form-section-title"><i class="fas fa-link"></i> Vincular a Recurso</div>
+        <p class="u-form-hint" style="margin-bottom:16px">
+          Opcional. Si este usuario es también un recurso reservable, vincúlalo aquí.
+        </p>
+        <div class="u-no-resource-opt selected" id="u-opt-none" onclick="uSelectResource(null)">
+          <div class="u-resource-icon-wrap">
+            <i class="fas fa-user-slash"></i>
+          </div>
+          <div style="flex:1">
+            <div class="u-resource-name">Sin recurso vinculado</div>
+            <div class="u-resource-meta">Solo tiene acceso al sistema</div>
+          </div>
+          <div class="u-resource-check" id="u-check-none">
+            <i class="fas fa-check" style="font-size:9px"></i>
+          </div>
+        </div>
+
+        <div class="u-resource-search">
+          <input id="u-resource-search" placeholder="Buscar recurso..." oninput="uFilterResources(this.value)"/>
+        </div>
+
+        <div class="u-resource-list" id="u-resource-list">
+          <div class="u-empty" style="display:none" id="u-resource-empty">
+            <i class="fas fa-inbox"></i>
+            <p>No hay recursos disponibles.</p>
+          </div>
+        </div>
+      </div>
+      <div class="u-nav-footer">
+        <button class="u-btn-secondary" onclick="uGoStep(1)"><i class="fas fa-arrow-left"></i> Volver</button>
+        <button class="u-btn-primary" onclick="uNext(2)">Siguiente <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- ── PANEL 4: Revisión ── -->
+    <div class="u-wizard-panel" id="u-panel-3">
+      <div class="u-panel-content">
+        <div class="u-form-section-title"><i class="fas fa-check-circle"></i> Revisión final</div>
+        <div id="u-review-content"></div>
+        <div id="u-wizard-error" class="u-wizard-error" style="display:none">
+          <i class="fas fa-exclamation-circle"></i>
+          <span id="u-wizard-error-msg"></span>
+        </div>
+      </div>
+      <div class="u-nav-footer">
+        <button class="u-btn-secondary" onclick="uGoStep(2)"><i class="fas fa-arrow-left"></i> Volver</button>
+        <button class="u-btn-primary" id="u-save-btn" onclick="saveUser()">
+          <i class="fas fa-check"></i> <span id="u-save-btn-text">Crear usuario</span>
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /u-view-wizard -->
+
+</div><!-- /usersRoot -->
