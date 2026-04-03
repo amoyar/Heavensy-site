@@ -3010,8 +3010,8 @@
 .seg-picker-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
+  gap: 4px;
+  padding: 2px 5px;
   background: transparent;
   border: none;
   border-radius: 6px;
@@ -3046,8 +3046,19 @@
   border: 0.5px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0,0,0,.12);
-  padding: 8px;
-  width: 120px;
+  padding: 8px 4px;
+  width: 90px;
+}
+
+/* Header igual al calendario */
+.seg-tp-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151 !important;
+  text-align: center;
+  margin-bottom: 6px;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .seg-tp-cols {
@@ -3061,50 +3072,41 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-}
-
-.seg-timepicker-header {
-  font-size: 10px;
-  font-weight: 700;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-}
-
-.seg-tp-sep {
-  font-size: 18px;
-  font-weight: 700;
-  color: #9961FF;
-  padding-top: 22px;
+  gap: 2px;
 }
 
 /* Columna con scroll invisible */
 .seg-tp-col {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   max-height: 160px;
   overflow-y: scroll;
   width: 100%;
-  /* Ocultar barra de scroll en todos los browsers */
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 .seg-tp-col::-webkit-scrollbar { display: none; }
 
+/* Celdas idénticas a seg-cal-day */
 .seg-tp-item {
-  padding: 5px 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
+  font-size: 11px;
+  font-weight: normal;
+  text-align: center;
+  padding: 5px 0;
   border-radius: 6px;
   cursor: pointer;
-  text-align: center;
-  transition: all .12s;
-  border: 1.5px solid transparent;
+  color: #374151;
+  transition: all .15s;
+  border: 1px solid transparent;
 }
-.seg-tp-item:hover { background: #f5f3ff; color: #9961FF; border-color: #c4b5fd; }
+
+#seg-hora-display {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9961FF;
+}
+.seg-tp-item:hover { background: #EFF6FF; color: #9961FF; }
 .seg-tp-item.active {
   background: #f5f3ff;
   color: #9961FF;
