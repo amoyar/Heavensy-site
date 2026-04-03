@@ -3587,11 +3587,11 @@
   font-size: 9px !important;
 }
 
-/* ── Móvil: tab expandir más visible y alto suficiente ── */
+/* ── Móvil: tab expandir arriba ── */
 @media (max-width: 767px) {
   .seg-expand-tab {
-    top: 50%;
-    transform: translateY(-50%);
+    top: 12px;
+    transform: none;
     padding: 14px 7px;
     font-size: 13px;
     z-index: 201;
