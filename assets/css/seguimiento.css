@@ -250,10 +250,12 @@
 /* ── Área principal ── */
 .seg-main-area {
   flex: 1;
+  min-width: 0; /* necesario para que flex expanda correctamente al colapsar panel izq */
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: #f3f4f6;
+  position: relative; /* para el botón flotante de expandir */
 }
 
 /* Empty state */
@@ -328,6 +330,13 @@
 .seg-hero-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.seg-hero-col-left {
+  flex-shrink: 0;
 }
 
 .seg-hero-name {
@@ -340,13 +349,25 @@
 .seg-hero-sub {
   font-size: 11px;
   color: #7D84C1;
-  margin-bottom: 7px;
+}
+
+.seg-hero-col-right {
+  flex: 1;
+  min-width: 0;
 }
 
 .seg-hero-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+
+.seg-hero-nota {
+  font-size: 10.5px;
+  font-style: italic;
+  color: #9ca3af;
+  line-height: 1.4;
 }
 
 .seg-hchip {
@@ -466,7 +487,17 @@
 }
 
 .seg-tl-year  { font-size: 10px; font-weight: 700; color: #374151; }
-.seg-tl-label { font-size: 9px; color: #9ca3af; max-width: 70px; text-align: center; }
+.seg-tl-label {
+  font-size: 9px;
+  color: #9ca3af;
+  max-width: 70px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+  position: relative;
+}
 .seg-tl-line  { height: 2px; background: #e5e7eb; min-width: 30px; flex: 0 1 50px; margin-bottom: 14px; }
 
 .seg-tl-add-btn {
@@ -565,7 +596,7 @@
 .seg-col-main::-webkit-scrollbar-thumb { background: #e0e7ff; border-radius: 99px; }
 
 .seg-col-side {
-  width: 200px;
+  width: 260px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -586,6 +617,10 @@
   border: 0.5px solid #e5e7eb;
   border-radius: 10px;
   padding: 7px 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
 }
 
 .seg-input-fecha,
@@ -637,6 +672,14 @@
   display: flex;
   align-items: center;
   gap: 5px;
+  flex-wrap: wrap;
+}
+
+.seg-etiquetas-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: 4px;
 }
 
 .seg-field-label i { opacity: .6; }
@@ -1331,69 +1374,38 @@
 
 @media (max-width: 767px) {
 
-  /* ── Layout principal: apilado, full width ── */
+  /* ── Layout principal: flex horizontal — paneles se colapsan con panel-hidden ── */
   #page-seguimiento {
-    flex-direction: column;
+    flex-direction: row;
     height: 100%;
     overflow: hidden;
     position: relative;
   }
 
-  /* ── Panel izquierdo: ocupa todo en modo lista ── */
+  /* ── Panel izquierdo: overlay fijo sobre el contenido ── */
   .seg-left-panel {
-    width: 100%;
-    height: 100%;
-    flex-shrink: 0;
-    border-right: none;
-    border-bottom: none;
-    transition: transform .25s ease;
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    z-index: 2;
+    position: fixed;
+    left: 0;
+    top: 40px;
+    bottom: 0;
+    z-index: 200;
+    width: 280px !important;
+    box-shadow: 2px 0 16px rgba(0,0,0,.15);
+    transition: width .25s ease;
   }
 
-  /* Al activar detalle: panel izq se va a la izquierda (oculto) */
-  #page-seguimiento.seg-mobile-detail .seg-left-panel {
-    transform: translateX(-100%);
-    pointer-events: none;
+  .seg-left-panel.panel-hidden {
+    width: 0 !important;
+    min-width: 0 !important;
+    box-shadow: none;
+    border: none !important;
   }
 
-  /* ── Área principal: oculta por defecto, se muestra en detalle ── */
+  /* ── Área principal: siempre ocupa todo el ancho ── */
   .seg-main-area {
     width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    z-index: 1;
-    transform: translateX(100%);
-    transition: transform .25s ease;
-  }
-
-  /* Al activar detalle: área principal aparece */
-  #page-seguimiento.seg-mobile-detail .seg-main-area {
-    transform: translateX(0);
-    z-index: 2;
-  }
-
-  /* ── Botón volver (solo móvil) ── */
-  .seg-back-btn {
-    display: flex !important;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    background: #fff;
-    border: none;
-    border-bottom: 1px solid #e5e7eb;
-    font-size: 13px;
-    font-weight: 600;
-    color: #9961FF;
-    cursor: pointer;
-    width: 100%;
-    flex-shrink: 0;
-  }
-
-  .seg-back-btn i {
-    font-size: 12px;
+    flex: 1;
+    min-width: 0;
   }
 
   /* ── Hero: más compacto ── */
@@ -1412,9 +1424,7 @@
   .seg-hero-name { font-size: 14px; }
   .seg-hero-sub  { font-size: 10px; }
 
-  .seg-hero-chips {
-    gap: 4px;
-  }
+  .seg-hero-chips { gap: 4px; }
 
   .seg-hchip {
     font-size: 9px;
@@ -1451,6 +1461,7 @@
     flex-direction: column;
     padding: 10px 14px;
     gap: 10px;
+    overflow-y: auto;
   }
 
   .seg-tab-panel {
@@ -1459,27 +1470,21 @@
 
   .seg-col-main {
     width: 100%;
+    overflow-y: visible;
+    padding-right: 0;
   }
 
   /* Columna lateral va debajo */
   .seg-col-side {
-    width: 100%;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 8px;
+    width: 100% !important;
+    overflow-y: visible;
+    flex-direction: column;
   }
 
-  .seg-col-side .seg-side-section-title {
-    width: 100%;
-  }
-
-  .seg-col-side .seg-hist-card {
-    flex: 1;
-    min-width: 140px;
-  }
-
-  .seg-col-side .seg-etiquetas-wrap {
-    width: 100%;
+  .seg-col-side.panel-hidden {
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
   }
 
   /* ── Barra de acciones ── */
@@ -1522,24 +1527,15 @@
   .seg-ml-auto { margin-left: 0; }
 
   /* ── Entity list: más padding táctil ── */
-  .seg-entity-item {
-    padding: 11px 12px;
-  }
-
-  .seg-entity-avatar {
-    width: 38px;
-    height: 38px;
-  }
-
+  .seg-entity-item { padding: 11px 12px; }
+  .seg-entity-avatar { width: 38px; height: 38px; }
   .seg-entity-name { font-size: 13px; }
   .seg-entity-meta { font-size: 11px; }
 
-  /* ── Empty state: centrado ── */
-  .seg-empty-state {
-    padding: 40px 20px;
-  }
+  /* ── Empty state ── */
+  .seg-empty-state { padding: 40px 20px; }
 
-  /* ── Toast: bottom center en móvil ── */
+  /* ── Toast ── */
   .seg-toast {
     left: 16px;
     right: 16px;
@@ -1547,11 +1543,14 @@
     justify-content: center;
   }
 
-  /* ── Modal: margen mayor en móvil ── */
+  /* ── Modal ── */
   .seg-modal {
     max-width: calc(100% - 24px);
     margin: 12px;
   }
+
+  /* Ocultar botón volver antiguo */
+  .seg-back-btn { display: none !important; }
 }
 
 /* ── Botón volver: oculto en desktop ── */
@@ -1811,15 +1810,17 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 10px;
+  padding: 2px 7px;
   border-radius: 20px;
-  font-size: 11px;
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  color: #7D84C1;
+  font-size: 9px;
+  border: 0.5px solid #ddd6fe;
+  background: #f5f0ff;
+  color: #7c3aed;
   cursor: pointer;
   transition: all .15s;
   position: relative;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .seg-plantilla-chip:hover {
@@ -2075,22 +2076,23 @@
 
 /* ── Botón enviar ── */
 .seg-btn-enviar {
-  background: linear-gradient(90deg, #9497F4 0%, #89B9F8 100%);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 18px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: opacity .15s;
+  padding: 7px 14px;
+  background: #EFF6FF;
+  border: 1.5px solid #C9D9FF;
+  color: #7D84C1;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
 }
-
-.seg-btn-enviar:hover { opacity: .9; }
-.seg-btn-enviar.enviado { background: #10b981; cursor: default; opacity: 1; }
+.seg-btn-enviar:hover { background: #E1DEFF; border-color: #9961FF; color: #9961FF; }
+.seg-btn-enviar.enviado { background: #f0fdf4; border-color: #86efac; color: #16a34a; cursor: default; }
+.seg-btn-enviar i { font-size: 11px; color: #9961FF; }
 
 /* ── Programados editor ── */
 .seg-prog-editor {
@@ -2565,55 +2567,6 @@
 .seg-modal-btn-danger:hover { background: #dc2626; }
 
 /* ── Responsive general ── */
-@media (max-width: 768px) {
-  .seg-left-panel {
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    z-index: 100;
-    transform: translateX(0);
-    transition: transform .25s ease;
-    width: 280px !important;
-  }
-  .seg-left-panel.seg-panel-hidden {
-    transform: translateX(-100%);
-  }
-  .seg-main-area {
-    width: 100%;
-  }
-  /* En móvil las columnas se apilan y cada una tiene su propio scroll */
-  .seg-body {
-    flex-direction: column;
-    padding: 10px 12px;
-    overflow-y: auto; /* el body scrollea en móvil */
-  }
-  .seg-col-main {
-    overflow-y: visible; /* en móvil se apila, no scroll propio */
-    padding-right: 0;
-  }
-  .seg-col-side {
-    width: 100%;
-    overflow-y: visible;
-  }
-  .seg-hero {
-    padding: 10px 12px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .seg-actions-bar {
-    padding: 8px 12px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .seg-tabs-bar {
-    padding: 0 10px;
-    overflow-x: auto;
-  }
-  .seg-tab {
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-}
-
 /* ── Sistema /slash — etiquetas en notas ── */
 .seg-notas-solo-ti {
   font-size: 10px;
@@ -2640,14 +2593,16 @@
 .seg-etiqueta-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 10px 3px 10px;
+  gap: 4px;
+  padding: 2px 7px;
   background: #f5f0ff;
   border: 0.5px solid #ddd6fe;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 600;
   color: #7c3aed;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .seg-chip-remove {
@@ -2695,6 +2650,10 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  background: #fff;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
 }
 
 .seg-field-badge {
@@ -2756,28 +2715,6 @@
   font-size: 11px;
   color: #b0b9c8;
 }
-
-.seg-plantilla-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #374151;
-  cursor: pointer;
-  transition: all .15s;
-  position: relative;
-}
-.seg-plantilla-chip:hover {
-  border-color: #9961FF;
-  color: #9961FF;
-  background: #f5f0ff;
-}
-.seg-plantilla-chip:hover .seg-chip-actions { opacity: 1; }
 
 .seg-chip-check { color: #9961FF; font-size: 9px; }
 
@@ -3015,18 +2952,24 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 18px;
-  background: linear-gradient(135deg, #9961FF, #7D84C1);
-  color: #fff;
-  border: none;
+  padding: 7px 14px;
+  background: #EFF6FF;
+  border: 1.5px solid #C9D9FF;
+  color: #7D84C1;
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   transition: all .15s;
+  font-family: inherit;
 }
-.seg-btn-enviar:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
-.seg-btn-enviar:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.seg-btn-enviar:hover:not(:disabled) {
+  background: #E1DEFF;
+  border-color: #9961FF;
+  color: #9961FF;
+}
+.seg-btn-enviar:disabled { opacity: .6; cursor: not-allowed; }
+.seg-btn-enviar i { font-size: 11px; color: #9961FF; }
 
 .seg-enviado-badge {
   display: flex;
@@ -3103,8 +3046,8 @@
   border: 0.5px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 4px 16px rgba(0,0,0,.12);
-  padding: 10px;
-  width: 160px;
+  padding: 8px;
+  width: 120px;
 }
 
 .seg-tp-cols {
@@ -3467,3 +3410,179 @@
 .seg-autosave.guardado  { color: #7D84C1; }
 .seg-autosave.guardado .seg-autosave-check { color: #16a34a; }
 .seg-autosave.error     { color: #ef4444; }
+
+/* ── Panel toggle buttons ── */
+.seg-panel-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #7D84C1;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  transition: background .15s, color .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.seg-panel-toggle-btn:hover {
+  background: #EFF6FF;
+  color: #9961FF;
+}
+
+/* ── Botón colapsar en header del panel izquierdo ── */
+.seg-lp-collapse-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 11px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  margin-left: auto;
+  transition: color .15s, background .15s;
+  display: flex;
+  align-items: center;
+}
+.seg-lp-collapse-btn:hover {
+  color: #9961FF;
+  background: #f5f3ff;
+}
+
+/* ── Tab para expandir panel cuando está colapsado ── */
+.seg-expand-tab {
+  position: absolute;
+  left: 0;
+  top: 12px;
+  z-index: 20;
+  background: #fff;
+  border: 0.5px solid #e5e7eb;
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+  cursor: pointer;
+  color: #7D84C1;
+  font-size: 11px;
+  padding: 8px 5px;
+  box-shadow: 2px 0 6px rgba(0,0,0,.08);
+  transition: background .15s, color .15s;
+  display: flex;
+  align-items: center;
+}
+.seg-expand-tab:hover {
+  background: #f5f3ff;
+  color: #9961FF;
+  border-color: #c4b5fd;
+}
+/* Panel collapse — igual que conversaciones */
+.seg-left-panel {
+  transition: width .25s ease;
+  overflow: hidden !important;
+  flex-shrink: 0;
+  min-width: 0; /* permite que colapso a 0 funcione */
+}
+.seg-left-panel.panel-hidden {
+  width: 0 !important;
+  min-width: 0 !important;
+  border: none !important;
+}
+
+.seg-col-side {
+  transition: width .25s ease;
+  min-width: 0;
+}
+.seg-col-side.panel-hidden {
+  width: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+/* Móvil — panel izquierdo como overlay encima del contenido */
+
+/* ── Plantillas inline (misma fila que el label) ── */
+.seg-field-label-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: nowrap;
+}
+
+.seg-field-label-row .seg-field-label {
+  margin-bottom: 0;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.seg-plantillas-inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.seg-plantillas-titulo-inline {
+  font-size: 9px;
+  font-weight: 600;
+  color: #9ca3af;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.seg-plantillas-inline .seg-plantillas-chips,
+.seg-plantillas-inline .seg-etiquetas-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.seg-plantillas-inline .seg-plantillas-vacio {
+  font-size: 10px;
+  color: #d1d5db;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.seg-btn-nueva-plantilla-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: #f5f3ff;
+  border: 1px solid #c4b5fd;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #9961FF;
+  font-size: 8px;
+  transition: all .12s;
+  flex-shrink: 0;
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.seg-btn-nueva-plantilla-inline:hover {
+  background: #ede9fe;
+  border-color: #9961FF;
+}
+
+/* ── Tooltip estilizado global Heavensy — manejado por JS ── */
+[data-seg-tooltip] { cursor: default; }
+
+/* ── Reset uppercase heredado del seg-field-label ── */
+.seg-field-label .seg-plantilla-chip,
+.seg-field-label .seg-etiqueta-chip,
+.seg-field-label .seg-plantillas-titulo-inline,
+.seg-field-label .seg-plantillas-vacio,
+.seg-field-label .seg-btn-nueva-plantilla-inline,
+.seg-field-label .seg-chip-remove {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 9px !important;
+}

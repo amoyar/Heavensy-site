@@ -42,6 +42,9 @@ async function loadPage(page) {
     if (page === 'conversaciones') {
       setupMobileConversaciones();
     }
+    if (page === 'seguimiento') {
+      setupMobileSeguimiento();
+    }
 
     // 4️⃣ Scroll arriba
     document.getElementById('app').scrollTop = 0;
@@ -105,6 +108,30 @@ function setupMobileConversaciones() {
   window.addEventListener('resize', () => {
     if (!isMobile()) {
       wrapper.classList.remove('mobile-chat-active', 'mobile-contact-open');
+    }
+  });
+}
+
+// ============================================
+// MOBILE SEGUIMIENTO — Paneles colapsables
+// ============================================
+function setupMobileSeguimiento() {
+  // Al rotar de móvil a desktop — restaurar paneles abiertos
+  window.addEventListener('resize', () => {
+    const isMobile = window.innerWidth < 768;
+    if (!isMobile) {
+      const lp     = document.querySelector('.seg-left-panel');
+      const rp     = document.querySelector('.seg-col-side');
+      const btnExp = document.getElementById('seg-btn-expand-left');
+      const iconL  = document.getElementById('seg-icon-collapse-left');
+      const iconR  = document.getElementById('seg-icon-toggle-right');
+      if (lp)     { lp.classList.remove('panel-hidden'); }
+      if (rp)     { rp.classList.remove('panel-hidden'); }
+      if (btnExp) { btnExp.classList.add('seg-hidden'); }
+      if (iconL)  { iconL.className = 'fas fa-chevron-left'; }
+      if (iconR)  { iconR.className = 'fas fa-chevron-right'; }
+      SEG_LEFT_OPEN  = true;
+      SEG_RIGHT_OPEN = true;
     }
   });
 }

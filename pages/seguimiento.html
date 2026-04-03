@@ -8,6 +8,10 @@
       <div class="seg-lp-title-row">
         <div class="seg-lp-icon"><i class="fas fa-notes-medical"></i></div>
         <span class="seg-lp-title">Seguimiento</span>
+        <button class="seg-lp-collapse-btn seg-hidden" id="seg-btn-collapse-left"
+          onclick="segToggleLeftPanel()" title="Colapsar panel">
+          <i class="fas fa-chevron-left"></i>
+        </button>
       </div>
 
       <!-- Selector de Empresa — mismo patrón que conversaciones -->
@@ -59,7 +63,13 @@
 
 
   <!-- ÁREA PRINCIPAL -->
-  <div class="seg-main-area">
+  <div class="seg-main-area" id="seg-main-area">
+
+    <!-- Tab para expandir panel izquierdo — solo visible cuando está colapsado -->
+    <button class="seg-expand-tab seg-hidden" id="seg-btn-expand-left"
+      onclick="segToggleLeftPanel()" title="Mostrar pacientes">
+      <i class="fas fa-chevron-right"></i>
+    </button>
 
     <!-- Empty state -->
     <div class="seg-empty-state" id="seg-empty-main">
@@ -81,10 +91,14 @@
       <div class="seg-hero">
         <div class="seg-hero-avatar" id="seg-hero-avatar">😊</div>
         <div class="seg-hero-info">
-          <div class="seg-hero-name" id="seg-hero-name">—</div>
-          <div class="seg-hero-sub"  id="seg-hero-sub">—</div>
-          <div class="seg-hero-chips" id="seg-hero-chips"></div>
-          <div class="seg-hero-nota seg-hidden" id="seg-hero-nota"></div>
+          <div class="seg-hero-col-left">
+            <div class="seg-hero-name" id="seg-hero-name">—</div>
+            <div class="seg-hero-sub"  id="seg-hero-sub">—</div>
+          </div>
+          <div class="seg-hero-col-right">
+            <div class="seg-hero-chips" id="seg-hero-chips"></div>
+            <div class="seg-hero-nota seg-hidden" id="seg-hero-nota"></div>
+          </div>
         </div>
         <span class="seg-hero-status seg-hidden" id="seg-hero-status"></span>
       </div>
@@ -185,7 +199,7 @@
               <div class="seg-actions-spacer"></div>
               <!-- Botón nueva sesión junto al calendario -->
               <button class="seg-btn-nueva-sesion-inline" id="seg-btn-nueva-sesion"
-                onclick="segNuevaSesion()" title="Nueva sesión">
+                onclick="segNuevaSesion()" data-seg-tooltip="Nueva sesión">
                 <i class="fas fa-plus"></i>
                 Nueva <span id="lbl-nueva-sesion">sesión</span>
               </button>
@@ -196,9 +210,8 @@
                 <i class="fas fa-lock"></i>
                 <span id="lbl-notas-internas">Notas internas</span>
                 <span class="seg-notas-solo-ti">Solo para ti</span>
+                <div class="seg-etiquetas-chips" id="seg-etiquetas-chips"></div>
               </div>
-              <!-- Chips de etiquetas activas -->
-              <div class="seg-etiquetas-chips" id="seg-etiquetas-chips"></div>
               <!-- Textarea con sistema /slash -->
               <div class="seg-notas-wrap" style="position:relative">
                 <textarea
@@ -208,7 +221,6 @@
                   oninput="segNotasInput(this); segMarcarCambios()"
                   onkeydown="segNotasKeydown(event)"
                 ></textarea>
-                <!-- Dropdown autocomplete -->
                 <div class="seg-slash-dropdown seg-hidden" id="seg-slash-dropdown">
                   <div id="seg-slash-items"></div>
                 </div>
@@ -222,17 +234,14 @@
                 <i class="fas fa-pen-alt seg-icon-muted"></i>
                 <span id="lbl-contenido">Lo que se trabajó</span>
                 <span class="seg-field-badge seg-badge-ia">Base para IA</span>
-              </div>
-              <div class="seg-plantillas-panel" id="seg-plantillas-principal">
-                <div class="seg-plantillas-header">
-                  <span class="seg-plantillas-titulo">Mis plantillas</span>
-                  <button class="seg-btn-nueva-plantilla" onclick="segNuevaPlantilla('principal')">
-                    <i class="fas fa-plus"></i> Nueva plantilla
-                  </button>
-                </div>
+                <span class="seg-plantillas-titulo-inline">Plantillas:</span>
                 <div class="seg-plantillas-chips" id="seg-chips-principal">
                   <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
                 </div>
+                <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantilla('principal')"
+                  data-seg-tooltip="Nueva plantilla">
+                  <i class="fas fa-plus"></i>
+                </button>
               </div>
               <textarea class="seg-textarea" id="seg-campo-contenido"
                 placeholder="Describe el contenido de esta sesión..."
@@ -245,17 +254,14 @@
                 <i class="fas fa-tasks seg-icon-muted"></i>
                 <span id="lbl-tareas">Tareas para el cliente</span>
                 <span class="seg-field-badge seg-badge-enviar">Se enviará</span>
-              </div>
-              <div class="seg-plantillas-panel" id="seg-plantillas-tareas">
-                <div class="seg-plantillas-header">
-                  <span class="seg-plantillas-titulo">Mis plantillas de tareas</span>
-                  <button class="seg-btn-nueva-plantilla" onclick="segNuevaPlantilla('tareas')">
-                    <i class="fas fa-plus"></i> Nueva plantilla
-                  </button>
-                </div>
+                <span class="seg-plantillas-titulo-inline">Plantillas:</span>
                 <div class="seg-plantillas-chips" id="seg-chips-tareas">
-                  <span class="seg-plantillas-vacio">Aún no tienes plantillas de tareas.</span>
+                  <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
                 </div>
+                <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantilla('tareas')"
+                  data-seg-tooltip="Nueva plantilla">
+                  <i class="fas fa-plus"></i>
+                </button>
               </div>
               <textarea class="seg-textarea" id="seg-campo-tareas"
                 placeholder="Tareas o indicaciones..."
@@ -268,17 +274,14 @@
                 <i class="fas fa-calendar-alt seg-icon-muted"></i>
                 <span id="lbl-proxima">Próxima sesión</span>
                 <span class="seg-field-badge seg-badge-enviar">Se enviará</span>
-              </div>
-              <div class="seg-plantillas-panel" id="seg-plantillas-proxima">
-                <div class="seg-plantillas-header">
-                  <span class="seg-plantillas-titulo">Mis plantillas de próxima sesión</span>
-                  <button class="seg-btn-nueva-plantilla" onclick="segNuevaPlantilla('proxima')">
-                    <i class="fas fa-plus"></i> Nueva plantilla
-                  </button>
-                </div>
+                <span class="seg-plantillas-titulo-inline">Plantillas:</span>
                 <div class="seg-plantillas-chips" id="seg-chips-proxima">
                   <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
                 </div>
+                <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantilla('proxima')"
+                  data-seg-tooltip="Nueva plantilla">
+                  <i class="fas fa-plus"></i>
+                </button>
               </div>
               <textarea class="seg-textarea seg-textarea-sm" id="seg-campo-proxima"
                 placeholder="Plan para la próxima vez..."

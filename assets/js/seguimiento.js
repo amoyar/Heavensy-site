@@ -359,6 +359,9 @@ function segSeleccionarCliente(clienteId, nombre, avatar) {
     SEG.registroId = data.registro_activo ? data.registro_activo._id : null;
     segMostrarRegistroWrap();
     segRenderizarContexto(data);
+    // Mostrar botón colapsar ahora que hay paciente
+    var btnCol = document.getElementById('seg-btn-collapse-left');
+    if (btnCol) btnCol.classList.remove('seg-hidden');
   }, function() {
     segMostrarEmptyMain();
     segToast('Error al cargar el contexto', 'error');
@@ -517,7 +520,7 @@ function segRenderizarTimeline(eventos, titulo, inicio) {
     var html = '<div class="seg-tl-item">' +
       '<div class="seg-tl-dot ' + dotCls + '"></div>' +
       '<div class="seg-tl-year" style="' + clr + '">' + segEscape(String(ev.year||ev.anio||'')) + '</div>' +
-      '<div class="seg-tl-label" style="' + clr + '">' + segEscape(ev.label||ev.titulo||'') + '</div>' +
+      '<div class="seg-tl-label" style="' + clr + '" data-seg-tooltip="' + segEscape(ev.label||ev.titulo||'') + '">' + segEscape(ev.label||ev.titulo||'') + '</div>' +
     '</div>';
     if (!isLast) html += '<div class="seg-tl-line"></div>';
     return html;
@@ -1025,8 +1028,29 @@ function segEliminarRegistro(registroId) {
 }
 
 /* ─────────────────────────────────────────
-   PANELES COLAPSABLES (col-side)
+   TOGGLE PANELES (izquierdo y derecho)
 ───────────────────────────────────────── */
+var SEG_LEFT_OPEN  = true;
+var SEG_RIGHT_OPEN = true;
+
+function segMostrarBtnColapsarIzquierdo(visible) {
+  // Botón siempre visible — no ocultar
+}
+
+function segToggleLeftPanel() {
+  SEG_LEFT_OPEN = !SEG_LEFT_OPEN;
+  var lp      = document.querySelector('.seg-left-panel');
+  var tabExp  = document.getElementById('seg-btn-expand-left');
+
+  if (lp)     lp.classList.toggle('panel-hidden', !SEG_LEFT_OPEN);
+  if (tabExp) tabExp.classList.toggle('seg-hidden', SEG_LEFT_OPEN);
+}
+
+function segToggleRightPanel() {
+  // Eliminado — los paneles del lado derecho se colapsan individualmente
+}
+
+
 var SEG_PANELS = { historial: true, etiquetas: true, plantillas: true };
 
 function segToggleSidePanel(nombre) {
@@ -1202,16 +1226,38 @@ function segEnviarAlCliente() {
   segFetch('/api/seguimiento/registros/' + SEG.registroId + '/enviar',
     { method: 'POST', body: JSON.stringify({ resumen: resumen, canal: canal, company_id: SEG.companyId }) },
     function() {
-      // Mostrar badge de enviado
+      // Badge "Enviado por X" en Tab 2
       var badge   = document.getElementById('seg-enviado-badge');
       var badgeTxt = document.getElementById('seg-enviado-txt');
       var iconMap = { whatsapp: 'WhatsApp', chat: 'Chat Heavensy', email: 'Email' };
       if (badgeTxt) badgeTxt.textContent = 'Enviado por ' + (iconMap[canal] || canal);
       if (badge) badge.classList.remove('seg-hidden');
       if (btnEnviar) { btnEnviar.disabled = true; btnEnviar.innerHTML = '<i class="fas fa-check seg-icon-mr-sm"></i>Enviado'; }
-      // Actualizar badge del hero
+
+      // Badge de estado en hero y date-row
       var heroStatus = document.getElementById('seg-hero-status');
       if (heroStatus) heroStatus.textContent = SEG.labels.status_sent || 'Enviado';
+      var badgeEstado = document.getElementById('seg-badge-estado');
+      if (badgeEstado) badgeEstado.textContent = SEG.labels.status_sent || 'Enviado';
+
+      // Actualizar tarjeta activa en historial directamente en el DOM
+      var card = document.querySelector('.seg-hist-card.active');
+      if (card) {
+        var badgeCard = card.querySelector('.seg-hist-badge');
+        if (badgeCard) {
+          badgeCard.className = 'seg-hist-badge enviado';
+          badgeCard.textContent = 'Enviado';
+        }
+      }
+      // También actualizar en la lista de entidades del panel izquierdo
+      if (SEG.clienteId) {
+        var entityItem = document.querySelector('.seg-entity-item[data-wa-id="' + SEG.clienteId + '"]');
+        if (entityItem) {
+          var dot = entityItem.querySelector('.seg-entity-dot');
+          if (dot) { dot.className = 'seg-entity-dot dot-sent'; }
+        }
+      }
+
       segToast('Enviado por ' + (iconMap[canal] || canal), 'success');
     },
     function() {
@@ -1494,6 +1540,10 @@ function segMostrarEmptyMain() {
   if (empty) empty.classList.remove('seg-hidden');
   if (wrap)  wrap.classList.add('seg-hidden');
   if (load)  load.classList.add('seg-hidden');
+  // Sin paciente → ocultar botón y restaurar panel si estaba colapsado
+  var btnCol = document.getElementById('seg-btn-collapse-left');
+  if (btnCol) btnCol.classList.add('seg-hidden');
+  if (!SEG_LEFT_OPEN) segToggleLeftPanel();
 }
 
 function segMostrarRegistroWrap() {
@@ -1990,6 +2040,8 @@ window.segMostrarConfirmEliminar = segMostrarConfirmEliminar;
 window.segCancelarConfirmEliminar = segCancelarConfirmEliminar;
 window.segConfirmarEliminar    = segConfirmarEliminar;
 window.segToggleSidePanel      = segToggleSidePanel;
+window.segToggleLeftPanel      = segToggleLeftPanel;
+window.segToggleRightPanel     = segToggleRightPanel;
 window.segNuevaSesion          = segNuevaSesion;
 window.segToggleDatePicker     = segToggleDatePicker;
 window.segCalNavMes            = segCalNavMes;
@@ -1997,6 +2049,50 @@ window.segSeleccionarFecha     = segSeleccionarFecha;
 window.segToggleTimePicker     = segToggleTimePicker;
 window.segSeleccionarHora      = segSeleccionarHora;
 window.segSeleccionarMinuto    = segSeleccionarMinuto;
+/* ─────────────────────────────────────────
+   TOOLTIP JS — evita problemas con overflow:hidden
+───────────────────────────────────────── */
+(function() {
+  var tip = document.createElement('div');
+  tip.id = 'seg-tooltip';
+  tip.style.cssText = [
+    'position:fixed',
+    'background:#f5f3ff',
+    'color:#7D84C1',
+    'border:1px solid #c4b5fd',
+    'font-size:10px',
+    'font-weight:600',
+    'padding:4px 8px',
+    'border-radius:6px',
+    'white-space:nowrap',
+    'z-index:99999',
+    'pointer-events:none',
+    'box-shadow:0 2px 8px rgba(153,97,255,.15)',
+    'display:none',
+    'font-family:inherit'
+  ].join(';');
+  document.body.appendChild(tip);
+
+  document.addEventListener('mouseover', function(e) {
+    var el = e.target.closest('[data-seg-tooltip]');
+    if (el) {
+      tip.textContent = el.getAttribute('data-seg-tooltip');
+      tip.style.display = 'block';
+    }
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (tip.style.display === 'block') {
+      tip.style.left = (e.clientX + 10) + 'px';
+      tip.style.top  = (e.clientY - 28) + 'px';
+    }
+  });
+  document.addEventListener('mouseout', function(e) {
+    if (!e.relatedTarget || !e.relatedTarget.closest('[data-seg-tooltip]')) {
+      tip.style.display = 'none';
+    }
+  });
+})();
+
 window.segInit                = segInit;
 window.segSetCompany          = segSetCompany;
 window.segSeleccionarCliente  = segSeleccionarCliente;
