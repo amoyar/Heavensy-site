@@ -354,6 +354,11 @@ function segSeleccionarCliente(clienteId, nombre, avatar) {
   // Mostrar spinner mientras carga
   segMostrarCargandoContexto();
 
+  // En móvil — colapsar panel izquierdo automáticamente al seleccionar paciente
+  if (window.innerWidth <= 767 && SEG_LEFT_OPEN) {
+    segToggleLeftPanel();
+  }
+
   segFetch('/api/seguimiento/clientes/' + clienteId + '/contexto?company_id=' + SEG.companyId, {}, function(data) {
     SEG.contexto   = data;
     SEG.registroId = data.registro_activo ? data.registro_activo._id : null;
