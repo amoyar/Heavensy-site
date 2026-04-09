@@ -759,6 +759,12 @@ function _segConfirmarTag(tag, afterSlash) {
 
 /* ── Dropdown diagnósticos ── */
 function _segDiagDropdownMostrar(matches) {
+  // En móvil usar bottom sheet
+  if (_segEsMobil()) {
+    segDiagSheetAbrir(matches);
+    return;
+  }
+
   var dd = document.getElementById('seg-diag-dropdown');
   if (!dd) return;
 
@@ -903,15 +909,38 @@ function segInicializarEditorNotas() {
   editor.parentNode.replaceChild(nuevo, editor);
   editor = nuevo;
 
-  editor.addEventListener('input', function() {
+  editor.addEventListener('input', function(e) {
     _segLimpiarSugerencia();
     _segSug.actual = null;
 
+    var editorEl = this;
+
+    // Detectar // usando e.data (funciona en Android Chrome con teclado virtual)
+    if (!_segDiagMode) {
+      var charInsertado = (e && e.data) ? e.data : '';
+      if (charInsertado === '/') {
+        // Leer texto completo del editor para ver si hay // reciente
+        var textoCompleto = editorEl.textContent || editorEl.innerText || '';
+        var idx = textoCompleto.lastIndexOf('//');
+        if (idx !== -1) {
+          var despues = textoCompleto.slice(idx + 2);
+          if (despues.indexOf(' ') === -1) {
+            _segDiagMode = true;
+            _segDiagMatches = [];
+            _segDiagIdx = -1;
+            _segSug.actual = null;
+          }
+        }
+      }
+    }
+
+    var fullText = _segGetTextBeforeCursor(editorEl);
+
     // Modo diagnóstico activo — buscar en API con el texto escrito
     if (_segDiagMode) {
-      var fullText   = _segGetTextBeforeCursor(this);
-      var dobleBarra = fullText.lastIndexOf('//');
-      var query      = dobleBarra !== -1 ? fullText.slice(dobleBarra + 2).trim() : '';
+      var textoFull  = editorEl.textContent || editorEl.innerText || '';
+      var dobleBarra = textoFull.lastIndexOf('//');
+      var query      = dobleBarra !== -1 ? textoFull.slice(dobleBarra + 2).trim() : '';
       if (query.length >= 2) {
         clearTimeout(_segDiagTimer);
         _segDiagTimer = setTimeout(function() {
@@ -921,7 +950,6 @@ function segInicializarEditorNotas() {
               _segDiagDropdownMostrar(_segDiagMatches);
             },
             function() {
-              // Si falla el API, mostrar fallback local
               _segDiagDropdownMostrar([]);
             }
           );
@@ -3109,11 +3137,25 @@ function segAgendaActualizarConfirmar() {
   if (ok && resumen) {
     resumen.classList.remove('seg-hidden');
     var svc = _segAgenda.svcSelec;
+
+    // Formatear fecha como "miércoles, 8 de abril"
+    var partes    = _segAgenda.diaSelec.split('-');
+    var fechaObj  = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
+    var diasNombre = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    var mesesNombre = ['enero','febrero','marzo','abril','mayo','junio',
+                       'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    var fechaFmt  = diasNombre[fechaObj.getDay()] + ', ' +
+                    fechaObj.getDate() + ' de ' + mesesNombre[fechaObj.getMonth()];
+
+    // Leer cobro del dropdown
+    var timerVal  = parseInt(document.getElementById('seg-agenda-timer').value) || 0;
+    var cobroLabel = document.getElementById('seg-agenda-dd-label');
+    var cobro     = (timerVal > 0 && cobroLabel) ? cobroLabel.textContent.trim() : null;
+
     resumen.innerHTML = '<i class="fas fa-check-circle" style="color:#16a34a;margin-right:4px"></i>' +
-      '<strong>' + segEscape(svc.name) + '</strong> · ' +
-      segEscape(svc.resource_name || '') + ' · ' +
-      _segAgenda.diaSelec + ' ' + _segAgenda.horaSelec.start +
-      (svc.price ? ' · $' + svc.price.toLocaleString('es-CL') : '');
+      '📅 ' + fechaFmt + ' · ' +
+      '<strong>' + segEscape(svc.name) + '</strong>' +
+      (cobro ? ' · Cobro: ' + cobro : '');
   } else if (resumen) {
     resumen.classList.add('seg-hidden');
   }
@@ -3428,21 +3470,19 @@ function segAgendaDdToggle() {
 }
 
 function segAgendaDdSelect(valor, label) {
-  // Actualizar valor oculto
   var hidden = document.getElementById('seg-agenda-timer');
   if (hidden) hidden.value = valor;
-  // Actualizar label del botón
   var lbl = document.getElementById('seg-agenda-dd-label');
   if (lbl) lbl.textContent = label;
-  // Marcar activo
   document.querySelectorAll('.seg-agenda-dd-item').forEach(function(el) {
     el.classList.toggle('activo', el.textContent.trim() === label);
   });
-  // Cerrar
   var list = document.getElementById('seg-agenda-dd-list');
   var wrap = document.getElementById('seg-agenda-timer-wrap-dd');
   if (list) list.classList.add('seg-hidden');
   if (wrap) wrap.classList.remove('abierto');
+  // Refrescar resumen
+  segAgendaActualizarConfirmar();
 }
 
 // Cerrar al click fuera
@@ -3455,6 +3495,117 @@ document.addEventListener('click', function(e) {
   }
 });
 
+
+/* ─────────────────────────────────────────
+   BOTTOM SHEET DIAGNÓSTICOS — MÓVIL
+───────────────────────────────────────── */
+function _segEsMobil() {
+  return window.innerWidth <= 768 || ('ontouchstart' in window && window.innerWidth <= 900);
+}
+
+function segDiagSheetAbrir(matches) {
+  var overlay = document.getElementById('seg-diag-sheet-overlay');
+  var sheet   = document.getElementById('seg-diag-sheet');
+  var input   = document.getElementById('seg-diag-sheet-input');
+  if (!overlay || !sheet) return;
+
+  // Guardar matches actuales para filtrar
+  segDiagSheetAbrir._matches = matches || [];
+
+  // Renderizar lista
+  segDiagSheetRenderizar(segDiagSheetAbrir._matches);
+
+  // Mostrar
+  overlay.classList.remove('seg-hidden');
+  sheet.classList.remove('seg-hidden');
+  // Animar entrada con pequeño delay
+  requestAnimationFrame(function() {
+    sheet.classList.add('visible');
+  });
+
+  // Limpiar buscador y foco
+  if (input) {
+    input.value = '';
+    setTimeout(function() { input.focus(); }, 300);
+  }
+}
+
+function segDiagSheetRenderizar(matches) {
+  var list = document.getElementById('seg-diag-sheet-list');
+  if (!list) return;
+
+  if (!matches || !matches.length) {
+    list.innerHTML = '<div class="seg-diag-sheet-empty">Sin resultados — prueba con otro término</div>';
+    return;
+  }
+
+  list.innerHTML = matches.map(function(d, i) {
+    return '<div class="seg-diag-sheet-item" onclick="segDiagSheetSelec(' + i + ')">' +
+      '<span class="seg-diag-sheet-codigo">' + segEscape(d.codigo || '—') + '</span>' +
+      '<span class="seg-diag-sheet-nombre">' + segEscape(d.nombre) + '</span>' +
+      '</div>';
+  }).join('');
+}
+
+function segDiagSheetFiltrar(q) {
+  // Filtrar desde todos los matches originales
+  var todos = segDiagSheetAbrir._matches || [];
+  if (!q || !q.trim()) {
+    segDiagSheetRenderizar(todos);
+    return;
+  }
+  var qn = q.trim().toLowerCase()
+    .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e')
+    .replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+  var filtrados = todos.filter(function(d) {
+    var n = (d.nombre || '').toLowerCase()
+      .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e')
+      .replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    return n.indexOf(qn) !== -1 || (d.codigo || '').toLowerCase().indexOf(qn) !== -1;
+  });
+  segDiagSheetRenderizar(filtrados);
+}
+
+function segDiagSheetSelec(idx) {
+  var list  = document.getElementById('seg-diag-sheet-list');
+  var visibles = (segDiagSheetAbrir._matches || []).filter(function(d) {
+    var input = document.getElementById('seg-diag-sheet-input');
+    var q = input ? input.value.trim() : '';
+    if (!q) return true;
+    var qn = q.toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e')
+      .replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    var n = (d.nombre||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e')
+      .replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
+    return n.indexOf(qn) !== -1 || (d.codigo||'').toLowerCase().indexOf(qn) !== -1;
+  });
+  var match = visibles[idx];
+  if (!match) return;
+
+  // En móvil: limpiar el texto del editor que se usó como query
+  var editor = document.getElementById('seg-campo-notas');
+  if (editor && _segEsMobil()) {
+    editor.textContent = '';
+  }
+
+  segDiagSheetCerrar();
+  var chipNombre = match.nombre + ' (' + match.codigo + ')';
+  _segDiagConfirmarChip(chipNombre, match.nombre);
+}
+
+function segDiagSheetCerrar() {
+  var overlay = document.getElementById('seg-diag-sheet-overlay');
+  var sheet   = document.getElementById('seg-diag-sheet');
+  if (!sheet) return;
+  sheet.classList.remove('visible');
+  setTimeout(function() {
+    if (overlay) overlay.classList.add('seg-hidden');
+    if (sheet) sheet.classList.add('seg-hidden');
+    // Limpiar modo diag
+    _segDiagMode = false;
+    _segDiagDropdownCerrar();
+  }, 280);
+}
+
 window.segCerrarModalAgenda      = segCerrarModalAgenda;
 window.segAgendaModo             = segAgendaModo;
 window.segAgendaCalNav           = segAgendaCalNav;
@@ -3465,6 +3616,43 @@ window.segAgendaSelecHora        = segAgendaSelecHora;
 window.segConfirmarAgenda        = segConfirmarAgenda;
 window.segAgendaTpToggle         = segAgendaTpToggle;
 window.segAgendaDdToggle         = segAgendaDdToggle;
+
+function segAbrirCie10Movil() {
+  // Leer texto del editor como query inicial
+  var editor = document.getElementById('seg-campo-notas');
+  var query  = (editor ? (editor.textContent || editor.innerText || '') : '').trim();
+
+  // Limpiar el texto del editor del contenido usado como query
+  // (no borramos — el usuario decide qué hacer)
+
+  _segDiagMode = true;
+  _segDiagMatches = [];
+
+  // Abrir bottom sheet vacío primero
+  segDiagSheetAbrir([]);
+
+  // Pre-rellenar el buscador con el texto del editor
+  var input = document.getElementById('seg-diag-sheet-input');
+  if (input && query) {
+    input.value = query;
+  }
+
+  // Buscar con el texto del editor como query, o fallback genérico
+  var q = query.length >= 2 ? query : 'trastorno';
+  segFetch('/api/seguimiento/diagnosticos?q=' + encodeURIComponent(q) + '&limit=20', {},
+    function(data) {
+      var matches = data.diagnosticos || [];
+      segDiagSheetAbrir._matches = matches;
+      segDiagSheetRenderizar(matches);
+    },
+    function() {}
+  );
+}
+
+window.segDiagSheetCerrar        = segDiagSheetCerrar;
+window.segAbrirCie10Movil        = segAbrirCie10Movil;
+window.segDiagSheetSelec         = segDiagSheetSelec;
+window.segDiagSheetFiltrar       = segDiagSheetFiltrar;
 window.segAgendaDdSelect         = segAgendaDdSelect;
 window.segAgendaTpSelHora        = segAgendaTpSelHora;
 window.segAgendaTpSelMin         = segAgendaTpSelMin;

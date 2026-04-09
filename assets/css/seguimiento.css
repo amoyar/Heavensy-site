@@ -4409,3 +4409,158 @@
   font-size: 8px;
   color: #6b7280;
 }
+
+/* ── Bottom Sheet diagnósticos CIE-10 (móvil) ─────────────────────────── */
+.seg-diag-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 9998;
+  backdrop-filter: blur(2px);
+}
+.seg-diag-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 32px rgba(30,45,90,0.18);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform .28s cubic-bezier(.32,1,.22,1);
+}
+.seg-diag-sheet.visible {
+  transform: translateY(0);
+}
+.seg-diag-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+.seg-diag-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 8px;
+  flex-shrink: 0;
+}
+.seg-diag-sheet-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #374151;
+}
+.seg-diag-sheet-close {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #6b7280;
+  cursor: pointer;
+}
+.seg-diag-sheet-search-wrap {
+  position: relative;
+  padding: 0 16px 10px;
+  flex-shrink: 0;
+}
+.seg-diag-sheet-search-icon {
+  position: absolute;
+  left: 26px;
+  top: 50%;
+  transform: translateY(-60%);
+  color: #9ca3af;
+  font-size: 12px;
+}
+.seg-diag-sheet-search {
+  width: 100%;
+  padding: 9px 12px 9px 32px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #374151;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  background: #f9fafb;
+}
+.seg-diag-sheet-search:focus {
+  border-color: #9961FF;
+  background: #fff;
+  box-shadow: 0 0 0 3px #9961FF12;
+}
+.seg-diag-sheet-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0 8px 20px;
+}
+.seg-diag-sheet-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .12s;
+}
+.seg-diag-sheet-item:hover,
+.seg-diag-sheet-item:active {
+  background: #EFF6FF;
+}
+.seg-diag-sheet-codigo {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9961FF;
+  background: #f5f3ff;
+  border-radius: 5px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+  min-width: 32px;
+  text-align: center;
+}
+.seg-diag-sheet-nombre {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.3;
+}
+.seg-diag-sheet-empty {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+  padding: 24px 0;
+}
+
+/* ── Botón CIE-10 móvil ─────────────────────────────────────────────────── */
+.seg-btn-cie10-movil {
+  display: none;
+}
+@media (max-width: 768px) {
+  .seg-btn-cie10-movil {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #f5f3ff;
+    border: 1px solid #c4b5fd;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #7c3aed;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 6px;
+  }
+  .seg-btn-cie10-movil i {
+    font-size: 12px;
+  }
+}
