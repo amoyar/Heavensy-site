@@ -858,12 +858,14 @@ function _segDiagConfirmarChip(chipNombre, textoRaw) {
     var fin      = pos + 2 + textoRaw.length;
     editor.innerHTML = html.slice(0, pos) + remplazo + html.slice(fin > html.length ? html.length : fin);
   }
-  var sel = window.getSelection();
-  var r   = document.createRange();
-  r.selectNodeContents(editor);
-  r.collapse(false);
-  sel.removeAllRanges();
-  sel.addRange(r);
+  try {
+    var sel = window.getSelection();
+    var r   = document.createRange();
+    r.selectNodeContents(editor);
+    r.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  } catch(e) { /* foco no disponible — ignorar */ }
 
   segAgregarChip('diagnostico', chipNombre);
   segMarcarCambios();
@@ -3567,27 +3569,25 @@ function segDiagSheetFiltrar(q) {
 }
 
 function segDiagSheetSelec(idx) {
-  var list  = document.getElementById('seg-diag-sheet-list');
-  var visibles = (segDiagSheetAbrir._matches || []).filter(function(d) {
-    var input = document.getElementById('seg-diag-sheet-input');
-    var q = input ? input.value.trim() : '';
-    if (!q) return true;
+  // Reconstruir lista visible según filtro actual del buscador
+  var input = document.getElementById('seg-diag-sheet-input');
+  var q = input ? input.value.trim() : '';
+  var todos = segDiagSheetAbrir._matches || [];
+  var visibles = !q ? todos : todos.filter(function(d) {
     var qn = q.toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e')
       .replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
     var n = (d.nombre||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e')
       .replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
     return n.indexOf(qn) !== -1 || (d.codigo||'').toLowerCase().indexOf(qn) !== -1;
   });
-  var match = visibles[idx];
+  var match = visibles[idx] || todos[idx];
   if (!match) return;
 
-  // En móvil: limpiar el texto del editor que se usó como query
-  var editor = document.getElementById('seg-campo-notas');
-  if (editor && _segEsMobil()) {
-    editor.textContent = '';
-  }
-
+  // Cerrar sheet primero
   segDiagSheetCerrar();
+
+  // Llamar _segDiagConfirmarChip exactamente igual que desktop
+  // El try/catch interno garantiza que segAgregarChip siempre se ejecuta
   var chipNombre = match.nombre + ' (' + match.codigo + ')';
   _segDiagConfirmarChip(chipNombre, match.nombre);
 }
