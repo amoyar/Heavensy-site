@@ -392,6 +392,13 @@
 }
 .seg-hchip-freq strong { color: #9961FF; font-weight: 700; }
 
+.seg-hchip-trabajar {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 0.5px solid #86efac;
+  font-weight: 600;
+}
+
 .seg-hero-nota {
   font-size: 10.5px;
   font-style: italic;
@@ -1841,12 +1848,6 @@
   color: #16a34a;
 }
 
-.seg-chip-actions {
-  display: none;
-  gap: 3px;
-  margin-left: 2px;
-}
-
 .seg-plantilla-chip:hover .seg-chip-actions { display: flex; }
 
 .seg-chip-act-btn {
@@ -2719,20 +2720,22 @@
 .seg-chip-check { color: #9961FF; font-size: 9px; }
 
 .seg-chip-actions {
-  display: flex;
+  display: none;
   align-items: center;
-  gap: 5px;
-  opacity: 0;
-  transition: opacity .15s;
-  margin-left: 2px;
+  gap: 4px;
+  margin-left: 4px;
 }
 .seg-chip-actions i {
   font-size: 10px;
   color: #9ca3af;
+  cursor: pointer;
   padding: 1px 2px;
+  transition: color .12s;
 }
 .seg-chip-actions i:hover { color: #9961FF; }
 .seg-chip-actions .fa-trash:hover { color: #ef4444; }
+
+.seg-plantilla-chip:hover .seg-chip-actions { display: flex; }
 
 /* Modal plantilla */
 .seg-modal-plantilla {
@@ -3181,7 +3184,7 @@
 .seg-side-panel-scroll::-webkit-scrollbar-thumb { background: #e0e7ff; border-radius: 99px; }
 
 /* Historial — caben ~4 tarjetas */
-#seg-body-historial .seg-side-panel-scroll { max-height: 300px; }
+#seg-body-historial .seg-side-panel-scroll { max-height: calc(100vh - 200px); }
 
 /* Etiquetas activas — caben ~4 chips (2 filas) */
 #seg-body-etiquetas .seg-side-panel-scroll { max-height: 64px; }
@@ -3603,4 +3606,806 @@
     z-index: 201;
     box-shadow: 3px 0 10px rgba(0,0,0,.15);
   }
+}
+
+/* ═══════════════════════════════════════════
+   EDITOR CONTENTEDITABLE — NOTAS CLÍNICAS
+═══════════════════════════════════════════ */
+.seg-notas-editor {
+  width: 100%;
+  min-height: 90px;
+  padding: 10px 12px;
+  border: 0.5px solid #fca5a5;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #374151;
+  background: #fff5f5;
+  outline: none;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+  resize: vertical;
+  overflow-y: auto;
+}
+.seg-notas-editor:focus { border-color: #f87171; }
+.seg-notas-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #c4b5b5;
+  pointer-events: none;
+  font-style: italic;
+  font-size: 12px;
+}
+/* Sugerencia inline — texto gris tenue */
+.seg-notas-editor .seg-inline-sug {
+  color: #c4b5b5;
+  font-style: normal;
+}
+/* Prefijo / y /d en gris muy suave */
+.seg-notas-editor .seg-slash-prefix {
+  color: #d1d5db;
+}
+
+/* ═══════════════════════════════════════════
+   4 SECCIONES DE CHIPS BAJO NOTAS CLÍNICAS
+═══════════════════════════════════════════ */
+.seg-chips-secciones {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.seg-chip-seccion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.seg-chip-seccion-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.seg-chip-seccion-label i { font-size: 10px; }
+.seg-chip-seccion-label::after {
+  content: '·';
+  font-size: 13px;
+  font-weight: 700;
+  margin-left: 2px;
+  opacity: .6;
+}
+
+/* Colores por tipo */
+.seg-chip-label-sintoma    { color: #e57373; }
+.seg-chip-label-diagnostico{ color: #64b5f6; }
+.seg-chip-label-hipotesis  { color: #ba68c8; }
+.seg-chip-label-trabajar   { color: #81c784; }
+
+.seg-chip-seccion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Chips por tipo */
+.seg-chip-sintoma {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  background: #fff5f5; color: #e57373; border: 0.5px solid #fecaca;
+  text-transform: none; letter-spacing: 0; cursor: default;
+}
+.seg-chip-diagnostico {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  background: #eff6ff; color: #64b5f6; border: 0.5px solid #bfdbfe;
+  text-transform: none; letter-spacing: 0; cursor: default;
+}
+.seg-chip-hipotesis {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  background: #fdf4ff; color: #ba68c8; border: 0.5px solid #e9d5ff;
+  text-transform: none; letter-spacing: 0; cursor: default;
+}
+.seg-chip-trabajar {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  background: #f0fdf4; color: #81c784; border: 0.5px solid #bbf7d0;
+  text-transform: none; letter-spacing: 0; cursor: pointer;
+}
+.seg-chip-trabajar.activo {
+  background: #dcfce7; border-color: #86efac; color: #16a34a;
+}
+.seg-chip-remove-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 9px; padding: 0; line-height: 1;
+  opacity: .6; transition: opacity .12s;
+}
+.seg-chip-remove-btn:hover { opacity: 1; }
+
+/* ═══════════════════════════════════════════
+   ETIQUETAS ACTIVAS EN PANEL IZQUIERDO
+═══════════════════════════════════════════ */
+.seg-lp-etiquetas {
+  margin-top: 6px;
+  background: #f9fafb;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.seg-lp-etiquetas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.seg-lp-etiquetas-header:hover { background: #f0f1f3; }
+.seg-lp-etiquetas-titulo {
+  font-size: 9px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.seg-lp-etiquetas-chev {
+  font-size: 9px;
+  color: #9ca3af;
+  transition: transform .2s;
+}
+.seg-lp-etiquetas-chev.collapsed { transform: rotate(-90deg); }
+.seg-lp-etiquetas-body {
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 0 10px 8px;
+  transition: max-height .25s ease;
+  scrollbar-width: thin;
+  scrollbar-color: #e0e7ff transparent;
+}
+.seg-lp-etiquetas-body.collapsed {
+  max-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.seg-lp-etiquetas-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+/* Chip clickeable para filtrar */
+.seg-lp-etiqueta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-size: 9px;
+  font-weight: 600;
+  background: #f5f3ff;
+  border: 0.5px solid #ddd6fe;
+  color: #7D84C1;
+  cursor: pointer;
+  transition: all .12s;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.seg-lp-etiqueta-chip:hover {
+  background: #ede9fe;
+  border-color: #9961FF;
+  color: #9961FF;
+}
+.seg-lp-etiqueta-chip.activa {
+  background: #9961FF;
+  border-color: #9961FF;
+  color: #fff;
+}
+
+/* Botón limpiar filtros etiquetas */
+.seg-lp-etiqueta-limpiar {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #ef4444 !important;
+}
+.seg-lp-etiqueta-limpiar:hover {
+  background: #fee2e2 !important;
+  border-color: #ef4444 !important;
+}
+
+/* Botón trash en chips hipótesis */
+.seg-chip-btn-trash i { color: #fca5a5 !important; }
+.seg-chip-btn-trash:hover i { color: #ef4444 !important; }
+
+/* ═══════════════════════════════
+   MODAL INTENSIDAD
+═══════════════════════════════ */
+.seg-intensidad-modal-box {
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.seg-intens-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all .15s;
+}
+.seg-intens-item:hover { background: #f7f8fc; border-color: #e5e7eb; }
+.seg-intens-item.activo { background: #f0f5ff; border-color: #9961FF; }
+
+.seg-intens-barra {
+  width: 6px;
+  min-height: 44px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.08);
+}
+.seg-intens-num {
+  font-size: 18px;
+  font-weight: 700;
+  color: #6b7280;
+  min-width: 22px;
+  line-height: 1.2;
+  font-family: inherit;
+}
+.seg-intens-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.seg-intens-label { font-size: 12px; font-weight: 600; color: #1e2d5a; }
+.seg-intens-desc { font-size: 11px; color: #9ca3af; line-height: 1.4; }
+
+/* Badge de intensidad en chip trabajar */
+.seg-intens-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin-left: 4px;
+  padding: 0 3px;
+  cursor: pointer;
+  transition: opacity .12s;
+}
+.seg-intens-badge:hover { opacity: .8; }
+
+.seg-modal-close-btn {
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: all .15s;
+  font-size: 11px;
+}
+.seg-modal-close-btn:hover { background: #f3f4f6; color: #374151; }
+
+/* ═══════════════════════════════════════
+   MODAL AGENDA — Próxima Sesión
+═══════════════════════════════════════ */
+.seg-agenda-modal-box {
+  max-width: 680px;
+  width: 96%;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+/* Header con X a la derecha */
+.seg-agenda-modal-box .seg-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.seg-agenda-modal-box .seg-modal-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e2d5a;
+  margin-bottom: 0;
+}
+
+/* Modo toggle */
+.seg-agenda-modo-wrap {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.seg-agenda-modo-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all .15s;
+}
+.seg-agenda-modo-btn.activo {
+  background: #f0f0ff;
+  border-color: #9961FF;
+  color: #9961FF;
+}
+
+/* Body dos columnas */
+.seg-agenda-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+@media (max-width: 560px) {
+  .seg-agenda-body { grid-template-columns: 1fr; }
+}
+
+/* Columna izquierda con separador sutil */
+.seg-agenda-col-left {
+  padding-right: 16px;
+  border-right: 1px solid #f0f0f5;
+}
+.seg-agenda-col-right {
+  padding-left: 16px;
+}
+
+/* Labels de sección */
+.seg-agenda-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #7D84C1;
+  margin-bottom: 6px;
+}
+
+/* Chips de servicios */
+.seg-agenda-servicios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+.seg-agenda-svc-chip {
+  padding: 4px 11px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all .12s;
+}
+.seg-agenda-svc-chip:hover { border-color: #9961FF; color: #9961FF; }
+.seg-agenda-svc-chip.activo {
+  background: #9961FF;
+  border-color: #9961FF;
+  color: #fff;
+}
+.seg-agenda-loading {
+  font-size: 10px;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Navegación mes */
+.seg-agenda-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px 0 6px;
+  background: #EFF6FF;
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+.seg-agenda-cal-btn {
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 9px;
+  color: #6b7280;
+  transition: all .12s;
+}
+.seg-agenda-cal-btn:hover { background: #f3f4f6; }
+.seg-agenda-cal-mes {
+  font-size: 11px;
+  font-weight: 700;
+  color: #374151;
+  text-transform: capitalize;
+}
+
+/* Grid calendario */
+.seg-agenda-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.seg-agenda-cal-head {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 500;
+  color: #9ca3af;
+  padding: 4px 2px;
+  text-transform: uppercase;
+}
+.seg-agenda-cal-day {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #374151;
+  transition: all .15s;
+  border: 1px solid transparent;
+}
+.seg-agenda-cal-day:hover:not(.vacio):not(.pasado):not(.sin-slots) {
+  background: #EFF6FF;
+  color: #9961FF;
+}
+.seg-agenda-cal-day.seleccionado {
+  background: #9961FF;
+  color: #fff;
+  border-color: #9961FF;
+  font-weight: 700;
+}
+.seg-agenda-cal-day.hoy { font-weight: 700; border-color: #9961FF; color: #9961FF; }
+.seg-agenda-cal-day.vacio { cursor: default; }
+.seg-agenda-cal-day.pasado { color: #d1d5db; cursor: not-allowed; }
+.seg-agenda-cal-day.sin-slots { color: #d1d5db; cursor: not-allowed; }
+.seg-agenda-cal-day.con-slots { position: relative; }
+.seg-agenda-cal-day.con-slots::after {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #9961FF;
+  margin: 1px auto 0;
+}
+
+/* Horas disponibles */
+.seg-agenda-horas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+.seg-agenda-hora-chip {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid #ddd6fe;
+  background: #f5f3ff;
+  color: #7c3aed;
+  cursor: pointer;
+  transition: all .12s;
+}
+.seg-agenda-hora-chip:hover { background: #ede9fe; }
+.seg-agenda-hora-chip.activo {
+  background: #9961FF;
+  border-color: #9961FF;
+  color: #fff;
+}
+
+/* Timer / inputs */
+.seg-agenda-timer-wrap { display: flex; flex-direction: column; gap: 10px; }
+.seg-agenda-timer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.seg-agenda-timer-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7D84C1;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.seg-agenda-timer-label--big {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Timepicker dentro del modal agenda */
+#seg-agenda-hora-wrap { position: relative; }
+#seg-agenda-timepicker {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: auto;
+  z-index: 600;
+}
+.seg-agenda-select {
+  font-size: 13px;
+  padding: 7px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-family: inherit;
+  outline: none;
+  transition: border .15s;
+  cursor: pointer;
+}
+.seg-agenda-select:focus {
+  border-color: #9961FF;
+  box-shadow: 0 0 0 3px #9961FF12;
+}
+
+/* Custom dropdown Activar cobro */
+.seg-agenda-dd-wrap {
+  position: relative;
+}
+.seg-agenda-dd-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+  white-space: nowrap;
+  min-width: 150px;
+  justify-content: space-between;
+}
+.seg-agenda-dd-btn:hover { border-color: #C9D9FF; }
+.seg-agenda-dd-btn:focus,
+.seg-agenda-dd-wrap.abierto .seg-agenda-dd-btn {
+  border-color: #9961FF;
+  box-shadow: 0 0 0 3px #9961FF12;
+  outline: none;
+}
+.seg-agenda-dd-chevron {
+  font-size: 9px;
+  color: #9961FF;
+  transition: transform .15s;
+}
+.seg-agenda-dd-wrap.abierto .seg-agenda-dd-chevron {
+  transform: rotate(180deg);
+}
+.seg-agenda-dd-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 100%;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.10);
+  z-index: 500;
+  overflow: hidden;
+  padding: 4px;
+}
+.seg-agenda-dd-item {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #374151;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  font-family: inherit;
+}
+.seg-agenda-dd-item:hover {
+  background: #EFF6FF;
+  color: #9961FF;
+}
+.seg-agenda-dd-item.activo {
+  background: #f5f3ff;
+  color: #9961FF;
+  font-weight: 600;
+}
+.seg-agenda-input {
+  width: 100%;
+  font-size: 13px;
+  padding: 7px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  outline: none;
+  color: #374151;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border .15s;
+  background: #fff;
+}
+.seg-agenda-input:focus {
+  border-color: #9961FF;
+  box-shadow: 0 0 0 3px #9961FF12;
+}
+.seg-agenda-textarea {
+  width: 100%;
+  font-size: 10px;
+  padding: 6px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  outline: none;
+  color: #374151;
+  resize: vertical;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+.seg-agenda-textarea:focus { border-color: #9961FF; }
+
+/* Resumen selección */
+.seg-agenda-resumen {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 10px;
+  color: #166534;
+  margin-top: 4px;
+}
+
+.seg-agenda-aviso {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #92400e;
+  margin-top: 6px;
+}
+.seg-agenda-aviso i {
+  color: #f59e0b;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+/* Botón agendar sesión */
+.seg-btn-agendar-sesion {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid #ddd6fe;
+  background: #f5f3ff;
+  color: #7c3aed;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .12s;
+  margin-left: 4px;
+}
+.seg-btn-agendar-sesion:hover { background: #ede9fe; border-color: #9961FF; }
+.seg-proxima-display {
+  font-size: 9px;
+  color: #16a34a;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+/* Placeholder columna derecha */
+.seg-agenda-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 140px;
+  color: #d1d5db;
+  font-size: 11px;
+  text-align: center;
+  border: 1.5px dashed #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+}
+.seg-agenda-placeholder i { font-size: 20px; }
+
+/* ═══════════════════════════════════════
+   DROPDOWN DIAGNÓSTICOS CIE-10
+═══════════════════════════════════════ */
+.seg-diag-dropdown {
+  position: fixed;
+  z-index: 9999;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(30,45,90,0.14);
+  min-width: 280px;
+  max-width: 400px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #e0e7ff transparent;
+}
+.seg-diag-dd-header {
+  padding: 5px 12px 4px;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #9ca3af;
+  border-bottom: 1px solid #f3f4f6;
+}
+.seg-diag-dd-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background .1s;
+}
+.seg-diag-dd-item:hover,
+.seg-diag-dd-item.activo {
+  background: #f5f3ff;
+}
+.seg-diag-dd-item.activo .seg-diag-dd-nombre {
+  color: #7c3aed;
+}
+.seg-diag-dd-codigo {
+  font-size: 9px;
+  font-weight: 700;
+  color: #9961FF;
+  min-width: 32px;
+  flex-shrink: 0;
+  font-family: monospace;
+}
+.seg-diag-dd-nombre {
+  font-size: 11px;
+  color: #374151;
+  line-height: 1.3;
+}
+.seg-diag-dd-empty {
+  padding: 10px 12px;
+  font-size: 10px;
+  color: #9ca3af;
+  text-align: center;
+}
+.seg-diag-dd-hint {
+  padding: 4px 12px;
+  font-size: 9px;
+  color: #c4b5fd;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  gap: 8px;
+}
+.seg-diag-dd-hint kbd {
+  background: #f3f4f6;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 8px;
+  color: #6b7280;
 }

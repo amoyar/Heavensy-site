@@ -35,6 +35,17 @@
         <input type="text" class="seg-search-input" id="seg-search"
           placeholder="Buscar..." oninput="segBuscar(this.value)" />
       </div>
+
+      <!-- Etiquetas activas del paciente (filtro visual) -->
+      <div class="seg-lp-etiquetas seg-hidden" id="seg-lp-etiquetas-wrap">
+        <div class="seg-lp-etiquetas-header" onclick="segToggleEtiquetasPanel()">
+          <span class="seg-lp-etiquetas-titulo">Etiquetas activas</span>
+          <i class="fas fa-chevron-down seg-lp-etiquetas-chev" id="seg-lp-etiquetas-chev"></i>
+        </div>
+        <div class="seg-lp-etiquetas-body" id="seg-lp-etiquetas-body">
+          <div class="seg-lp-etiquetas-chips" id="seg-lp-etiquetas-chips"></div>
+        </div>
+      </div>
     </div>
 
     <div class="seg-entity-list" id="seg-entity-list">
@@ -210,18 +221,48 @@
                 <span class="seg-notas-solo-ti">Solo para ti</span>
                 <div class="seg-etiquetas-chips" id="seg-etiquetas-chips"></div>
               </div>
-              <!-- Textarea con sistema /slash -->
+              <!-- Editor contenteditable con sugerencia inline -->
               <div class="seg-notas-wrap" style="position:relative">
-                <textarea
-                  class="seg-textarea seg-notas-textarea"
+                <div
+                  class="seg-notas-editor"
                   id="seg-campo-notas"
-                  placeholder="Notas privadas... Escribe /palabra + espacio para crear etiquetas"
-                  oninput="segNotasInput(this); segMarcarCambios()"
-                  onkeydown="segNotasKeydown(event)"
-                ></textarea>
-                <div class="seg-slash-dropdown seg-hidden" id="seg-slash-dropdown">
-                  <div id="seg-slash-items"></div>
+                  contenteditable="true"
+                  spellcheck="true"
+                  data-placeholder="Escribe /palabra para síntoma, /dpalabra para diagnóstico, &quot;texto&quot; para hipótesis. Confirma con Espacio."
+                ></div>
+              </div>
+
+              <!-- 4 secciones de chips bajo el editor -->
+              <div class="seg-chips-secciones" id="seg-chips-secciones">
+
+                <div class="seg-chip-seccion seg-hidden" id="seg-sec-sintoma">
+                  <div class="seg-chip-seccion-label seg-chip-label-sintoma">
+                    <i class="fas fa-circle-notch"></i> Síntoma
+                  </div>
+                  <div class="seg-chip-seccion-chips" id="seg-chips-sintoma"></div>
                 </div>
+
+                <div class="seg-chip-seccion seg-hidden" id="seg-sec-diagnostico">
+                  <div class="seg-chip-seccion-label seg-chip-label-diagnostico">
+                    <i class="fas fa-stethoscope"></i> Diagnóstico
+                  </div>
+                  <div class="seg-chip-seccion-chips" id="seg-chips-diagnostico"></div>
+                </div>
+
+                <div class="seg-chip-seccion seg-hidden" id="seg-sec-hipotesis">
+                  <div class="seg-chip-seccion-label seg-chip-label-hipotesis">
+                    <i class="fas fa-lightbulb"></i> Hipótesis
+                  </div>
+                  <div class="seg-chip-seccion-chips" id="seg-chips-hipotesis"></div>
+                </div>
+
+                <div class="seg-chip-seccion seg-hidden" id="seg-sec-trabajar">
+                  <div class="seg-chip-seccion-label seg-chip-label-trabajar">
+                    <i class="fas fa-bullseye"></i> Lo que abordaremos
+                  </div>
+                  <div class="seg-chip-seccion-chips" id="seg-chips-trabajar"></div>
+                </div>
+
               </div>
             </div>
 
@@ -272,6 +313,11 @@
                 <i class="fas fa-calendar-alt seg-icon-muted"></i>
                 <span id="lbl-proxima">Próxima sesión</span>
                 <span class="seg-field-badge seg-badge-enviar">Se enviará</span>
+                <button class="seg-btn-agendar-sesion" onclick="segAbrirModalAgenda()"
+                  data-seg-tooltip="Agendar sesión">
+                  <i class="fas fa-calendar-plus"></i> Agendar
+                </button>
+                <span id="seg-proxima-sesion-display" class="seg-proxima-display"></span>
                 <span class="seg-plantillas-titulo-inline">Plantillas:</span>
                 <div class="seg-plantillas-chips" id="seg-chips-proxima">
                   <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
@@ -330,34 +376,6 @@
               <div class="seg-side-panel-body" id="seg-body-historial">
                 <div class="seg-side-panel-scroll">
                   <div id="seg-historial-list"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Etiquetas activas colapsable -->
-            <div class="seg-side-panel" id="seg-side-etiquetas">
-              <div class="seg-side-panel-header" onclick="segToggleSidePanel('etiquetas')">
-                <span class="seg-side-panel-title">Etiquetas activas</span>
-                <i class="fas fa-chevron-down seg-side-panel-chev" id="seg-chev-etiquetas"></i>
-              </div>
-              <div class="seg-side-panel-body" id="seg-body-etiquetas">
-                <div class="seg-side-panel-scroll">
-                  <div class="seg-etiquetas-wrap" id="seg-etiquetas-activas"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Plantillas colapsable -->
-            <div class="seg-side-panel" id="seg-side-plantillas">
-              <div class="seg-side-panel-header" onclick="segToggleSidePanel('plantillas')">
-                <span class="seg-side-panel-title">Plantillas</span>
-                <i class="fas fa-chevron-down seg-side-panel-chev" id="seg-chev-plantillas"></i>
-              </div>
-              <div class="seg-side-panel-body" id="seg-body-plantillas">
-                <div class="seg-side-panel-scroll">
-                  <div class="seg-side-card-plain" onclick="segVerPlantillas()">
-                    Mis plantillas <i class="fas fa-chevron-right"></i>
-                  </div>
                 </div>
               </div>
             </div>
@@ -564,3 +582,179 @@
     </div>
   </div>
 </div>
+
+<!-- Modal Intensidad -->
+<div class="seg-modal-overlay seg-hidden" id="seg-intensidad-modal">
+  <div class="seg-modal seg-intensidad-modal-box">
+    <div class="seg-modal-header">
+      <div class="seg-modal-title" id="seg-intensidad-titulo">Intensidad</div>
+      <button class="seg-modal-close-btn" onclick="segCerrarModalIntensidad()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div id="seg-intensidad-lista" style="display:flex;flex-direction:column;gap:4px;margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MODAL AGENDA — Próxima Sesión
+═══════════════════════════════════════ -->
+<div class="seg-modal-overlay seg-hidden" id="seg-agenda-modal">
+  <div class="seg-modal seg-agenda-modal-box">
+
+    <!-- Header -->
+    <div class="seg-modal-header">
+      <div class="seg-modal-title">Agendar próxima sesión</div>
+      <button class="seg-modal-close-btn" onclick="segCerrarModalAgenda()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Modo toggle -->
+    <div class="seg-agenda-modo-wrap" id="seg-agenda-modo-wrap">
+      <button class="seg-agenda-modo-btn activo" id="seg-agenda-modo-sesion" onclick="segAgendaModo('sesion')">
+        <i class="fas fa-calendar-check"></i> Sesión
+      </button>
+      <button class="seg-agenda-modo-btn" id="seg-agenda-modo-recordatorio" onclick="segAgendaModo('recordatorio')">
+        <i class="fas fa-bell"></i> Recordatorio
+      </button>
+    </div>
+
+    <!-- Body: dos columnas -->
+    <div class="seg-agenda-body">
+
+      <!-- COLUMNA IZQUIERDA: servicios + calendario -->
+      <div class="seg-agenda-col-left">
+
+        <!-- Servicios -->
+        <div class="seg-agenda-section-label">Servicio</div>
+        <div class="seg-agenda-servicios" id="seg-agenda-servicios">
+          <div class="seg-agenda-loading"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+        </div>
+
+        <!-- Especialista (si hay varios) -->
+        <div id="seg-agenda-especialista-wrap" class="seg-hidden">
+          <div class="seg-agenda-section-label" style="margin-top:10px">Especialista</div>
+          <div class="seg-agenda-servicios" id="seg-agenda-especialistas"></div>
+        </div>
+
+        <!-- Calendario -->
+        <div class="seg-agenda-cal-nav" id="seg-agenda-cal-nav">
+          <button class="seg-agenda-cal-btn" onclick="segAgendaCalNav(-1)">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span class="seg-agenda-cal-mes" id="seg-agenda-cal-mes"></span>
+          <button class="seg-agenda-cal-btn" onclick="segAgendaCalNav(1)">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+        <div class="seg-agenda-cal-grid" id="seg-agenda-cal-grid"></div>
+
+      </div>
+
+      <!-- COLUMNA DERECHA: horas + timer / recordatorio -->
+      <div class="seg-agenda-col-right">
+
+        <!-- MODO SESIÓN -->
+        <div id="seg-agenda-sesion-wrap">
+
+          <!-- Placeholder inicial -->
+          <div id="seg-agenda-placeholder" class="seg-agenda-placeholder">
+            <i class="fas fa-hand-point-left"></i>
+            Selecciona un servicio y luego una fecha
+          </div>
+
+          <div id="seg-agenda-horas-wrap" class="seg-hidden">
+            <div class="seg-agenda-section-label">Horas disponibles</div>
+            <div class="seg-agenda-horas" id="seg-agenda-horas"></div>
+          </div>
+
+          <div class="seg-agenda-timer-wrap seg-hidden" id="seg-agenda-timer-wrap">
+            <div class="seg-agenda-section-label">Aviso de pago</div>
+            <div class="seg-agenda-timer-row">
+              <span class="seg-agenda-timer-label">Activar cobro</span>
+              <!-- Custom dropdown -->
+              <div class="seg-agenda-dd-wrap" id="seg-agenda-timer-wrap-dd">
+                <button class="seg-agenda-dd-btn" type="button" onclick="segAgendaDdToggle()">
+                  <span id="seg-agenda-dd-label">48h antes</span>
+                  <i class="fas fa-chevron-down seg-agenda-dd-chevron"></i>
+                </button>
+                <div class="seg-agenda-dd-list seg-hidden" id="seg-agenda-dd-list">
+                  <div class="seg-agenda-dd-item" onclick="segAgendaDdSelect(0,'Sin aviso')">Sin aviso</div>
+                  <div class="seg-agenda-dd-item activo" onclick="segAgendaDdSelect(48,'48h antes')">48h antes</div>
+                  <div class="seg-agenda-dd-item" onclick="segAgendaDdSelect(72,'72h antes')">72h antes</div>
+                  <div class="seg-agenda-dd-item" onclick="segAgendaDdSelect(96,'4 días antes')">4 días antes</div>
+                  <div class="seg-agenda-dd-item" onclick="segAgendaDdSelect(168,'1 semana antes')">1 semana antes</div>
+                </div>
+              </div>
+              <!-- Hidden value for JS -->
+              <input type="hidden" id="seg-agenda-timer" value="48">
+            </div>
+            <div class="seg-agenda-timer-row" style="margin-top:8px">
+              <span class="seg-agenda-timer-label">Link de pago</span>
+            </div>
+            <input type="text" class="seg-agenda-input" id="seg-agenda-link-pago"
+              placeholder="https://...">
+          </div>
+        </div>
+
+        <!-- MODO RECORDATORIO -->
+        <div id="seg-agenda-recordatorio-wrap" class="seg-hidden">
+          <div class="seg-agenda-timer-row">
+            <span class="seg-agenda-timer-label seg-agenda-timer-label--big">Hora de envío</span>
+            <div class="seg-picker-wrap" id="seg-agenda-hora-wrap">
+              <button class="seg-picker-btn" type="button" onclick="segAgendaTpToggle()">
+                <i class="fas fa-clock" style="color:#9961FF;font-size:11px"></i>
+                <span id="seg-agenda-hora-display">10:00</span>
+              </button>
+              <div class="seg-timepicker seg-hidden" id="seg-agenda-timepicker">
+                <div class="seg-tp-title">HH : MM</div>
+                <div class="seg-tp-cols">
+                  <div class="seg-tp-col-wrap">
+                    <div class="seg-tp-col" id="seg-agenda-tp-horas"></div>
+                  </div>
+                  <div class="seg-tp-col-wrap">
+                    <div class="seg-tp-col" id="seg-agenda-tp-minutos"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px">
+            <div class="seg-agenda-section-label">Link de agenda</div>
+            <input type="text" class="seg-agenda-input" id="seg-agenda-link-agenda"
+              placeholder="https://...">
+          </div>
+          <div style="margin-top:10px">
+            <div class="seg-agenda-section-label">Mensaje WhatsApp</div>
+            <textarea class="seg-agenda-textarea" id="seg-agenda-msg-rec" rows="5"
+              placeholder="Ej: Le recuerdo que puede agendar su próxima sesión en..."></textarea>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Resumen selección -->
+    <div class="seg-agenda-resumen seg-hidden" id="seg-agenda-resumen"></div>
+
+    <!-- Advertencia disponibilidad -->
+    <div class="seg-agenda-aviso seg-hidden" id="seg-agenda-aviso">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span id="seg-agenda-aviso-msg"></span>
+    </div>
+
+    <!-- Footer -->
+    <div class="seg-modal-footer">
+      <button class="seg-modal-btn seg-modal-btn-ghost" onclick="segCerrarModalAgenda()">Cancelar</button>
+      <button class="seg-modal-btn seg-modal-btn-primary" id="seg-agenda-confirmar-btn"
+        onclick="segConfirmarAgenda()" disabled>
+        <i class="fas fa-check"></i> Confirmar
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Dropdown diagnósticos CIE-10 -->
+<div id="seg-diag-dropdown" class="seg-diag-dropdown seg-hidden"></div>

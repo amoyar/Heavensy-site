@@ -21,9 +21,10 @@ var SEG = {
   _toastTimer:          null,
   etiquetasDisponibles: [],
   etiquetasActivas:     [],
+  _etiquetaFiltro:      [],
   _slashQuery:          '',
-  _cal: { anio: null, mes: null, fechaSel: null }, // date picker state
-  _tp:  { hora: null, min: null }                  // time picker state
+  _cal: { anio: null, mes: null, fechaSel: null },
+  _tp:  { hora: null, min: null }
 };
 
 /* ─────────────────────────────────────────
@@ -174,11 +175,12 @@ function segActualizarSelectorUI() {}
    EMPRESA
 ───────────────────────────────────────── */
 function segSetCompany(companyId, nombre) {
-  SEG.companyId     = companyId;
-  SEG.companyNombre = nombre;
-  SEG.clienteId     = null;
-  SEG.registroId    = null;
-  SEG.contexto      = null;
+  SEG.companyId      = companyId;
+  SEG.companyNombre  = nombre;
+  SEG.clienteId      = null;
+  SEG.registroId     = null;
+  SEG.contexto       = null;
+  SEG._etiquetaFiltro = [];
 
   var nameEl = document.getElementById('seg-company-name');
   if (nameEl) nameEl.textContent = nombre || companyId;
@@ -187,6 +189,7 @@ function segSetCompany(companyId, nombre) {
 
   segCargarLabels(companyId, function() {
     segCargarClientes(companyId);
+    segCargarIntensidadLabels();
   });
 }
 
@@ -252,6 +255,8 @@ function segCargarClientes(companyId) {
     SEG.hayTodas     = lista;
     SEG.hayEntidades = lista;
     segRenderizarLista(lista);
+    // Mostrar etiquetas de todos los pacientes para filtrar
+    segRenderizarPanelEtiquetasFiltro(lista);
   }, function() {
     var el = document.getElementById('seg-entity-list');
     if (el) el.innerHTML = '<div class="seg-list-empty"><i class="fas fa-exclamation-circle"></i>Error al cargar.</div>';
@@ -364,8 +369,12 @@ function segSeleccionarCliente(clienteId, nombre, avatar) {
     SEG.registroId = data.registro_activo ? data.registro_activo._id : null;
     segMostrarRegistroWrap();
     segRenderizarContexto(data);
+    // Cargar intensidades del registro activo
+    _segIntensidades = {};
+    segCargarIntensidades();
     // Mostrar botón colapsar ahora que hay paciente
     var btnCol = document.getElementById('seg-btn-collapse-left');
+    if (btnCol) btnCol.classList.remove('seg-hidden');
     if (btnCol) btnCol.classList.remove('seg-hidden');
   }, function() {
     segMostrarEmptyMain();
@@ -443,7 +452,19 @@ function segRenderizarContexto(ctx) {
     return typeof e === 'string' ? e : (e.nombre || '');
   }).filter(Boolean);
   var notasInput = document.getElementById('seg-campo-notas');
-  if (notasInput) notasInput.value = reg.notas_internas || '';
+  if (notasInput) {
+    notasInput.innerText = reg.notas_internas || '';
+    segInicializarEditorNotas();
+  }
+  segLimpiarTodosChips();
+  // Cargar chips guardados — primero los 3 tipos, luego trabajar como selecciones
+  if (reg.chips_sintoma)     (reg.chips_sintoma||[]).forEach(function(c){ segAgregarChip('sintoma',c); });
+  if (reg.chips_diagnostico) (reg.chips_diagnostico||[]).forEach(function(c){ segAgregarChip('diagnostico',c); });
+  if (reg.chips_hipotesis)   (reg.chips_hipotesis||[]).forEach(function(c){ segAgregarChip('hipotesis',c); });
+  // trabajar se carga directamente como selecciones (no como chips independientes)
+  _segChips.trabajar = (reg.chips_trabajar || []).slice();
+  segRenderizarSeccionTrabajar();
+  segActualizarHeroChipsTrabajar();
   segRenderizarChipsEtiquetas();
 
   var tc = document.getElementById('seg-campo-contenido');
@@ -574,15 +595,64 @@ function segRenderizarHistorial(historial, lb) {
   }).join('');
 }
 
+function segRenderizarPanelEtiquetasFiltro(lista) {
+  // Recopilar todas las etiquetas únicas de todos los pacientes
+  var todasEtiquetas = [];
+  (lista || []).forEach(function(e) {
+    (e.etiquetas || []).forEach(function(et) {
+      var nombre = typeof et === 'string' ? et : (et.nombre || '');
+      if (nombre && todasEtiquetas.indexOf(nombre) === -1) {
+        todasEtiquetas.push(nombre);
+      }
+    });
+  });
+  todasEtiquetas.sort();
+
+  var wrap  = document.getElementById('seg-lp-etiquetas-wrap');
+  var chips = document.getElementById('seg-lp-etiquetas-chips');
+  if (!wrap || !chips) return;
+
+  if (!todasEtiquetas.length) {
+    wrap.classList.add('seg-hidden');
+    return;
+  }
+  wrap.classList.remove('seg-hidden');
+  segRenderizarChipsFiltro(todasEtiquetas);
+}
+
+function segRenderizarChipsFiltro(todasEtiquetas) {
+  var chips = document.getElementById('seg-lp-etiquetas-chips');
+  if (!chips) return;
+  var hayFiltro = SEG._etiquetaFiltro && SEG._etiquetaFiltro.length > 0;
+  var html = todasEtiquetas.map(function(nombre) {
+    var activa = SEG._etiquetaFiltro.indexOf(nombre) !== -1;
+    return '<span class="seg-lp-etiqueta-chip' + (activa ? ' activa' : '') + '"' +
+      ' onclick="segFiltrarPorEtiqueta(\'' + segEscape(nombre) + '\')">' +
+      (activa ? '<i class="fas fa-check" style="font-size:8px;margin-right:2px"></i>' : '') +
+      segEscape(nombre) +
+      '</span>';
+  }).join('');
+  if (hayFiltro) {
+    html += '<span class="seg-lp-etiqueta-chip seg-lp-etiqueta-limpiar"' +
+      ' onclick="segLimpiarFiltroEtiquetas()">' +
+      '<i class="fas fa-times" style="font-size:8px;margin-right:2px"></i>Limpiar' +
+      '</span>';
+  }
+  chips.innerHTML = html;
+}
+
 function segRenderizarEtiquetasActivas(etiquetas, lb) {
-  var el = document.getElementById('seg-etiquetas-activas');
-  if (!el) return;
-  var lista = (etiquetas || []).map(function(et) {
-    return typeof et === 'string' ? et : (et.nombre || '');
-  }).filter(Boolean);
-  el.innerHTML = lista.map(function(nombre) {
-    return '<span class="seg-hist-tag">' + segEscape(nombre) + '</span>';
-  }).join('') || '<span style="font-size:10px;color:#b0b9c8">Sin etiquetas</span>';
+  // Solo re-renderiza los chips del panel de filtro manteniendo estado
+  // Reconstruye la lista de todas las etiquetas de todos los pacientes
+  var todasEtiquetas = [];
+  (SEG.hayTodas || []).forEach(function(e) {
+    (e.etiquetas || []).forEach(function(et) {
+      var nombre = typeof et === 'string' ? et : (et.nombre || '');
+      if (nombre && todasEtiquetas.indexOf(nombre) === -1) todasEtiquetas.push(nombre);
+    });
+  });
+  todasEtiquetas.sort();
+  if (todasEtiquetas.length) segRenderizarChipsFiltro(todasEtiquetas);
 }
 
 function segRenderizarTLEdit(eventos, titulo) {
@@ -603,115 +673,646 @@ function segRenderizarTLEdit(eventos, titulo) {
   }).join('');
 }
 
+
 /* ─────────────────────────────────────────
-   SISTEMA /SLASH — ETIQUETAS EN NOTAS
+   SISTEMA INLINE — CHIPS NOTAS CLÍNICAS
+   /palabra → Síntoma (rosado)
+   /dpalabra → Diagnóstico (azul, solo existentes)
+   "texto" → Hipótesis (morado)
+   Espacio confirma la sugerencia inline
 ───────────────────────────────────────── */
-function segNotasInput(textarea) {
-  var val    = textarea.value;
-  var cursor = textarea.selectionStart;
-  // Buscar /palabra antes del cursor
-  var antes  = val.substring(0, cursor);
-  var match  = antes.match(/\/(\w*)$/);
 
-  if (!match) {
-    segCerrarSlash();
-    return;
-  }
+var _segSug = { actual: null, esDiag: false };
+var _segHipMode = false; // true cuando hay una " abierta esperando cierre
+var _segDiagMode  = false; // true cuando hay // abierto esperando cierre
+var _segDiagTimer = null;
+var _segDiagMatches = [];
+var _segDiagIdx    = -1;
 
-  var query = match[1].toLowerCase();
-  SEG._slashQuery = query;
-
-  // Filtrar etiquetas disponibles
-  var sugeridas = SEG.etiquetasDisponibles.filter(function(e) {
-    return e.toLowerCase().includes(query) &&
-           SEG.etiquetasActivas.indexOf(e) === -1;
-  }).slice(0, 6);
-
-  if (!match) {
-    // No hay sugerencias pero sí hay query activa — mantener query para crear con espacio
-    SEG._slashQuery = query;
-    var drop = document.getElementById('seg-slash-dropdown');
-    if (drop) drop.classList.add('seg-hidden');
-    return;
-  }
-
-  var items = document.getElementById('seg-slash-items');
-  var drop  = document.getElementById('seg-slash-dropdown');
-  if (!items || !drop) return;
-
-  items.innerHTML = sugeridas.map(function(e) {
-    return '<div class="seg-slash-item" onmousedown="segSeleccionarEtiqueta(\'' + segEscape(e) + '\')">' +
-      '<i class="fas fa-tag"></i> ' + segEscape(e) + '</div>';
-  }).join('');
-
-  drop.classList.remove('seg-hidden');
+function _segSinTilde(s) {
+  return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 }
 
-function segNotasKeydown(e) {
-  var drop = document.getElementById('seg-slash-dropdown');
-  if (!drop || drop.classList.contains('seg-hidden')) return;
-  var items = drop.querySelectorAll('.seg-slash-item');
-  var active = drop.querySelector('.seg-slash-item.active');
-  var idx = Array.from(items).indexOf(active);
+function _segGetTextBeforeCursor(el) {
+  var sel = window.getSelection();
+  if (!sel.rangeCount) return '';
+  var range = sel.getRangeAt(0).cloneRange();
+  range.selectNodeContents(el);
+  range.setEnd(sel.getRangeAt(0).endContainer, sel.getRangeAt(0).endOffset);
+  return range.toString();
+}
 
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    if (active) active.classList.remove('active');
-    var next = items[(idx + 1) % items.length];
-    if (next) next.classList.add('active');
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    if (active) active.classList.remove('active');
-    var prev = items[(idx - 1 + items.length) % items.length];
-    if (prev) prev.classList.add('active');
-  } else if (e.key === 'Enter' && active) {
-    e.preventDefault();
-    segSeleccionarEtiqueta(active.textContent.replace(/^\s*\S+\s/, '').trim());
-  } else if (e.key === 'Escape') {
-    segCerrarSlash();
-  } else if (e.key === ' ') {
-    // Espacio con /palabra activo — crear etiqueta con la query actual
-    if (SEG._slashQuery) {
-      e.preventDefault();
-      // Buscar match exacto en disponibles, si no crear nueva
-      var match = SEG.etiquetasDisponibles.find(function(et) {
-        return et.toLowerCase() === SEG._slashQuery.toLowerCase();
-      }) || SEG._slashQuery;
-      segSeleccionarEtiqueta(match);
-    }
+function _segLimpiarSugerencia() {
+  var sug = document.querySelector('#seg-campo-notas .seg-inline-sug');
+  if (sug) sug.remove();
+  _segSug.actual = null;
+}
+
+function _segMostrarSugerencia(resto) {
+  _segLimpiarSugerencia();
+  if (!resto) return;
+  var sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  var range = sel.getRangeAt(0).cloneRange();
+  var span = document.createElement('span');
+  span.className = 'seg-inline-sug';
+  span.textContent = resto;
+  span.contentEditable = 'false';
+  range.insertNode(span);
+  range.setStartBefore(span);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function _segConfirmarTag(tag, afterSlash) {
+  _segLimpiarSugerencia();
+  var editor = document.getElementById('seg-campo-notas');
+  if (!editor) return;
+  var sel = window.getSelection();
+  var gris = '<span style="color:#d0d3e0" contenteditable="false">';
+  var esDiag = afterSlash.slice(0, 2).toLowerCase() === 'dx' && afterSlash.length > 2;
+  var prefijoGris = esDiag ? gris + '/dx</span>' : gris + '/</span>';
+  var reemplazo = prefijoGris + '<span style="color:#374151">' + tag + '</span>\u00a0';
+
+  var html = editor.innerHTML.replace(/<span class="seg-inline-sug"[^>]*>.*?<\/span>/gi, '');
+
+  var idx = -1;
+  for (var i = html.length - 1; i >= 0; i--) {
+    if (html[i] === '/' && html[i-1] !== '<') { idx = i; break; }
   }
+
+  if (idx !== -1) {
+    var fin = idx + 1;
+    while (fin < html.length && html[fin] !== '<' && html[fin] !== '\u00a0' && html[fin] !== ' ') fin++;
+    editor.innerHTML = html.slice(0, idx) + reemplazo + html.slice(fin);
+  } else {
+    editor.innerHTML = html + reemplazo;
+  }
+
+  var range = document.createRange();
+  range.selectNodeContents(editor);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+/* ── Dropdown diagnósticos ── */
+function _segDiagDropdownMostrar(matches) {
+  var dd = document.getElementById('seg-diag-dropdown');
+  if (!dd) return;
+
+  _segDiagIdx = 0; // primer item activo por defecto
+
+  if (!matches || !matches.length) {
+    dd.innerHTML = '<div class="seg-diag-dd-empty">Sin resultados — escribe más</div>';
+    _segDiagDropdownPositionar();
+    dd.classList.remove('seg-hidden');
+    return;
+  }
+
+  var html = '<div class="seg-diag-dd-header">Diagnósticos CIE — <kbd>↑↓</kbd> navegar · <kbd>Tab</kbd> seleccionar</div>';
+  html += matches.map(function(d, i) {
+    return '<div class="seg-diag-dd-item' + (i === 0 ? ' activo' : '') + '"' +
+      ' data-idx="' + i + '"' +
+      ' onclick="_segDiagDropdownSelec(' + i + ')">' +
+      '<span class="seg-diag-dd-codigo">' + segEscape(d.codigo || '—') + '</span>' +
+      '<span class="seg-diag-dd-nombre">' + segEscape(d.nombre) + '</span>' +
+      '</div>';
+  }).join('');
+  html += '<div class="seg-diag-dd-hint"><kbd>Tab</kbd> seleccionar · <kbd>Esc</kbd> cancelar · <kbd>//</kbd> confirmar texto libre</div>';
+
+  dd.innerHTML = html;
+  _segDiagDropdownPositionar();
+  dd.classList.remove('seg-hidden');
+}
+
+function _segDiagDropdownPositionar() {
+  var dd = document.getElementById('seg-diag-dropdown');
+  if (!dd) return;
+  var sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return;
+  var rect = sel.getRangeAt(0).getBoundingClientRect();
+  var top  = rect.bottom + 6;
+  var left = rect.left;
+  // Ajustar si se sale de la pantalla
+  if (left + 400 > window.innerWidth) left = window.innerWidth - 410;
+  if (top + 280 > window.innerHeight) top = rect.top - 270;
+  dd.style.top  = top + 'px';
+  dd.style.left = left + 'px';
+}
+
+function _segDiagDropdownNavegar(dir) {
+  var dd = document.getElementById('seg-diag-dropdown');
+  if (!dd || dd.classList.contains('seg-hidden')) return false;
+  var items = dd.querySelectorAll('.seg-diag-dd-item');
+  if (!items.length) return false;
+  items[_segDiagIdx] && items[_segDiagIdx].classList.remove('activo');
+  _segDiagIdx = Math.max(0, Math.min(items.length - 1, _segDiagIdx + dir));
+  items[_segDiagIdx] && items[_segDiagIdx].classList.add('activo');
+  items[_segDiagIdx] && items[_segDiagIdx].scrollIntoView({ block: 'nearest' });
+  return true;
+}
+
+function _segDiagDropdownSelec(idx) {
+  var match = _segDiagMatches[idx !== undefined ? idx : _segDiagIdx];
+  if (!match) {
+    // Confirmar texto libre si no hay match
+    _segDiagDropdownConfirmarLibre();
+    return;
+  }
+  var chipNombre = match.nombre + ' (' + match.codigo + ')';
+  _segDiagDropdownCerrar();
+  _segDiagConfirmarChip(chipNombre, match.nombre);
+}
+
+function _segDiagDropdownConfirmarLibre() {
+  var editor = document.getElementById('seg-campo-notas');
+  if (!editor) return;
+  var fullText   = _segGetTextBeforeCursor(editor);
+  var dobleBarra = fullText.lastIndexOf('//');
+  var diagTexto  = dobleBarra !== -1 ? fullText.slice(dobleBarra + 2).trim() : '';
+  if (!diagTexto) { _segDiagDropdownCerrar(); return; }
+  var chipNombre = diagTexto.charAt(0).toUpperCase() + diagTexto.slice(1);
+  _segDiagDropdownCerrar();
+  _segDiagConfirmarChip(chipNombre, diagTexto);
+}
+
+function _segDiagConfirmarChip(chipNombre, textoRaw) {
+  var editor = document.getElementById('seg-campo-notas');
+  if (!editor) return;
+  _segDiagMode = false;
+  _segLimpiarSugerencia();
+
+  var html = editor.innerHTML.replace(/<span class="seg-inline-sug"[^>]*>.*?<\/span>/gi, '');
+  var pos  = html.lastIndexOf('//');
+  if (pos !== -1) {
+    var gris     = '<span style="color:#d0d3e0" contenteditable="false">';
+    var remplazo = gris + '//</span><span style="color:#374151">' + textoRaw + '</span>' + gris + '//</span>\u00a0';
+    var fin      = pos + 2 + textoRaw.length;
+    editor.innerHTML = html.slice(0, pos) + remplazo + html.slice(fin > html.length ? html.length : fin);
+  }
+  var sel = window.getSelection();
+  var r   = document.createRange();
+  r.selectNodeContents(editor);
+  r.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(r);
+
+  segAgregarChip('diagnostico', chipNombre);
+  segMarcarCambios();
+}
+
+function _segDiagDropdownCerrar() {
+  var dd = document.getElementById('seg-diag-dropdown');
+  if (dd) { dd.classList.add('seg-hidden'); dd.innerHTML = ''; }
+  _segDiagIdx = -1;
+}
+
+// Cerrar al hacer click fuera
+document.addEventListener('click', function(e) {
+  var dd = document.getElementById('seg-diag-dropdown');
+  var ed = document.getElementById('seg-campo-notas');
+  if (!dd || dd.classList.contains('seg-hidden')) return;
+  if (!dd.contains(e.target) && e.target !== ed) {
+    _segDiagDropdownCerrar();
+    _segDiagMode = false;
+  }
+});
+
+// Navegar dropdown con flechas aunque el foco esté en otro lugar
+document.addEventListener('keydown', function(e) {
+  var dd = document.getElementById('seg-diag-dropdown');
+  if (!dd || dd.classList.contains('seg-hidden')) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); _segDiagDropdownNavegar(1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); _segDiagDropdownNavegar(-1); }
+  else if (e.key === 'Tab' || e.key === 'Enter') {
+    e.preventDefault();
+    if (_segDiagMatches.length) _segDiagDropdownSelec(_segDiagIdx >= 0 ? _segDiagIdx : 0);
+    else _segDiagDropdownConfirmarLibre();
+  } else if (e.key === 'Escape') {
+    _segDiagDropdownCerrar();
+    _segDiagMode = false;
+  }
+});
+
+function segInicializarEditorNotas() {
+  var editor = document.getElementById('seg-campo-notas');
+  if (!editor) return;
+  var nuevo = editor.cloneNode(true);
+  editor.parentNode.replaceChild(nuevo, editor);
+  editor = nuevo;
+
+  editor.addEventListener('input', function() {
+    _segLimpiarSugerencia();
+    _segSug.actual = null;
+
+    // Modo diagnóstico activo — buscar en API con el texto escrito
+    if (_segDiagMode) {
+      var fullText   = _segGetTextBeforeCursor(this);
+      var dobleBarra = fullText.lastIndexOf('//');
+      var query      = dobleBarra !== -1 ? fullText.slice(dobleBarra + 2).trim() : '';
+      if (query.length >= 2) {
+        clearTimeout(_segDiagTimer);
+        _segDiagTimer = setTimeout(function() {
+          segFetch('/api/seguimiento/diagnosticos?q=' + encodeURIComponent(query) + '&limit=8', {},
+            function(data) {
+              _segDiagMatches = data.diagnosticos || [];
+              _segDiagDropdownMostrar(_segDiagMatches);
+            },
+            function() {
+              // Si falla el API, mostrar fallback local
+              _segDiagDropdownMostrar([]);
+            }
+          );
+        }, 300);
+      } else if (query.length === 0) {
+        _segDiagDropdownCerrar();
+      }
+      segMarcarCambios();
+      return;
+    }
+
+    var texto = _segGetTextBeforeCursor(this);
+    var lastSlash = texto.lastIndexOf('/');
+    if (lastSlash === -1) { segMarcarCambios(); return; }
+    var afterSlash = texto.slice(lastSlash + 1);
+    if (afterSlash.indexOf(' ') !== -1 || afterSlash.indexOf('\u00a0') !== -1 || afterSlash.indexOf('\n') !== -1) { segMarcarCambios(); return; }
+
+    // Solo síntomas con /palabra
+    var query = afterSlash;
+    var matches = query.length === 0
+      ? SEG.etiquetasDisponibles.slice(0, 8)
+      : SEG.etiquetasDisponibles.filter(function(t) {
+          return _segSinTilde(t).replace(/\s+/g,'').indexOf(_segSinTilde(query).replace(/\s+/g,'')) === 0;
+        });
+    if (!matches.length) { segMarcarCambios(); return; }
+    _segSug.actual = matches[0];
+    var restoReal = matches[0].slice(query.length);
+    if (restoReal) _segMostrarSugerencia(restoReal);
+    segMarcarCambios();
+  });
+
+  editor.addEventListener('keydown', function(e) {
+
+    // ── Manejo de "/" — detectar doble barra para diagnósticos ──
+    if (e.key === '/') {
+      if (!_segDiagMode) {
+        var textoAntes = _segGetTextBeforeCursor(this);
+        if (textoAntes.slice(-1) === '/') {
+          _segDiagMode = true;
+          _segDiagMatches = [];
+          _segDiagIdx = -1;
+          _segSug.actual = null;
+        }
+      } else {
+        // Segunda '//' cierra con texto libre
+        e.preventDefault();
+        _segDiagDropdownConfirmarLibre();
+        return;
+      }
+    }
+
+    // ── Navegación dropdown con flechas ──
+    if (_segDiagMode) {
+      var dd = document.getElementById('seg-diag-dropdown');
+      var ddVisible = dd && !dd.classList.contains('seg-hidden');
+      if (ddVisible && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault(); return; // lo maneja el listener de document
+      }
+      if (e.key === 'ArrowDown') { e.preventDefault(); _segDiagDropdownNavegar(1); return; }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); _segDiagDropdownNavegar(-1); return; }
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        if (_segDiagMatches.length) _segDiagDropdownSelec(_segDiagIdx >= 0 ? _segDiagIdx : 0);
+        else _segDiagDropdownConfirmarLibre();
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (_segDiagMatches.length) _segDiagDropdownSelec(_segDiagIdx >= 0 ? _segDiagIdx : 0);
+        else _segDiagDropdownConfirmarLibre();
+        return;
+      }
+      if (e.key === 'Escape') {
+        _segDiagMode = false;
+        _segDiagDropdownCerrar();
+        return;
+      }
+    }
+
+    // ── Hipótesis con "texto" ──
+    if (e.key === '"') {
+      if (!_segHipMode) {
+        _segHipMode = true;
+        return;
+      } else {
+        var textoActual = _segGetTextBeforeCursor(this);
+        var primerComilla = textoActual.lastIndexOf('"');
+        if (primerComilla !== -1) {
+          var hipTexto = textoActual.slice(primerComilla + 1).trim();
+          if (hipTexto.length > 0) {
+            e.preventDefault();
+            _segHipMode = false;
+            segAgregarChip('hipotesis', hipTexto);
+            var html = this.innerHTML;
+            var grisSpan = '<span style="color:#d0d3e0" contenteditable="false">';
+            var reemplazo = grisSpan + '"</span><span style="color:#374151">' + hipTexto + '</span>' + grisSpan + '"</span>';
+            var pos = html.lastIndexOf('"' + hipTexto);
+            if (pos !== -1) {
+              this.innerHTML = html.slice(0, pos) + reemplazo + html.slice(pos + ('"' + hipTexto).length);
+              var sel2 = window.getSelection();
+              var r2 = document.createRange();
+              r2.selectNodeContents(this);
+              r2.collapse(false);
+              sel2.removeAllRanges();
+              sel2.addRange(r2);
+            }
+            return;
+          }
+        }
+        _segHipMode = false;
+        return;
+      }
+    }
+
+    // ── Espacio — confirmar síntoma ──
+    if (e.key === ' ') {
+      if (_segDiagMode) return; // en modo diag, el espacio es parte del texto
+      var sug = document.querySelector('#seg-campo-notas .seg-inline-sug');
+      var sugTexto = sug ? sug.textContent : '';
+      var textoCompleto = _segGetTextBeforeCursor(this);
+      var texto = sugTexto && textoCompleto.endsWith(sugTexto)
+        ? textoCompleto.slice(0, -sugTexto.length)
+        : textoCompleto;
+      var lastSlash = texto.lastIndexOf('/');
+      if (lastSlash === -1) return;
+      var afterSlash = texto.slice(lastSlash + 1);
+      if (afterSlash.indexOf(' ') !== -1 || afterSlash.indexOf('\u00a0') !== -1) return;
+      var query = afterSlash;
+      if (!query || query.length < 1) return;
+
+      var tagMatch =
+        SEG.etiquetasDisponibles.filter(function(t) {
+          return _segSinTilde(t).replace(/\s+/g,'') === _segSinTilde(query).replace(/\s+/g,'');
+        })[0]
+        || (_segSug.actual && _segSinTilde(_segSug.actual).replace(/\s+/g,'').indexOf(_segSinTilde(query).replace(/\s+/g,'')) === 0 ? _segSug.actual : null)
+        || SEG.etiquetasDisponibles.filter(function(t) {
+          return _segSinTilde(t).replace(/\s+/g,'').indexOf(_segSinTilde(query).replace(/\s+/g,'')) === 0;
+        })[0]
+        || (query.length > 1 ? query.charAt(0).toUpperCase() + query.slice(1) : null);
+
+      if (!tagMatch) return;
+      e.preventDefault();
+      _segConfirmarTag(tagMatch, afterSlash);
+      segAgregarChip('sintoma', tagMatch);
+      if (SEG.etiquetasActivas.indexOf(tagMatch) === -1) {
+        SEG.etiquetasActivas.push(tagMatch);
+        segRenderizarChipsEtiquetas();
+        if (SEG.etiquetasDisponibles.indexOf(tagMatch) === -1) {
+          SEG.etiquetasDisponibles.push(tagMatch);
+          segFetch('/api/seguimiento/etiquetas',
+            { method: 'POST', body: JSON.stringify({ company_id: SEG.companyId, nombre: tagMatch }) },
+            function() {}, function() {}
+          );
+        }
+      }
+      _segSug.actual = null;
+      segMarcarCambios();
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      _segLimpiarSugerencia();
+      _segSug.actual = null;
+      _segHipMode  = false;
+      _segDiagMode = false;
+      _segDiagDropdownCerrar();
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      _segLimpiarSugerencia();
+      _segSug.actual = null;
+      var sel3 = window.getSelection();
+      if (sel3.rangeCount) {
+        var range3 = sel3.getRangeAt(0);
+        range3.deleteContents();
+        var br = document.createElement('br');
+        range3.insertNode(br);
+        range3.setStartAfter(br);
+        range3.collapse(true);
+        sel3.removeAllRanges();
+        sel3.addRange(range3);
+      }
+      segMarcarCambios();
+    }
+  });
+
+  editor.addEventListener('keyup', function() {
+    var sug = document.querySelector('#seg-campo-notas .seg-inline-sug');
+    if (!sug || !_segSug.actual) return;
+    var texto = _segGetTextBeforeCursor(this);
+    var lastSlash = texto.lastIndexOf('/');
+    if (lastSlash === -1) return;
+    var afterSlash = texto.slice(lastSlash + 1);
+    var esDiag = afterSlash.slice(0, 2).toLowerCase() === 'dx' && afterSlash.length > 2;
+    var query  = esDiag ? afterSlash.slice(2) : afterSlash;
+    if (_segSinTilde(query.replace(/\s+/g,'')) === _segSinTilde(_segSug.actual.replace(/\s+/g,''))) {
+      sug.style.color = '#374151'; sug.style.fontWeight = '500';
+    } else {
+      sug.style.color = '#c4b5b5'; sug.style.fontWeight = 'normal';
+    }
+  });
+}
+
+function segCerrarSlash() {
+  _segLimpiarSugerencia();
+  _segSug.actual = null;
+}
+
+/* ── 4 SECCIONES DE CHIPS ── */
+var _segChips = { sintoma: [], diagnostico: [], hipotesis: [], trabajar: [] };
+
+function segAgregarChip(tipo, nombre) {
+  if (!nombre) return;
+  nombre = nombre.trim();
+  if (!nombre) return;
+  if (tipo === 'trabajar') {
+    // trabajar solo se agrega via toggle — ignorar llamadas directas
+    if (_segChips.trabajar.indexOf(nombre) === -1) {
+      _segChips.trabajar.push(nombre);
+      segRenderizarSeccionTrabajar();
+      segMarcarCambios();
+    }
+    return;
+  }
+  if (_segChips[tipo] && _segChips[tipo].indexOf(nombre) === -1) {
+    _segChips[tipo].push(nombre);
+    segRenderizarSeccionChips(tipo);
+    segRenderizarSeccionTrabajar(); // auto-actualizar "lo que abordaremos"
+    segMarcarCambios();
+  }
+}
+
+function segQuitarChip(tipo, nombre) {
+  if (!_segChips[tipo]) return;
+  _segChips[tipo] = _segChips[tipo].filter(function(c) { return c !== nombre; });
+  // Si se quita de síntoma/diagnóstico/hipótesis, también quitar de trabajar si estaba
+  if (tipo !== 'trabajar') {
+    _segChips.trabajar = _segChips.trabajar.filter(function(c) { return c !== nombre; });
+    segRenderizarSeccionTrabajar();
+  }
+  segRenderizarSeccionChips(tipo);
+  segMarcarCambios();
+}
+
+function segEditarChipHipotesis(nombre) {
+  segPrompt('Editar hipótesis', nombre, function(nuevoNombre) {
+    nuevoNombre = (nuevoNombre || '').trim();
+    if (!nuevoNombre || nuevoNombre === nombre) return;
+    var idx = _segChips.hipotesis.indexOf(nombre);
+    if (idx !== -1) _segChips.hipotesis[idx] = nuevoNombre;
+    // Actualizar en trabajar si estaba
+    var idxT = _segChips.trabajar.indexOf(nombre);
+    if (idxT !== -1) _segChips.trabajar[idxT] = nuevoNombre;
+    segRenderizarSeccionChips('hipotesis');
+    segRenderizarSeccionTrabajar();
+    segMarcarCambios();
+  });
+}
+
+function segEliminarChipHipotesis(nombre) {
+  segConfirm('¿Eliminar esta hipótesis?', function() {
+    segQuitarChip('hipotesis', nombre);
+  });
+}
+
+function segToggleTrabajar(nombre) {
+  var idx = _segChips.trabajar.indexOf(nombre);
+  if (idx !== -1) {
+    _segChips.trabajar.splice(idx, 1);
+  } else {
+    _segChips.trabajar.push(nombre);
+  }
+  segRenderizarSeccionTrabajar();
+  segActualizarHeroChipsTrabajar();
+  segMarcarCambios();
+}
+
+function segActualizarHeroChipsTrabajar() {
+  var chEl = document.getElementById('seg-hero-chips');
+  if (!chEl) return;
+  var seleccionados = _segChips.trabajar;
+  if (!seleccionados.length) {
+    chEl.innerHTML = '';
+    return;
+  }
+  chEl.innerHTML = seleccionados.map(function(nombre) {
+    return '<span class="seg-hchip seg-hchip-trabajar">' +
+      '<i class="fas fa-check" style="font-size:8px;margin-right:3px;color:#16a34a"></i>' +
+      segEscape(nombre) +
+    '</span>';
+  }).join('');
+}
+
+function segRenderizarSeccionChips(tipo) {
+  var secEl = document.getElementById('seg-sec-' + tipo);
+  var chips = document.getElementById('seg-chips-' + tipo);
+  if (!chips) return;
+  var lista = _segChips[tipo] || [];
+  if (secEl) secEl.classList.toggle('seg-hidden', lista.length === 0);
+
+  if (tipo === 'hipotesis') {
+    chips.innerHTML = lista.map(function(nombre) {
+      return '<span class="seg-chip-hipotesis">' +
+        segEscape(nombre) +
+        '<button class="seg-chip-remove-btn" onclick="segEditarChipHipotesis(\'' + segEscape(nombre) + '\')" data-seg-tooltip="Editar">' +
+          '<i class="fas fa-pencil-alt"></i>' +
+        '</button>' +
+        '<button class="seg-chip-remove-btn seg-chip-btn-trash" onclick="segEliminarChipHipotesis(\'' + segEscape(nombre) + '\')" data-seg-tooltip="Eliminar">' +
+          '<i class="fas fa-trash"></i>' +
+        '</button>' +
+      '</span>';
+    }).join('');
+  } else {
+    chips.innerHTML = lista.map(function(nombre) {
+      return '<span class="seg-chip-' + tipo + '">' +
+        segEscape(nombre) +
+        '<button class="seg-chip-remove-btn" onclick="segQuitarChip(\'' + tipo + '\',\'' + segEscape(nombre) + '\')">' +
+          '<i class="fas fa-times"></i>' +
+        '</button>' +
+      '</span>';
+    }).join('');
+  }
+}
+
+function segRenderizarSeccionTrabajar() {
+  var secEl = document.getElementById('seg-sec-trabajar');
+  var chips = document.getElementById('seg-chips-trabajar');
+  if (!chips) return;
+
+  // Todos los chips de las otras 3 secciones — sin duplicados
+  var vistos = {};
+  var todos = [];
+  [
+    { lista: _segChips.sintoma,     tipo: 'sintoma' },
+    { lista: _segChips.diagnostico, tipo: 'diagnostico' },
+    { lista: _segChips.hipotesis,   tipo: 'hipotesis' }
+  ].forEach(function(grupo) {
+    grupo.lista.forEach(function(nombre) {
+      if (!vistos[nombre]) {
+        vistos[nombre] = true;
+        todos.push({ nombre: nombre, tipo: grupo.tipo });
+      }
+    });
+  });
+
+  if (secEl) secEl.classList.toggle('seg-hidden', todos.length === 0);
+
+  chips.innerHTML = todos.map(function(item) {
+    var activo   = _segChips.trabajar.indexOf(item.nombre) !== -1;
+    var esDiag   = item.tipo === 'diagnostico';
+    var nivel    = _segIntensidades[item.nombre];
+    var tieneNivel = activo && esDiag && nivel !== undefined && nivel > 0;
+    var badgeColor = tieneNivel ? SEG_INTENS_COLORS[nivel] : '';
+    var badgeText  = tieneNivel ? SEG_INTENS_TEXT[nivel] : '';
+    return '<span class="seg-chip-trabajar' + (activo ? ' activo' : '') + '"' +
+      ' onclick="segToggleTrabajar(\'' + segEscape(item.nombre) + '\')">' +
+      (activo ? '<i class="fas fa-check" style="font-size:8px;margin-right:3px;color:#16a34a"></i>' : '') +
+      segEscape(item.nombre) +
+      (activo && esDiag
+        ? '<span class="seg-intens-badge" style="background:' + (tieneNivel ? badgeColor : '#e5e7eb') + ';color:' + (tieneNivel ? badgeText : '#9ca3af') + '"' +
+          ' onclick="event.stopPropagation();segAbrirModalIntensidad(\'' + segEscape(item.nombre) + '\')"' +
+          ' data-seg-tooltip="Escala de intensidad">' +
+          (tieneNivel ? nivel : '·') +
+          '</span>'
+        : '') +
+    '</span>';
+  }).join('');
+}
+
+function segRenderizarTodosChips() {
+  ['sintoma','diagnostico','hipotesis'].forEach(segRenderizarSeccionChips);
+  segRenderizarSeccionTrabajar();
+}
+
+function segLimpiarTodosChips() {
+  _segChips = { sintoma: [], diagnostico: [], hipotesis: [], trabajar: [] };
+  segRenderizarTodosChips();
+  segActualizarHeroChipsTrabajar();
 }
 
 function segSeleccionarEtiqueta(etiqueta) {
-  if (!etiqueta) return;
-  var textarea = document.getElementById('seg-campo-notas');
-  if (!textarea) return;
-
-  // Reemplazar /query por el nombre de la etiqueta en el texto
-  var val    = textarea.value;
-  var cursor = textarea.selectionStart;
-  var antes  = val.substring(0, cursor);
-  var nuevo  = antes.replace(/\/\w*$/, etiqueta + ' ');
-  textarea.value = nuevo + val.substring(cursor);
-  textarea.selectionStart = textarea.selectionEnd = nuevo.length;
-
-  // Agregar chip si no está ya
+  segAgregarChip('sintoma', etiqueta);
   if (SEG.etiquetasActivas.indexOf(etiqueta) === -1) {
     SEG.etiquetasActivas.push(etiqueta);
     segRenderizarChipsEtiquetas();
-    segMarcarCambios();
-    // Si es etiqueta nueva (no estaba en disponibles), guardarla como custom
     if (SEG.etiquetasDisponibles.indexOf(etiqueta) === -1) {
       SEG.etiquetasDisponibles.push(etiqueta);
-      segFetch('/api/seguimiento/etiquetas',
-        { method: 'POST', body: JSON.stringify({ company_id: SEG.companyId, nombre: etiqueta }) },
-        function() {}, // silencioso
-        function() {}
-      );
     }
   }
-  segCerrarSlash();
-  textarea.focus();
+  segMarcarCambios();
 }
 
 function segRemoverEtiqueta(etiqueta) {
@@ -734,11 +1335,6 @@ function segRenderizarChipsEtiquetas() {
   }).join('');
 }
 
-function segCerrarSlash() {
-  SEG._slashQuery = '';
-  var drop = document.getElementById('seg-slash-dropdown');
-  if (drop) drop.classList.add('seg-hidden');
-}
 
 /* ─────────────────────────────────────────
    ADJUNTOS
@@ -1037,6 +1633,52 @@ function segEliminarRegistro(registroId) {
 ───────────────────────────────────────── */
 var SEG_LEFT_OPEN  = true;
 var SEG_RIGHT_OPEN = true;
+var SEG_ETIQUETAS_PANEL_OPEN = true;
+
+/* ── Panel etiquetas activas — colapsar/expandir ── */
+function segToggleEtiquetasPanel() {
+  SEG_ETIQUETAS_PANEL_OPEN = !SEG_ETIQUETAS_PANEL_OPEN;
+  var body = document.getElementById('seg-lp-etiquetas-body');
+  var chev = document.getElementById('seg-lp-etiquetas-chev');
+  if (body) body.classList.toggle('collapsed', !SEG_ETIQUETAS_PANEL_OPEN);
+  if (chev) chev.classList.toggle('collapsed', !SEG_ETIQUETAS_PANEL_OPEN);
+}
+
+/* ── Filtrar lista de pacientes por etiqueta (acumulativo) ── */
+function segFiltrarPorEtiqueta(nombre) {
+  var idx = SEG._etiquetaFiltro.indexOf(nombre);
+  if (idx !== -1) {
+    SEG._etiquetaFiltro.splice(idx, 1); // quitar si ya estaba
+  } else {
+    SEG._etiquetaFiltro.push(nombre);   // agregar si no estaba
+  }
+  segAplicarFiltroEtiquetas();
+}
+
+function segLimpiarFiltroEtiquetas() {
+  SEG._etiquetaFiltro = [];
+  segAplicarFiltroEtiquetas();
+}
+
+function segAplicarFiltroEtiquetas() {
+  // Re-renderizar chips del panel de filtro
+  segRenderizarEtiquetasActivas([], SEG.labels);
+
+  // Filtrar entidades
+  var lista = SEG._etiquetaFiltro.length === 0
+    ? (SEG.hayTodas || [])
+    : (SEG.hayTodas || []).filter(function(e) {
+        var ets = (e.etiquetas || []).map(function(x) {
+          return typeof x === 'string' ? x : (x.nombre || '');
+        });
+        return SEG._etiquetaFiltro.every(function(f) {
+          return ets.indexOf(f) !== -1;
+        });
+      });
+
+  SEG.hayEntidades = lista;
+  segRenderizarLista(lista);
+}
 
 function segMostrarBtnColapsarIzquierdo(visible) {
   // Botón siempre visible — no ocultar
@@ -1098,8 +1740,12 @@ function segGuardar() {
     cliente_id:          SEG.clienteId,
     fecha:               (document.getElementById('seg-campo-fecha')||{}).value || '',
     hora:                (document.getElementById('seg-campo-hora')||{}).value  || '',
-    notas_internas:      (document.getElementById('seg-campo-notas')||{}).value || '',
+    notas_internas:      (document.getElementById('seg-campo-notas')||{}).innerText || '',
     etiquetas:           SEG.etiquetasActivas.slice(),
+    chips_sintoma:       (_segChips.sintoma||[]).slice(),
+    chips_diagnostico:   (_segChips.diagnostico||[]).slice(),
+    chips_hipotesis:     (_segChips.hipotesis||[]).slice(),
+    chips_trabajar:      (_segChips.trabajar||[]).slice(),
     adjuntos:            SEG._adjuntos.filter(function(a){ return !a.subiendo; }),
     contenido_principal: document.getElementById('seg-campo-contenido').value,
     tareas:              document.getElementById('seg-campo-tareas').value,
@@ -1424,7 +2070,15 @@ function segSeleccionarRegistro(registroId) {
     if (tc) tc.value = data.contenido_principal || '';
     if (tt) tt.value = data.tareas || '';
     if (tp) tp.value = data.proxima_cita || '';
-    if (tn) tn.value = data.notas_internas || '';
+    if (tn) { tn.innerText = data.notas_internas || ''; segInicializarEditorNotas(); }
+    // Cargar chips
+    segLimpiarTodosChips();
+    if (data.chips_sintoma)     (data.chips_sintoma||[]).forEach(function(c){ segAgregarChip('sintoma',c); });
+    if (data.chips_diagnostico) (data.chips_diagnostico||[]).forEach(function(c){ segAgregarChip('diagnostico',c); });
+    if (data.chips_hipotesis)   (data.chips_hipotesis||[]).forEach(function(c){ segAgregarChip('hipotesis',c); });
+    _segChips.trabajar = (data.chips_trabajar || []).slice();
+    segRenderizarSeccionTrabajar();
+    segActualizarHeroChipsTrabajar();
     if (tf) tf.value = data.fecha || '';
     if (th) th.value = data.hora || '';
     // Etiquetas del registro (array de strings)
@@ -1545,9 +2199,11 @@ function segMostrarEmptyMain() {
   if (empty) empty.classList.remove('seg-hidden');
   if (wrap)  wrap.classList.add('seg-hidden');
   if (load)  load.classList.add('seg-hidden');
-  // Sin paciente → ocultar botón y restaurar panel si estaba colapsado
+  // Sin paciente → ocultar botón, chips y restaurar panel
   var btnCol = document.getElementById('seg-btn-collapse-left');
   if (btnCol) btnCol.classList.add('seg-hidden');
+  var etWrap = document.getElementById('seg-lp-etiquetas-wrap');
+  if (etWrap) etWrap.classList.add('seg-hidden');
   if (!SEG_LEFT_OPEN) segToggleLeftPanel();
 }
 
@@ -1623,8 +2279,12 @@ function segAutoguardarSilencioso() {
     cliente_id:          SEG.clienteId,
     fecha:               (document.getElementById('seg-campo-fecha')||{}).value || '',
     hora:                (document.getElementById('seg-campo-hora')||{}).value  || '',
-    notas_internas:      (document.getElementById('seg-campo-notas')||{}).value || '',
+    notas_internas:      (document.getElementById('seg-campo-notas')||{}).innerText || '',
     etiquetas:           SEG.etiquetasActivas.slice(),
+    chips_sintoma:       (_segChips.sintoma||[]).slice(),
+    chips_diagnostico:   (_segChips.diagnostico||[]).slice(),
+    chips_hipotesis:     (_segChips.hipotesis||[]).slice(),
+    chips_trabajar:      (_segChips.trabajar||[]).slice(),
     adjuntos:            SEG._adjuntos.filter(function(a){ return !a.subiendo; }),
     contenido_principal: (document.getElementById('seg-campo-contenido')||{}).value || '',
     tareas:              (document.getElementById('seg-campo-tareas')||{}).value    || '',
@@ -1728,7 +2388,7 @@ function segPrompt(titulo, placeholder, onAceptar) {
 }
 
 
-function segToast(msg, tipo) {
+function segToast(msg, tipo, duracion) {
   var el     = document.getElementById('seg-toast');
   var msgEl  = document.getElementById('seg-toast-msg');
   var iconEl = document.getElementById('seg-toast-icon');
@@ -1737,9 +2397,10 @@ function segToast(msg, tipo) {
   el.className = 'seg-toast visible';
   if (tipo === 'success') { el.className += ' success'; if (iconEl) iconEl.className = 'fas fa-check-circle'; }
   else if (tipo === 'error') { el.className += ' error'; if (iconEl) iconEl.className = 'fas fa-exclamation-circle'; }
+  else if (typeof tipo === 'number') { duracion = tipo; if (iconEl) iconEl.className = 'fas fa-info-circle'; }
   else { if (iconEl) iconEl.className = 'fas fa-info-circle'; }
   clearTimeout(SEG._toastTimer);
-  SEG._toastTimer = setTimeout(function(){ el.classList.remove('visible'); }, 2800);
+  SEG._toastTimer = setTimeout(function(){ el.classList.remove('visible'); }, duracion || 2800);
 }
 
 /* ─────────────────────────────────────────
@@ -1754,7 +2415,10 @@ function segFetch(url, opts, onSuccess, onError) {
   apiCall(endpoint, options)
     .then(function(res) {
       if (!res || !res.ok) { if (onError) onError(res); return; }
-      if (onSuccess) onSuccess(res.data);
+      if (onSuccess) {
+        try { onSuccess(res.data); }
+        catch(cbErr) { console.error('[Seguimiento] callback error:', cbErr, endpoint); }
+      }
     })
     .catch(function(err) {
       console.error('[Seguimiento]', err, endpoint);
@@ -1840,7 +2504,11 @@ function segNuevaSesionConfirm() {
   if (tc) tc.value = '';
   if (tt) tt.value = '';
   if (tp) tp.value = '';
-  if (tn) tn.value = '';
+  if (tn) tn.innerText = '';
+  segLimpiarTodosChips();
+  _segIntensidades = {};
+  _segDiagMode = false;
+  _segHipMode  = false;
 
   segSetFecha(fechaStr);
   segSetHora(horaStr);
@@ -2045,7 +2713,772 @@ window.segMostrarConfirmEliminar = segMostrarConfirmEliminar;
 window.segCancelarConfirmEliminar = segCancelarConfirmEliminar;
 window.segConfirmarEliminar    = segConfirmarEliminar;
 window.segToggleSidePanel      = segToggleSidePanel;
-window.segToggleLeftPanel      = segToggleLeftPanel;
+/* ═══════════════════════════════════════════
+   SISTEMA DE INTENSIDADES
+═══════════════════════════════════════════ */
+var _segIntensidades = {}; // { nombre: nivel }
+var _segIntensidadActual = null;
+
+// Defaults en JS (fallback si BD falla o demora)
+var SEG_INTENS_LABELS = [
+  { n: 0, label: 'Sin síntoma',    desc: 'Funcionalidad normal. Intensidad ausente. Riesgo nulo.' },
+  { n: 1, label: 'Mínimo',         desc: 'Funcionalidad completamente conservada. Intensidad apenas perceptible. Riesgo nulo.' },
+  { n: 2, label: 'Leve',           desc: 'Funcionalidad conservada. Intensidad leve. Riesgo bajo.' },
+  { n: 3, label: 'Moderado',       desc: 'Funcionalidad levemente afectada. Intensidad clara y frecuente. Riesgo bajo.' },
+  { n: 4, label: 'Moderado–grave', desc: 'Funcionalidad afectada en áreas importantes. Intensidad significativa. Riesgo moderado.' },
+  { n: 5, label: 'Grave',          desc: 'Funcionalidad muy comprometida. Intensidad alta. Riesgo relevante.' },
+  { n: 6, label: 'Crítico',        desc: 'Funcionalidad severamente comprometida. Intensidad muy alta. Riesgo alto.' },
+  { n: 7, label: 'Riesgo vital',   desc: 'Funcionalidad colapsada. Intensidad extrema. Riesgo inminente.' }
+];
+
+var SEG_INTENS_COLORS = [
+  '#ffffff','#d4f0d4','#a8e6a8','#f9e79f',
+  '#f0c070','#e8855a','#d94f4f','#a01010'
+];
+
+var SEG_INTENS_TEXT = [
+  '#374151','#374151','#374151','#374151',
+  '#374151','#fff','#fff','#fff'
+];
+
+function segCargarIntensidadLabels() {
+  segFetch('/api/seguimiento/intensidad-labels?company_id=' + SEG.companyId, {},
+    function(data) {
+      if (data.niveles && data.niveles.length === 8) {
+        SEG_INTENS_LABELS = data.niveles;
+      }
+      if (data.colores && data.colores.length === 8) {
+        SEG_INTENS_COLORS = data.colores;
+      }
+    },
+    function() {} // silencioso — usa fallback hardcoded
+  );
+}
+
+function segCargarIntensidades() {
+  if (!SEG.registroId) return;
+  segFetch('/api/seguimiento/registros/' + SEG.registroId + '/intensidades', {},
+    function(data) {
+      _segIntensidades = data.intensidades || {};
+      segRenderizarSeccionTrabajar();
+    },
+    function() {} // silencioso
+  );
+}
+
+function segAbrirModalIntensidad(nombre) {
+  _segIntensidadActual = nombre;
+  var tituloEl = document.getElementById('seg-intensidad-titulo');
+  var listaEl  = document.getElementById('seg-intensidad-lista');
+  if (tituloEl) tituloEl.textContent = 'Intensidad — ' + nombre;
+  var actual = _segIntensidades[nombre] !== undefined ? _segIntensidades[nombre] : 0;
+  listaEl.innerHTML = SEG_INTENS_LABELS.slice().reverse().map(function(item) {
+    var sel   = item.n === actual;
+    var color = SEG_INTENS_COLORS[item.n];
+    return '<div class="seg-intens-item' + (sel ? ' activo' : '') + '" onclick="segSeleccionarIntensidad(' + item.n + ')">' +
+      '<div class="seg-intens-barra" style="background:' + color + '"></div>' +
+      '<div class="seg-intens-num">' + item.n + '</div>' +
+      '<div class="seg-intens-info">' +
+        '<div class="seg-intens-label">' + segEscape(item.label) + '</div>' +
+        '<div class="seg-intens-desc">' + segEscape(item.desc) + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  var modal = document.getElementById('seg-intensidad-modal');
+  if (modal) modal.classList.remove('seg-hidden');
+}
+
+function segSeleccionarIntensidad(nivel) {
+  if (!_segIntensidadActual) return;
+  _segIntensidades[_segIntensidadActual] = nivel;
+  // Guardar en BD
+  if (SEG.registroId) {
+    segFetch('/api/seguimiento/registros/' + SEG.registroId + '/intensidades/' + encodeURIComponent(_segIntensidadActual),
+      { method: 'PUT', body: JSON.stringify({ nivel: nivel, cliente_id: SEG.clienteId }) },
+      function() {}, function() {}
+    );
+  }
+  segCerrarModalIntensidad();
+  segRenderizarSeccionTrabajar();
+  segActualizarHeroChipsTrabajar();
+  segMarcarCambios();
+}
+
+function segCerrarModalIntensidad() {
+  var modal = document.getElementById('seg-intensidad-modal');
+  if (modal) modal.classList.add('seg-hidden');
+  _segIntensidadActual = null;
+}
+
+/* ═══════════════════════════════════════════════════════
+   MODAL AGENDA — Próxima Sesión
+   Reutiliza endpoints existentes del módulo /api/agenda
+═══════════════════════════════════════════════════════ */
+var _segAgenda = {
+  modo:          'sesion',   // 'sesion' | 'recordatorio'
+  servicios:     [],         // lista de servicios de la empresa
+  svcSelec:      null,       // { service_id, resource_id, name, duration, price }
+  especialistas: [],         // especialistas con ese servicio
+  espSelec:      null,       // { resource_id, resource_name, service_id }
+  cal:           { anio: null, mes: null },
+  diaSelec:      null,       // 'YYYY-MM-DD'
+  slotsDisp:     {},         // { 'YYYY-MM-DD': [ {start, end}, ... ] }
+  horaSelec:     null,       // { start, end }
+};
+
+var MESES_AGENDA = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                    'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+var DIAS_AGENDA  = ['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
+
+function segAbrirModalAgenda() {
+  // Resetear estado
+  _segAgenda.svcSelec    = null;
+  _segAgenda.espSelec    = null;
+  _segAgenda.diaSelec    = null;
+  _segAgenda.horaSelec   = null;
+  _segAgenda.slotsDisp   = {};
+
+  var now = new Date();
+  _segAgenda.cal = { anio: now.getFullYear(), mes: now.getMonth() };
+
+  // Resetear UI
+  document.getElementById('seg-agenda-horas-wrap').classList.add('seg-hidden');
+  document.getElementById('seg-agenda-horas').innerHTML = '';
+  document.getElementById('seg-agenda-resumen').classList.add('seg-hidden');
+  document.getElementById('seg-agenda-confirmar-btn').disabled = true;
+  segAgendaModo('sesion');
+
+  // Abrir modal
+  document.getElementById('seg-agenda-modal').classList.remove('seg-hidden');
+
+  // Cargar servicios de la empresa
+  segFetch('/api/agenda/company?limit=5', {},
+    function(data) {
+      _segAgenda.servicios = data.services || [];
+      segAgendaRenderServicios();
+      segAgendaRenderCal();
+    },
+    function() {
+      document.getElementById('seg-agenda-servicios').innerHTML =
+        '<span style="font-size:10px;color:#ef4444">Error cargando servicios</span>';
+    }
+  );
+}
+
+function segCerrarModalAgenda() {
+  document.getElementById('seg-agenda-modal').classList.add('seg-hidden');
+}
+
+function segAgendaModo(modo) {
+  _segAgenda.modo = modo;
+  document.getElementById('seg-agenda-modo-sesion').classList.toggle('activo', modo === 'sesion');
+  document.getElementById('seg-agenda-modo-recordatorio').classList.toggle('activo', modo === 'recordatorio');
+  document.getElementById('seg-agenda-sesion-wrap').classList.toggle('seg-hidden', modo !== 'sesion');
+  document.getElementById('seg-agenda-recordatorio-wrap').classList.toggle('seg-hidden', modo !== 'recordatorio');
+  segAgendaActualizarConfirmar();
+}
+
+function segAgendaRenderServicios() {
+  var el = document.getElementById('seg-agenda-servicios');
+  if (!_segAgenda.servicios.length) {
+    el.innerHTML = '<span style="font-size:10px;color:#9ca3af">Sin servicios configurados</span>';
+    return;
+  }
+  el.innerHTML = _segAgenda.servicios.map(function(svc) {
+    var nombre = svc.name.replace(/'/g, "\\'");
+    return '<span class="seg-agenda-svc-chip" onclick="segAgendaSelecSvc(\'' + nombre + '\')">' +
+      segEscape(svc.name) + '</span>';
+  }).join('');
+}
+
+function segAgendaSelecSvc(nombre) {
+  var svc = _segAgenda.servicios.find(function(s) { return s.name === nombre; });
+  if (!svc) return;
+
+  // Marcar chip activo
+  document.querySelectorAll('.seg-agenda-svc-chip').forEach(function(c) {
+    c.classList.toggle('activo', c.textContent === nombre);
+  });
+
+  // Determinar especialistas para este servicio
+  var especialistas = svc.specialists || [];
+  _segAgenda.especialistas = especialistas;
+  _segAgenda.horaSelec = null;
+  _segAgenda.diaSelec  = null;
+  _segAgenda.slotsDisp = {};
+
+  // Si hay un solo especialista seleccionarlo automáticamente
+  if (especialistas.length === 1) {
+    _segAgenda.espSelec = especialistas[0];
+    _segAgenda.svcSelec = {
+      service_id:    especialistas[0].service_id,
+      resource_id:   especialistas[0].resource_id,
+      resource_name: especialistas[0].resource_name,
+      name:          svc.name,
+      duration:      svc.duration,
+      price:         svc.price,
+    };
+    document.getElementById('seg-agenda-especialista-wrap').classList.add('seg-hidden');
+  } else {
+    // Mostrar selector de especialista
+    _segAgenda.svcSelec = null;
+    _segAgenda.espSelec = null;
+    segAgendaRenderEspecialistas(especialistas, svc);
+    document.getElementById('seg-agenda-especialista-wrap').classList.remove('seg-hidden');
+  }
+
+  // Cargar slots del mes actual
+  segAgendaCargarMes();
+  // Esconder placeholder
+  var ph = document.getElementById('seg-agenda-placeholder');
+  if (ph) ph.classList.add('seg-hidden');
+  segAgendaActualizarConfirmar();
+}
+
+function segAgendaRenderEspecialistas(especialistas, svc) {
+  var el = document.getElementById('seg-agenda-especialistas');
+  el.innerHTML = especialistas.map(function(esp) {
+    var rid   = esp.resource_id.replace(/'/g, "\\'");
+    var rname = esp.resource_name.replace(/'/g, "\\'");
+    var sid   = esp.service_id.replace(/'/g, "\\'");
+    var sname = svc.name.replace(/'/g, "\\'");
+    return '<span class="seg-agenda-svc-chip" onclick="segAgendaSelecEsp(\'' +
+      rid + '\',\'' + rname + '\',\'' + sid + '\',\'' + sname + '\',' +
+      svc.duration + ',' + (svc.price || 0) + ')">' +
+      segEscape(esp.resource_name) + '</span>';
+  }).join('');
+}
+
+function segAgendaSelecEsp(resource_id, resource_name, service_id, svc_name, duration, price) {
+  _segAgenda.espSelec = { resource_id: resource_id, resource_name: resource_name, service_id: service_id };
+  _segAgenda.svcSelec = { service_id: service_id, resource_id: resource_id,
+    resource_name: resource_name, name: svc_name, duration: duration, price: price };
+  document.querySelectorAll('#seg-agenda-especialistas .seg-agenda-svc-chip').forEach(function(c) {
+    c.classList.toggle('activo', c.textContent === resource_name);
+  });
+  _segAgenda.diaSelec  = null;
+  _segAgenda.horaSelec = null;
+  _segAgenda.slotsDisp = {};
+  segAgendaCargarMes();
+  segAgendaActualizarConfirmar();
+}
+
+function segAgendaCargarMes() {
+  if (!_segAgenda.svcSelec) return;
+  var anio = _segAgenda.cal.anio;
+  var mes  = _segAgenda.cal.mes;
+  var from = anio + '-' + String(mes + 1).padStart(2,'0') + '-01';
+  var rid  = _segAgenda.svcSelec.resource_id;
+  var sid  = _segAgenda.svcSelec.service_id;
+
+  // Obtener slots del mes completo
+  segFetch('/api/agenda/availability/' + rid + '/' + sid + '?from=' + from + '&limit=60', {},
+    function(data) {
+      _segAgenda.slotsDisp = {};
+      (data.slots || []).forEach(function(s) {
+        if (!_segAgenda.slotsDisp[s.date]) _segAgenda.slotsDisp[s.date] = [];
+        _segAgenda.slotsDisp[s.date].push(s);
+      });
+      segAgendaRenderCal();
+    },
+    function() {}
+  );
+}
+
+function segAgendaCalNav(dir) {
+  _segAgenda.cal.mes += dir;
+  if (_segAgenda.cal.mes > 11) { _segAgenda.cal.mes = 0;  _segAgenda.cal.anio++; }
+  if (_segAgenda.cal.mes < 0)  { _segAgenda.cal.mes = 11; _segAgenda.cal.anio--; }
+  segAgendaCargarMes();
+  segAgendaRenderCal();
+}
+
+function segAgendaRenderCal() {
+  var anio   = _segAgenda.cal.anio;
+  var mes    = _segAgenda.cal.mes;
+  var mesEl  = document.getElementById('seg-agenda-cal-mes');
+  var gridEl = document.getElementById('seg-agenda-cal-grid');
+  if (mesEl) mesEl.textContent = MESES_AGENDA[mes] + ' ' + anio;
+
+  var hoy        = new Date();
+  var primerDia  = new Date(anio, mes, 1);
+  var diasMes    = new Date(anio, mes + 1, 0).getDate();
+  // Lunes=0 ... Domingo=6
+  var offsetLunes = (primerDia.getDay() + 6) % 7;
+
+  var html = DIAS_AGENDA.map(function(d) {
+    return '<div class="seg-agenda-cal-head">' + d + '</div>';
+  }).join('');
+
+  for (var i = 0; i < offsetLunes; i++) html += '<div class="seg-agenda-cal-day vacio"></div>';
+
+  for (var d = 1; d <= diasMes; d++) {
+    var fecha     = anio + '-' + String(mes+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var esHoy     = (anio === hoy.getFullYear() && mes === hoy.getMonth() && d === hoy.getDate());
+    var esPasado  = new Date(anio, mes, d) < new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    var tieneSlot = !!(_segAgenda.slotsDisp[fecha] && _segAgenda.slotsDisp[fecha].length);
+    var esSelec   = _segAgenda.diaSelec === fecha;
+
+    var cls = 'seg-agenda-cal-day';
+    if (esSelec)  cls += ' seleccionado';
+    else if (esHoy)    cls += ' hoy';
+    if (esPasado) cls += ' pasado';
+    else if (!tieneSlot && _segAgenda.svcSelec) cls += ' sin-slots';
+    else if (tieneSlot) cls += ' con-slots';
+
+    var onclick = (!esPasado && tieneSlot)
+      ? ' onclick="segAgendaSelecDia(\'' + fecha + '\')"'
+      : '';
+
+    html += '<div class="' + cls + '"' + onclick + '>' + d + '</div>';
+  }
+
+  if (gridEl) gridEl.innerHTML = html;
+}
+
+function segAgendaSelecDia(fecha) {
+  _segAgenda.diaSelec  = fecha;
+  _segAgenda.horaSelec = null;
+  segAgendaRenderCal();
+
+  var horasEl = document.getElementById('seg-agenda-horas');
+  var wrapEl  = document.getElementById('seg-agenda-horas-wrap');
+  var timerEl = document.getElementById('seg-agenda-timer-wrap');
+
+  if (!_segAgenda.svcSelec) return;
+
+  // Mostrar spinner mientras carga disponibilidad fresca
+  wrapEl.classList.remove('seg-hidden');
+  timerEl.classList.add('seg-hidden');
+  horasEl.innerHTML = '<span style="color:#888;font-size:12px">' +
+    '<i class="fas fa-spinner fa-spin"></i> Verificando disponibilidad...</span>';
+
+  var svc = _segAgenda.svcSelec;
+
+  function _renderSlots(slots) {
+    _segAgenda.slotsDisp[fecha] = slots;
+    if (!slots.length) {
+      wrapEl.classList.add('seg-hidden');
+      timerEl.classList.add('seg-hidden');
+      horasEl.innerHTML = '';
+      return;
+    }
+    horasEl.innerHTML = slots.map(function(s) {
+      return '<span class="seg-agenda-hora-chip" onclick="segAgendaSelecHora(\'' +
+        s.start + '\',\'' + s.end + '\')">' + s.start + '</span>';
+    }).join('');
+    segAgendaActualizarConfirmar();
+  }
+
+  segFetch('/api/agenda/availability/' + svc.resource_id + '/' + svc.service_id +
+    '?date=' + fecha, {},
+    function(data) { _renderSlots(data.slots || []); },
+    function()     { _renderSlots(_segAgenda.slotsDisp[fecha] || []); }
+  );
+}
+
+function segAgendaSelecHora(start, end) {
+  _segAgenda.horaSelec = { start: start, end: end };
+  segAgendaAviso(null); // limpiar aviso al seleccionar nueva hora
+  document.querySelectorAll('.seg-agenda-hora-chip').forEach(function(c) {
+    c.classList.toggle('activo', c.textContent === start);
+  });
+  // Mostrar timer al seleccionar hora
+  document.getElementById('seg-agenda-timer-wrap').classList.remove('seg-hidden');
+  segAgendaActualizarConfirmar();
+}
+
+function segAgendaActualizarConfirmar() {
+  var btn     = document.getElementById('seg-agenda-confirmar-btn');
+  var resumen = document.getElementById('seg-agenda-resumen');
+  if (!btn) return;
+
+  if (_segAgenda.modo === 'recordatorio') {
+    var diaRec = _segAgenda.diaSelec;
+    var ok = !!diaRec;
+    btn.disabled = !ok;
+    if (ok && resumen) {
+      resumen.classList.remove('seg-hidden');
+      resumen.textContent = 'Recordatorio programado para el ' + diaRec;
+    }
+    return;
+  }
+
+  var ok = !!(_segAgenda.svcSelec && _segAgenda.diaSelec && _segAgenda.horaSelec);
+  btn.disabled = !ok;
+  if (ok && resumen) {
+    resumen.classList.remove('seg-hidden');
+    var svc = _segAgenda.svcSelec;
+    resumen.innerHTML = '<i class="fas fa-check-circle" style="color:#16a34a;margin-right:4px"></i>' +
+      '<strong>' + segEscape(svc.name) + '</strong> · ' +
+      segEscape(svc.resource_name || '') + ' · ' +
+      _segAgenda.diaSelec + ' ' + _segAgenda.horaSelec.start +
+      (svc.price ? ' · $' + svc.price.toLocaleString('es-CL') : '');
+  } else if (resumen) {
+    resumen.classList.add('seg-hidden');
+  }
+}
+
+function segAgendaAviso(msg) {
+  var el  = document.getElementById('seg-agenda-aviso');
+  var txt = document.getElementById('seg-agenda-aviso-msg');
+  if (!el || !txt) return;
+  if (msg) {
+    txt.textContent = msg;
+    el.classList.remove('seg-hidden');
+  } else {
+    el.classList.add('seg-hidden');
+    txt.textContent = '';
+  }
+}
+
+
+
+function segConfirmarAgenda() {
+  if (_segAgenda.modo === 'recordatorio') {
+    segConfirmarRecordatorio();
+    return;
+  }
+  if (!_segAgenda.svcSelec || !_segAgenda.diaSelec || !_segAgenda.horaSelec) return;
+
+  var btn = document.getElementById('seg-agenda-confirmar-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+
+  var svc   = _segAgenda.svcSelec;
+  var timer = parseInt(document.getElementById('seg-agenda-timer').value) || 0;
+  var link  = (document.getElementById('seg-agenda-link-pago').value || '').trim();
+
+  function resetBtn() {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-check"></i> Confirmar';
+  }
+
+  // ── Capa 2: validar disponibilidad fresca antes del POST ──────────────────
+  segFetch('/api/agenda/availability/' + svc.resource_id + '/' + svc.service_id +
+    '?date=' + _segAgenda.diaSelec, {},
+    function(avData) {
+      var horaSelec = _segAgenda.horaSelec.start;
+      var slots     = avData.slots || [];
+      var aun_disp  = slots.some(function(s) { return s.start === horaSelec; });
+
+      if (!aun_disp) {
+        resetBtn();
+        // Refrescar chips con disponibilidad actual
+        var horasEl = document.getElementById('seg-agenda-horas');
+        _segAgenda.slotsDisp[_segAgenda.diaSelec] = slots;
+        _segAgenda.horaSelec = null;
+        segAgendaActualizarConfirmar();
+        if (horasEl) {
+          horasEl.innerHTML = slots.map(function(s) {
+            return '<span class="seg-agenda-hora-chip" onclick="segAgendaSelecHora(\'' +
+              s.start + '\',\'' + s.end + '\')">' + s.start + '</span>';
+          }).join('');
+        }
+        segAgendaAviso('Este horario ya no está disponible — fue reservado recientemente. Selecciona otro.');
+        return;
+      }
+
+      // Slot confirmado disponible — proceder con la reserva
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+      _hacerReserva();
+    },
+    function() {
+      // Si falla la validación, proceder igual (el POST detectará el 409)
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+      _hacerReserva();
+    }
+  );
+
+  // Crear reserva en el módulo Agenda
+  function _hacerReserva() {
+  segFetch('/api/agenda/reservations', {
+    method: 'POST',
+    body: JSON.stringify({
+      resource_id: svc.resource_id,
+      service_id:  svc.service_id,
+      contact_id:  SEG.clienteId,
+      date:        _segAgenda.diaSelec,
+      start:       _segAgenda.horaSelec.start,
+      notes:       'Agendado desde Seguimiento'
+    })
+  },
+  function(data) {
+    resetBtn();
+    var appointment_id = data.appointment_id || data.id || '';
+
+    // Guardar en el registro de seguimiento
+    var proxData = {
+      appointment_id: appointment_id,
+      service_name:   svc.name,
+      resource_name:  svc.resource_name || '',
+      fecha:          _segAgenda.diaSelec,
+      hora:           _segAgenda.horaSelec.start,
+      precio:         svc.price || null,
+      link_pago:      link,
+      timer_horas:    timer,
+    };
+
+    if (SEG.registroId) {
+      segFetch('/api/seguimiento/registros/' + SEG.registroId, {
+        method: 'PUT',
+        body: JSON.stringify({ proxima_sesion_data: proxData })
+      }, function() {}, function() {});
+    }
+
+    // Crear mensaje programado de cobro si hay timer
+    if (timer > 0 && link && SEG.registroId) {
+      var fechaHora = new Date(_segAgenda.diaSelec + 'T' + _segAgenda.horaSelec.start);
+      fechaHora.setHours(fechaHora.getHours() - timer);
+      var msgText = '🔔 Recordatorio de pago:\n' +
+        'Para confirmar su sesión de ' + svc.name + ' el ' + _segAgenda.diaSelec +
+        ' a las ' + _segAgenda.horaSelec.start + ', por favor realice el pago:\n' + link;
+
+      segFetch('/api/seguimiento/mensajes-programados', {
+        method: 'POST',
+        body: JSON.stringify({
+          company_id:  SEG.companyId,
+          cliente_id:  SEG.clienteId,
+          registro_id: SEG.registroId,
+          fecha_envio: fechaHora.toISOString().slice(0,16),
+          mensaje:     msgText,
+          canal:       'whatsapp',
+          tipo:        'cobro_sesion',
+        })
+      }, function() {}, function() {});
+    }
+
+    // Actualizar UI
+    segActualizarProximaSesionUI(proxData);
+    segAgendaAviso(null); segCerrarModalAgenda();
+    segMarcarCambios();
+
+    // Avisar si hubo advertencia de email
+    if (data.email_warning || data.warnings) {
+      segToast('✅ Sesión agendada · ⚠️ Notificación por email no enviada', 5000);
+    } else {
+      segToast('✅ Sesión agendada para el ' + _segAgenda.diaSelec + ' a las ' + _segAgenda.horaSelec.start);
+    }
+  },
+  function(err) {
+    resetBtn();
+    // Detectar si el slot ya está reservado (409 duplicate)
+    if (err && (err.status === 409 || (err.data && err.data.code === 'duplicate'))) {
+      // Limpiar hora seleccionada y refrescar slots del día
+      _segAgenda.horaSelec = null;
+      segAgendaActualizarConfirmar();
+      segAgendaAviso('Esta hora ya fue reservada o confirmada. Selecciona otro horario.');
+      if (_segAgenda.diaSelec && _segAgenda.svcSelec) {
+        segFetch('/api/agenda/availability/' + _segAgenda.svcSelec.resource_id +
+          '/' + _segAgenda.svcSelec.service_id + '?date=' + _segAgenda.diaSelec, {},
+          function(data) {
+            var slots = data.slots || [];
+            _segAgenda.slotsDisp[_segAgenda.diaSelec] = slots;
+            segAgendaSelecDia(_segAgenda.diaSelec);
+          },
+          function() {}
+        );
+      }
+    } else {
+      segToast('❌ Error al agendar. Intente nuevamente.');
+    }
+  });
+  } // fin _hacerReserva
+}
+
+function segConfirmarRecordatorio() {
+  if (!_segAgenda.diaSelec) return;
+  var hora  = segAgendaTpGetValue();
+  var link  = (document.getElementById('seg-agenda-link-agenda').value || '').trim();
+  var msg   = (document.getElementById('seg-agenda-msg-rec').value || '').trim();
+
+  if (!msg) {
+    msg = '🔔 Recordatorio: Le informamos que es momento de agendar su próxima sesión.' +
+      (link ? '\\n\\nAgenda aquí: ' + link : '');
+  }
+
+  if (SEG.registroId) {
+    segFetch('/api/seguimiento/mensajes-programados', {
+      method: 'POST',
+      body: JSON.stringify({
+        company_id:  SEG.companyId,
+        cliente_id:  SEG.clienteId,
+        registro_id: SEG.registroId,
+        fecha_envio: _segAgenda.diaSelec + 'T' + hora,
+        mensaje:     msg,
+        canal:       'whatsapp',
+        tipo:        'recordatorio_agenda',
+      })
+    }, function() {}, function() {});
+  }
+
+  segCerrarModalAgenda();
+  segToast('✅ Recordatorio programado para el ' + _segAgenda.diaSelec);
+}
+
+function segActualizarProximaSesionUI(data) {
+  // Actualizar el campo de próxima sesión visible en el panel
+  var el = document.getElementById('seg-proxima-sesion-display');
+  if (!el) return;
+  el.textContent = data.fecha + ' ' + data.hora + ' — ' + data.service_name;
+}
+
+window.segAbrirModalAgenda       = segAbrirModalAgenda;
+window._segDiagDropdownSelec     = _segDiagDropdownSelec;
+
+/* ─────────────────────────────────────────
+   TIMEPICKER AGENDA RECORDATORIO
+───────────────────────────────────────── */
+var _segAgendaTp = { hora: 10, min: 0 };
+
+function segAgendaTpToggle() {
+  var tp = document.getElementById('seg-agenda-timepicker');
+  if (!tp) return;
+  if (tp.classList.contains('seg-hidden')) {
+    segAgendaTpRender();
+    tp.classList.remove('seg-hidden');
+  } else {
+    tp.classList.add('seg-hidden');
+  }
+}
+
+function segAgendaTpRender() {
+  var horasEl = document.getElementById('seg-agenda-tp-horas');
+  var minsEl  = document.getElementById('seg-agenda-tp-minutos');
+  if (!horasEl || !minsEl) return;
+  var curH = _segAgendaTp.hora;
+  var curM = _segAgendaTp.min;
+  var htmlH = '';
+  for (var h = 0; h <= 23; h++) {
+    var cls = 'seg-tp-item' + (h === curH ? ' active' : '');
+    htmlH += '<div class="' + cls + '" onclick="segAgendaTpSelHora(' + h + ')">' +
+      String(h).padStart(2,'0') + '</div>';
+  }
+  horasEl.innerHTML = htmlH;
+  var htmlM = '';
+  for (var m = 0; m < 60; m += 5) {
+    var cls2 = 'seg-tp-item' + (m === curM ? ' active' : '');
+    htmlM += '<div class="' + cls2 + '" onclick="segAgendaTpSelMin(' + m + ')">' +
+      String(m).padStart(2,'0') + '</div>';
+  }
+  minsEl.innerHTML = htmlM;
+  setTimeout(function() {
+    var hA = horasEl.querySelector('.active');
+    var mA = minsEl.querySelector('.active');
+    if (hA) hA.scrollIntoView({ block: 'nearest' });
+    if (mA) mA.scrollIntoView({ block: 'nearest' });
+  }, 30);
+}
+
+function segAgendaTpSelHora(h) {
+  _segAgendaTp.hora = h;
+  segAgendaTpActualizar();
+  document.querySelectorAll('#seg-agenda-tp-horas .seg-tp-item').forEach(function(el, i) {
+    el.classList.toggle('active', i === h);
+  });
+}
+
+function segAgendaTpSelMin(m) {
+  _segAgendaTp.min = m;
+  segAgendaTpActualizar();
+  document.querySelectorAll('#seg-agenda-tp-minutos .seg-tp-item').forEach(function(el, i) {
+    el.classList.toggle('active', i * 5 === m);
+  });
+  setTimeout(function() {
+    var tp = document.getElementById('seg-agenda-timepicker');
+    if (tp) tp.classList.add('seg-hidden');
+  }, 150);
+}
+
+function segAgendaTpActualizar() {
+  var horaStr = String(_segAgendaTp.hora).padStart(2,'0') + ':' +
+                String(_segAgendaTp.min).padStart(2,'0');
+  var display = document.getElementById('seg-agenda-hora-display');
+  if (display) display.textContent = horaStr;
+}
+
+function segAgendaTpGetValue() {
+  return String(_segAgendaTp.hora).padStart(2,'0') + ':' +
+         String(_segAgendaTp.min).padStart(2,'0');
+}
+
+// Cerrar al click fuera
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('seg-agenda-hora-wrap');
+  var tp   = document.getElementById('seg-agenda-timepicker');
+  if (tp && wrap && !wrap.contains(e.target)) tp.classList.add('seg-hidden');
+});
+
+
+/* ─────────────────────────────────────────
+   CUSTOM DROPDOWN — ACTIVAR COBRO
+───────────────────────────────────────── */
+function segAgendaDdToggle() {
+  var wrap = document.getElementById('seg-agenda-timer-wrap-dd');
+  var list = document.getElementById('seg-agenda-dd-list');
+  if (!wrap || !list) return;
+  var abierto = !list.classList.contains('seg-hidden');
+  if (abierto) {
+    list.classList.add('seg-hidden');
+    wrap.classList.remove('abierto');
+  } else {
+    list.classList.remove('seg-hidden');
+    wrap.classList.add('abierto');
+  }
+}
+
+function segAgendaDdSelect(valor, label) {
+  // Actualizar valor oculto
+  var hidden = document.getElementById('seg-agenda-timer');
+  if (hidden) hidden.value = valor;
+  // Actualizar label del botón
+  var lbl = document.getElementById('seg-agenda-dd-label');
+  if (lbl) lbl.textContent = label;
+  // Marcar activo
+  document.querySelectorAll('.seg-agenda-dd-item').forEach(function(el) {
+    el.classList.toggle('activo', el.textContent.trim() === label);
+  });
+  // Cerrar
+  var list = document.getElementById('seg-agenda-dd-list');
+  var wrap = document.getElementById('seg-agenda-timer-wrap-dd');
+  if (list) list.classList.add('seg-hidden');
+  if (wrap) wrap.classList.remove('abierto');
+}
+
+// Cerrar al click fuera
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('seg-agenda-timer-wrap-dd');
+  var list = document.getElementById('seg-agenda-dd-list');
+  if (list && wrap && !wrap.contains(e.target)) {
+    list.classList.add('seg-hidden');
+    wrap.classList.remove('abierto');
+  }
+});
+
+window.segCerrarModalAgenda      = segCerrarModalAgenda;
+window.segAgendaModo             = segAgendaModo;
+window.segAgendaCalNav           = segAgendaCalNav;
+window.segAgendaSelecSvc         = segAgendaSelecSvc;
+window.segAgendaSelecEsp         = segAgendaSelecEsp;
+window.segAgendaSelecDia         = segAgendaSelecDia;
+window.segAgendaSelecHora        = segAgendaSelecHora;
+window.segConfirmarAgenda        = segConfirmarAgenda;
+window.segAgendaTpToggle         = segAgendaTpToggle;
+window.segAgendaDdToggle         = segAgendaDdToggle;
+window.segAgendaDdSelect         = segAgendaDdSelect;
+window.segAgendaTpSelHora        = segAgendaTpSelHora;
+window.segAgendaTpSelMin         = segAgendaTpSelMin;
+window.segAbrirModalIntensidad   = segAbrirModalIntensidad;
+window.segSeleccionarIntensidad  = segSeleccionarIntensidad;
+window.segCerrarModalIntensidad  = segCerrarModalIntensidad;
+window.segToggleLeftPanel        = segToggleLeftPanel;
+window.segQuitarChip             = segQuitarChip;
+window.segToggleTrabajar         = segToggleTrabajar;
+window.segEditarChipHipotesis    = segEditarChipHipotesis;
+window.segEliminarChipHipotesis  = segEliminarChipHipotesis;
+window.segToggleEtiquetasPanel   = segToggleEtiquetasPanel;
+window.segFiltrarPorEtiqueta     = segFiltrarPorEtiqueta;
+window.segLimpiarFiltroEtiquetas = segLimpiarFiltroEtiquetas;
 window.segToggleRightPanel     = segToggleRightPanel;
 window.segNuevaSesion          = segNuevaSesion;
 window.segToggleDatePicker     = segToggleDatePicker;
@@ -2139,6 +3572,8 @@ function initSeguimientoPage() {
   SEG._plantillas   = {};
   SEG._canal        = 'whatsapp';
   segInit();
+  // Inicializar editor notas al cargar la página
+  setTimeout(segInicializarEditorNotas, 100);
 }
 window.initSeguimientoPage = initSeguimientoPage;
 
