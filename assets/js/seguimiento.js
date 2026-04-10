@@ -1842,6 +1842,10 @@ function segGenerarResumen() {
 }
 
 function segRegenerarResumen() {
+  var badge = document.getElementById('seg-enviado-badge');
+  if (badge) badge.classList.add('seg-hidden');
+  var btnEnviar = document.getElementById('seg-btn-enviar-cliente');
+  if (btnEnviar) { btnEnviar.disabled = false; btnEnviar.innerHTML = '<i class="fas fa-paper-plane seg-icon-mr-sm"></i>Enviar al cliente'; }
   segGenerarResumen();
 }
 
@@ -1912,7 +1916,12 @@ function segEnviarAlCliente() {
       var badgeTxt = document.getElementById('seg-enviado-txt');
       var iconMap = { whatsapp: 'WhatsApp', chat: 'Chat Heavensy', email: 'Email' };
       if (badgeTxt) badgeTxt.textContent = 'Enviado por ' + (iconMap[canal] || canal);
-      if (badge) badge.classList.remove('seg-hidden');
+      if (badge) {
+        badge.classList.remove('seg-hidden');
+        badge.className = badge.className
+          .replace(/seg-enviado-canal-\S+/g, '').trim();
+        badge.classList.add('seg-enviado-canal-' + (canal || 'whatsapp'));
+      }
       if (btnEnviar) { btnEnviar.disabled = true; btnEnviar.innerHTML = '<i class="fas fa-check seg-icon-mr-sm"></i>Enviado'; }
 
       // Badge de estado en hero y date-row
