@@ -214,23 +214,46 @@
               </button>
             </div>
 
-            <div class="seg-field-card">
+            <div class="seg-field-card" id="seg-notas-field-card">
               <div class="seg-field-label">
                 <i class="fas fa-lock"></i>
                 <span id="lbl-notas-internas">Notas internas</span>
                 <span class="seg-notas-solo-ti">Solo para ti</span>
                 <div class="seg-etiquetas-chips" id="seg-etiquetas-chips"></div>
+                <span class="seg-plantillas-titulo-inline">Plantillas:</span>
+                <div class="seg-plantillas-chips" id="seg-chips-notas">
+                  <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                </div>
+                <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantillaNotas()"
+                  data-seg-tooltip="Nueva plantilla de notas clínicas">
+                  <i class="fas fa-plus"></i>
+                </button>
               </div>
-              <!-- Editor contenteditable con sugerencia inline -->
-              <div class="seg-notas-wrap" style="position:relative">
-                <div
-                  class="seg-notas-editor"
-                  id="seg-campo-notas"
-                  contenteditable="true"
-                  spellcheck="true"
-                  data-placeholder="Escribe /palabra para síntoma, /dpalabra para diagnóstico, &quot;texto&quot; para hipótesis. Confirma con Espacio."
-                ></div>
+
+              <!-- Editor normal (se oculta cuando hay formulario activo) -->
+              <div id="seg-notas-editor-wrap">
+                <div class="seg-notas-wrap" style="position:relative">
+                  <div
+                    class="seg-notas-editor"
+                    id="seg-campo-notas"
+                    contenteditable="true"
+                    spellcheck="true"
+                    data-placeholder="Escribe /palabra para síntoma, /dpalabra para diagnóstico, &quot;texto&quot; para hipótesis. Confirma con Espacio."
+                  ></div>
+                </div>
               </div>
+
+              <!-- Formulario de plantilla (reemplaza el editor) -->
+              <div id="seg-notas-formulario" class="seg-hidden">
+                <div class="seg-pn-form-header">
+                  <span id="seg-pn-form-nombre" class="seg-pn-form-titulo"></span>
+                  <button class="seg-pn-form-volver" onclick="segPnFormVolver()">
+                    <i class="fas fa-arrow-left"></i> Volver a notas
+                  </button>
+                </div>
+                <div id="seg-pn-form-campos" class="seg-pn-form-campos"></div>
+              </div>
+
               <!-- 4 secciones de chips bajo el editor -->
               <div class="seg-chips-secciones" id="seg-chips-secciones">
 
@@ -314,7 +337,7 @@
                 <span class="seg-field-badge seg-badge-enviar">Se enviará</span>
                 <button class="seg-btn-agendar-sesion" onclick="segAbrirModalAgenda()"
                   data-seg-tooltip="Agendar sesión">
-                  <i class="fas fa-calendar"></i> Agendar
+                  <i class="fas fa-calendar-plus"></i> Agendar
                 </button>
                 <span id="seg-proxima-sesion-display" class="seg-proxima-display"></span>
                 <span class="seg-plantillas-titulo-inline">Plantillas:</span>
@@ -582,6 +605,59 @@
   </div>
 </div>
 
+<!-- Modal Form Builder — Plantilla Notas Clínicas -->
+<div class="seg-modal-overlay seg-hidden" id="seg-pn-modal">
+  <div class="seg-modal seg-pn-modal-box">
+    <div class="seg-modal-header">
+      <div class="seg-modal-title" id="seg-pn-modal-titulo">Nueva plantilla de notas</div>
+      <button class="seg-modal-close-btn" onclick="segPnCerrar()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div style="margin-bottom:12px">
+      <label class="seg-pn-label">Nombre de la plantilla</label>
+      <input type="text" class="seg-pn-input" id="seg-pn-nombre"
+        placeholder="Ej: Anamnesis inicial, Evaluación de ansiedad...">
+    </div>
+    <div style="margin-bottom:10px">
+      <label class="seg-pn-label">Campos</label>
+      <div id="seg-pn-campos-wrap" class="seg-pn-campos-wrap"></div>
+    </div>
+    <div class="seg-pn-tipos-wrap">
+      <button class="seg-pn-tipo-btn" onclick="segPnAgregarCampo('texto-corto')">
+        <i class="fas fa-font"></i> Texto corto
+      </button>
+      <button class="seg-pn-tipo-btn" onclick="segPnAgregarCampo('texto-largo')">
+        <i class="fas fa-align-left"></i> Texto largo
+      </button>
+      <button class="seg-pn-tipo-btn" onclick="segPnAgregarCampo('numero')">
+        <i class="fas fa-hashtag"></i> Número
+      </button>
+      <button class="seg-pn-tipo-btn" onclick="segPnAgregarCampo('selector')">
+        <i class="fas fa-list"></i> Selector
+      </button>
+      <button class="seg-pn-tipo-btn" onclick="segPnAgregarCampo('fecha')">
+        <i class="fas fa-calendar"></i> Fecha
+      </button>
+    </div>
+    <div class="seg-pn-preview-wrap">
+      <div class="seg-pn-preview-titulo">
+        <i class="fas fa-eye"></i> Vista previa
+      </div>
+      <div id="seg-pn-preview" class="seg-pn-preview-body">
+        <span class="seg-pn-preview-empty">Agrega campos para ver la vista previa</span>
+      </div>
+    </div>
+    <div class="seg-modal-footer">
+      <button class="seg-modal-btn seg-modal-btn-ghost" onclick="segPnCerrar()">Cancelar</button>
+      <button class="seg-modal-btn seg-modal-btn-primary" onclick="segPnGuardar()">
+        <i class="fas fa-save"></i> Guardar plantilla
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Dropdown diagnósticos CIE-10 (desktop) -->
 <!-- Modal Intensidad -->
 <div class="seg-modal-overlay seg-hidden" id="seg-intensidad-modal">
   <div class="seg-modal seg-intensidad-modal-box">
@@ -725,8 +801,25 @@
               placeholder="https://...">
           </div>
           <div style="margin-top:10px">
-            <div class="seg-agenda-section-label">Mensaje WhatsApp</div>
-            <textarea class="seg-agenda-textarea" id="seg-agenda-msg-rec" rows="5"
+            <div class="seg-agenda-section-label">Canal de envío</div>
+            <div class="seg-canal-chips" id="seg-agenda-canal-chips">
+              <button class="seg-canal-chip active" data-canal="whatsapp"
+                onclick="segAgendaSetCanal('whatsapp', this)">
+                <i class="fab fa-whatsapp"></i> WhatsApp
+              </button>
+              <button class="seg-canal-chip" data-canal="chat"
+                onclick="segAgendaSetCanal('chat', this)">
+                <i class="fas fa-comment"></i> Chat Heavensy
+              </button>
+              <button class="seg-canal-chip" data-canal="email"
+                onclick="segAgendaSetCanal('email', this)">
+                <i class="fas fa-envelope"></i> Email
+              </button>
+            </div>
+          </div>
+          <div style="margin-top:10px">
+            <div class="seg-agenda-section-label">Mensaje (opcional)</div>
+            <textarea class="seg-agenda-textarea" id="seg-agenda-msg-rec" rows="4"
               placeholder="Ej: Le recuerdo que puede agendar su próxima sesión en..."></textarea>
           </div>
         </div>

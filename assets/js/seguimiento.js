@@ -390,6 +390,9 @@ function segRenderizarContexto(ctx) {
   var reg = ctx.registro_activo || {};
   var cli = ctx.cliente || {};
 
+  // Siempre partir desde el editor (nunca dejar plantilla de registro anterior activa)
+  segPnResetearVista();
+
   // ── Hero enriquecido ──────────────────────────────
   var numSesiones = cli.total_registros || (ctx.historial ? ctx.historial.length : 0);
   var sub = (lb.registros || 'sesiones') + ': ' + numSesiones;
@@ -493,6 +496,14 @@ function segRenderizarContexto(ctx) {
   if (promBtn) {
     if (cli.tipo_relacion === 'contacto') promBtn.classList.remove('seg-hidden');
     else promBtn.classList.add('seg-hidden');
+  }
+
+  // Restaurar modo plantilla si el registro fue guardado con una
+  if (reg.modo_notas && reg.modo_notas.indexOf('plantilla:') === 0) {
+    var _pidCtx = reg.modo_notas.replace('plantilla:', '');
+    setTimeout(function() {
+      segPnFormAbrir(_pidCtx, reg.campos_plantilla || []);
+    }, 150);
   }
 }
 
@@ -688,6 +699,11 @@ var _segDiagMode  = false; // true cuando hay // abierto esperando cierre
 var _segDiagTimer = null;
 var _segDiagMatches = [];
 var _segDiagIdx    = -1;
+var _segEditorActivo = null; // editor contenteditable con foco actual (principal o campo de plantilla)
+
+function _segGetEditor() {
+  return _segEditorActivo || document.getElementById('seg-campo-notas');
+}
 
 function _segSinTilde(s) {
   return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -703,7 +719,8 @@ function _segGetTextBeforeCursor(el) {
 }
 
 function _segLimpiarSugerencia() {
-  var sug = document.querySelector('#seg-campo-notas .seg-inline-sug');
+  var ed = _segGetEditor();
+  var sug = ed ? ed.querySelector('.seg-inline-sug') : document.querySelector('#seg-campo-notas .seg-inline-sug');
   if (sug) sug.remove();
   _segSug.actual = null;
 }
@@ -727,7 +744,7 @@ function _segMostrarSugerencia(resto) {
 
 function _segConfirmarTag(tag, afterSlash) {
   _segLimpiarSugerencia();
-  var editor = document.getElementById('seg-campo-notas');
+  var editor = _segGetEditor();
   if (!editor) return;
   var sel = window.getSelection();
   var gris = '<span style="color:#d0d3e0" contenteditable="false">';
@@ -758,10 +775,10 @@ function _segConfirmarTag(tag, afterSlash) {
 }
 
 /* ── Dropdown diagnósticos ── */
-function _segDiagDropdownMostrar(matches) {
+function _segDiagDropdownMostrar(matches, query) {
   // En móvil usar bottom sheet
   if (_segEsMobil()) {
-    segDiagSheetAbrir(matches);
+    segDiagSheetAbrir(matches, query || '');
     return;
   }
 
@@ -833,7 +850,7 @@ function _segDiagDropdownSelec(idx) {
 }
 
 function _segDiagDropdownConfirmarLibre() {
-  var editor = document.getElementById('seg-campo-notas');
+  var editor = _segGetEditor();
   if (!editor) return;
   var fullText   = _segGetTextBeforeCursor(editor);
   var dobleBarra = fullText.lastIndexOf('//');
@@ -845,7 +862,7 @@ function _segDiagDropdownConfirmarLibre() {
 }
 
 function _segDiagConfirmarChip(chipNombre, textoRaw) {
-  var editor = document.getElementById('seg-campo-notas');
+  var editor = _segGetEditor();
   if (!editor) return;
   _segDiagMode = false;
   _segLimpiarSugerencia();
@@ -855,17 +872,20 @@ function _segDiagConfirmarChip(chipNombre, textoRaw) {
   if (pos !== -1) {
     var gris     = '<span style="color:#d0d3e0" contenteditable="false">';
     var remplazo = gris + '//</span><span style="color:#374151">' + textoRaw + '</span>' + gris + '//</span>\u00a0';
-    var fin      = pos + 2 + textoRaw.length;
+    // Calcular fin: saltar exactamente el texto que el usuario escribió después de //
+    // No usar textoRaw.length (nombre del diagnóstico) — puede diferir del query escrito
+    var afterSlashes = html.slice(pos + 2);
+    var nextTag      = afterSlashes.indexOf('<');
+    var queryEnHtml  = nextTag === -1 ? afterSlashes : afterSlashes.slice(0, nextTag);
+    var fin          = pos + 2 + queryEnHtml.length;
     editor.innerHTML = html.slice(0, pos) + remplazo + html.slice(fin > html.length ? html.length : fin);
   }
-  try {
-    var sel = window.getSelection();
-    var r   = document.createRange();
-    r.selectNodeContents(editor);
-    r.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(r);
-  } catch(e) { /* foco no disponible — ignorar */ }
+  var sel = window.getSelection();
+  var r   = document.createRange();
+  r.selectNodeContents(editor);
+  r.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(r);
 
   segAgregarChip('diagnostico', chipNombre);
   segMarcarCambios();
@@ -904,12 +924,23 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-function segInicializarEditorNotas() {
-  var editor = document.getElementById('seg-campo-notas');
+function segInicializarEditorNotas(editorOverride) {
+  // Acepta un elemento DOM específico (para campos del formulario de plantilla)
+  // o busca el editor principal si no se pasa ninguno
+  var editor = editorOverride || document.getElementById('seg-campo-notas');
   if (!editor) return;
-  var nuevo = editor.cloneNode(true);
-  editor.parentNode.replaceChild(nuevo, editor);
-  editor = nuevo;
+  // Solo clonar el editor principal (evita problemas con elementos del formulario)
+  if (!editorOverride) {
+    var nuevo = editor.cloneNode(true);
+    editor.parentNode.replaceChild(nuevo, editor);
+    editor = nuevo;
+  }
+
+  // Rastrear qué editor tiene foco para que chips/síntomas se inserten en el correcto
+  // No limpiamos en blur porque el dropdown/sheet recibe el click antes de que
+  // _segDiagConfirmarChip se ejecute — el último editor activo se mantiene hasta
+  // que otro editor tome el foco.
+  editor.addEventListener('focus', function() { _segEditorActivo = this; });
 
   editor.addEventListener('input', function(e) {
     _segLimpiarSugerencia();
@@ -949,10 +980,10 @@ function segInicializarEditorNotas() {
           segFetch('/api/seguimiento/diagnosticos?q=' + encodeURIComponent(query) + '&limit=8', {},
             function(data) {
               _segDiagMatches = data.diagnosticos || [];
-              _segDiagDropdownMostrar(_segDiagMatches);
+              _segDiagDropdownMostrar(_segDiagMatches, query);
             },
             function() {
-              _segDiagDropdownMostrar([]);
+              _segDiagDropdownMostrar([], query);
             }
           );
         }, 300);
@@ -1163,6 +1194,8 @@ function segCerrarSlash() {
 
 /* ── 4 SECCIONES DE CHIPS ── */
 var _segChips = { sintoma: [], diagnostico: [], hipotesis: [], trabajar: [] };
+var _segModoNotas      = 'editor';   // 'editor' | 'plantilla:{id}'
+var _segCamposPlantilla = [];        // [{label, valor, tipo}] — valores actuales del form
 
 function segAgregarChip(tipo, nombre) {
   if (!nombre) return;
@@ -1505,6 +1538,7 @@ function segCargarPlantillasContexto(plantillas) {
   segRenderizarChipsPlantillas('principal');
   segRenderizarChipsPlantillas('tareas');
   segRenderizarChipsPlantillas('proxima');
+  segPnRenderChips();
 }
 
 function segRenderizarChipsPlantillas(tipo) {
@@ -1765,6 +1799,7 @@ function segGuardar() {
   var btn = document.getElementById('seg-btn-guardar');
   if (btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:5px"></i>Guardando...'; btn.disabled = true; }
 
+  var camposActuales = _segPn.formActivo ? segPnRecopilarCampos() : _segCamposPlantilla;
   var payload = {
     company_id:          SEG.companyId,
     cliente_id:          SEG.clienteId,
@@ -1780,7 +1815,9 @@ function segGuardar() {
     contenido_principal: document.getElementById('seg-campo-contenido').value,
     tareas:              document.getElementById('seg-campo-tareas').value,
     proxima_cita:        document.getElementById('seg-campo-proxima').value,
-    resumen_editado:     (document.getElementById('seg-resumen-text')||{}).innerText || ''
+    resumen_editado:     (document.getElementById('seg-resumen-text')||{}).innerText || '',
+    modo_notas:          _segModoNotas,
+    campos_plantilla:    camposActuales
   };
 
   var url = SEG.registroId ? '/api/seguimiento/registros/' + SEG.registroId : '/api/seguimiento/registros';
@@ -1842,10 +1879,6 @@ function segGenerarResumen() {
 }
 
 function segRegenerarResumen() {
-  var badge = document.getElementById('seg-enviado-badge');
-  if (badge) badge.classList.add('seg-hidden');
-  var btnEnviar = document.getElementById('seg-btn-enviar-cliente');
-  if (btnEnviar) { btnEnviar.disabled = false; btnEnviar.innerHTML = '<i class="fas fa-paper-plane seg-icon-mr-sm"></i>Enviar al cliente'; }
   segGenerarResumen();
 }
 
@@ -1916,12 +1949,7 @@ function segEnviarAlCliente() {
       var badgeTxt = document.getElementById('seg-enviado-txt');
       var iconMap = { whatsapp: 'WhatsApp', chat: 'Chat Heavensy', email: 'Email' };
       if (badgeTxt) badgeTxt.textContent = 'Enviado por ' + (iconMap[canal] || canal);
-      if (badge) {
-        badge.classList.remove('seg-hidden');
-        badge.className = badge.className
-          .replace(/seg-enviado-canal-\S+/g, '').trim();
-        badge.classList.add('seg-enviado-canal-' + (canal || 'whatsapp'));
-      }
+      if (badge) badge.classList.remove('seg-hidden');
       if (btnEnviar) { btnEnviar.disabled = true; btnEnviar.innerHTML = '<i class="fas fa-check seg-icon-mr-sm"></i>Enviado'; }
 
       // Badge de estado en hero y date-row
@@ -2095,11 +2123,23 @@ function segSeleccionarRegistro(registroId) {
     });
     return;
   }
+
+  // Marcar card como cargando, bloquear otras
+  document.querySelectorAll('.seg-hist-card').forEach(function(el) {
+    el.classList.remove('active', 'seg-hist-loading');
+    el.style.pointerEvents = 'none';
+  });
+  var cardCargando = document.getElementById('hist-' + registroId);
+  if (cardCargando) cardCargando.classList.add('seg-hist-loading');
   SEG.registroId = registroId;
   segFetch('/api/seguimiento/registros/' + registroId, {}, function(resp) {
     // El endpoint devuelve { ok: true, registro: {...} }
     var data = resp.registro || resp;
     var lb = SEG.labels;
+
+    // Siempre partir desde el editor antes de cargar el nuevo registro
+    segPnResetearVista();
+
     var tc = document.getElementById('seg-campo-contenido');
     var tt = document.getElementById('seg-campo-tareas');
     var tp = document.getElementById('seg-campo-proxima');
@@ -2132,16 +2172,33 @@ function segSeleccionarRegistro(registroId) {
     var resumenTexto = data.resumen_editado || data.resumen_ia || data.resumen;
     if (resumenTexto) segMostrarResumen(resumenTexto);
     else segLimpiarResumen();
-    // Marcar activo en historial
-    document.querySelectorAll('.seg-hist-card').forEach(function(el){ el.classList.remove('active'); });
-    var card = document.querySelector('.seg-hist-card[onclick*="' + registroId + '"]');
-    if (card) card.classList.add('active');
     // Actualizar badge de estado
     var badgeEl = document.getElementById('seg-badge-estado');
     if (badgeEl) badgeEl.textContent = data.estado === 'en_curso'
       ? (lb.status_active||'En curso') : (lb.status_pending||'Pendiente');
     SEG.hayUnsaved = false;
-  }, function() { segToast('Error al cargar el registro', 'error'); });
+    // Restaurar cards — quitar loading, marcar activa
+    document.querySelectorAll('.seg-hist-card').forEach(function(el) {
+      el.classList.remove('seg-hist-loading');
+      el.style.pointerEvents = '';
+    });
+    var cardActiva = document.getElementById('hist-' + registroId);
+    if (cardActiva) cardActiva.classList.add('active');
+    // Restaurar modo plantilla si el registro fue guardado con una
+    if (data.modo_notas && data.modo_notas.indexOf('plantilla:') === 0) {
+      var _pidHist = data.modo_notas.replace('plantilla:', '');
+      setTimeout(function() {
+        segPnFormAbrir(_pidHist, data.campos_plantilla || []);
+      }, 150);
+    }
+  }, function() {
+    // Error — restaurar cards
+    document.querySelectorAll('.seg-hist-card').forEach(function(el) {
+      el.classList.remove('seg-hist-loading');
+      el.style.pointerEvents = '';
+    });
+    segToast('Error al cargar el registro', 'error');
+  });
 }
 
 /* ─────────────────────────────────────────
@@ -2313,6 +2370,7 @@ function segAutoguardarSilencioso() {
   segMostrarIndicadorAutoguardado('guardando');
 
   var nomReg = SEG.labels.registro || 'sesión';
+  var camposActualesAuto = _segPn.formActivo ? segPnRecopilarCampos() : _segCamposPlantilla;
   var payload = {
     company_id:          SEG.companyId,
     cliente_id:          SEG.clienteId,
@@ -2328,7 +2386,9 @@ function segAutoguardarSilencioso() {
     contenido_principal: (document.getElementById('seg-campo-contenido')||{}).value || '',
     tareas:              (document.getElementById('seg-campo-tareas')||{}).value    || '',
     proxima_cita:        (document.getElementById('seg-campo-proxima')||{}).value   || '',
-    resumen_editado:     (document.getElementById('seg-resumen-text')||{}).innerText || ''
+    resumen_editado:     (document.getElementById('seg-resumen-text')||{}).innerText || '',
+    modo_notas:          _segModoNotas,
+    campos_plantilla:    camposActualesAuto
   };
 
   var url    = SEG.registroId ? '/api/seguimiento/registros/' + SEG.registroId : '/api/seguimiento/registros';
@@ -2525,6 +2585,9 @@ function segNuevaSesion() {
 }
 
 function segNuevaSesionConfirm() {
+  // Resetear modo plantilla → siempre partir desde editor
+  segPnResetearVista();
+
   // Limpiar todos los campos
   SEG.registroId = null;
   SEG.hayUnsaved = false;
@@ -2885,6 +2948,11 @@ function segAbrirModalAgenda() {
   document.getElementById('seg-agenda-horas').innerHTML = '';
   document.getElementById('seg-agenda-resumen').classList.add('seg-hidden');
   document.getElementById('seg-agenda-confirmar-btn').disabled = true;
+  _segAgendaCanal = 'whatsapp';
+  // Resetear chips de canal en recordatorio
+  document.querySelectorAll('#seg-agenda-canal-chips .seg-canal-chip').forEach(function(c) {
+    c.classList.toggle('active', c.dataset.canal === 'whatsapp');
+  });
   segAgendaModo('sesion');
 
   // Abrir modal
@@ -3339,6 +3407,17 @@ function segConfirmarAgenda() {
   } // fin _hacerReserva
 }
 
+/* Canal de envío del recordatorio */
+var _segAgendaCanal = 'whatsapp';
+
+function segAgendaSetCanal(canal, el) {
+  _segAgendaCanal = canal;
+  document.querySelectorAll('#seg-agenda-canal-chips .seg-canal-chip').forEach(function(c) {
+    c.classList.remove('active');
+  });
+  if (el) el.classList.add('active');
+}
+
 function segConfirmarRecordatorio() {
   if (!_segAgenda.diaSelec) return;
   var hora  = segAgendaTpGetValue();
@@ -3350,6 +3429,8 @@ function segConfirmarRecordatorio() {
       (link ? '\\n\\nAgenda aquí: ' + link : '');
   }
 
+  var canal = _segAgendaCanal || 'whatsapp';
+
   if (SEG.registroId) {
     segFetch('/api/seguimiento/mensajes-programados', {
       method: 'POST',
@@ -3359,7 +3440,7 @@ function segConfirmarRecordatorio() {
         registro_id: SEG.registroId,
         fecha_envio: _segAgenda.diaSelec + 'T' + hora,
         mensaje:     msg,
-        canal:       'whatsapp',
+        canal:       canal,
         tipo:        'recordatorio_agenda',
       })
     }, function() {}, function() {});
@@ -3514,7 +3595,7 @@ function _segEsMobil() {
   return window.innerWidth <= 768 || ('ontouchstart' in window && window.innerWidth <= 900);
 }
 
-function segDiagSheetAbrir(matches) {
+function segDiagSheetAbrir(matches, query) {
   var overlay = document.getElementById('seg-diag-sheet-overlay');
   var sheet   = document.getElementById('seg-diag-sheet');
   var input   = document.getElementById('seg-diag-sheet-input');
@@ -3523,20 +3604,24 @@ function segDiagSheetAbrir(matches) {
   // Guardar matches actuales para filtrar
   segDiagSheetAbrir._matches = matches || [];
 
+  // Snapshot del editor y largo del query para restaurar al seleccionar (fix pérdida de contenido en móvil)
+  var _edSnap = _segGetEditor();
+  segDiagSheetAbrir._editorSnapshot = _edSnap ? _edSnap.innerHTML : null;
+  segDiagSheetAbrir._queryLen       = (query || '').length;
+
   // Renderizar lista
   segDiagSheetRenderizar(segDiagSheetAbrir._matches);
 
   // Mostrar
   overlay.classList.remove('seg-hidden');
   sheet.classList.remove('seg-hidden');
-  // Animar entrada con pequeño delay
   requestAnimationFrame(function() {
     sheet.classList.add('visible');
   });
 
-  // Limpiar buscador y foco
+  // Pre-cargar query en el buscador (lo que ya escribió el usuario)
   if (input) {
-    input.value = '';
+    input.value = query || '';
     setTimeout(function() { input.focus(); }, 300);
   }
 }
@@ -3578,25 +3663,30 @@ function segDiagSheetFiltrar(q) {
 }
 
 function segDiagSheetSelec(idx) {
-  // Reconstruir lista visible según filtro actual del buscador
-  var input = document.getElementById('seg-diag-sheet-input');
-  var q = input ? input.value.trim() : '';
-  var todos = segDiagSheetAbrir._matches || [];
-  var visibles = !q ? todos : todos.filter(function(d) {
+  var list  = document.getElementById('seg-diag-sheet-list');
+  var visibles = (segDiagSheetAbrir._matches || []).filter(function(d) {
+    var input = document.getElementById('seg-diag-sheet-input');
+    var q = input ? input.value.trim() : '';
+    if (!q) return true;
     var qn = q.toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e')
       .replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
     var n = (d.nombre||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e')
       .replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u');
     return n.indexOf(qn) !== -1 || (d.codigo||'').toLowerCase().indexOf(qn) !== -1;
   });
-  var match = visibles[idx] || todos[idx];
+  var match = visibles[idx];
   if (!match) return;
 
-  // Cerrar sheet primero
-  segDiagSheetCerrar();
+  // En móvil: restaurar el contenido del editor al estado previo al sheet
+  // (antes se hacía textContent='' lo que borraba todo el contenido escrito)
+  var editor = _segGetEditor();
+  if (editor && _segEsMobil()) {
+    if (segDiagSheetAbrir._editorSnapshot !== null && segDiagSheetAbrir._editorSnapshot !== undefined) {
+      editor.innerHTML = segDiagSheetAbrir._editorSnapshot;
+    }
+  }
 
-  // Llamar _segDiagConfirmarChip exactamente igual que desktop
-  // El try/catch interno garantiza que segAgregarChip siempre se ejecuta
+  segDiagSheetCerrar();
   var chipNombre = match.nombre + ' (' + match.codigo + ')';
   _segDiagConfirmarChip(chipNombre, match.nombre);
 }
@@ -3625,10 +3715,11 @@ window.segAgendaSelecHora        = segAgendaSelecHora;
 window.segConfirmarAgenda        = segConfirmarAgenda;
 window.segAgendaTpToggle         = segAgendaTpToggle;
 window.segAgendaDdToggle         = segAgendaDdToggle;
+window.segAgendaSetCanal         = segAgendaSetCanal;
 
 function segAbrirCie10Movil() {
   // Leer texto del editor como query inicial
-  var editor = document.getElementById('seg-campo-notas');
+  var editor = _segGetEditor();
   var query  = (editor ? (editor.textContent || editor.innerText || '') : '').trim();
 
   // Limpiar el texto del editor del contenido usado como query
@@ -3757,6 +3848,420 @@ window.segEditarResumen       = segEditarResumen;
    El router llama initSeguimientoPage() al cargar la página.
    Si no existe ese hook, el IIFE hace polling como fallback.
 ───────────────────────────────────────── */
+
+/* ══════════════════════════════════════════════════════
+   PLANTILLA NOTAS CLÍNICAS — FORM BUILDER (Puntos 3, 4, 5)
+══════════════════════════════════════════════════════ */
+var _segPn = {
+  campos:  [],    // [{tipo, label, opciones}] — campos de la plantilla en construcción
+  editId:  null,  // id si estamos editando una plantilla existente
+  formActivo: null, // id de la plantilla cuyo formulario está activo inline
+};
+
+// Estado por campo para los date pickers del formulario de plantilla
+// { idx: { anio, mes, fechaSel } }
+var _segPnFormDp = {};
+
+/* ── Abrir modal de creación/edición ── */
+function segNuevaPlantillaNotas(plantillaId) {
+  _segPn.campos = [];
+  _segPn.editId = plantillaId || null;
+
+  if (plantillaId) {
+    var lista = SEG._plantillas['notas'] || [];
+    var p = lista.find(function(x) { return (x._id || x.id) === plantillaId; });
+    if (p) {
+      _segPn.campos = (p.campos || []).map(function(c) {
+        return { tipo: c.tipo, label: c.label || '', opciones: c.opciones || '' };
+      });
+      document.getElementById('seg-pn-nombre').value = p.nombre || '';
+      document.getElementById('seg-pn-modal-titulo').textContent = 'Editar plantilla';
+    }
+  } else {
+    document.getElementById('seg-pn-nombre').value = '';
+    document.getElementById('seg-pn-modal-titulo').textContent = 'Nueva plantilla de notas';
+  }
+
+  segPnRenderCampos();
+  segPnRenderPreview();
+  document.getElementById('seg-pn-modal').classList.remove('seg-hidden');
+  setTimeout(function() { document.getElementById('seg-pn-nombre').focus(); }, 80);
+}
+
+function segPnCerrar() {
+  document.getElementById('seg-pn-modal').classList.add('seg-hidden');
+  _segPn.campos = [];
+  _segPn.editId = null;
+}
+
+/* ── Punto 3: Agregar campo SIN label pre-relleno ── */
+function segPnAgregarCampo(tipo) {
+  // label vacío — el placeholder del input pide al usuario que lo rellene
+  _segPn.campos.push({ tipo: tipo, label: '', opciones: '' });
+  segPnRenderCampos();
+  segPnRenderPreview();
+  // Foco en el último input de label agregado
+  setTimeout(function() {
+    var inputs = document.querySelectorAll('#seg-pn-campos-wrap .seg-pn-campo-label-input');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  }, 50);
+}
+
+function segPnEliminarCampo(idx) {
+  _segPn.campos.splice(idx, 1);
+  segPnRenderCampos();
+  segPnRenderPreview();
+}
+
+function segPnCampoLabelChange(idx, val) {
+  if (_segPn.campos[idx] !== undefined) _segPn.campos[idx].label = val;
+  segPnRenderPreview();
+}
+
+function segPnCampoOpcionesChange(idx, val) {
+  if (_segPn.campos[idx] !== undefined) _segPn.campos[idx].opciones = val;
+  segPnRenderPreview();
+}
+
+/* ── Renderizar campos en el builder ── */
+function segPnRenderCampos() {
+  var wrap = document.getElementById('seg-pn-campos-wrap');
+  if (!wrap) return;
+  if (!_segPn.campos.length) {
+    wrap.innerHTML = '<div style="font-size:12px;color:#9ca3af;padding:6px 0">Aún no hay campos. Agrégalos con los botones de abajo.</div>';
+    return;
+  }
+  var tipoLabels = { 'texto-corto': 'Texto corto', 'texto-largo': 'Texto largo',
+    'numero': 'Número', 'selector': 'Selector', 'fecha': 'Fecha' };
+  wrap.innerHTML = _segPn.campos.map(function(c, i) {
+    var esSelector = c.tipo === 'selector';
+    return '<div class="seg-pn-campo-item">' +
+      '<i class="fas fa-grip-vertical seg-pn-campo-drag"></i>' +
+      '<div class="seg-pn-campo-body">' +
+        '<span class="seg-pn-campo-tipo-badge">' + (tipoLabels[c.tipo] || c.tipo) + '</span>' +
+        '<input class="seg-pn-campo-label-input" type="text"' +
+          ' value="' + segEscape(c.label) + '"' +
+          ' placeholder="Ingrese el nombre del campo"' +
+          ' oninput="segPnCampoLabelChange(' + i + ', this.value)">' +
+        (esSelector
+          ? '<input class="seg-pn-opciones-input" type="text"' +
+              ' value="' + segEscape(c.opciones || '') + '"' +
+              ' placeholder="Opciones separadas por coma: Leve, Moderado, Grave"' +
+              ' oninput="segPnCampoOpcionesChange(' + i + ', this.value)">'
+          : '') +
+      '</div>' +
+      '<button class="seg-pn-campo-del" onclick="segPnEliminarCampo(' + i + ')" data-seg-tooltip="Eliminar campo">' +
+        '<i class="fas fa-times"></i>' +
+      '</button>' +
+    '</div>';
+  }).join('');
+}
+
+/* ── Vista previa en tiempo real ── */
+function segPnRenderPreview() {
+  var el = document.getElementById('seg-pn-preview');
+  if (!el) return;
+  if (!_segPn.campos.length) {
+    el.innerHTML = '<span class="seg-pn-preview-empty">Agrega campos para ver la vista previa</span>';
+    return;
+  }
+  el.innerHTML = _segPn.campos.map(function(c) {
+    var label = c.label || '(sin nombre)';
+    var inputHtml = '';
+    if (c.tipo === 'texto-corto') {
+      inputHtml = '<div class="seg-pn-preview-input">' + segEscape(label) + '...</div>';
+    } else if (c.tipo === 'texto-largo') {
+      inputHtml = '<div class="seg-pn-preview-textarea"></div>';
+    } else if (c.tipo === 'numero') {
+      inputHtml = '<div class="seg-pn-preview-input">0</div>';
+    } else if (c.tipo === 'selector') {
+      var opciones = (c.opciones || '').split(',').map(function(o) { return o.trim(); }).filter(Boolean);
+      inputHtml = '<div class="seg-pn-preview-select">' +
+        (opciones.length ? segEscape(opciones[0]) : 'Seleccionar...') + ' ▾</div>';
+    } else if (c.tipo === 'fecha') {
+      inputHtml = '<div class="seg-pn-preview-input">DD-MM-AAAA</div>';
+    }
+    return '<div class="seg-pn-preview-campo">' +
+      '<div class="seg-pn-preview-label">' + segEscape(label) + '</div>' +
+      inputHtml +
+    '</div>';
+  }).join('');
+}
+
+/* ── Guardar plantilla ── */
+function segPnGuardar() {
+  var nombre = (document.getElementById('seg-pn-nombre').value || '').trim();
+  if (!nombre) { segToast('Escribe un nombre para la plantilla', 'error'); return; }
+  if (!_segPn.campos.length) { segToast('Agrega al menos un campo', 'error'); return; }
+  for (var i = 0; i < _segPn.campos.length; i++) {
+    if (!(_segPn.campos[i].label || '').trim()) {
+      segToast('Completa el nombre de todos los campos', 'error'); return;
+    }
+  }
+
+  var payload = {
+    company_id: SEG.companyId,
+    nombre: nombre,
+    tipo: 'notas',
+    campos: _segPn.campos.map(function(c) {
+      return { tipo: c.tipo, label: c.label.trim(), opciones: c.opciones || '' };
+    })
+  };
+
+  var id = _segPn.editId;
+  var url = id ? '/api/seguimiento/plantillas/' + id : '/api/seguimiento/plantillas';
+  var method = id ? 'PUT' : 'POST';
+
+  segFetch(url, { method: method, body: JSON.stringify(payload) },
+    function(data) {
+      if (!SEG._plantillas['notas']) SEG._plantillas['notas'] = [];
+      if (id) {
+        var lista = SEG._plantillas['notas'];
+        var idx = -1;
+        lista.forEach(function(x, i) { if ((x._id || x.id) === id) idx = i; });
+        if (idx >= 0) lista[idx] = { _id: id, nombre: nombre, campos: payload.campos, tipo: 'notas' };
+      } else {
+        SEG._plantillas['notas'].push({ _id: data._id || data.id, nombre: nombre, campos: payload.campos, tipo: 'notas' });
+      }
+      segPnRenderChips();
+      segPnCerrar();
+      segToast('Plantilla guardada', 'success');
+    },
+    function() { segToast('Error al guardar la plantilla', 'error'); }
+  );
+}
+
+/* ── Chips de plantillas notas ── */
+function segPnRenderChips() {
+  var el = document.getElementById('seg-chips-notas');
+  if (!el) return;
+  var lista = SEG._plantillas['notas'] || [];
+  if (!lista.length) {
+    el.innerHTML = '<span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>';
+    return;
+  }
+  el.innerHTML = lista.map(function(p) {
+    var pid = p._id || p.id || '';
+    var pidEsc = segEscape(pid);
+    return '<span class="seg-plantilla-chip" data-id="' + pidEsc + '"' +
+      ' onclick="segPnFormAbrir(\'' + pidEsc + '\')">' +
+      '<i class="fas fa-check seg-chip-check seg-hidden" id="pnchk-' + pidEsc + '"></i>' +
+      segEscape(p.nombre) +
+      '<span class="seg-chip-actions">' +
+        '<i class="fas fa-pencil-alt" onclick="event.stopPropagation();segNuevaPlantillaNotas(\'' + pidEsc + '\')" title="Editar"></i>' +
+        '<i class="fas fa-trash" onclick="event.stopPropagation();segPnEliminarPlantilla(\'' + pidEsc + '\')" title="Eliminar"></i>' +
+      '</span>' +
+    '</span>';
+  }).join('');
+}
+
+function segPnEliminarPlantilla(plantillaId) {
+  segConfirm('¿Eliminar esta plantilla?', function() {
+    segFetch('/api/seguimiento/plantillas/' + plantillaId,
+      { method: 'DELETE', body: JSON.stringify({ company_id: SEG.companyId }) },
+      function() {
+        SEG._plantillas['notas'] = (SEG._plantillas['notas'] || []).filter(function(x) {
+          return (x._id || x.id) !== plantillaId;
+        });
+        segPnRenderChips();
+        // Si el formulario activo era esta plantilla, volver al editor
+        if (_segPn.formActivo === plantillaId) segPnFormVolver();
+        segToast('Plantilla eliminada', 'success');
+      },
+      function() { segToast('Error al eliminar', 'error'); }
+    );
+  });
+}
+
+/* ── Punto 4: Formulario inline reemplaza el editor ── */
+/* ── Resetear vista al editor por defecto ── */
+function segPnResetearVista() {
+  _segModoNotas       = 'editor';
+  _segCamposPlantilla = [];
+  _segPn.formActivo   = null;
+  var edWrap  = document.getElementById('seg-notas-editor-wrap');
+  var frmWrap = document.getElementById('seg-notas-formulario');
+  if (edWrap)  edWrap.classList.remove('seg-hidden');
+  if (frmWrap) frmWrap.classList.add('seg-hidden');
+  // Quitar marca activa de chips de plantilla
+  document.querySelectorAll('#seg-chips-notas .seg-plantilla-chip').forEach(function(chip) {
+    chip.classList.remove('used');
+    var chk = chip.querySelector('.seg-chip-check');
+    if (chk) chk.classList.add('seg-hidden');
+  });
+}
+
+/* ── Recopilar valores actuales del formulario activo ── */
+function segPnRecopilarCampos() {
+  if (!_segPn.formActivo) return [];
+  var lista = SEG._plantillas['notas'] || [];
+  var p = lista.find(function(x) { return (x._id || x.id) === _segPn.formActivo; });
+  if (!p || !p.campos) return [];
+  return p.campos.map(function(c, i) {
+    var el  = document.getElementById('seg-pn-form-f-' + i);
+    var val = el ? (el.innerText || el.value || '').trim() : '';
+    return { label: c.label, valor: val, tipo: c.tipo };
+  });
+}
+
+function segPnFormAbrir(plantillaId, valores) {
+  var lista = SEG._plantillas['notas'] || [];
+  // Comparación robusta: normalizar ambos lados como string trimado
+  var pidStr = String(plantillaId || '').trim();
+  var p = lista.find(function(x) {
+    return String(x._id || x.id || '').trim() === pidStr;
+  });
+  if (!p || !p.campos || !p.campos.length) return;
+
+  _segPn.formActivo = plantillaId;
+  _segModoNotas     = 'plantilla:' + plantillaId;
+
+  // Ocultar editor, mostrar formulario
+  document.getElementById('seg-notas-editor-wrap').classList.add('seg-hidden');
+  document.getElementById('seg-notas-formulario').classList.remove('seg-hidden');
+
+  // Título del formulario
+  document.getElementById('seg-pn-form-nombre').textContent = p.nombre;
+
+  // Marcar chip activo
+  document.querySelectorAll('#seg-chips-notas .seg-plantilla-chip').forEach(function(chip) {
+    var chk = chip.querySelector('.seg-chip-check');
+    if (chip.dataset.id === plantillaId) {
+      chip.classList.add('used');
+      if (chk) chk.classList.remove('seg-hidden');
+    } else {
+      chip.classList.remove('used');
+      if (chk) chk.classList.add('seg-hidden');
+    }
+  });
+
+  // Renderizar campos del formulario (Punto 5: contenteditable con comandos)
+  var wrap = document.getElementById('seg-pn-form-campos');
+  wrap.innerHTML = p.campos.map(function(c, i) {
+    var label = '<div class="seg-pn-form-campo-label">' + segEscape(c.label) + '</div>';
+    var input = '';
+    if (c.tipo === 'texto-corto' || c.tipo === 'texto-largo') {
+      // contenteditable para soportar comandos de diagnóstico/síntoma
+      input = '<div class="seg-pn-form-campo-editor"' +
+        ' id="seg-pn-form-f-' + i + '"' +
+        ' data-tipo="' + c.tipo + '"' +
+        ' data-placeholder="' + segEscape(c.label) + '..."' +
+        ' contenteditable="true" spellcheck="true"></div>';
+    } else if (c.tipo === 'numero') {
+      input = '<input type="number" class="seg-pn-form-campo-input"' +
+        ' id="seg-pn-form-f-' + i + '" placeholder="0">';
+    } else if (c.tipo === 'selector') {
+      var opciones = (c.opciones || '').split(',').map(function(o) { return o.trim(); }).filter(Boolean);
+      input = '<div class="seg-agenda-dd-wrap seg-pn-form-dd-wrap" id="seg-pn-form-dd-' + i + '">' +
+        '<button class="seg-agenda-dd-btn" type="button" onclick="segPnFormDdToggle(' + i + ')">' +
+          '<span id="seg-pn-form-dd-label-' + i + '">Seleccionar...</span>' +
+          '<i class="fas fa-chevron-down seg-agenda-dd-chevron"></i>' +
+        '</button>' +
+        '<div class="seg-agenda-dd-list seg-hidden" id="seg-pn-form-dd-list-' + i + '">' +
+          opciones.map(function(o) {
+            return '<div class="seg-agenda-dd-item" onclick="segPnFormDdSelec(' + i + ',\'' + o.replace(/'/g, "\\'") + '\')">' + segEscape(o) + '</div>';
+          }).join('') +
+        '</div>' +
+        '<input type="hidden" id="seg-pn-form-f-' + i + '" value="">' +
+      '</div>';
+    } else if (c.tipo === 'fecha') {
+      var hoy = new Date();
+      _segPnFormDp[i] = { anio: hoy.getFullYear(), mes: hoy.getMonth(), fechaSel: '' };
+      var dayHeaders = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(function(d) {
+        return '<div class="cal-day-header">' + d + '</div>';
+      }).join('');
+      input = '<div class="seg-picker-wrap seg-pn-form-dp-wrap">' +
+        '<button class="seg-picker-btn seg-pn-form-dp-btn" type="button" onclick="segPnFormDpToggle(' + i + ')">' +
+          '<i class="fas fa-calendar-alt" style="color:#9961FF;font-size:11px"></i>' +
+          '<span id="seg-pn-form-dp-display-' + i + '">—</span>' +
+        '</button>' +
+        '<div class="seg-datepicker seg-hidden" id="seg-pn-form-dp-' + i + '">' +
+          '<div class="cal-nav">' +
+            '<button class="cal-nav-btn" type="button" onclick="segPnFormDpNavMes(' + i + ',-1)"><i class="fas fa-chevron-left"></i></button>' +
+            '<span class="cal-nav-title" id="seg-pn-form-dp-titulo-' + i + '"></span>' +
+            '<button class="cal-nav-btn" type="button" onclick="segPnFormDpNavMes(' + i + ',1)"><i class="fas fa-chevron-right"></i></button>' +
+          '</div>' +
+          '<div class="cal-grid" style="padding:4px 4px 2px">' + dayHeaders + '</div>' +
+          '<div class="cal-grid cal-days-grid" id="seg-pn-form-dp-dias-' + i + '"></div>' +
+        '</div>' +
+        '<input type="hidden" id="seg-pn-form-f-' + i + '" value="">' +
+      '</div>';
+    }
+    return '<div class="seg-pn-form-campo">' + label + input + '</div>';
+  }).join('');
+
+  // Punto 5: Inicializar comandos CIE-10/síntomas en los campos contenteditable
+  p.campos.forEach(function(c, i) {
+    if (c.tipo === 'texto-corto' || c.tipo === 'texto-largo') {
+      var el = document.getElementById('seg-pn-form-f-' + i);
+      if (el) segInicializarEditorNotas(el);
+    }
+  });
+
+  // Restaurar valores guardados si se proporcionan (desde historial o contexto)
+  if (valores && valores.length) {
+    p.campos.forEach(function(c, i) {
+      var saved = valores[i];
+      if (!saved || !saved.valor) return;
+      var el = document.getElementById('seg-pn-form-f-' + i);
+      if (!el) return;
+      if (c.tipo === 'texto-corto' || c.tipo === 'texto-largo') {
+        el.innerText = saved.valor;
+      } else if (c.tipo === 'numero') {
+        el.value = saved.valor;
+      } else if (c.tipo === 'selector') {
+        segPnFormDdSelec(i, saved.valor);
+      } else if (c.tipo === 'fecha') {
+        segPnFormDpSelec(i, saved.valor);
+      }
+    });
+  }
+}
+
+/* ── Punto 4: Volver al editor normal ── */
+function segPnFormVolver() {
+  // Recopilar valores del formulario y guardar en notas_internas
+  if (_segPn.formActivo) {
+    _segCamposPlantilla = segPnRecopilarCampos(); // guardar antes de resetear
+    _segModoNotas = 'editor';
+    var lista = SEG._plantillas['notas'] || [];
+    var p = lista.find(function(x) { return (x._id || x.id) === _segPn.formActivo; });
+    if (p && p.campos) {
+      var lineas = [];
+      p.campos.forEach(function(c, i) {
+        var el = document.getElementById('seg-pn-form-f-' + i);
+        var val = '';
+        if (el) {
+          val = (el.innerText || el.value || '').trim();
+        }
+        if (val) lineas.push(c.label + ': ' + val);
+      });
+      if (lineas.length) {
+        var editor = document.getElementById('seg-campo-notas');
+        if (editor) {
+          var sep = (editor.innerText || '').trim() ? '\n\n' : '';
+          var header = '── ' + p.nombre + ' ──\n';
+          editor.innerText = (editor.innerText || '') + sep + header + lineas.join('\n');
+          segMarcarCambios();
+        }
+      }
+    }
+  }
+
+  // Restaurar editor y ocultar formulario
+  document.getElementById('seg-notas-editor-wrap').classList.remove('seg-hidden');
+  document.getElementById('seg-notas-formulario').classList.add('seg-hidden');
+
+  // Quitar marca de chip activo
+  document.querySelectorAll('#seg-chips-notas .seg-plantilla-chip').forEach(function(chip) {
+    chip.classList.remove('used');
+    var chk = chip.querySelector('.seg-chip-check');
+    if (chk) chk.classList.add('seg-hidden');
+  });
+
+  _segPn.formActivo = null;
+}
+
 function initSeguimientoPage() {
   // Resetear estado para re-inicialización limpia
   SEG.clienteId     = null;
@@ -3772,7 +4277,19 @@ function initSeguimientoPage() {
   // Inicializar editor notas al cargar la página
   setTimeout(segInicializarEditorNotas, 100);
 }
-window.initSeguimientoPage = initSeguimientoPage;
+window.initSeguimientoPage    = initSeguimientoPage;
+window.segNuevaPlantillaNotas  = segNuevaPlantillaNotas;
+window.segPnCerrar             = segPnCerrar;
+window.segPnAgregarCampo       = segPnAgregarCampo;
+window.segPnEliminarCampo      = segPnEliminarCampo;
+window.segPnCampoLabelChange   = segPnCampoLabelChange;
+window.segPnCampoOpcionesChange = segPnCampoOpcionesChange;
+window.segPnGuardar            = segPnGuardar;
+window.segPnEliminarPlantilla  = segPnEliminarPlantilla;
+window.segPnFormAbrir          = segPnFormAbrir;
+window.segPnFormVolver         = segPnFormVolver;
+window.segPnResetearVista      = segPnResetearVista;
+window.segPnRecopilarCampos    = segPnRecopilarCampos;
 
 (function segAutoInit() {
   if (document.getElementById('seg-entity-list')) {
@@ -3782,3 +4299,153 @@ window.initSeguimientoPage = initSeguimientoPage;
     setTimeout(segAutoInit, 80);
   }
 })();
+
+/* ═══════════════════════════════════════════════════════
+   FORM BUILDER — DATE PICKER Y DROPDOWN CUSTOM
+   Reutilizan las clases CSS del calendario y dropdown
+   de la sección de Agenda (cal-nav, cal-day, etc.)
+═══════════════════════════════════════════════════════ */
+
+var _MESES_DP = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                 'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+/* ── Date Picker ── */
+function segPnFormDpToggle(idx) {
+  var dp = document.getElementById('seg-pn-form-dp-' + idx);
+  if (!dp) return;
+  // Cerrar todos los demás
+  document.querySelectorAll('.seg-datepicker').forEach(function(el) {
+    if (el !== dp) el.classList.add('seg-hidden');
+  });
+  document.querySelectorAll('.seg-agenda-dd-list').forEach(function(el) {
+    el.classList.add('seg-hidden');
+  });
+  if (dp.classList.contains('seg-hidden')) {
+    segPnFormDpRender(idx);
+    dp.classList.remove('seg-hidden');
+  } else {
+    dp.classList.add('seg-hidden');
+  }
+}
+
+function segPnFormDpNavMes(idx, delta) {
+  var st = _segPnFormDp[idx];
+  if (!st) return;
+  st.mes += delta;
+  if (st.mes < 0)  { st.mes = 11; st.anio--; }
+  if (st.mes > 11) { st.mes = 0;  st.anio++; }
+  segPnFormDpRender(idx);
+}
+
+function segPnFormDpRender(idx) {
+  var st = _segPnFormDp[idx];
+  if (!st) return;
+  var tituloEl = document.getElementById('seg-pn-form-dp-titulo-' + idx);
+  var diasEl   = document.getElementById('seg-pn-form-dp-dias-' + idx);
+  if (!tituloEl || !diasEl) return;
+
+  tituloEl.textContent = _MESES_DP[st.mes] + ' ' + st.anio;
+
+  var hoy = new Date();
+  var hoyStr = hoy.getFullYear() + '-' +
+    String(hoy.getMonth()+1).padStart(2,'0') + '-' +
+    String(hoy.getDate()).padStart(2,'0');
+
+  var primerDia = new Date(st.anio, st.mes, 1).getDay();
+  var offset    = (primerDia === 0) ? 6 : primerDia - 1;
+  var diasEnMes = new Date(st.anio, st.mes + 1, 0).getDate();
+
+  var html = '';
+  for (var i = 0; i < offset; i++) html += '<div></div>';
+  for (var d = 1; d <= diasEnMes; d++) {
+    var fechaStr = st.anio + '-' +
+      String(st.mes+1).padStart(2,'0') + '-' +
+      String(d).padStart(2,'0');
+    var cls = 'cal-day';
+    if (fechaStr === hoyStr)     cls += ' cal-day--today';
+    if (fechaStr === st.fechaSel) cls += ' cal-day--selected';
+    html += '<div class="' + cls + '" onclick="segPnFormDpSelec(' + idx + ',\'' + fechaStr + '\')">' +
+      '<span class="cal-day-num">' + d + '</span>' +
+    '</div>';
+  }
+  diasEl.innerHTML = html;
+}
+
+function segPnFormDpSelec(idx, fechaStr) {
+  var st = _segPnFormDp[idx];
+  if (!st) return;
+  st.fechaSel = fechaStr;
+  // Guardar en hidden input
+  var hidden = document.getElementById('seg-pn-form-f-' + idx);
+  if (hidden) hidden.value = fechaStr;
+  // Actualizar display
+  var display = document.getElementById('seg-pn-form-dp-display-' + idx);
+  if (display && fechaStr) {
+    var d = new Date(fechaStr + 'T12:00:00');
+    var meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    display.textContent = d.getDate() + ' ' + meses[d.getMonth()] + ' ' + d.getFullYear();
+  }
+  // Cerrar calendar
+  var dp = document.getElementById('seg-pn-form-dp-' + idx);
+  if (dp) dp.classList.add('seg-hidden');
+}
+
+/* ── Custom Dropdown (selector) ── */
+function segPnFormDdToggle(idx) {
+  var list = document.getElementById('seg-pn-form-dd-list-' + idx);
+  var wrap = document.getElementById('seg-pn-form-dd-' + idx);
+  if (!list) return;
+  // Cerrar todos los demás
+  document.querySelectorAll('.seg-agenda-dd-list').forEach(function(el) {
+    if (el !== list) el.classList.add('seg-hidden');
+  });
+  document.querySelectorAll('.seg-agenda-dd-wrap').forEach(function(el) {
+    if (el !== wrap) el.classList.remove('abierto');
+  });
+  document.querySelectorAll('.seg-datepicker').forEach(function(el) {
+    el.classList.add('seg-hidden');
+  });
+  var isOpen = !list.classList.contains('seg-hidden');
+  list.classList.toggle('seg-hidden', isOpen);
+  if (wrap) wrap.classList.toggle('abierto', !isOpen);
+}
+
+function segPnFormDdSelec(idx, val) {
+  var hidden = document.getElementById('seg-pn-form-f-' + idx);
+  var label  = document.getElementById('seg-pn-form-dd-label-' + idx);
+  var list   = document.getElementById('seg-pn-form-dd-list-' + idx);
+  var wrap   = document.getElementById('seg-pn-form-dd-' + idx);
+  if (hidden) hidden.value = val;
+  if (label)  label.textContent = val;
+  // Marcar activo
+  if (list) {
+    list.querySelectorAll('.seg-agenda-dd-item').forEach(function(item) {
+      item.classList.toggle('activo', item.textContent.trim() === val);
+    });
+    list.classList.add('seg-hidden');
+  }
+  if (wrap) wrap.classList.remove('abierto');
+}
+
+// Cerrar pickers/dropdowns del form al hacer click fuera
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.seg-pn-form-dp-wrap') && !e.target.closest('.seg-pn-form-dp-btn')) {
+    document.querySelectorAll('[id^="seg-pn-form-dp-"]').forEach(function(dp) {
+      if (dp.classList.contains('seg-datepicker')) dp.classList.add('seg-hidden');
+    });
+  }
+  if (!e.target.closest('.seg-pn-form-dd-wrap')) {
+    document.querySelectorAll('[id^="seg-pn-form-dd-list-"]').forEach(function(el) {
+      el.classList.add('seg-hidden');
+    });
+    document.querySelectorAll('[id^="seg-pn-form-dd-"]').forEach(function(el) {
+      if (el.classList.contains('seg-agenda-dd-wrap')) el.classList.remove('abierto');
+    });
+  }
+});
+
+window.segPnFormDpToggle  = segPnFormDpToggle;
+window.segPnFormDpNavMes  = segPnFormDpNavMes;
+window.segPnFormDpSelec   = segPnFormDpSelec;
+window.segPnFormDdToggle  = segPnFormDdToggle;
+window.segPnFormDdSelec   = segPnFormDdSelec;

@@ -393,9 +393,9 @@
 .seg-hchip-freq strong { color: #9961FF; font-weight: 700; }
 
 .seg-hchip-trabajar {
-  background: #f5f3ff;
-  color: #7c3aed;
-  border: 0.5px solid #ddd6fe;
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 0.5px solid #86efac;
   font-weight: 600;
 }
 
@@ -768,6 +768,26 @@
 
 .seg-hist-card:hover { border-color: #C9D9FF; background: #fafbff; }
 .seg-hist-card.active { border-color: #9961FF; background: #f5f0ff; }
+.seg-hist-card.seg-hist-loading {
+  border-color: #C9D9FF;
+  background: #f5f0ff;
+  opacity: .7;
+  cursor: wait;
+  position: relative;
+}
+.seg-hist-card.seg-hist-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg, transparent 0%, rgba(153,97,255,.08) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: seg-hist-shimmer .9s infinite;
+}
+@keyframes seg-hist-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
 
 .seg-hist-date    { font-size: 10px; font-weight: 700; color: #374151; }
 .seg-hist-preview {
@@ -981,7 +1001,7 @@
   transform: translateY(0);
 }
 
-.seg-toast.success { background: #5b21b6; }
+.seg-toast.success { background: #065f46; }
 .seg-toast.error   { background: #991b1b; }
 
 /* ── Botones comunes (reutiliza de la app) ── */
@@ -2992,10 +3012,6 @@
   margin-top: 8px;
 }
 .seg-enviado-badge i { font-size: 16px; }
-/* Variantes por canal */
-.seg-enviado-canal-whatsapp { background: #f0fdf4; border-color: #bbf7d0; color: #16a34a; }
-.seg-enviado-canal-chat     { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
-.seg-enviado-canal-email    { background: #f5f3ff; border-color: #ddd6fe; color: #7c3aed; }
 
 /* ── Cal-* styles (copiados de conv-calendar.css para pickers) ── */
 .cal-nav { display:flex;align-items:center;gap:4px;padding:5px 12px;background:#EFF6FF;border-radius:10px 10px 0 0;border-bottom:1px solid #C9D9FF; }
@@ -3721,11 +3737,11 @@
 .seg-chip-trabajar {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
-  background: #f5f3ff; color: #a78bfa; border: 0.5px solid #ddd6fe;
+  background: #f0fdf4; color: #81c784; border: 0.5px solid #bbf7d0;
   text-transform: none; letter-spacing: 0; cursor: pointer;
 }
 .seg-chip-trabajar.activo {
-  background: #ede9fe; border-color: #9961FF; color: #7c3aed;
+  background: #dcfce7; border-color: #86efac; color: #16a34a;
 }
 .seg-chip-remove-btn {
   background: none; border: none; cursor: pointer;
@@ -4269,12 +4285,12 @@
 
 /* Resumen selección */
 .seg-agenda-resumen {
-  background: #f5f3ff;
-  border: 1px solid #ddd6fe;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
   border-radius: 8px;
   padding: 8px 12px;
   font-size: 10px;
-  color: #7c3aed;
+  color: #166534;
   margin-top: 4px;
 }
 
@@ -4300,13 +4316,13 @@
 .seg-btn-agendar-sesion {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 12px;
+  gap: 3px;
+  padding: 2px 8px;
   border-radius: 12px;
   border: 1px solid #ddd6fe;
   background: #f5f3ff;
   color: #7c3aed;
-  font-size: 12px;
+  font-size: 9px;
   font-weight: 600;
   cursor: pointer;
   transition: all .12s;
@@ -4568,3 +4584,164 @@
     font-size: 12px;
   }
 }
+/* ══════════════════════════════════════════════════════
+   PLANTILLA NOTAS CLÍNICAS — FORM BUILDER
+══════════════════════════════════════════════════════ */
+.seg-pn-modal-box {
+  width: 95%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.seg-pn-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #7D84C1;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 6px;
+}
+.seg-pn-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #374151;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border .15s;
+}
+.seg-pn-input:focus { border-color: #9961FF; box-shadow: 0 0 0 3px #9961FF12; }
+
+/* Campos en el builder */
+.seg-pn-campos-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 8px;
+  margin-bottom: 10px;
+}
+.seg-pn-campo-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.seg-pn-campo-drag { color: #d1d5db; font-size: 14px; cursor: grab; padding-top: 2px; flex-shrink: 0; }
+.seg-pn-campo-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.seg-pn-campo-tipo-badge {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #9961FF; background: #f5f3ff; border-radius: 4px; padding: 1px 6px; display: inline-block; margin-bottom: 2px;
+}
+.seg-pn-campo-label-input {
+  width: 100%; padding: 5px 8px; border: 1px solid #e5e7eb; border-radius: 7px;
+  font-size: 12px; color: #374151; font-family: inherit; outline: none;
+  box-sizing: border-box; transition: border .15s;
+}
+.seg-pn-campo-label-input:focus { border-color: #9961FF; }
+.seg-pn-campo-label-input::placeholder { color: #9ca3af; }
+.seg-pn-opciones-input {
+  width: 100%; padding: 5px 8px; border: 1px solid #e5e7eb; border-radius: 7px;
+  font-size: 11px; color: #6b7280; font-family: inherit; outline: none;
+  box-sizing: border-box; transition: border .15s;
+}
+.seg-pn-opciones-input:focus { border-color: #9961FF; }
+.seg-pn-campo-del {
+  background: none; border: none; cursor: pointer; color: #d1d5db;
+  font-size: 13px; padding: 2px 4px; flex-shrink: 0; transition: color .12s;
+}
+.seg-pn-campo-del:hover { color: #ef4444; }
+
+/* Botones tipo campo */
+.seg-pn-tipos-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.seg-pn-tipo-btn {
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px;
+  border: 1px solid #ddd6fe; border-radius: 20px; background: #fff; color: #7c3aed;
+  font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer; transition: all .12s;
+}
+.seg-pn-tipo-btn:hover { background: #f5f3ff; border-color: #9961FF; }
+.seg-pn-tipo-btn i { font-size: 11px; }
+
+/* Vista previa */
+.seg-pn-preview-wrap {
+  background: #f8f8ff; border: 1px solid #ede9fe; border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 16px;
+}
+.seg-pn-preview-titulo {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #9961FF; margin-bottom: 10px; display: flex; align-items: center; gap: 5px;
+}
+.seg-pn-preview-body { display: flex; flex-direction: column; gap: 10px; }
+.seg-pn-preview-empty { font-size: 12px; color: #9ca3af; }
+.seg-pn-preview-campo { display: flex; flex-direction: column; gap: 4px; }
+.seg-pn-preview-label { font-size: 11px; font-weight: 600; color: #374151; }
+.seg-pn-preview-input {
+  padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 7px;
+  font-size: 12px; color: #9ca3af; background: #fff; pointer-events: none;
+}
+.seg-pn-preview-textarea {
+  padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 7px;
+  font-size: 12px; color: #9ca3af; background: #fff; min-height: 48px; pointer-events: none;
+}
+.seg-pn-preview-select {
+  padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 7px;
+  font-size: 12px; color: #9ca3af; background: #fff; pointer-events: none;
+}
+
+/* Formulario inline (reemplaza el editor de notas) */
+.seg-pn-form-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb;
+}
+.seg-pn-form-titulo {
+  font-size: 13px; font-weight: 700; color: #374151;
+}
+.seg-pn-form-volver {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid #e5e7eb; border-radius: 20px;
+  padding: 4px 12px; font-size: 11px; color: #6b7280; font-family: inherit;
+  cursor: pointer; transition: all .12s;
+}
+.seg-pn-form-volver:hover { border-color: #9961FF; color: #9961FF; }
+.seg-pn-form-campos { display: flex; flex-direction: column; gap: 12px; }
+
+/* Campo individual del formulario inline */
+.seg-pn-form-campo { display: flex; flex-direction: column; gap: 5px; }
+.seg-pn-form-campo-label {
+  font-size: 11px; font-weight: 700; color: #7D84C1;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.seg-pn-form-campo-editor {
+  min-height: 38px; padding: 7px 10px;
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  font-size: 13px; color: #374151; font-family: inherit;
+  outline: none; transition: border .15s; line-height: 1.5;
+  background: #fff;
+}
+.seg-pn-form-campo-editor:focus { border-color: #9961FF; box-shadow: 0 0 0 3px #9961FF12; }
+.seg-pn-form-campo-editor[data-tipo="texto-largo"] { min-height: 72px; }
+.seg-pn-form-campo-editor:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af; pointer-events: none;
+}
+.seg-pn-form-campo-input {
+  padding: 7px 10px; border: 1px solid #e5e7eb; border-radius: 8px;
+  font-size: 13px; color: #374151; font-family: inherit; outline: none;
+  width: 100%; box-sizing: border-box; transition: border .15s;
+}
+.seg-pn-form-campo-input:focus { border-color: #9961FF; box-shadow: 0 0 0 3px #9961FF12; }
+
+/* Date picker y dropdown custom dentro del form builder de plantillas */
+.seg-pn-form-dp-wrap { display: inline-block; position: relative; }
+.seg-pn-form-dp-btn  { border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 12px; background: #fff; }
+.seg-pn-form-dp-btn:hover { border-color: #C9D9FF; }
+.seg-pn-form-dd-wrap { width: 100%; }
+.seg-pn-form-dd-wrap .seg-agenda-dd-btn { width: 100%; box-sizing: border-box; }
