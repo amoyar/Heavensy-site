@@ -608,6 +608,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-height: 0;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #e0e7ff transparent;
@@ -2794,25 +2795,37 @@
 .seg-dropzone {
   border: 1.5px dashed #C9D9FF;
   border-radius: 10px;
-  padding: 16px;
+  padding: 10px 12px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   gap: 6px;
   font-size: 12px;
   color: #9ca3af;
-  cursor: pointer;
+  cursor: default;
   transition: all .15s;
   background: #fafbff;
+  min-height: 72px;
 }
-.seg-dropzone:hover,
 .seg-dropzone-over {
   border-color: #9961FF;
   background: #f5f0ff;
   color: #9961FF;
 }
-.seg-dropzone i { font-size: 18px; color: #C9D9FF; }
-.seg-dropzone-over i { color: #9961FF; }
+.seg-dropzone-over .seg-dropzone-trigger i { color: #9961FF; }
+
+/* Zona clickeable con el texto "arrastra / selecciona" */
+.seg-dropzone-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background .12s;
+}
+.seg-dropzone-trigger:hover { background: #eff6ff; }
+.seg-dropzone-trigger i { font-size: 16px; color: #C9D9FF; flex-shrink: 0; }
 
 .seg-dropzone-btn {
   color: #9961FF;
@@ -2821,53 +2834,111 @@
   text-decoration: underline;
 }
 
+/* Lista de archivos dentro del dropzone */
 .seg-adjuntos-lista {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.seg-adjunto-item {
-  display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
-  padding: 6px 10px;
-  background: #fff;
-  border: 0.5px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 12px;
+  width: 100%;
+  padding: 2px 0 6px;
 }
+.seg-adjuntos-lista:empty { display: none; }
 
-.seg-adjunto-subiendo {
-  opacity: .7;
-}
-
-.seg-adjunto-icon {
-  font-size: 14px;
-  color: #7D84C1;
+/* Tarjeta de adjunto */
+.seg-adj-card {
+  position: relative;
+  width: 76px;
   flex-shrink: 0;
 }
-.seg-adjunto-icon.fa-file-pdf   { color: #ef4444; }
-.seg-adjunto-icon.fa-file-word  { color: #2563eb; }
-.seg-adjunto-icon.fa-file-excel { color: #16a34a; }
-.seg-adjunto-icon.fa-image      { color: #f59e0b; }
-.seg-adjunto-icon.fa-video      { color: #8b5cf6; }
 
-.seg-adjunto-nombre {
-  flex: 1;
+.seg-adj-card-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.seg-adj-card-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color .15s, box-shadow .15s;
+}
+.seg-adj-card-link:hover .seg-adj-card-preview {
+  border-color: #9961FF;
+  box-shadow: 0 0 0 3px #9961FF12;
+}
+
+/* Miniatura para imágenes */
+.seg-adj-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 7px;
+}
+
+/* Icono para documentos */
+.seg-adj-card-icon {
+  font-size: 28px;
+  color: #7D84C1;
+}
+.seg-adj-card-icon.fa-file-pdf   { color: #ef4444; }
+.seg-adj-card-icon.fa-file-word  { color: #2563eb; }
+.seg-adj-card-icon.fa-file-excel { color: #16a34a; }
+.seg-adj-card-icon.fa-image      { color: #f59e0b; }
+.seg-adj-card-icon.fa-video      { color: #8b5cf6; }
+.seg-adj-card-icon.fa-music      { color: #ec4899; }
+
+/* Nombre del archivo */
+.seg-adj-card-nombre {
+  font-size: 10px;
+  color: #6b7280;
+  width: 72px;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #374151;
-  text-decoration: none;
+  display: block;
 }
-.seg-adjunto-nombre:hover { color: #9961FF; text-decoration: underline; }
 
-.seg-adjunto-tam {
-  font-size: 10px;
-  color: #9ca3af;
-  flex-shrink: 0;
+/* Botón eliminar en esquina */
+.seg-adj-card-remove {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #374151;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity .15s, background .15s;
+  z-index: 2;
 }
+.seg-adj-card:hover .seg-adj-card-remove { opacity: 1; }
+.seg-adj-card-remove:hover { background: #ef4444; }
+
+/* Tarjeta en estado subiendo */
+.seg-adj-card--subiendo .seg-adj-card-preview {
+  border-style: dashed;
+  background: #f5f3ff;
+}
+
 
 .seg-adjunto-remove {
   background: none;
@@ -3149,7 +3220,7 @@
 .seg-side-panel {
   border: 0.5px solid #e5e7eb;
   border-radius: 10px;
-  overflow: hidden;
+  overflow: visible;
   margin-bottom: 8px;
 }
 
@@ -3162,6 +3233,7 @@
   cursor: pointer;
   user-select: none;
   transition: background .12s;
+  border-radius: 10px 10px 0 0;
 }
 .seg-side-panel-header:hover { background: #f0f4ff; }
 
@@ -3181,17 +3253,18 @@
 
 /* Transición suave con max-height */
 .seg-side-panel-body {
-  max-height: 600px;
-  overflow: hidden;
+  max-height: 2000px;
+  overflow: visible;
   transition: max-height 0.28s ease, padding 0.28s ease, opacity 0.2s ease;
   padding: 8px 10px;
   opacity: 1;
 }
 .seg-side-panel-body.collapsed {
-  max-height: 0;
+  max-height: 0 !important;
   padding-top: 0;
   padding-bottom: 0;
   opacity: 0;
+  overflow: hidden;
 }
 
 /* Scroll interno de cada panel — limita altura y permite scroll */
@@ -3203,8 +3276,9 @@
 .seg-side-panel-scroll::-webkit-scrollbar { width: 3px; }
 .seg-side-panel-scroll::-webkit-scrollbar-thumb { background: #e0e7ff; border-radius: 99px; }
 
-/* Historial — caben ~4 tarjetas */
-#seg-body-historial .seg-side-panel-scroll { max-height: calc(100vh - 200px); }
+/* Historial — sin límite de altura, scroll lo maneja seg-col-side */
+#seg-body-historial { padding: 6px 8px; }
+#seg-body-historial .seg-side-panel-scroll { max-height: none; overflow-y: visible; }
 
 /* Etiquetas activas — caben ~4 chips (2 filas) */
 #seg-body-etiquetas .seg-side-panel-scroll { max-height: 64px; }
@@ -3251,7 +3325,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #d1d5db;
+  color: transparent; /* oculto por defecto */
   font-size: 11px;
   padding: 2px 4px;
   border-radius: 4px;
@@ -3259,8 +3333,11 @@
   line-height: 1;
   flex-shrink: 0;
 }
+.seg-hist-card:hover .seg-hist-delete-btn {
+  color: #d1d5db; /* visible al hover de la card */
+}
 .seg-hist-delete-btn:hover {
-  color: #ef4444;
+  color: #ef4444 !important;
   background: #fef2f2;
 }
 
@@ -3324,7 +3401,7 @@
 .seg-side-panel {
   border: 0.5px solid #e5e7eb;
   border-radius: 10px;
-  overflow: hidden;
+  overflow: visible;
   margin-bottom: 8px;
 }
 
@@ -3337,6 +3414,7 @@
   cursor: pointer;
   user-select: none;
   transition: background .12s;
+  border-radius: 10px 10px 0 0;
 }
 .seg-side-panel-header:hover { background: #f0f4ff; }
 
@@ -3555,12 +3633,13 @@
 }
 
 .seg-plantillas-titulo-inline {
-  font-size: 9px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   color: #9ca3af;
   white-space: nowrap;
   text-transform: none;
   letter-spacing: 0;
+  flex-shrink: 0;
 }
 
 .seg-plantillas-inline .seg-plantillas-chips,
@@ -3578,6 +3657,31 @@
   white-space: nowrap;
 }
 
+/* Grupo [Plantillas: chips +] alineado a la derecha */
+.seg-plantillas-grupo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Chips se alinean a la derecha creciendo hacia la izq, separados del + */
+.seg-field-label .seg-plantillas-chips,
+.seg-field-label .seg-etiquetas-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.seg-field-label .seg-plantillas-titulo-inline {
+  flex-shrink: 0;
+}
+
+/* Separar el botón + de los chips */
 .seg-btn-nueva-plantilla-inline {
   display: inline-flex;
   align-items: center;
@@ -3592,7 +3696,7 @@
   font-size: 8px;
   transition: all .12s;
   flex-shrink: 0;
-  margin-left: auto;
+  margin-left: 16px;
   text-transform: none;
   letter-spacing: 0;
 }
@@ -3607,13 +3711,17 @@
 /* ── Reset uppercase heredado del seg-field-label ── */
 .seg-field-label .seg-plantilla-chip,
 .seg-field-label .seg-etiqueta-chip,
-.seg-field-label .seg-plantillas-titulo-inline,
 .seg-field-label .seg-plantillas-vacio,
 .seg-field-label .seg-btn-nueva-plantilla-inline,
 .seg-field-label .seg-chip-remove {
   text-transform: none !important;
   letter-spacing: 0 !important;
   font-size: 9px !important;
+}
+.seg-field-label .seg-plantillas-titulo-inline {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 11px !important;
 }
 
 /* ── Móvil: tab expandir arriba ── */
@@ -3658,9 +3766,13 @@
   font-size: 12px;
 }
 /* Sugerencia inline — texto gris tenue */
-.seg-notas-editor .seg-inline-sug {
+.seg-notas-editor .seg-inline-sug,
+.seg-pn-form-campo-editor .seg-inline-sug,
+.seg-pn-fijo-editor .seg-inline-sug {
   color: #c4b5b5;
   font-style: normal;
+  pointer-events: none;
+  user-select: none;
 }
 /* Prefijo / y /d en gris muy suave */
 .seg-notas-editor .seg-slash-prefix {
@@ -4316,13 +4428,13 @@
 .seg-btn-agendar-sesion {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 2px 8px;
+  gap: 4px;
+  padding: 4px 10px;
   border-radius: 12px;
   border: 1px solid #ddd6fe;
   background: #f5f3ff;
   color: #7c3aed;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all .12s;
@@ -4711,8 +4823,11 @@
   cursor: pointer; transition: all .12s;
 }
 .seg-pn-form-volver:hover { border-color: #9961FF; color: #9961FF; }
-.seg-pn-form-campos { display: flex; flex-direction: column; gap: 12px; }
+.seg-pn-form-campos-obsoleto-eliminado {
+  /* bloque eliminado — ver definición correcta más abajo */
+}
 
+/* Campo ancho completo (texto-largo, campos fijos) */
 /* Campo individual del formulario inline */
 .seg-pn-form-campo { display: flex; flex-direction: column; gap: 5px; }
 .seg-pn-form-campo-label {
@@ -4745,3 +4860,252 @@
 .seg-pn-form-dp-btn:hover { border-color: #C9D9FF; }
 .seg-pn-form-dd-wrap { width: 100%; }
 .seg-pn-form-dd-wrap .seg-agenda-dd-btn { width: 100%; box-sizing: border-box; }
+/* ── Footer del formulario de plantilla ── */
+.seg-pn-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Botón historial en footer */
+.seg-pn-form-auditoria-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid #e5e7eb; border-radius: 20px;
+  padding: 4px 12px; font-size: 11px; color: #6b7280; font-family: inherit;
+  cursor: pointer; transition: all .12s;
+}
+.seg-pn-form-auditoria-btn:hover { border-color: #9961FF; color: #9961FF; background: #f5f3ff; }
+
+/* ── Campo fijo ── */
+.seg-pn-form-campo--fijo { background: #fafbff; border-radius: 8px; padding: 8px 10px; }
+.seg-pn-fijo-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 700; color: #9961FF;
+  background: #f5f3ff; border: 1px solid #ddd6fe;
+  border-radius: 10px; padding: 1px 6px;
+  margin-left: 6px; text-transform: none; letter-spacing: 0;
+  vertical-align: middle;
+}
+.seg-pn-fijo-wrap {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; background: #fff;
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  min-height: 36px;
+}
+.seg-pn-fijo-valor {
+  flex: 1; font-size: 13px; color: #374151;
+}
+.seg-pn-fijo-edit-btn {
+  background: none; border: none; cursor: pointer;
+  color: #9ca3af; font-size: 11px; padding: 3px 6px;
+  border-radius: 5px; transition: all .12s; flex-shrink: 0;
+}
+.seg-pn-fijo-edit-btn:hover { color: #9961FF; background: #f5f3ff; }
+
+/* ── Toggle campo fijo en builder ── */
+.seg-pn-campo-fijo-wrap {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; color: #7D84C1; cursor: pointer;
+  padding: 2px 6px; border-radius: 10px;
+  border: 1px solid #e5e7eb; margin-left: 4px;
+  transition: all .12s; white-space: nowrap;
+}
+.seg-pn-campo-fijo-wrap:has(input:checked) {
+  background: #f5f3ff; border-color: #ddd6fe; color: #9961FF;
+}
+.seg-pn-campo-fijo-chk { display: none; }
+.seg-pn-campo-fijo-icon { font-size: 9px; }
+
+/* ── Modal Auditoría ── */
+.seg-auditoria-modal-wrap {
+  width: 800px; max-width: 95vw;
+}
+.seg-auditoria-loading,
+.seg-auditoria-empty {
+  text-align: center; color: #9ca3af;
+  font-size: 13px; padding: 24px;
+}
+.seg-auditoria-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 12px;
+}
+.seg-auditoria-table th {
+  text-align: left; padding: 8px 12px;
+  background: #f9fafb; border-bottom: 1px solid #e5e7eb;
+  font-size: 10px; font-weight: 700; color: #7D84C1;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.seg-auditoria-table td {
+  padding: 8px 12px; border-bottom: 0.5px solid #f3f4f6;
+  color: #374151; vertical-align: top;
+}
+.seg-auditoria-table tr:hover td { background: #fafbff; }
+.seg-auditoria-anterior { color: #ef4444; text-decoration: line-through; }
+.seg-auditoria-nuevo    { color: #16a34a; font-weight: 600; }
+
+/* ── Dropdown dentro del formulario de plantilla ── */
+.seg-pn-form-dd-list {
+  z-index: 600 !important; /* encima de todo dentro del formulario */
+  left: 0; right: auto;
+  min-width: 100%;
+}
+
+/* ── Date picker: título clickeable para navegar a meses/años ── */
+.seg-dp-titulo-link {
+  cursor: pointer;
+  border-bottom: 1px dashed #C9D9FF;
+  padding-bottom: 1px;
+  transition: color .12s;
+}
+.seg-dp-titulo-link:hover { color: #9961FF; }
+
+/* Grid de meses/años (4x3 y 4x3) */
+.seg-dp-grid-meses {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 6px 8px 8px;
+}
+.seg-dp-mes-item {
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  border: 1.5px solid transparent;
+}
+.seg-dp-mes-item:hover { background: #f5f3ff; color: #9961FF; }
+.seg-dp-mes-item.activo {
+  background: #9961FF;
+  color: #fff;
+  border-color: #9961FF;
+}
+
+/* ── Layout drag & drop en el builder ── */
+.seg-pn-layout-fila {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 4px;
+  border-radius: 8px;
+  border: 1.5px dashed transparent;
+  transition: border-color .15s, background .15s;
+  margin-bottom: 4px;
+}
+.seg-pn-layout-fila--multi .seg-pn-campo-item { flex: 1; }
+.seg-pn-layout-fila.seg-pn-drag-over {
+  border-color: #9961FF;
+  background: #f5f3ff;
+}
+
+/* Zona "+ soltar aquí" al lado de un campo solo */
+.seg-pn-drop-aqui {
+  width: 36px;
+  min-height: 48px;
+  border: 1.5px dashed #C9D9FF;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #C9D9FF;
+  font-size: 11px;
+  cursor: copy;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.seg-pn-drop-aqui.hover {
+  border-color: #9961FF;
+  color: #9961FF;
+  background: #f5f3ff;
+}
+
+/* Campo siendo arrastrado */
+.seg-pn-dragging { opacity: .4; }
+
+/* ── Layout del formulario activo (usando el layout guardado) ── */
+.seg-pn-form-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.seg-pn-form-fila {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.seg-pn-form-fila--multi {
+  grid-template-columns: 1fr 1fr;
+}
+.seg-pn-form-campo--full { grid-column: 1 / -1; }
+
+/* ── Edición inline de campos fijos ── */
+.seg-pn-fijo-wrap.editando {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+.seg-pn-fijo-input {
+  flex: 1;
+  border: 1.5px solid #9961FF;
+  border-radius: 7px;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #374151;
+  outline: none;
+  background: #fff;
+  min-width: 0;
+}
+.seg-pn-fijo-select {
+  flex: 1;
+  border: 1.5px solid #9961FF;
+  border-radius: 7px;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #374151;
+  outline: none;
+  background: #fff;
+  cursor: pointer;
+  min-width: 0;
+}
+.seg-pn-fijo-ok-btn,
+.seg-pn-fijo-cancel-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .12s;
+}
+.seg-pn-fijo-ok-btn {
+  background: #9961FF;
+  color: #fff;
+}
+.seg-pn-fijo-ok-btn:hover { background: #7c3aed; }
+.seg-pn-fijo-cancel-btn {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+.seg-pn-fijo-cancel-btn:hover { background: #e5e7eb; }
+
+/* Editor contenteditable en campo fijo editando */
+.seg-pn-fijo-editor {
+  flex: 1;
+  min-width: 0;
+  cursor: text;
+}
+.seg-pn-fijo-wrap.editando {
+  align-items: flex-start;
+}

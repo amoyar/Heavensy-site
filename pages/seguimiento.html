@@ -118,7 +118,7 @@
       <div class="seg-tl-wrap">
         <div class="seg-tl-bar" onclick="segToggleTL()">
           <i class="fas fa-stream seg-tl-bar-icon"></i>
-          <span class="seg-tl-bar-title" id="seg-tl-titulo">Historial</span>
+          <span class="seg-tl-bar-title" id="seg-tl-titulo">Línea de tiempo</span>
           <i class="fas fa-chevron-down seg-tl-chevron" id="seg-tl-chev"></i>
         </div>
         <div class="seg-tl-content" id="seg-tl-content">
@@ -220,14 +220,16 @@
                 <span id="lbl-notas-internas">Notas internas</span>
                 <span class="seg-notas-solo-ti">Solo para ti</span>
                 <div class="seg-etiquetas-chips" id="seg-etiquetas-chips"></div>
-                <span class="seg-plantillas-titulo-inline">Plantillas:</span>
-                <div class="seg-plantillas-chips" id="seg-chips-notas">
-                  <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                <div class="seg-plantillas-grupo">
+                  <span class="seg-plantillas-titulo-inline">Plantillas:</span>
+                  <div class="seg-plantillas-chips" id="seg-chips-notas">
+                    <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                  </div>
+                  <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantillaNotas()"
+                    data-seg-tooltip="Nueva plantilla de notas clínicas">
+                    <i class="fas fa-plus"></i>
+                  </button>
                 </div>
-                <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantillaNotas()"
-                  data-seg-tooltip="Nueva plantilla de notas clínicas">
-                  <i class="fas fa-plus"></i>
-                </button>
               </div>
 
               <!-- Editor normal (se oculta cuando hay formulario activo) -->
@@ -238,7 +240,8 @@
                     id="seg-campo-notas"
                     contenteditable="true"
                     spellcheck="true"
-                    data-placeholder="Escribe /palabra para síntoma, /dpalabra para diagnóstico, &quot;texto&quot; para hipótesis. Confirma con Espacio."
+                    data-placeholder="Escribe /síntoma, //diagnóstico CIE-10, &quot;hipótesis&quot;. Confirma con Espacio."
+                    id="seg-campo-notas-placeholder-attr"
                   ></div>
                 </div>
               </div>
@@ -247,11 +250,16 @@
               <div id="seg-notas-formulario" class="seg-hidden">
                 <div class="seg-pn-form-header">
                   <span id="seg-pn-form-nombre" class="seg-pn-form-titulo"></span>
-                  <button class="seg-pn-form-volver" onclick="segPnFormVolver()">
-                    <i class="fas fa-arrow-left"></i> Volver a notas
-                  </button>
                 </div>
                 <div id="seg-pn-form-campos" class="seg-pn-form-campos"></div>
+                <div class="seg-pn-form-footer">
+                  <button class="seg-pn-form-auditoria-btn" onclick="segAbrirAuditoriaCampos(_segPn.formActivo)" title="Historial de cambios">
+                    <i class="fas fa-history"></i> Historial de cambios
+                  </button>
+                  <button class="seg-pn-form-volver" onclick="segPnFormVolver()">
+                    <i class="fas fa-times"></i> Cerrar plantilla
+                  </button>
+                </div>
               </div>
 
               <!-- 4 secciones de chips bajo el editor -->
@@ -295,17 +303,20 @@
                 <i class="fas fa-pen-alt seg-icon-muted"></i>
                 <span id="lbl-contenido">Lo que se trabajó</span>
                 <span class="seg-field-badge seg-badge-ia">Base para IA</span>
-                <span class="seg-plantillas-titulo-inline">Plantillas:</span>
-                <div class="seg-plantillas-chips" id="seg-chips-principal">
-                  <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                <div class="seg-plantillas-grupo">
+                  <span class="seg-plantillas-titulo-inline">Plantillas:</span>
+                  <div class="seg-plantillas-chips" id="seg-chips-principal">
+                    <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                  </div>
+                  <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantilla('principal')"
+                    data-seg-tooltip="Nueva plantilla">
+                    <i class="fas fa-plus"></i>
+                  </button>
                 </div>
-                <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantilla('principal')"
-                  data-seg-tooltip="Nueva plantilla">
-                  <i class="fas fa-plus"></i>
-                </button>
               </div>
               <textarea class="seg-textarea" id="seg-campo-contenido"
                 placeholder="Describe el contenido de esta sesión..."
+                id="seg-campo-contenido"
                 oninput="segMarcarCambios()"></textarea>
             </div>
 
@@ -315,14 +326,16 @@
                 <i class="fas fa-tasks seg-icon-muted"></i>
                 <span id="lbl-tareas">Tareas para el cliente</span>
                 <span class="seg-field-badge seg-badge-enviar">Se enviará</span>
-                <span class="seg-plantillas-titulo-inline">Plantillas:</span>
-                <div class="seg-plantillas-chips" id="seg-chips-tareas">
-                  <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                <div class="seg-plantillas-grupo">
+                  <span class="seg-plantillas-titulo-inline">Plantillas:</span>
+                  <div class="seg-plantillas-chips" id="seg-chips-tareas">
+                    <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                  </div>
+                  <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantilla('tareas')"
+                    data-seg-tooltip="Nueva plantilla">
+                    <i class="fas fa-plus"></i>
+                  </button>
                 </div>
-                <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantilla('tareas')"
-                  data-seg-tooltip="Nueva plantilla">
-                  <i class="fas fa-plus"></i>
-                </button>
               </div>
               <textarea class="seg-textarea" id="seg-campo-tareas"
                 placeholder="Tareas o indicaciones..."
@@ -340,14 +353,16 @@
                   <i class="fas fa-calendar-plus"></i> Agendar
                 </button>
                 <span id="seg-proxima-sesion-display" class="seg-proxima-display"></span>
-                <span class="seg-plantillas-titulo-inline">Plantillas:</span>
-                <div class="seg-plantillas-chips" id="seg-chips-proxima">
-                  <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                <div class="seg-plantillas-grupo">
+                  <span class="seg-plantillas-titulo-inline">Plantillas:</span>
+                  <div class="seg-plantillas-chips" id="seg-chips-proxima">
+                    <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                  </div>
+                  <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantilla('proxima')"
+                    data-seg-tooltip="Nueva plantilla">
+                    <i class="fas fa-plus"></i>
+                  </button>
                 </div>
-                <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantilla('proxima')"
-                  data-seg-tooltip="Nueva plantilla">
-                  <i class="fas fa-plus"></i>
-                </button>
               </div>
               <textarea class="seg-textarea seg-textarea-sm" id="seg-campo-proxima"
                 placeholder="Plan para la próxima vez..."
@@ -364,16 +379,20 @@
                 ondragover="event.preventDefault();this.classList.add('seg-dropzone-over')"
                 ondragleave="this.classList.remove('seg-dropzone-over')"
                 ondrop="segDropArchivo(event)">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <span>Arrastra archivos aquí o</span>
-                <label class="seg-dropzone-btn">
-                  selecciona
-                  <input type="file" id="seg-file-input" multiple
-                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
-                    onchange="segSeleccionarArchivos(this.files)" style="display:none" />
-                </label>
+                <!-- Items adjuntos (dentro del dropzone) -->
+                <div class="seg-adjuntos-lista" id="seg-adjuntos-lista"></div>
+                <!-- Zona de carga (se reduce cuando hay archivos) -->
+                <div class="seg-dropzone-trigger" id="seg-dropzone-trigger">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <span>Arrastra archivos aquí o</span>
+                  <label class="seg-dropzone-btn">
+                    selecciona
+                    <input type="file" id="seg-file-input" multiple
+                      accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
+                      onchange="segSeleccionarArchivos(this.files)" style="display:none" />
+                  </label>
+                </div>
               </div>
-              <div class="seg-adjuntos-lista" id="seg-adjuntos-lista"></div>
             </div>
 
             <!-- Botón Generar resumen IA — solo visible en Tab 1 -->
@@ -755,11 +774,7 @@
                   <i class="fas fa-chevron-down seg-agenda-dd-chevron"></i>
                 </button>
                 <div class="seg-agenda-dd-list seg-hidden" id="seg-agenda-dd-list">
-                  <div class="seg-agenda-dd-item" onclick="segAgendaDdSelect(0,'Sin aviso')">Sin aviso</div>
-                  <div class="seg-agenda-dd-item activo" onclick="segAgendaDdSelect(48,'48h antes')">48h antes</div>
-                  <div class="seg-agenda-dd-item" onclick="segAgendaDdSelect(72,'72h antes')">72h antes</div>
-                  <div class="seg-agenda-dd-item" onclick="segAgendaDdSelect(96,'4 días antes')">4 días antes</div>
-                  <div class="seg-agenda-dd-item" onclick="segAgendaDdSelect(168,'1 semana antes')">1 semana antes</div>
+                  <!-- Renderizado dinámicamente por segRenderizarDropdownCobro() -->
                 </div>
               </div>
               <!-- Hidden value for JS -->
@@ -770,6 +785,23 @@
             </div>
             <input type="text" class="seg-agenda-input" id="seg-agenda-link-pago"
               placeholder="https://...">
+            <div style="margin-top:10px">
+              <div class="seg-agenda-section-label">Canal de confirmación</div>
+              <div class="seg-canal-chips" id="seg-agenda-sesion-canal-chips">
+                <button class="seg-canal-chip active" data-canal="whatsapp"
+                  onclick="segAgendaSesionSetCanal('whatsapp', this)">
+                  <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+                <button class="seg-canal-chip" data-canal="email"
+                  onclick="segAgendaSesionSetCanal('email', this)">
+                  <i class="fas fa-envelope"></i> Email
+                </button>
+                <button class="seg-canal-chip" data-canal="ninguno"
+                  onclick="segAgendaSesionSetCanal('ninguno', this)">
+                  <i class="fas fa-ban"></i> Sin notificación
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -841,7 +873,7 @@
       <button class="seg-modal-btn seg-modal-btn-ghost" onclick="segCerrarModalAgenda()">Cancelar</button>
       <button class="seg-modal-btn seg-modal-btn-primary" id="seg-agenda-confirmar-btn"
         onclick="segConfirmarAgenda()" disabled>
-        <i class="fas fa-check"></i> Confirmar
+        <i class="fas fa-calendar-check"></i> Agendar
       </button>
     </div>
 
@@ -869,4 +901,17 @@
       autocomplete="off" autocorrect="off" spellcheck="false">
   </div>
   <div id="seg-diag-sheet-list" class="seg-diag-sheet-list"></div>
+</div>
+<!-- ═══ Modal Auditoría Campos Fijos ═══ -->
+<div class="seg-modal-overlay seg-hidden" id="seg-auditoria-modal" onclick="if(event.target===this)segCerrarAuditoriaCampos()">
+  <div class="seg-modal seg-auditoria-modal-wrap">
+    <div class="seg-modal-header">
+      <span class="seg-modal-title" id="seg-auditoria-titulo">Historial de cambios</span>
+      <button class="seg-modal-btn-close" onclick="segCerrarAuditoriaCampos()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="seg-modal-body" id="seg-auditoria-lista" style="padding:16px;overflow-y:auto;max-height:60vh;">
+    </div>
+  </div>
 </div>
