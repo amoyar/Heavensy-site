@@ -1,0 +1,316 @@
+/* ═══════════════════════════════════════════════════════
+   SEGUIMIENTO — seg-notas.css
+   Notas privadas, side panel, plantillas inline, tooltips, secciones
+═══════════════════════════════════════════════════════ */
+
+.seg-adj-card--subiendo .seg-adj-card-preview {
+  border-style: dashed;
+  background: #f5f3ff;
+}
+
+
+.seg-adjunto-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 10px;
+  padding: 2px 4px;
+  flex-shrink: 0;
+}
+.seg-adjunto-remove:hover { color: #ef4444; }
+
+/* ── Tab 2 — Canal + Etiquetas IA + Enviar ── */
+.seg-canal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.seg-canal-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.seg-canal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #fff;
+  cursor: pointer;
+  transition: all .15s;
+}
+.seg-canal-chip:hover { border-color: #9961FF; color: #9961FF; }
+.seg-canal-chip.active {
+  border-color: #9961FF;
+  background: #f5f0ff;
+  color: #9961FF;
+}
+.seg-canal-chip .fab,
+.seg-canal-chip .fas { font-size: 13px; }
+.seg-canal-chip.active .fab.fa-whatsapp { color: #25D366; }
+
+.seg-btn-volver-notas {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: #9ca3af;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all .15s;
+}
+.seg-btn-volver-notas:hover { color: #9961FF; background: #f5f0ff; }
+
+.seg-etiquetas-ia {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: #fdf4ff;
+  border: 0.5px solid #e9d5ff;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+.seg-etiquetas-ia-titulo {
+  font-size: 10px;
+  font-weight: 700;
+  color: #9333ea;
+  white-space: nowrap;
+  padding-top: 3px;
+}
+
+.seg-etiqueta-ia-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: #fff;
+  border: 1px solid #d8b4fe;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9333ea;
+  cursor: pointer;
+  transition: all .15s;
+}
+.seg-etiqueta-ia-chip:hover { background: #f5f0ff; }
+.seg-etiqueta-ia-chip.aceptada {
+  background: #f5f0ff;
+  border-color: #9961FF;
+  color: #9961FF;
+  cursor: default;
+}
+
+.seg-btn-enviar:hover:not(:disabled) {
+  background: #E1DEFF;
+  border-color: #9961FF;
+  color: #9961FF;
+}
+.seg-btn-enviar:disabled { opacity: .6; cursor: not-allowed; }
+.seg-btn-enviar i { font-size: 11px; color: #9961FF; }
+
+.seg-enviado-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f0fdf4;
+  border: 0.5px solid #bbf7d0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #16a34a;
+  margin-top: 8px;
+}
+.seg-enviado-badge i { font-size: 16px; }
+
+/* ── Cal-* styles (copiados de conv-calendar.css para pickers) ── */
+.cal-nav { display:flex;align-items:center;gap:4px;padding:5px 12px;background:#EFF6FF;border-radius:10px 10px 0 0;border-bottom:1px solid #C9D9FF; }
+.cal-nav-title { font-size:13px;font-weight:700;color:#7D84C1;flex:1;text-align:center; }
+.cal-nav-btn { background:none;border:none;cursor:pointer;color:#9961FF;padding:2px 5px;border-radius:4px;font-size:11px;transition:background .15s; }
+.cal-nav-btn:hover { background:#E1DEFF; }
+.cal-grid { display:grid;grid-template-columns:repeat(7,1fr);padding:4px 4px 2px; }
+.cal-days-grid { padding:0 4px 4px;gap:2px; }
+.cal-day-header { text-align:center;font-size:10px;font-weight:600;color:#9ca3af;padding:2px 0; }
+.cal-day { position:relative;text-align:center;padding:2px 1px;border-radius:5px;border:1.5px solid transparent;transition:all .12s;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer; }
+.cal-day:hover { background:#f5f3ff;border-color:#c4b5fd; }
+.cal-day--today { border-color:#9961FF; }
+.cal-day--today .cal-day-num { color:#9961FF;font-weight:700; }
+.cal-day--selected { background:#f5f3ff;border-color:#9961FF; }
+.cal-day--selected .cal-day-num { color:#9961FF;font-weight:700; }
+.cal-day-num { font-size:11px;line-height:1.2;color:#6b7280; }
+
+/* ── Date/Time picker wrappers ── */
+.seg-picker-wrap {
+  position: relative;
+}
+
+.seg-picker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 5px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: background .12s;
+  font-family: inherit;
+}
+.seg-picker-btn:hover { background: #f3f4f6; }
+
+.seg-datepicker {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 300;
+  background: #fff;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  width: 220px;
+  overflow: hidden;
+}
+
+.seg-timepicker {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 300;
+  background: #fff;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  padding: 8px 4px;
+  width: 90px;
+}
+
+/* Header igual al calendario */
+.seg-tp-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151 !important;
+  text-align: center;
+  margin-bottom: 6px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.seg-tp-cols {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.seg-tp-col-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Columna con scroll invisible */
+.seg-tp-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 160px;
+  overflow-y: scroll;
+  width: 100%;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.seg-tp-col::-webkit-scrollbar { display: none; }
+
+/* Celdas idénticas a seg-cal-day */
+.seg-tp-item {
+  font-size: 11px;
+  font-weight: normal;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #374151;
+  transition: all .15s;
+  border: 1px solid transparent;
+}
+
+#seg-hora-display {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9961FF;
+}
+.seg-tp-item:hover { background: #EFF6FF; color: #9961FF; }
+.seg-tp-item.active {
+  background: #f5f3ff;
+  color: #9961FF;
+  border-color: #9961FF;
+  font-weight: 700;
+}
+
+/* Eliminar referencias antiguas */
+.seg-tp-grid { display: none; }
+.seg-timepicker-col { display: none; }
+
+/* ── Paneles colapsables col-side — transición suave ── */
+
+.seg-side-panel-header:hover { background: #f0f4ff; }
+
+
+.seg-side-panel-chev {
+  font-size: 9px;
+  color: #9ca3af;
+  transition: transform .25s ease;
+}
+
+/* Transición suave con max-height */
+.seg-side-panel-body {
+  max-height: 2000px;
+  overflow: visible;
+  transition: max-height 0.28s ease, padding 0.28s ease, opacity 0.2s ease;
+  padding: 8px 10px;
+  opacity: 1;
+}
+.seg-side-panel-body.collapsed {
+  max-height: 0 !important;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+/* Scroll interno de cada panel — limita altura y permite scroll */
+.seg-side-panel-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #e0e7ff transparent;
+}
+.seg-side-panel-scroll::-webkit-scrollbar { width: 3px; }
+.seg-side-panel-scroll::-webkit-scrollbar-thumb { background: #e0e7ff; border-radius: 99px; }
+
+/* Historial — sin límite de altura, scroll lo maneja seg-col-side */
+#seg-body-historial { padding: 6px 8px; }
+#seg-body-historial .seg-side-panel-scroll { max-height: none; overflow-y: visible; }
+
+/* Etiquetas activas — caben ~4 chips (2 filas) */
+#seg-body-etiquetas .seg-side-panel-scroll { max-height: 64px; }
+
+/* Plantillas — altura libre */

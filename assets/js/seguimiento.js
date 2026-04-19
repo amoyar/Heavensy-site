@@ -12,6 +12,7 @@ var SEG = {
   companyNombre:        null,
   clienteId:            null,
   registroId:           null,
+  template:             null,
   labels:               {},
   contexto:             null,
   hayEntidades:         [],
@@ -182,6 +183,9 @@ function segSetCompany(companyId, nombre) {
   SEG.contexto       = null;
   SEG._etiquetaFiltro = [];
 
+  // Leer el template/rubro de la empresa desde la config global
+  SEG.template = (window._companyConfig && window._companyConfig.template) || null;
+
   var nameEl = document.getElementById('seg-company-name');
   if (nameEl) nameEl.textContent = nombre || companyId;
 
@@ -336,6 +340,17 @@ function segSeleccionarCliente(clienteId, nombre, avatar) {
   SEG.hayUnsaved = false;
   SEG._canal     = 'whatsapp';
 
+  // Resetear panel de evolución
+  segResetEvolucion();
+
+  // Unirse al room de Socket.IO para recibir eventos en tiempo real
+  if (typeof window.setRealtimeContext === 'function') {
+    window.setRealtimeContext({
+      companyId: SEG.companyId,
+      userId:    clienteId
+    });
+  }
+
   // Limpiar estado residual del paciente anterior
   segLimpiarResumen();
   var badgeEnviado = document.getElementById('seg-enviado-badge');
@@ -460,14 +475,16 @@ function segRenderizarContexto(ctx) {
     segInicializarEditorNotas();
   }
   segLimpiarTodosChips();
-  // Cargar chips guardados — primero los 3 tipos, luego trabajar como selecciones
+  // Cargar chips guardados — suprimir marcarCambios durante la carga
+  var _hayUnsavedBak = SEG.hayUnsaved;
+  SEG.hayUnsaved = false;
   if (reg.chips_sintoma)     (reg.chips_sintoma||[]).forEach(function(c){ segAgregarChip('sintoma',c); });
   if (reg.chips_diagnostico) (reg.chips_diagnostico||[]).forEach(function(c){ segAgregarChip('diagnostico',c); });
   if (reg.chips_hipotesis)   (reg.chips_hipotesis||[]).forEach(function(c){ segAgregarChip('hipotesis',c); });
-  // trabajar se carga directamente como selecciones (no como chips independientes)
   _segChips.trabajar = (reg.chips_trabajar || []).slice();
   segRenderizarSeccionTrabajar();
   segActualizarHeroChipsTrabajar();
+  SEG.hayUnsaved = _hayUnsavedBak;
   segRenderizarChipsEtiquetas();
 
   var tc = document.getElementById('seg-campo-contenido');
@@ -576,14 +593,73 @@ function segRenderizarHistorial(historial, lb) {
     el.innerHTML = '<div style="font-size:10px;color:#b0b9c8">Sin ' + (lb.registros||'registros') + ' anteriores.</div>';
     return;
   }
+
+  var MAX_CHIP_LEN = 18; // caracteres antes de truncar
+
+  function _chipTruncado(nombre, bgColor, textColor, borderColor, clsExtra) {
+    var truncado = nombre.length > MAX_CHIP_LEN ? nombre.slice(0, MAX_CHIP_LEN) + '...' : nombre;
+    var tooltip  = nombre.length > MAX_CHIP_LEN ? ' data-seg-tooltip="' + segEscape(nombre) + '"' : '';
+    return '<span class="seg-hist-chip' + (clsExtra ? ' ' + clsExtra : '') + '"' +
+      ' style="background:' + bgColor + ';color:' + textColor + ';border:0.5px solid ' + borderColor + '"' +
+      tooltip + '>' + segEscape(truncado) + '</span>';
+  }
+
+  function _chipTrabajar(nombre, nivel, colors, texts) {
+    var truncado = nombre.length > MAX_CHIP_LEN ? nombre.slice(0, MAX_CHIP_LEN) + '...' : nombre;
+    var tooltip  = nombre.length > MAX_CHIP_LEN ? ' data-seg-tooltip="' + segEscape(nombre) + '"' : '';
+    var badge = '';
+    if (nivel !== null && nivel !== undefined) {
+      var badgeColor = (nivel && colors && colors[nivel]) ? colors[nivel] : '#e5e7eb';
+      var badgeTxt   = (nivel && texts  && texts[nivel])  ? texts[nivel]  : '#9ca3af';
+      badge = '<span class="seg-hist-intens-badge" style="background:' + badgeColor + ';color:' + badgeTxt + '">' +
+        (nivel || '·') +
+      '</span>';
+    }
+    return '<span class="seg-hist-chip seg-hist-chip-trabajar"' + tooltip + '>' +
+      segEscape(truncado) +
+      badge +
+    '</span>';
+  }
+
   el.innerHTML = historial.map(function(h, i) {
-    var rid      = h._id || h.id || '';
-    var badgeCls = h.estado === 'enviado' ? 'enviado' : h.estado === 'en_curso' ? 'nueva' : 'pendiente';
-    var badgeTxt = h.estado === 'enviado' ? 'Enviado' : h.estado === 'en_curso' ? 'En curso' : 'Pendiente';
-    var preview  = h.resumen_corto || h.contenido_principal || '';
-    var tags     = (h.etiquetas||[]).map(function(t){
-      return '<span class="seg-hist-tag">' + segEscape(typeof t === 'string' ? t : (t.nombre||'')) + '</span>';
+    var rid        = h._id || h.id || '';
+    var badgeCls   = h.estado === 'enviado' ? 'enviado' : h.estado === 'en_curso' ? 'nueva' : 'pendiente';
+    var badgeTxt   = h.estado === 'enviado' ? 'Enviado' : h.estado === 'en_curso' ? 'En curso' : 'Pendiente';
+    var preview    = h.resumen_corto || h.contenido_principal || '';
+    var intens     = h.intensidades || {};
+    var colors     = SEG_INTENS_COLORS;
+    var texts      = SEG_INTENS_TEXT;
+
+    // Síntomas = sintoma + diagnostico combinados
+    var sintomas = [].concat(h.chips_sintoma || [], h.chips_diagnostico || []);
+    var trabajar = h.chips_trabajar || [];
+
+    var sintChips = sintomas.map(function(n) {
+      return _chipTruncado(n, '#ede9fe', '#5b21b6', '#c4b5fd', '');
     }).join('');
+
+    var trabChips = trabajar.map(function(n) {
+      var esDiag  = (h.chips_diagnostico || []).indexOf(n) !== -1;
+      var esSint  = (h.chips_sintoma || []).indexOf(n) !== -1;
+      var conIntens = esDiag || esSint;
+      var nivel   = conIntens ? (intens[n] || 0) : null;
+      return _chipTrabajar(n, nivel, colors, texts);
+    }).join('');
+
+    var secSint = sintChips
+      ? '<div class="seg-hist-chips-sec">' +
+          '<span class="seg-hist-chips-label">Síntomas</span>' +
+          '<div class="seg-hist-chips-row">' + sintChips + '</div>' +
+        '</div>'
+      : '';
+
+    var secTrab = trabChips
+      ? '<div class="seg-hist-chips-sec">' +
+          '<span class="seg-hist-chips-label">Lo que se abordó</span>' +
+          '<div class="seg-hist-chips-row">' + trabChips + '</div>' +
+        '</div>'
+      : '';
+
     return '<div class="seg-hist-card' + (i===0?' active':'') + '" id="hist-' + segEscape(rid) + '">' +
       '<div class="seg-hist-card-top" onclick="segSeleccionarRegistro(\'' + segEscape(rid) + '\')">' +
         '<div class="seg-hist-date">' + segFormatFechaCorta(h.fecha) + '</div>' +
@@ -593,9 +669,12 @@ function segRenderizarHistorial(historial, lb) {
         '</button>' +
       '</div>' +
       '<div class="seg-hist-preview" onclick="segSeleccionarRegistro(\'' + segEscape(rid) + '\')">' + segEscape(preview) + '</div>' +
-      (tags ? '<div class="seg-hist-tags" onclick="segSeleccionarRegistro(\'' + segEscape(rid) + '\')">' + tags + '</div>' : '') +
+      (secSint || secTrab
+        ? '<div class="seg-hist-chips-wrap" onclick="segSeleccionarRegistro(\'' + segEscape(rid) + '\')">' +
+            secSint + secTrab +
+          '</div>'
+        : '') +
       '<span class="seg-hist-badge ' + badgeCls + '" onclick="segSeleccionarRegistro(\'' + segEscape(rid) + '\')">' + badgeTxt + '</span>' +
-      // Panel de confirmación inline (oculto por defecto)
       '<div class="seg-hist-confirm seg-hidden" id="confirm-' + segEscape(rid) + '">' +
         '<div class="seg-hist-confirm-msg">' +
           '<i class="fas fa-exclamation-triangle"></i>' +
@@ -1294,6 +1373,7 @@ function segToggleTrabajar(nombre) {
   }
   segRenderizarSeccionTrabajar();
   segActualizarHeroChipsTrabajar();
+  segActualizarTarjetaHistorialChips();
   segMarcarCambios();
 }
 
@@ -1306,9 +1386,22 @@ function segActualizarHeroChipsTrabajar() {
     return;
   }
   chEl.innerHTML = seleccionados.map(function(nombre) {
+    var esDiag = _segChips.diagnostico.indexOf(nombre) !== -1 || _segChips.sintoma.indexOf(nombre) !== -1;
+    var nivel  = esDiag ? _segIntensidades[nombre] : undefined;
+    var tieneNivel = esDiag && nivel !== undefined && nivel > 0;
+    var badgeColor     = tieneNivel ? SEG_INTENS_COLORS[nivel] : '#e5e7eb';
+    var badgeTextColor = tieneNivel ? SEG_INTENS_TEXT[nivel]   : '#9ca3af';
     return '<span class="seg-hchip seg-hchip-trabajar">' +
       '<i class="fas fa-check" style="font-size:8px;margin-right:3px;color:#16a34a"></i>' +
       segEscape(nombre) +
+      (esDiag
+        ? '<span class="seg-intens-badge"' +
+            ' style="background:' + badgeColor + ';color:' + badgeTextColor + '"' +
+            ' onclick="event.stopPropagation();segAbrirModalIntensidad(\'' + segEscape(nombre) + '\')"' +
+            ' data-seg-tooltip="Escala de intensidad">' +
+            (tieneNivel ? nivel : '·') +
+          '</span>'
+        : '') +
     '</span>';
   }).join('');
 }
@@ -1368,17 +1461,17 @@ function segRenderizarSeccionTrabajar() {
   if (secEl) secEl.classList.toggle('seg-hidden', todos.length === 0);
 
   chips.innerHTML = todos.map(function(item) {
-    var activo   = _segChips.trabajar.indexOf(item.nombre) !== -1;
-    var esDiag   = item.tipo === 'diagnostico';
-    var nivel    = _segIntensidades[item.nombre];
-    var tieneNivel = activo && esDiag && nivel !== undefined && nivel > 0;
+    var activo    = _segChips.trabajar.indexOf(item.nombre) !== -1;
+    var conIntens = item.tipo === 'diagnostico' || item.tipo === 'sintoma';
+    var nivel     = _segIntensidades[item.nombre];
+    var tieneNivel = activo && conIntens && nivel !== undefined && nivel > 0;
     var badgeColor = tieneNivel ? SEG_INTENS_COLORS[nivel] : '';
     var badgeText  = tieneNivel ? SEG_INTENS_TEXT[nivel] : '';
     return '<span class="seg-chip-trabajar' + (activo ? ' activo' : '') + '"' +
       ' onclick="segToggleTrabajar(\'' + segEscape(item.nombre) + '\')">' +
       (activo ? '<i class="fas fa-check" style="font-size:8px;margin-right:3px;color:#16a34a"></i>' : '') +
       segEscape(item.nombre) +
-      (activo && esDiag
+      (activo && conIntens
         ? '<span class="seg-intens-badge" style="background:' + (tieneNivel ? badgeColor : '#e5e7eb') + ';color:' + (tieneNivel ? badgeText : '#9ca3af') + '"' +
           ' onclick="event.stopPropagation();segAbrirModalIntensidad(\'' + segEscape(item.nombre) + '\')"' +
           ' data-seg-tooltip="Escala de intensidad">' +
@@ -2270,12 +2363,19 @@ function segSeleccionarRegistro(registroId) {
     if (tn) { tn.innerText = data.notas_internas || ''; segInicializarEditorNotas(); }
     // Cargar chips
     segLimpiarTodosChips();
+    var _hayUnsavedBak2 = SEG.hayUnsaved;
+    SEG.hayUnsaved = false;
     if (data.chips_sintoma)     (data.chips_sintoma||[]).forEach(function(c){ segAgregarChip('sintoma',c); });
     if (data.chips_diagnostico) (data.chips_diagnostico||[]).forEach(function(c){ segAgregarChip('diagnostico',c); });
     if (data.chips_hipotesis)   (data.chips_hipotesis||[]).forEach(function(c){ segAgregarChip('hipotesis',c); });
     _segChips.trabajar = (data.chips_trabajar || []).slice();
+    // Limpiar intensidades anteriores y cargar las de este registro
+    _segIntensidades = {};
     segRenderizarSeccionTrabajar();
     segActualizarHeroChipsTrabajar();
+    SEG.hayUnsaved = _hayUnsavedBak2;
+    // Cargar intensidades desde BD (actualiza los badges al llegar)
+    segCargarIntensidades();
     if (tf) tf.value = data.fecha || '';
     if (th) th.value = data.hora || '';
     // Etiquetas del registro (array de strings)
@@ -2353,6 +2453,259 @@ function segToggleTL() {
   SEG.tl_visible = !SEG.tl_visible;
   c.style.display = SEG.tl_visible ? 'flex' : 'none';
   if (ch) ch.style.transform = SEG.tl_visible ? '' : 'rotate(-90deg)';
+}
+
+/* ─────────────────────────────────────────
+   EVOLUCIÓN DE INTENSIDADES
+───────────────────────────────────────── */
+var _segEvoChart   = null;
+var _segEvoVisible = false;
+var _segEvoPaleta  = [
+  '#7c3aed','#0891b2','#059669','#d97706',
+  '#dc2626','#db2777','#4f46e5','#0369a1'
+];
+var _segEvoDash = [
+  [], [4,2], [2,2], [6,2],
+  [3,3], [5,2,2,2], [4,4], [2,4]
+];
+
+function segToggleEvo() {
+  var content = document.getElementById('seg-evo-content');
+  var chev    = document.getElementById('seg-evo-chev');
+  if (!content) return;
+  _segEvoVisible = !_segEvoVisible;
+  content.classList.toggle('seg-hidden', !_segEvoVisible);
+  if (chev) chev.classList.toggle('open', _segEvoVisible);
+  if (_segEvoVisible && SEG.clienteId) {
+    segCargarEvolucion();
+  }
+}
+
+function segCargarEvolucion(limite) {
+  if (!SEG.clienteId || !SEG.companyId) return;
+  limite = limite || 10;
+  var url = '/api/seguimiento/clientes/' + SEG.clienteId +
+            '/evolucion-intensidades?company_id=' + SEG.companyId +
+            '&limite=' + limite;
+  segFetch(url, {}, function(data) {
+    if (data && data.evolucion) {
+      // Asegurar que Chart.js esté cargado antes de renderizar
+      if (typeof Chart === 'undefined') {
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
+        script.onload = function() { segRenderizarEvolucion(data.evolucion); };
+        document.head.appendChild(script);
+      } else {
+        segRenderizarEvolucion(data.evolucion);
+      }
+    }
+  }, function() {
+    var content = document.getElementById('seg-evo-content');
+    if (content) content.innerHTML = '<div class="seg-evo-empty">No se pudo cargar la evolución.</div>';
+  });
+}
+
+function segRenderizarEvolucion(evolucion) {
+  var legendEl = document.getElementById('seg-evo-legend');
+  var statsEl  = document.getElementById('seg-evo-stats');
+  var sesEl    = document.getElementById('seg-evo-sesiones');
+
+  if (!evolucion || evolucion.length === 0) {
+    var content = document.getElementById('seg-evo-content');
+    if (content) content.innerHTML = '<div class="seg-evo-empty">Sin datos de intensidad aún.</div>';
+    return;
+  }
+
+  // Recopilar todos los chips con intensidad (filtrar texto libre)
+  // Solo chips que estuvieron en "Lo que abordaremos" con intensidad, excluyendo hipótesis
+  var chipsSet = {};
+  evolucion.forEach(function(s) {
+    var trabajar   = s.chips_trabajar  || [];
+    var hipotesis  = s.chips_hipotesis || [];
+    trabajar.forEach(function(nombre) {
+      if (hipotesis.indexOf(nombre) === -1) {
+        var nivel = (s.intensidades || {})[nombre];
+        if (nivel !== undefined && nivel > 0) {
+          chipsSet[nombre] = (chipsSet[nombre] || 0) + 1;
+        }
+      }
+    });
+  });
+  var chips = Object.keys(chipsSet);
+  if (!chips.length) {
+    var content2 = document.getElementById('seg-evo-content');
+    if (content2) content2.innerHTML = '<div class="seg-evo-empty">Sin intensidades registradas.</div>';
+    return;
+  }
+
+  // Labels de fechas — agregar hora si hay más de una sesión el mismo día
+  var fechaCount = {};
+  evolucion.forEach(function(s) { fechaCount[s.fecha] = (fechaCount[s.fecha] || 0) + 1; });
+  var labels = evolucion.map(function(s) {
+    if (!s.fecha) return '';
+    var p = s.fecha.split('-');
+    var base = p[2] + '/' + p[1];
+    return (fechaCount[s.fecha] > 1 && s.hora) ? base + ' ' + s.hora.slice(0,5) : base;
+  });
+
+  if (sesEl) sesEl.textContent = evolucion.length + ' sesiones';
+
+  // Datasets — solo chips con datos reales
+  var datasets = chips.map(function(nombre, i) {
+    var color = _segEvoPaleta[i % _segEvoPaleta.length];
+    var dash  = _segEvoDash[i % _segEvoDash.length];
+    return {
+      label: nombre,
+      data: evolucion.map(function(s) {
+        var v = s.intensidades[nombre];
+        return (v !== undefined && v > 0) ? v : null;
+      }),
+      borderColor: color,
+      backgroundColor: color + '14',
+      borderWidth: 1,
+      pointRadius: 0,
+      pointHitRadius: 10,
+      tension: 0.3,
+      fill: false,
+      borderDash: [],
+      spanGaps: true
+    };
+  });
+
+  // Leyenda — solo chips con datos
+  if (legendEl) {
+    legendEl.innerHTML = chips.map(function(nombre, i) {
+      var color = _segEvoPaleta[i % _segEvoPaleta.length];
+      var label = nombre.length > 22 ? nombre.slice(0, 22) + '...' : nombre;
+      return '<div class="seg-evo-legend-item" data-seg-tooltip="' + segEscape(nombre) + '">' +
+        '<div class="seg-evo-legend-dot" style="background:' + color + '"></div>' +
+        segEscape(label) +
+      '</div>';
+    }).join('');
+  }
+
+  // Plugin para puntos con color de intensidad y número dentro
+  var puntosPlugin = {
+    id: 'puntosIntensidad',
+    afterDatasetsDraw: function(chart) {
+      var ctx2 = chart.ctx;
+      chart.data.datasets.forEach(function(ds, di) {
+        var meta = chart.getDatasetMeta(di);
+        meta.data.forEach(function(pt, pi) {
+          var val = ds.data[pi];
+          if (val === null || val === undefined) return;
+          var nivel = Math.round(val);
+          var bg  = SEG_INTENS_COLORS && SEG_INTENS_COLORS[nivel] ? SEG_INTENS_COLORS[nivel] : ds.borderColor;
+          var txt = SEG_INTENS_TEXT  && SEG_INTENS_TEXT[nivel]  ? SEG_INTENS_TEXT[nivel]  : '#fff';
+          var x = pt.x, y = pt.y, r = 7;
+          ctx2.save();
+          ctx2.beginPath();
+          ctx2.arc(x, y, r, 0, Math.PI * 2);
+          ctx2.fillStyle = bg;
+          ctx2.fill();
+          ctx2.strokeStyle = '#ffffff';
+          ctx2.lineWidth = 1.5;
+          ctx2.stroke();
+          ctx2.fillStyle = txt;
+          ctx2.font = '700 8px sans-serif';
+          ctx2.textAlign = 'center';
+          ctx2.textBaseline = 'middle';
+          ctx2.fillText(String(nivel), x, y);
+          ctx2.restore();
+        });
+      });
+    }
+  };
+
+  // Destruir chart anterior si existe
+  if (_segEvoChart) { _segEvoChart.destroy(); _segEvoChart = null; }
+
+  var canvas = document.getElementById('seg-evo-chart');
+  if (!canvas) return;
+
+  _segEvoChart = new Chart(canvas, {
+    type: 'line',
+    plugins: [puntosPlugin],
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'nearest',
+          intersect: true,
+          backgroundColor: 'rgba(237, 233, 254, 0.97)',
+          titleColor: '#4c1d95',
+          bodyColor: '#5b21b6',
+          borderColor: '#c4b5fd',
+          borderWidth: 1,
+          padding: 8,
+          titleFont: { size: 10, weight: '600' },
+          bodyFont: { size: 10 },
+          callbacks: {
+            title: function(items) {
+              return items.length ? items[0].label : '';
+            },
+            label: function(item) {
+              var nivel = item.parsed.y;
+              var lbl = SEG_INTENS_LABELS && SEG_INTENS_LABELS[nivel]
+                ? (SEG_INTENS_LABELS[nivel].label || SEG_INTENS_LABELS[nivel]) : '';
+              var nombre = item.dataset.label || '';
+              var corto = nombre.length > 28 ? nombre.slice(0, 28) + '...' : nombre;
+              return corto + ': ' + nivel + (lbl ? ' (' + lbl + ')' : '');
+            },
+            labelColor: function(ctx) {
+              var nivel = ctx.parsed.y;
+              var bg = SEG_INTENS_COLORS && SEG_INTENS_COLORS[nivel] ? SEG_INTENS_COLORS[nivel] : ctx.dataset.borderColor;
+              return { borderColor: bg, backgroundColor: bg };
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          min: 0, max: 8,
+          ticks: { stepSize: 1, font: { size: 9 } },
+          grid: { color: 'rgba(0,0,0,0.05)' }
+        },
+        x: {
+          ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  // Stats — tendencia de cada chip
+  if (statsEl) {
+    statsEl.innerHTML = chips.map(function(nombre, i) {
+      var color  = _segEvoPaleta[i % _segEvoPaleta.length];
+      var vals   = evolucion.map(function(s) { return s.intensidades[nombre]; }).filter(function(v) { return v !== undefined && v > 0; });
+      if (vals.length < 2) return '';
+      var primero = vals[0];
+      var ultimo  = vals[vals.length - 1];
+      var diff    = ultimo - primero;
+      var cls     = diff < 0 ? 'baja' : diff > 0 ? 'sube' : '';
+      var txt     = diff < 0 ? '↓ ' + Math.abs(diff) : diff > 0 ? '↑ ' + diff : '→ sin cambio';
+      return '<div class="seg-evo-stat">' +
+        '<span class="seg-evo-stat-label" style="color:' + color + '">' + segEscape(nombre.length > 14 ? nombre.slice(0,14)+'...' : nombre) + '</span>' +
+        '<span class="seg-evo-stat-value ' + cls + '">' + txt + '</span>' +
+      '</div>';
+    }).join('');
+  }
+}
+
+// Resetear evolución al cambiar de cliente
+function segResetEvolucion() {
+  _segEvoVisible = false;
+  var content = document.getElementById('seg-evo-content');
+  var chev    = document.getElementById('seg-evo-chev');
+  var sesEl   = document.getElementById('seg-evo-sesiones');
+  if (content) { content.classList.add('seg-hidden'); content.innerHTML = '<div class="seg-evo-legend" id="seg-evo-legend"></div><div class="seg-evo-chart-wrap"><canvas id="seg-evo-chart" role="img" aria-label="Evolución de intensidades por sesión"></canvas></div><div class="seg-evo-stats" id="seg-evo-stats"></div>'; }
+  if (chev)    chev.classList.remove('open');
+  if (sesEl)   sesEl.textContent = '';
+  if (_segEvoChart) { _segEvoChart.destroy(); _segEvoChart = null; }
 }
 
 /* ─────────────────────────────────────────
@@ -2761,6 +3114,17 @@ function segNuevaSesionConfirm() {
   _segDiagMode = false;
   _segHipMode  = false;
 
+  // Precargar chips acumulados de sesiones anteriores
+  var acum = SEG.contexto && SEG.contexto.chips_acumulados;
+  if (acum) {
+    var _bak = SEG.hayUnsaved;
+    SEG.hayUnsaved = false;
+    (acum.sintoma     || []).forEach(function(c) { segAgregarChip('sintoma',     c); });
+    (acum.diagnostico || []).forEach(function(c) { segAgregarChip('diagnostico', c); });
+    (acum.hipotesis   || []).forEach(function(c) { segAgregarChip('hipotesis',   c); });
+    SEG.hayUnsaved = _bak;
+  }
+
   segSetFecha(fechaStr);
   segSetHora(horaStr);
   segRenderizarChipsEtiquetas();
@@ -2772,7 +3136,138 @@ function segNuevaSesionConfirm() {
 
   segMostrarRegistroWrap();
   segSetTab('notas', document.getElementById('seg-tab-notas'));
+
+  // Crear registro en BD inmediatamente y agregar tarjeta al historial
+  var payload = {
+    company_id: SEG.companyId,
+    cliente_id: SEG.clienteId,
+    fecha:      fechaStr,
+    hora:       horaStr,
+    estado:     'en_curso',
+  };
+  segFetch('/api/seguimiento/registros', { method: 'POST', body: JSON.stringify(payload) },
+    function(data) {
+      SEG.registroId = data._id || data.id;
+      SEG.hayUnsaved = false;
+      // Agregar tarjeta al historial inmediatamente
+      segAgregarTarjetaHistorial({
+        _id:          SEG.registroId,
+        fecha:        fechaStr,
+        hora:         horaStr,
+        estado:       'en_curso',
+        resumen_corto: SEG.labels.registro ? SEG.labels.registro + ' registrado.' : 'Sesión registrada.',
+        etiquetas:    [],
+        chips_sintoma:     [],
+        chips_diagnostico: [],
+        chips_trabajar:    [],
+        intensidades:      {},
+      });
+    },
+    function() {}
+  );
+
   segToast('Nueva ' + (SEG.labels.registro || 'sesión') + ' lista para registrar', 'success');
+}
+
+function segAgregarTarjetaHistorial(h) {
+  var el = document.getElementById('seg-historial-list');
+  if (!el) return;
+  var lb  = SEG.labels || {};
+  var rid = h._id || h.id || '';
+
+  var cardHtml =
+    '<div class="seg-hist-card active" id="hist-' + segEscape(rid) + '">' +
+      '<div class="seg-hist-card-top" onclick="segSeleccionarRegistro(\'' + segEscape(rid) + '\')">' +
+        '<div class="seg-hist-date">' + segFormatFechaCorta(h.fecha) + '</div>' +
+        '<button class="seg-hist-delete-btn" title="Eliminar sesión" ' +
+          'onclick="event.stopPropagation();segMostrarConfirmEliminar(\'' + segEscape(rid) + '\')">' +
+          '<i class="fas fa-trash"></i>' +
+        '</button>' +
+      '</div>' +
+      '<div class="seg-hist-preview" onclick="segSeleccionarRegistro(\'' + segEscape(rid) + '\')">' +
+        segEscape(h.resumen_corto || '') +
+      '</div>' +
+      '<span class="seg-hist-badge nueva" onclick="segSeleccionarRegistro(\'' + segEscape(rid) + '\')">' +
+        (lb.status_active || 'En curso') +
+      '</span>' +
+      '<div class="seg-hist-confirm seg-hidden" id="confirm-' + segEscape(rid) + '">' +
+        '<div class="seg-hist-confirm-msg">' +
+          '<i class="fas fa-exclamation-triangle"></i>' +
+          '¿Eliminar esta ' + segEscape(lb.registro||'sesión') + '? Se borrará permanentemente.' +
+        '</div>' +
+        '<div class="seg-hist-confirm-btns">' +
+          '<button class="seg-hist-confirm-cancel" onclick="segCancelarConfirmEliminar(\'' + segEscape(rid) + '\')">Cancelar</button>' +
+          '<button class="seg-hist-confirm-ok" onclick="segConfirmarEliminar(\'' + segEscape(rid) + '\')">Eliminar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  // Quitar active de tarjetas anteriores
+  el.querySelectorAll('.seg-hist-card.active').forEach(function(c) { c.classList.remove('active'); });
+  // Insertar al inicio
+  el.insertAdjacentHTML('afterbegin', cardHtml);
+}
+
+function segActualizarTarjetaHistorialChips() {
+  if (!SEG.registroId) return;
+  var card = document.getElementById('hist-' + SEG.registroId);
+  if (!card) return;
+
+  // Construir chips de "Lo que se abordó"
+  var trabChips = (_segChips.trabajar || []).map(function(n) {
+    var esDiag  = _segChips.diagnostico.indexOf(n) !== -1;
+    var esSint  = _segChips.sintoma.indexOf(n) !== -1;
+    var conIntens = esDiag || esSint;
+    var nivel   = conIntens ? (_segIntensidades[n] || 0) : null;
+    var truncado = n.length > 18 ? n.slice(0, 18) + '...' : n;
+    var tooltip  = n.length > 18 ? ' data-seg-tooltip="' + segEscape(n) + '"' : '';
+    var badge = '';
+    if (nivel !== null) {
+      var badgeColor = (nivel && SEG_INTENS_COLORS && SEG_INTENS_COLORS[nivel]) ? SEG_INTENS_COLORS[nivel] : '#e5e7eb';
+      var badgeTxt   = (nivel && SEG_INTENS_TEXT  && SEG_INTENS_TEXT[nivel])   ? SEG_INTENS_TEXT[nivel]   : '#9ca3af';
+      badge = '<span class="seg-hist-intens-badge" style="background:' + badgeColor + ';color:' + badgeTxt + '">' + (nivel || '·') + '</span>';
+    }
+    return '<span class="seg-hist-chip seg-hist-chip-trabajar"' + tooltip + '>' + segEscape(truncado) + badge + '</span>';
+  }).join('');
+
+  // Buscar o crear la sección "Lo que se abordó" en la tarjeta
+  var wrap = card.querySelector('.seg-hist-chips-wrap');
+  if (trabChips) {
+    var secTrab = '<div class="seg-hist-chips-sec">' +
+      '<span class="seg-hist-chips-label">Lo que se abordó</span>' +
+      '<div class="seg-hist-chips-row">' + trabChips + '</div>' +
+    '</div>';
+    if (wrap) {
+      // Actualizar solo la sección trabajar
+      var secExist = wrap.querySelector('.seg-hist-chips-sec:last-child');
+      if (secExist && secExist.querySelector('.seg-hist-chips-label') &&
+          secExist.querySelector('.seg-hist-chips-label').textContent === 'Lo que se abordó') {
+        secExist.outerHTML = secTrab;
+      } else {
+        wrap.insertAdjacentHTML('beforeend', secTrab);
+      }
+    } else {
+      // Crear wrap antes del badge de estado
+      var badge = card.querySelector('.seg-hist-badge');
+      if (badge) {
+        var newWrap = document.createElement('div');
+        newWrap.className = 'seg-hist-chips-wrap';
+        newWrap.innerHTML = secTrab;
+        card.insertBefore(newWrap, badge);
+      }
+    }
+  } else if (wrap) {
+    // Sin chips — quitar sección si estaba vacía
+    var secTrabVacia = wrap.querySelector('.seg-hist-chips-sec:last-child');
+    if (secTrabVacia && secTrabVacia.querySelector('.seg-hist-chips-label') &&
+        secTrabVacia.querySelector('.seg-hist-chips-label').textContent === 'Lo que se abordó') {
+      if (wrap.children.length === 1) {
+        wrap.remove();
+      } else {
+        secTrabVacia.remove();
+      }
+    }
+  }
 }
 
 /* ─────────────────────────────────────────
@@ -2993,16 +3488,27 @@ var SEG_INTENS_TEXT = [
 ];
 
 function segCargarIntensidadLabels() {
-  segFetch('/api/seguimiento/intensidad-labels?company_id=' + SEG.companyId, {},
+  var url = '/api/seguimiento/intensidad-labels?company_id=' + SEG.companyId;
+  if (SEG.template) url += '&template=' + encodeURIComponent(SEG.template);
+  segFetch(url, {},
     function(data) {
+      if (data.error) {
+        segToast('⚠️ ' + data.error, 'error');
+        return;
+      }
       if (data.niveles && data.niveles.length === 8) {
         SEG_INTENS_LABELS = data.niveles;
       }
       if (data.colores && data.colores.length === 8) {
         SEG_INTENS_COLORS = data.colores;
       }
+      if (data.textos && data.textos.length === 8) {
+        SEG_INTENS_TEXT = data.textos;
+      }
     },
-    function() {} // silencioso — usa fallback hardcoded
+    function() {
+      segToast('⚠️ No se pudo cargar la escala de intensidad', 'error');
+    }
   );
 }
 
@@ -3012,6 +3518,7 @@ function segCargarIntensidades() {
     function(data) {
       _segIntensidades = data.intensidades || {};
       segRenderizarSeccionTrabajar();
+      segActualizarHeroChipsTrabajar(); // actualizar header con intensidades cargadas
     },
     function() {} // silencioso
   );
@@ -3046,12 +3553,17 @@ function segSeleccionarIntensidad(nivel) {
   if (SEG.registroId) {
     segFetch('/api/seguimiento/registros/' + SEG.registroId + '/intensidades/' + encodeURIComponent(_segIntensidadActual),
       { method: 'PUT', body: JSON.stringify({ nivel: nivel, cliente_id: SEG.clienteId }) },
-      function() {}, function() {}
+      function() {
+        // Actualizar gráfico de evolución si está visible
+        if (_segEvoVisible) segCargarEvolucion();
+      },
+      function() {}
     );
   }
   segCerrarModalIntensidad();
   segRenderizarSeccionTrabajar();
   segActualizarHeroChipsTrabajar();
+  segActualizarTarjetaHistorialChips();
   segMarcarCambios();
 }
 
@@ -4054,6 +4566,7 @@ window.segPromover            = segPromover;
 window.segBuscar              = segBuscar;
 window.segSetTab              = segSetTab;
 window.segToggleTL            = segToggleTL;
+window.segToggleEvo           = segToggleEvo;
 window.segAddEvento           = segAddEvento;
 window.segEliminarEvento      = segEliminarEvento;
 window.segSyncTimeline        = segSyncTimeline;
@@ -4742,6 +5255,34 @@ function initSeguimientoPage() {
   segCargarConfigAutoguardado();
   // Inicializar editor notas al cargar la página
   setTimeout(segInicializarEditorNotas, 100);
+  // Escuchar eventos de timeline IA via Socket.IO
+  segRegistrarSocketTimeline();
+}
+
+function segRegistrarSocketTimeline() {
+  // Exponer callback que realtime.js llamará al recibir el evento
+  window.segOnTimelineUpdated = function(data) {
+    // Solo procesar si es para el cliente activo
+    if (!SEG.clienteId || data.cliente_id !== SEG.clienteId) return;
+    // Actualizar timeline en UI
+    if (data.timeline && SEG.labels) {
+      segRenderizarTimeline(
+        data.timeline,
+        SEG.labels.timeline_titulo,
+        SEG.labels.timeline_inicio
+      );
+      segRenderizarTLEdit(data.timeline, SEG.labels.timeline_titulo);
+      if (SEG.contexto) SEG.contexto.timeline = data.timeline;
+    }
+    // Toast informativo
+    var n = data.nuevos || 0;
+    if (n > 0) {
+      segToast(
+        '📅 ' + n + ' evento' + (n > 1 ? 's' : '') + ' agregado' + (n > 1 ? 's' : '') + ' a la línea de tiempo',
+        'success'
+      );
+    }
+  };
 }
 window.initSeguimientoPage    = initSeguimientoPage;
 window.segNuevaPlantillaNotas  = segNuevaPlantillaNotas;
@@ -5288,3 +5829,35 @@ function segCerrarAuditoriaCampos() {
 window.segPnFijoEditar          = segPnFijoEditar;
 window.segAbrirAuditoriaCampos  = segAbrirAuditoriaCampos;
 window.segCerrarAuditoriaCampos = segCerrarAuditoriaCampos;
+
+// Registrar listener via rtEvents (sistema de eventos de realtime.js)
+// Se registra al cargar el script Y cada vez que initSeguimientoPage se llama
+(function segSuscribirTimeline() {
+  function _handler(data) {
+    if (!SEG.clienteId || data.cliente_id !== SEG.clienteId) return;
+    if (data.timeline && SEG.labels) {
+      segRenderizarTimeline(data.timeline, SEG.labels.timeline_titulo, SEG.labels.timeline_inicio);
+      segRenderizarTLEdit(data.timeline, SEG.labels.timeline_titulo);
+      if (SEG.contexto) SEG.contexto.timeline = data.timeline;
+    }
+    var n = data.nuevos || 0;
+    if (n > 0) {
+      segToast('📅 ' + n + ' evento' + (n > 1 ? 's' : '') + ' agregado' + (n > 1 ? 's' : '') + ' a la línea de tiempo', 'success');
+    }
+  }
+  // Intentar suscribir via rtEvents si ya está disponible
+  if (window.rtEvents) {
+    window.rtEvents.on('seguimiento_timeline_updated', _handler);
+    console.log('✅ [Seguimiento] suscrito a seguimiento_timeline_updated via rtEvents');
+  } else {
+    // rtEvents aún no cargó — esperar
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.rtEvents) {
+        window.rtEvents.on('seguimiento_timeline_updated', _handler);
+        console.log('✅ [Seguimiento] suscrito a seguimiento_timeline_updated (DOMContentLoaded)');
+      }
+    });
+  }
+  // También exponer como fallback directo
+  window.segOnTimelineUpdated = _handler;
+})();

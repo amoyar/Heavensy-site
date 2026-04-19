@@ -115,6 +115,7 @@
       </div>
 
       <!-- TIMELINE -->
+      <div class="seg-scroll-area">
       <div class="seg-tl-wrap">
         <div class="seg-tl-bar" onclick="segToggleTL()">
           <i class="fas fa-stream seg-tl-bar-icon"></i>
@@ -125,9 +126,152 @@
           <div class="seg-tl-events" id="seg-tl-events"></div>
           <button class="seg-tl-add-btn" onclick="segAddEvento()">+ evento</button>
         </div>
+
+        <!-- Panel evolución de intensidades (colapsable) -->
+        <div class="seg-evo-panel" id="seg-evo-panel">
+          <div class="seg-evo-bar" onclick="segToggleEvo()">
+            <i class="fas fa-chart-line" style="font-size:9px;color:#7D84C1;opacity:.7;"></i>
+            <span class="seg-evo-title">Evolución de intensidades</span>
+            <span class="seg-evo-sesiones" id="seg-evo-sesiones"></span>
+            <i class="fas fa-chevron-down seg-evo-chevron" id="seg-evo-chev"></i>
+          </div>
+          <div class="seg-evo-content seg-hidden" id="seg-evo-content">
+            <div class="seg-evo-legend" id="seg-evo-legend"></div>
+            <div class="seg-evo-chart-wrap">
+              <canvas id="seg-evo-chart" role="img" aria-label="Evolución de intensidades por sesión"></canvas>
+            </div>
+            <div class="seg-evo-stats" id="seg-evo-stats"></div>
+          </div>
+        </div>
       </div>
 
-      <!-- TABS -->
+      <!-- Panel derivaciones (colapsable) -->
+      <div class="seg-der-panel" id="seg-der-panel">
+        <div class="seg-der-bar" onclick="segToggleDer()"
+          ondragover="segDerBarDragOver(event)"
+          ondragleave="segDerBarDragLeave(event)"
+          ondrop="segDerBarDrop(event)">
+          <i class="fas fa-code-branch" style="font-size:9px;color:#7D84C1;opacity:.7;"></i>
+          <span class="seg-der-title" id="seg-der-labels-title">Derivaciones</span>
+          <span class="seg-der-sub" id="seg-der-sub"></span>
+          <i class="fas fa-chevron-right seg-der-chev" id="seg-der-chev"></i>
+        </div>
+        <div class="seg-der-content seg-hidden" id="seg-der-content">
+          <div class="seg-der-hint" id="seg-der-hint">Selecciona un problema para ver o asignar profesionales.</div>
+          <div class="seg-der-chips" id="seg-der-chips"></div>
+          <div class="seg-der-detail seg-hidden" id="seg-der-detail">
+            <div class="seg-der-detail-hdr">
+              <span class="seg-der-detail-dot" id="seg-der-detail-dot">●</span>
+              <span class="seg-der-detail-nombre" id="seg-der-detail-nombre"></span>
+              <span class="seg-der-detail-sub" id="seg-der-labels-asignados">— profesionales asignados</span>
+              <button class="seg-der-detail-close" onclick="segDerCerrarDetalle()" data-seg-tooltip="Cerrar"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="seg-der-detail-body">
+              <div id="seg-der-lista"></div>
+              <div class="seg-der-sep"></div>
+              <div class="seg-der-add-interno">
+                <div class="seg-der-add-label" id="seg-der-labels-interno">Agregar profesional interno</div>
+                <div class="seg-der-add-row">
+                  <select id="seg-der-sel-area" onchange="segDerFiltrarProfesionales()">
+                    <option value="">— área —</option>
+                  </select>
+                  <select id="seg-der-sel-prof">
+                    <option value="">— profesional —</option>
+                  </select>
+                  <button class="seg-der-add-btn" onclick="segDerAgregarInterno()">+ Asignar</button>
+                </div>
+              </div>
+              <div class="seg-der-add-externo">
+                <div class="seg-der-add-label" id="seg-der-labels-externo">Agregar profesional externo</div>
+                <div class="seg-der-add-row">
+                  <input id="seg-der-ext-nombre" placeholder="Nombre del profesional" />
+                  <input id="seg-der-ext-area" placeholder="Área / Especialidad" />
+                  <input id="seg-der-ext-lugar" placeholder="Institución / Lugar" />
+                  <button class="seg-der-add-btn" onclick="segDerAgregarExterno()">+ Agregar</button>
+                </div>
+              </div>
+              <div class="seg-der-actions">
+                <button class="seg-der-btn-ai" onclick="segDerResumenIA()">
+                  <i class="fas fa-wand-magic-sparkles"></i>
+                  <span id="seg-der-labels-resumen">Resumen IA para derivación</span>
+                </button>
+                <button class="seg-der-btn-pdf" onclick="segDerHistorialPDF()">
+                  <i class="fas fa-file-pdf"></i>
+                  <span id="seg-der-labels-historial">Historial completo (PDF)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Resumen IA para derivación -->
+      <div class="seg-der-modal-overlay seg-hidden" id="seg-der-resumen-overlay" onclick="segDerCerrarResumen()">
+        <div class="seg-der-modal" onclick="event.stopPropagation()" style="max-width:520px">
+          <div class="seg-der-modal-hdr" style="background:#f5f3ff">
+            <div class="seg-der-modal-avatar" style="background:#ede9fe;color:#5b21b6">
+              <i class="fas fa-wand-magic-sparkles" style="font-size:13px"></i>
+            </div>
+            <div class="seg-der-modal-info">
+              <div class="seg-der-modal-nombre">Resumen IA para derivación</div>
+              <div class="seg-der-modal-area" id="seg-der-resumen-subtitulo"></div>
+            </div>
+            <button class="seg-der-modal-close" onclick="segDerCerrarResumen()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="seg-der-modal-body" style="padding:0">
+            <textarea id="seg-der-resumen-texto"
+              style="width:100%;min-height:320px;padding:14px 16px;border:none;
+                     font-size:11px;line-height:1.6;color:#374151;resize:vertical;
+                     font-family:inherit;background:#fafaf9;outline:none"
+              spellcheck="false"></textarea>
+          </div>
+          <div class="seg-der-modal-footer">
+            <button class="seg-der-footer-btn" style="background:#f0fdf4;border:1px solid #86efac;color:#16a34a" onclick="segDerResumenCopiar()">
+              <i class="fas fa-copy"></i> Copiar
+            </button>
+            <button class="seg-der-footer-btn seg-der-footer-ai" onclick="segDerResumenEnviarWA()">
+              <i class="fab fa-whatsapp"></i> WhatsApp
+            </button>
+            <button class="seg-der-footer-btn" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af" onclick="segDerResumenEnviarEmail()">
+              <i class="fas fa-envelope"></i> Email
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal historial por profesional -->
+      <div class="seg-der-modal-overlay seg-hidden" id="seg-der-modal-overlay" onclick="segDerCerrarModal()">
+        <div class="seg-der-modal" onclick="event.stopPropagation()">
+          <div class="seg-der-modal-hdr">
+            <div class="seg-der-modal-avatar" id="seg-der-modal-avatar"></div>
+            <div class="seg-der-modal-info">
+              <div class="seg-der-modal-nombre" id="seg-der-modal-nombre"></div>
+              <div class="seg-der-modal-area" id="seg-der-modal-area"></div>
+              <div class="seg-der-modal-tags" id="seg-der-modal-tags"></div>
+            </div>
+            <button class="seg-der-modal-close" onclick="segDerCerrarModal()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="seg-der-modal-body" id="seg-der-modal-body"></div>
+          <div class="seg-der-modal-footer">
+            <button class="seg-der-footer-btn" style="background:#f0fdf4;border:1px solid #86efac;color:#16a34a" onclick="segDerHistorialCopiar()">
+              <i class="fas fa-copy"></i> Copiar
+            </button>
+            <button class="seg-der-footer-btn seg-der-footer-ai" onclick="segDerHistorialEnviarWA()">
+              <i class="fab fa-whatsapp"></i> WhatsApp
+            </button>
+            <button class="seg-der-footer-btn" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af" onclick="segDerHistorialEnviarEmail()">
+              <i class="fas fa-envelope"></i> Email
+            </button>
+            <button class="seg-der-footer-btn seg-der-footer-pdf" onclick="segDerExportarPDF()">
+              <i class="fas fa-file-pdf"></i> PDF
+            </button>
+          </div>
+        </div>
+      </div>
       <div class="seg-tabs-bar">
         <div class="seg-tab active done" id="seg-tab-notas" onclick="segSetTab('notas', this)">
           <div class="seg-tab-num"><i class="fas fa-check seg-tab-check-icon"></i></div>
@@ -565,6 +709,8 @@
 
       </div><!-- /.seg-body -->
 
+      </div><!-- /seg-scroll-area -->
+
       <!-- BARRA DE ACCIONES -->
       <div class="seg-actions-bar">
         <button class="seg-btn-guardar-principal" id="seg-btn-guardar" onclick="segGuardar()">
@@ -915,3 +1061,6 @@
     </div>
   </div>
 </div>
+
+<!-- Chart.js para evolución de intensidades -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>

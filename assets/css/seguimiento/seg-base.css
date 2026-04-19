@@ -1,0 +1,445 @@
+/* ═══════════════════════════════════════════════════════
+   SEGUIMIENTO — seg-base.css
+   Layout principal, panel izquierdo, selector empresa, búsqueda, lista clientes, área principal, hero
+═══════════════════════════════════════════════════════ */
+
+/* ── Layout principal ── */
+#page-seguimiento {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: 100%;
+}
+
+/* ── Panel izquierdo ── */
+.seg-left-panel {
+  width: 260px;
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden; /* contiene los hijos */
+}
+
+.seg-lp-header {
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid #f3f4f6;
+  flex-shrink: 0;
+}
+
+.seg-lp-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.seg-lp-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #EFF6FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.seg-lp-icon i {
+  font-size: 12px;
+  color: #9961FF;
+}
+
+.seg-lp-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #374151;
+}
+
+/* Company selector */
+.seg-company-sel {
+  width: 100%;
+  margin-bottom: 9px;
+}
+
+.seg-company-select {
+  width: 100%;
+  padding: 7px 10px;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #374151;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color .15s;
+  outline: none;
+  appearance: auto;
+}
+
+.seg-company-select:hover,
+.seg-company-select:focus {
+  border-color: #C9D9FF;
+}
+
+/* Search */
+.seg-search-wrap {
+  position: relative;
+}
+
+.seg-search-wrap i {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.seg-search-input {
+  width: 100%;
+  padding: 7px 10px 7px 28px;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #374151;
+  background: #f9fafb;
+  outline: none;
+  transition: all .15s;
+}
+
+.seg-search-input:focus {
+  border-color: #9961FF;
+  background: #fff;
+  box-shadow: 0 0 0 3px #9961FF12;
+}
+
+.seg-search-input::placeholder {
+  color: #b0b9c8;
+}
+
+/* ── Lista de entidades ── */
+.seg-entity-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.seg-info-banner {
+  margin: 8px 10px 4px;
+  padding: 7px 10px;
+  background: #EFF6FF;
+  border: 0.5px solid #C9D9FF;
+  border-radius: 8px;
+  font-size: 10px;
+  color: #7D84C1;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.4;
+}
+
+.seg-info-banner strong {
+  color: #9961FF;
+}
+
+.seg-entity-item {
+  display: flex;
+  align-items: center;
+  padding: 9px 10px;
+  gap: 9px;
+  cursor: pointer;
+  transition: all .12s;
+  border-left: 2px solid transparent;
+  margin: 4px 8px;
+  border-radius: 10px;
+  border: 0.5px solid #e5e7eb;
+  background: #fff;
+}
+
+.seg-entity-item:hover {
+  background: #f5f0ff;
+  border-color: #C9D9FF;
+}
+
+.seg-entity-item.active {
+  background: #f5f0ff;
+  border-color: #9961FF;
+  border-left-color: #9961FF;
+}
+
+.seg-entity-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #EFF6FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  border: 1.5px solid #C9D9FF;
+}
+
+.seg-entity-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.seg-entity-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seg-entity-meta {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seg-entity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.seg-entity-dot.dot-active  { background: #9961FF; }
+.seg-entity-dot.dot-pending { background: #f59e0b; }
+.seg-entity-dot.dot-sent    { background: #10b981; }
+
+/* Leyenda */
+.seg-list-legend {
+  padding: 8px 12px 8px;
+  font-size: 9px;
+  color: #b0b9c8;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-top: 0.5px solid #f3f4f6;
+  margin-top: 4px;
+}
+
+.seg-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Estado vacío lista */
+.seg-list-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.seg-list-empty i {
+  font-size: 22px;
+  color: #C9D9FF;
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* ── Área principal ── */
+.seg-main-area {
+  flex: 1;
+  min-width: 0; /* necesario para que flex expanda correctamente al colapsar panel izq */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f3f4f6;
+  position: relative; /* para el botón flotante de expandir */
+}
+
+/* Empty state */
+.seg-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  gap: 10px;
+}
+
+/* Loading state — mientras carga el contexto del cliente */
+.seg-loading-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.seg-empty-state i {
+  font-size: 36px;
+  color: #C9D9FF;
+}
+
+.seg-empty-state p {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.seg-empty-state span {
+  font-size: 12px;
+}
+
+/* ── Contenido del registro ── */
+.seg-registro-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Área scrolleable entre hero y footer */
+.seg-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+.seg-scroll-area::-webkit-scrollbar { width: 4px; }
+.seg-scroll-area::-webkit-scrollbar-thumb { background: #e0e7ff; border-radius: 99px; }
+
+/* Hero */
+.seg-hero {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.seg-hero-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #EFF6FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  border: 2px solid #C9D9FF;
+}
+
+.seg-hero-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.seg-hero-col-left {
+  flex-shrink: 0;
+}
+
+.seg-hero-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e2d5a;
+  margin-bottom: 2px;
+}
+
+.seg-hero-sub {
+  font-size: 11px;
+  color: #7D84C1;
+}
+
+.seg-hero-col-right {
+  flex: 1;
+  min-width: 0;
+}
+
+.seg-hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+
+.seg-hero-nota {
+  font-size: 10.5px;
+  font-style: italic;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+.seg-hchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: default;
+}
+
+.seg-hchip.t1 { background: #fff5f5; color: #b45f5f; border: 0.5px solid #fecaca; }
+.seg-hchip.t2 { background: #eff6ff; color: #4a7fc0; border: 0.5px solid #bfdbfe; }
+.seg-hchip.t3 { background: #f5f0ff; color: #7c3aed; border: 0.5px solid #ddd6fe; }
+.seg-hchip-freq {
+  background: #f5f3ff;
+  color: #7D84C1;
+  border: 0.5px solid #ddd6fe;
+  font-weight: 600;
+}
+.seg-hchip-freq strong { color: #9961FF; font-weight: 700; }
+
+.seg-hchip-trabajar {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 0.5px solid #86efac;
+  font-weight: 600;
+  display: inline-flex;
+  flex-direction: column;
+  cursor: grab;
+  user-select: none;
+}
+.seg-hchip-trabajar:active { cursor: grabbing; opacity: .75; }
+.seg-hchip-main {
+  display: flex;
+  align-items: center;
+}
+.seg-hchip-sub {
+  font-size: 8px;
+  color: #6b7280;
+  margin-top: 1px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.seg-hero-nota {
+  font-size: 10.5px;
+  font-style: italic;
+  color: #9ca3af;
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+.seg-hero-status {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 3px 10px;
+  background: #E1DEFF;
+  color: #7c3aed;
+  border-radius: 8px;
+  font-weight: 600;
+  white-space: nowrap;
+  align-self: flex-start;
+}

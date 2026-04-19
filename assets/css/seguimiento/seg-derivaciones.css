@@ -1,0 +1,632 @@
+/* ═══════════════════════════════════════════════════════
+   SEGUIMIENTO — seg-derivaciones.css
+   Panel de derivaciones/asignaciones de profesionales.
+   Multi-rubro: salud, fitness, educación, cowork, etc.
+═══════════════════════════════════════════════════════ */
+
+/* ── Panel bar ── */
+.seg-der-panel {
+  border-top: 0.5px solid #e5e7eb;
+  border-bottom: 0.5px solid #e5e7eb;
+  background: #fff;
+}
+.seg-der-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: background .12s;
+}
+.seg-der-bar:hover { background: #fafbff; }
+.seg-der-bar.drag-over { background: #f5f3ff; border-bottom: 1.5px dashed #c4b5fd; }
+.seg-der-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7D84C1;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.seg-der-sub {
+  font-size: 10px;
+  color: #b0b9c8;
+  margin-left: 4px;
+}
+.seg-der-chev {
+  font-size: 10px;
+  color: #7D84C1;
+  margin-left: auto;
+  transition: transform .2s;
+}
+
+/* ── Content ── */
+.seg-der-content {
+  padding: 8px 20px 14px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+.seg-der-content::-webkit-scrollbar { width: 4px; }
+.seg-der-content::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 99px; }
+.seg-der-hint {
+  font-size: 11px;
+  color: #b0b9c8;
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+/* ── Chips ── */
+.seg-der-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.seg-der-chip {
+  display: inline-flex;
+  flex-direction: column;
+  padding: 5px 10px;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all .15s;
+  min-width: 0;
+}
+.seg-der-chip:hover { border-color: #c4b5fd; background: #faf5ff; }
+.seg-der-chip.activo { background: #ede9fe; border-color: #a78bfa; }
+.seg-der-chip-top {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.seg-der-chip-nombre {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+.seg-der-chip.activo .seg-der-chip-nombre { color: #5b21b6; }
+.seg-der-chip-badge {
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  padding: 0 3px;
+  flex-shrink: 0;
+}
+.seg-der-chip-profs {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-top: 2px;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.seg-der-chip.activo .seg-der-chip-profs { color: #7c3aed; }
+
+/* ── Detalle ── */
+.seg-der-detail {
+  border: 0.5px solid #C9D9FF;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 10px;
+  max-width: 560px;
+  background: #EFF6FF;
+}
+.seg-der-detail-hdr {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  background: #dbeafe;
+  border-bottom: 0.5px solid #C9D9FF;
+  font-size: 11px;
+}
+.seg-der-detail-dot { font-size: 11px; }
+.seg-der-detail-nombre { font-weight: 600; color: #374151; }
+.seg-der-detail-sub { color: #9ca3af; margin-left: 2px; }
+.seg-der-detail-body { padding: 10px; background: #EFF6FF; }
+
+/* ── Cards de profesionales ── */
+.seg-der-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border: 0.5px solid #C9D9FF;
+  border-radius: 8px;
+  margin-bottom: 5px;
+  background: #fff;
+  position: relative;
+}
+.seg-der-card:last-child { margin-bottom: 0; }
+.seg-der-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.seg-der-card-info { flex: 1; min-width: 0; }
+.seg-der-card-nombre { font-size: 13px; font-weight: 500; color: #374151; }
+.seg-der-card-area { font-size: 11px; color: #9ca3af; }
+.seg-der-card-badges {
+  display: flex;
+  gap: 3px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+.seg-der-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.seg-der-badge-resp     { background: #ede9fe; color: #5b21b6; }
+.seg-der-badge-asignado { background: #e1f5ee; color: #0f6e56; }
+.seg-der-badge-externo  { background: #fef3c7; color: #92400e; }
+.seg-der-card-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.seg-der-icon-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  border: 0.5px solid #e5e7eb;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all .12s;
+  color: #9ca3af;
+  font-size: 12px;
+}
+.seg-der-icon-btn:hover { background: #f3f4f6; }
+.seg-der-icon-btn.hist:hover { background: #ede9fe; color: #5b21b6; border-color: #a78bfa; }
+.seg-der-icon-btn.del:hover  { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+
+/* Confirm Heavensy */
+.seg-der-confirm {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 50;
+  background: #fff;
+  border: 0.5px solid #fca5a5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  min-width: 220px;
+}
+.seg-der-confirm.show { display: block; }
+.seg-der-confirm-msg {
+  font-size: 11px;
+  color: #374151;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.seg-der-confirm-msg i { color: #dc2626; margin-right: 4px; }
+.seg-der-confirm-btns {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.seg-der-confirm-cancel {
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 0.5px solid #e5e7eb;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+}
+.seg-der-confirm-ok {
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 0.5px solid #fca5a5;
+  background: #fef2f2;
+  color: #dc2626;
+  cursor: pointer;
+}
+
+/* ── Separador y formularios ── */
+.seg-der-sep {
+  height: 0.5px;
+  background: #C9D9FF;
+  margin: 8px 0;
+}
+.seg-der-add-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+.seg-der-add-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  max-width: 480px;
+}
+.seg-der-add-row select,
+.seg-der-add-row input {
+  flex: 1;
+  min-width: 80px;
+  max-width: 180px;
+  font-size: 11px;
+  padding: 5px 8px;
+  border: 0.5px solid #C9D9FF;
+  border-radius: 7px;
+  background: #fff;
+  color: #374151;
+}
+.seg-der-add-externo { margin-top: 6px; }
+.seg-der-add-btn {
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid #a78bfa;
+  background: #ede9fe;
+  color: #5b21b6;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: opacity .12s;
+}
+.seg-der-add-btn:hover { opacity: .8; }
+
+/* ── Action buttons ── */
+.seg-der-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  max-width: 480px;
+}
+.seg-der-btn-ai,
+.seg-der-btn-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1;
+  justify-content: center;
+  transition: opacity .12s;
+}
+.seg-der-btn-ai:hover, .seg-der-btn-pdf:hover { opacity: .82; }
+.seg-der-btn-ai  { background: #ede9fe; border: 1px solid #c4b5fd; color: #5b21b6; }
+.seg-der-btn-pdf { background: #E1F5EE; border: 1px solid #9FE1CB; color: #085041; }
+
+/* ── Modal historial ── */
+.seg-der-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30,45,90,0.35);
+  z-index: 300;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+}
+.seg-der-modal {
+  background: #fff;
+  border-radius: 14px;
+  border: 0.5px solid #e5e7eb;
+  width: 100%;
+  max-width: 540px;
+  overflow: hidden;
+}
+.seg-der-modal-hdr {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 0.5px solid #e5e7eb;
+}
+.seg-der-modal-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: #ede9fe;
+  color: #5b21b6;
+}
+.seg-der-modal-info { flex: 1; }
+.seg-der-modal-nombre { font-size: 15px; font-weight: 500; color: #1f2937; }
+.seg-der-modal-area   { font-size: 12px; color: #6b7280; margin-top: 1px; }
+.seg-der-modal-tags   { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+.seg-der-modal-tag    { font-size: 10px; padding: 2px 7px; border-radius: 8px; font-weight: 600; }
+.seg-der-modal-tag-chip { background: #fef2f2; color: #b91c1c; }
+.seg-der-modal-tag-rol  { background: #ede9fe; color: #5b21b6; }
+.seg-der-modal-tag-n    { background: #f3f4f6; color: #6b7280; }
+.seg-der-modal-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 0.5px solid #e5e7eb;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 12px;
+  flex-shrink: 0;
+  transition: all .12s;
+}
+.seg-der-modal-close:hover { background: #f3f4f6; }
+.seg-der-modal-body {
+  padding: 0;
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+/* Sesiones en modal */
+.seg-der-ses-card {
+  border: 0.5px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.seg-der-ses-card:last-child { margin-bottom: 0; }
+.seg-der-ses-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: #f9fafb;
+  cursor: pointer;
+  user-select: none;
+}
+.seg-der-ses-hdr:hover { background: #f5f3ff; }
+.seg-der-ses-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7D84C1;
+  background: #ede9fe;
+  border-radius: 10px;
+  padding: 1px 7px;
+}
+.seg-der-ses-fecha { font-size: 12px; font-weight: 500; color: #374151; }
+.seg-der-ses-hora  { font-size: 11px; color: #9ca3af; }
+.seg-der-ses-intens {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #9ca3af;
+}
+.seg-der-ses-dot {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  padding: 0 4px;
+}
+.seg-der-ses-chev { font-size: 9px; color: #7D84C1; margin-left: 4px; transition: transform .15s; }
+.seg-der-ses-body { padding: 10px; }
+.seg-der-ses-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7D84C1;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 3px;
+}
+.seg-der-ses-text { font-size: 12px; color: #374151; line-height: 1.5; }
+.seg-der-ses-sep  { height: 0.5px; background: #e5e7eb; margin: 6px 0; }
+.seg-der-ses-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.seg-der-ses-chip {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+  background: #ede9fe;
+  color: #5b21b6;
+}
+.seg-der-ses-chip-sint {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+  background: #fce7f3;
+  color: #9d174d;
+}
+.seg-der-ses-intens-badge {
+  min-width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+  color: #fff;
+  margin-left: 3px;
+  vertical-align: middle;
+  padding: 0 3px;
+}
+.seg-der-ses-empty {
+  font-size: 11px;
+  color: #b0b9c8;
+  font-style: italic;
+  padding: 16px 0;
+  text-align: center;
+}
+
+/* ── Modal footer ── */
+.seg-der-modal-footer {
+  padding: 12px 16px;
+  border-top: 0.5px solid #e5e7eb;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: #f9fafb;
+}
+.seg-der-footer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: opacity .12s;
+  white-space: nowrap;
+}
+.seg-der-footer-btn:hover { opacity: .82; }
+.seg-der-footer-ghost { background: transparent; border: 0.5px solid #e5e7eb; color: #6b7280; }
+.seg-der-footer-ghost:hover { background: #f3f4f6; opacity: 1; }
+.seg-der-footer-ai  { background: #ede9fe; border: 1px solid #c4b5fd; color: #5b21b6; }
+.seg-der-footer-pdf { background: #E1F5EE; border: 1px solid #9FE1CB; color: #085041; }
+
+/* ── Drop zone ── */
+.seg-der-drop-zone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1.5px dashed #c4b5fd;
+  border-radius: 12px;
+  background: #faf5ff;
+  width: 100%;
+  transition: all .15s;
+  min-height: 48px;
+}
+.seg-der-drop-zone.drag-over {
+  background: #ede9fe;
+  border-color: #7c3aed;
+}
+.seg-der-drop-zone-has-chips {
+  background: #faf5ff;
+}
+.seg-der-drop-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+  padding: 6px 0;
+  color: #b0b9c8;
+  font-size: 10px;
+}
+.seg-der-drop-empty i { font-size: 15px; color: #c4b5fd; }
+.seg-der-add-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px dashed #a78bfa;
+  color: #7D84C1;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .12s;
+  white-space: nowrap;
+}
+.seg-der-add-chip-btn:hover { background: #ede9fe; border-style: solid; }
+.seg-der-add-chip-btn i { font-size: 9px; }
+
+/* ── Quitar chip del panel ── */
+.seg-der-chip-quitar {
+  margin-left: auto;
+  font-size: 9px;
+  color: #c4b5fd;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  line-height: 1;
+  transition: all .12s;
+  flex-shrink: 0;
+}
+.seg-der-chip-quitar:hover { color: #dc2626; background: #fef2f2; }
+/* ── Botón cerrar detalle ── */
+.seg-der-detail-close {
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 0.5px solid #C9D9FF;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 11px;
+  flex-shrink: 0;
+  transition: all .12s;
+}
+.seg-der-detail-close:hover { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+/* ── Encabezado paciente en modal historial ── */
+.seg-der-paciente-hdr {
+  background: #EFF6FF;
+  border-bottom: 0.5px solid #C9D9FF;
+  padding: 10px 16px;
+  font-size: 13px;
+}
+.seg-der-paciente-nombre {
+  font-weight: 600;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.seg-der-paciente-nombre i { color: #60a5fa; font-size: 14px; }
+.seg-der-paciente-meta {
+  font-size: 10px;
+  color: #6b7280;
+  font-weight: 400;
+  margin-left: 4px;
+}
+.seg-der-campos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 20px;
+}
+.seg-der-campo-fijo {
+  font-size: 11px;
+  color: #374151;
+  line-height: 1.5;
+}
+.seg-der-campo-label {
+  color: #6b7280;
+  font-weight: 400;
+}
+.seg-der-campo-label::after { content: ': '; }
+.seg-der-campo-valor { font-weight: 500; word-break: break-word; }

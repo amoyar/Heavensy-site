@@ -1,0 +1,412 @@
+/* ═══════════════════════════════════════════════════════
+   SEGUIMIENTO — seg-plantillas.css
+   Builder de plantillas, campos fijos, formulario inline, drag & drop, auditoría
+═══════════════════════════════════════════════════════ */
+
+.seg-pn-modal-box {
+  width: 95%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.seg-pn-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #7D84C1;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 6px;
+}
+.seg-pn-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #374151;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border .15s;
+}
+.seg-pn-input:focus { border-color: #9961FF; box-shadow: 0 0 0 3px #9961FF12; }
+
+/* Campos en el builder */
+.seg-pn-campos-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 8px;
+  margin-bottom: 10px;
+}
+.seg-pn-campo-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.seg-pn-campo-drag { color: #d1d5db; font-size: 14px; cursor: grab; padding-top: 2px; flex-shrink: 0; }
+.seg-pn-campo-body { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.seg-pn-campo-tipo-badge {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #9961FF; background: #f5f3ff; border-radius: 4px; padding: 1px 6px; display: inline-block; margin-bottom: 2px;
+}
+.seg-pn-campo-label-input {
+  width: 100%; padding: 5px 8px; border: 1px solid #e5e7eb; border-radius: 7px;
+  font-size: 12px; color: #374151; font-family: inherit; outline: none;
+  box-sizing: border-box; transition: border .15s;
+}
+.seg-pn-campo-label-input:focus { border-color: #9961FF; }
+.seg-pn-campo-label-input::placeholder { color: #9ca3af; }
+.seg-pn-opciones-input {
+  width: 100%; padding: 5px 8px; border: 1px solid #e5e7eb; border-radius: 7px;
+  font-size: 11px; color: #6b7280; font-family: inherit; outline: none;
+  box-sizing: border-box; transition: border .15s;
+}
+.seg-pn-opciones-input:focus { border-color: #9961FF; }
+.seg-pn-campo-del {
+  background: none; border: none; cursor: pointer; color: #d1d5db;
+  font-size: 13px; padding: 2px 4px; flex-shrink: 0; transition: color .12s;
+}
+.seg-pn-campo-del:hover { color: #ef4444; }
+
+/* Botones tipo campo */
+.seg-pn-tipos-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.seg-pn-tipo-btn {
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px;
+  border: 1px solid #ddd6fe; border-radius: 20px; background: #fff; color: #7c3aed;
+  font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer; transition: all .12s;
+}
+.seg-pn-tipo-btn:hover { background: #f5f3ff; border-color: #9961FF; }
+.seg-pn-tipo-btn i { font-size: 11px; }
+
+/* Vista previa */
+.seg-pn-preview-wrap {
+  background: #f8f8ff; border: 1px solid #ede9fe; border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 16px;
+}
+.seg-pn-preview-titulo {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #9961FF; margin-bottom: 10px; display: flex; align-items: center; gap: 5px;
+}
+.seg-pn-preview-body { display: flex; flex-direction: column; gap: 10px; }
+.seg-pn-preview-empty { font-size: 12px; color: #9ca3af; }
+.seg-pn-preview-campo { display: flex; flex-direction: column; gap: 4px; }
+.seg-pn-preview-label { font-size: 11px; font-weight: 600; color: #374151; }
+.seg-pn-preview-input {
+  padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 7px;
+  font-size: 12px; color: #9ca3af; background: #fff; pointer-events: none;
+}
+.seg-pn-preview-textarea {
+  padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 7px;
+  font-size: 12px; color: #9ca3af; background: #fff; min-height: 48px; pointer-events: none;
+}
+.seg-pn-preview-select {
+  padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 7px;
+  font-size: 12px; color: #9ca3af; background: #fff; pointer-events: none;
+}
+
+/* Formulario inline (reemplaza el editor de notas) */
+.seg-pn-form-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb;
+}
+.seg-pn-form-titulo {
+  font-size: 13px; font-weight: 700; color: #374151;
+}
+.seg-pn-form-volver {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid #e5e7eb; border-radius: 20px;
+  padding: 4px 12px; font-size: 11px; color: #6b7280; font-family: inherit;
+  cursor: pointer; transition: all .12s;
+}
+.seg-pn-form-volver:hover { border-color: #9961FF; color: #9961FF; }
+
+/* Campo ancho completo (texto-largo, campos fijos) */
+/* Campo individual del formulario inline */
+.seg-pn-form-campo { display: flex; flex-direction: column; gap: 5px; }
+.seg-pn-form-campo-label {
+  font-size: 11px; font-weight: 700; color: #7D84C1;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.seg-pn-form-campo-editor {
+  min-height: 38px; padding: 7px 10px;
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  font-size: 13px; color: #374151; font-family: inherit;
+  outline: none; transition: border .15s; line-height: 1.5;
+  background: #fff;
+}
+.seg-pn-form-campo-editor:focus { border-color: #9961FF; box-shadow: 0 0 0 3px #9961FF12; }
+.seg-pn-form-campo-editor[data-tipo="texto-largo"] { min-height: 72px; }
+.seg-pn-form-campo-editor:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af; pointer-events: none;
+}
+.seg-pn-form-campo-input {
+  padding: 7px 10px; border: 1px solid #e5e7eb; border-radius: 8px;
+  font-size: 13px; color: #374151; font-family: inherit; outline: none;
+  width: 100%; box-sizing: border-box; transition: border .15s;
+}
+.seg-pn-form-campo-input:focus { border-color: #9961FF; box-shadow: 0 0 0 3px #9961FF12; }
+
+/* Date picker y dropdown custom dentro del form builder de plantillas */
+.seg-pn-form-dp-wrap { display: inline-block; position: relative; }
+.seg-pn-form-dp-btn  { border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 12px; background: #fff; }
+.seg-pn-form-dp-btn:hover { border-color: #C9D9FF; }
+.seg-pn-form-dd-wrap { width: 100%; }
+.seg-pn-form-dd-wrap .seg-agenda-dd-btn { width: 100%; box-sizing: border-box; }
+/* ── Footer del formulario de plantilla ── */
+.seg-pn-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Botón historial en footer */
+.seg-pn-form-auditoria-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid #e5e7eb; border-radius: 20px;
+  padding: 4px 12px; font-size: 11px; color: #6b7280; font-family: inherit;
+  cursor: pointer; transition: all .12s;
+}
+.seg-pn-form-auditoria-btn:hover { border-color: #9961FF; color: #9961FF; background: #f5f3ff; }
+
+/* ── Campo fijo ── */
+.seg-pn-form-campo--fijo { background: #fafbff; border-radius: 8px; padding: 8px 10px; }
+.seg-pn-fijo-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 700; color: #9961FF;
+  background: #f5f3ff; border: 1px solid #ddd6fe;
+  border-radius: 10px; padding: 1px 6px;
+  margin-left: 6px; text-transform: none; letter-spacing: 0;
+  vertical-align: middle;
+}
+.seg-pn-fijo-wrap {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; background: #fff;
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  min-height: 36px;
+}
+.seg-pn-fijo-valor {
+  flex: 1; font-size: 13px; color: #374151;
+}
+.seg-pn-fijo-edit-btn {
+  background: none; border: none; cursor: pointer;
+  color: #9ca3af; font-size: 11px; padding: 3px 6px;
+  border-radius: 5px; transition: all .12s; flex-shrink: 0;
+}
+.seg-pn-fijo-edit-btn:hover { color: #9961FF; background: #f5f3ff; }
+
+/* ── Toggle campo fijo en builder ── */
+.seg-pn-campo-fijo-wrap {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; color: #7D84C1; cursor: pointer;
+  padding: 2px 6px; border-radius: 10px;
+  border: 1px solid #e5e7eb; margin-left: 4px;
+  transition: all .12s; white-space: nowrap;
+}
+.seg-pn-campo-fijo-wrap:has(input:checked) {
+  background: #f5f3ff; border-color: #ddd6fe; color: #9961FF;
+}
+.seg-pn-campo-fijo-chk { display: none; }
+.seg-pn-campo-fijo-icon { font-size: 9px; }
+
+/* ── Modal Auditoría ── */
+.seg-auditoria-modal-wrap {
+  width: 800px; max-width: 95vw;
+}
+.seg-auditoria-loading,
+.seg-auditoria-empty {
+  text-align: center; color: #9ca3af;
+  font-size: 13px; padding: 24px;
+}
+.seg-auditoria-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 12px;
+}
+.seg-auditoria-table th {
+  text-align: left; padding: 8px 12px;
+  background: #f9fafb; border-bottom: 1px solid #e5e7eb;
+  font-size: 10px; font-weight: 700; color: #7D84C1;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.seg-auditoria-table td {
+  padding: 8px 12px; border-bottom: 0.5px solid #f3f4f6;
+  color: #374151; vertical-align: top;
+}
+.seg-auditoria-table tr:hover td { background: #fafbff; }
+.seg-auditoria-anterior { color: #ef4444; text-decoration: line-through; }
+.seg-auditoria-nuevo    { color: #16a34a; font-weight: 600; }
+
+/* ── Dropdown dentro del formulario de plantilla ── */
+.seg-pn-form-dd-list {
+  z-index: 600 !important; /* encima de todo dentro del formulario */
+  left: 0; right: auto;
+  min-width: 100%;
+}
+
+/* ── Date picker: título clickeable para navegar a meses/años ── */
+.seg-dp-titulo-link {
+  cursor: pointer;
+  border-bottom: 1px dashed #C9D9FF;
+  padding-bottom: 1px;
+  transition: color .12s;
+}
+.seg-dp-titulo-link:hover { color: #9961FF; }
+
+/* Grid de meses/años (4x3 y 4x3) */
+.seg-dp-grid-meses {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 6px 8px 8px;
+}
+.seg-dp-mes-item {
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  border: 1.5px solid transparent;
+}
+.seg-dp-mes-item:hover { background: #f5f3ff; color: #9961FF; }
+.seg-dp-mes-item.activo {
+  background: #9961FF;
+  color: #fff;
+  border-color: #9961FF;
+}
+
+/* ── Layout drag & drop en el builder ── */
+.seg-pn-layout-fila {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 4px;
+  border-radius: 8px;
+  border: 1.5px dashed transparent;
+  transition: border-color .15s, background .15s;
+  margin-bottom: 4px;
+}
+.seg-pn-layout-fila--multi .seg-pn-campo-item { flex: 1; }
+.seg-pn-layout-fila.seg-pn-drag-over {
+  border-color: #9961FF;
+  background: #f5f3ff;
+}
+
+/* Zona "+ soltar aquí" al lado de un campo solo */
+.seg-pn-drop-aqui {
+  width: 36px;
+  min-height: 48px;
+  border: 1.5px dashed #C9D9FF;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #C9D9FF;
+  font-size: 11px;
+  cursor: copy;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.seg-pn-drop-aqui.hover {
+  border-color: #9961FF;
+  color: #9961FF;
+  background: #f5f3ff;
+}
+
+/* Campo siendo arrastrado */
+.seg-pn-dragging { opacity: .4; }
+
+/* ── Layout del formulario activo (usando el layout guardado) ── */
+.seg-pn-form-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.seg-pn-form-fila {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.seg-pn-form-fila--multi {
+  grid-template-columns: 1fr 1fr;
+}
+.seg-pn-form-campo--full { grid-column: 1 / -1; }
+
+/* ── Edición inline de campos fijos ── */
+.seg-pn-fijo-wrap.editando {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+.seg-pn-fijo-input {
+  flex: 1;
+  border: 1.5px solid #9961FF;
+  border-radius: 7px;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #374151;
+  outline: none;
+  background: #fff;
+  min-width: 0;
+}
+.seg-pn-fijo-select {
+  flex: 1;
+  border: 1.5px solid #9961FF;
+  border-radius: 7px;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #374151;
+  outline: none;
+  background: #fff;
+  cursor: pointer;
+  min-width: 0;
+}
+.seg-pn-fijo-ok-btn,
+.seg-pn-fijo-cancel-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .12s;
+}
+.seg-pn-fijo-ok-btn {
+  background: #9961FF;
+  color: #fff;
+}
+.seg-pn-fijo-ok-btn:hover { background: #7c3aed; }
+.seg-pn-fijo-cancel-btn {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+.seg-pn-fijo-cancel-btn:hover { background: #e5e7eb; }
+
+/* Editor contenteditable en campo fijo editando */
+.seg-pn-fijo-editor {
+  flex: 1;
+  min-width: 0;
+  cursor: text;
+}
+.seg-pn-fijo-wrap.editando {
+  align-items: flex-start;
+}

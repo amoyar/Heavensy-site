@@ -1,0 +1,498 @@
+/* ═══════════════════════════════════════════════════════
+   SEGUIMIENTO — seg-agenda-modal.css
+   Modal de agenda: header, servicios, especialistas, calendario
+═══════════════════════════════════════════════════════ */
+
+.seg-sesion-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 20px;
+}
+
+.seg-sesion-badge.en_curso { background: #E1DEFF; color: #7c3aed; }
+.seg-sesion-badge.pendiente { background: #fef3c7; color: #92400e; }
+
+.seg-sesion-txt {
+  font-size: 11px;
+  color: #9ca3af;
+  line-height: 1.4;
+  margin-bottom: 3px;
+  overflow: hidden;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.seg-sesion-tags {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+
+.seg-sesion-tag {
+  font-size: 9px;
+  padding: 1px 6px;
+  background: #EFF6FF;
+  color: #7D84C1;
+  border-radius: 10px;
+  border: 1px solid #C9D9FF;
+}
+
+.seg-btn-ver-registro {
+  margin-top: 5px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 9px;
+  font-weight: 500;
+  border: 1px solid #e5e7eb;
+  background: none;
+  color: #7D84C1;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.seg-btn-ver-registro:hover { border-color: #9961FF; color: #9961FF; }
+
+/* ── Responsive nuevos elementos ── */
+@media (max-width: 767px) {
+  .seg-form-row { grid-template-columns: 1fr; }
+  .seg-cal-body { grid-template-columns: 1fr; }
+  .seg-cal-col-left { padding-right: 0; border-right: none; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; }
+  .seg-cal-col-right { padding-left: 0; }
+  .seg-canal-chips { flex-direction: column; gap: 6px; }
+  .seg-steps-bar { padding: 6px 10px; }
+  .seg-step-divider { min-width: 8px; }
+  .seg-tab-footer { flex-direction: column; align-items: stretch; }
+  .seg-tab-footer .seg-btn-save,
+  .seg-tab-footer .seg-btn-ai,
+  .seg-tab-footer .seg-btn-enviar { justify-content: center; }
+  .seg-tab-footer-between { flex-direction: row; }
+}
+
+/* ── Modal custom (reemplaza confirm/prompt nativos) ── */
+.seg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30,45,90,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 16px;
+}
+
+.seg-modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px 24px 20px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 8px 32px rgba(30,45,90,0.18);
+}
+
+.seg-modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e2d5a;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.seg-modal-body {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.seg-modal-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 16px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color .15s;
+}
+.seg-modal-input:focus { border-color: #9961FF; box-shadow: 0 0 0 3px #9961FF12; }
+
+.seg-modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.seg-modal-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all .15s;
+}
+
+.seg-modal-btn-ghost {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+.seg-modal-btn-ghost:hover { background: #e5e7eb; }
+
+.seg-modal-btn-primary {
+  background: #9961FF;
+  color: #fff;
+}
+.seg-modal-btn-primary:hover { background: #8450ef; }
+
+.seg-modal-btn-danger {
+  background: #ef4444;
+  color: #fff;
+}
+.seg-modal-btn-danger:hover { background: #dc2626; }
+
+/* ── Responsive general ── */
+/* ── Sistema /slash — etiquetas en notas ── */
+.seg-notas-solo-ti {
+  font-size: 10px;
+  font-weight: 600;
+  color: #ef4444;
+  margin-left: 6px;
+  background: #fff5f5;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.seg-notas-textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.seg-etiquetas-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.seg-etiqueta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  background: #f5f0ff;
+  border: 0.5px solid #ddd6fe;
+  border-radius: 20px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #7c3aed;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.seg-chip-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #a78bfa;
+  font-size: 9px;
+  padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+.seg-chip-remove:hover { color: #7c3aed; }
+
+.seg-slash-dropdown {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  width: 220px;
+  background: #fff;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.10);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.seg-slash-item {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: background .1s;
+}
+.seg-slash-item i { color: #9961FF; font-size: 10px; }
+.seg-slash-item:hover,
+.seg-slash-item.active { background: #EFF6FF; color: #9961FF; }
+
+/* ── Plantillas por campo ── */
+.seg-field-con-plantillas {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #fff;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.seg-field-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 10px;
+  margin-left: 6px;
+}
+.seg-badge-ia     { background: #d1fae5; color: #065f46; }
+.seg-badge-enviar { background: #dbeafe; color: #1e40af; }
+
+.seg-plantillas-panel {
+  background: #fafbff;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.seg-plantillas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 7px;
+}
+
+.seg-plantillas-titulo {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7D84C1;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.seg-btn-nueva-plantilla {
+  background: none;
+  border: 1px solid #C9D9FF;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9961FF;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all .15s;
+}
+.seg-btn-nueva-plantilla:hover { background: #EFF6FF; border-color: #9961FF; }
+.seg-btn-nueva-plantilla i { font-size: 9px; }
+
+.seg-plantillas-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.seg-plantillas-vacio {
+  font-size: 11px;
+  color: #b0b9c8;
+}
+
+.seg-chip-check { color: #9961FF; font-size: 9px; }
+
+.seg-chip-actions i {
+  font-size: 10px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 1px 2px;
+  transition: color .12s;
+}
+.seg-chip-actions i:hover { color: #9961FF; }
+.seg-chip-actions .fa-trash:hover { color: #ef4444; }
+
+.seg-plantilla-chip:hover .seg-chip-actions { display: flex; }
+
+/* Modal plantilla */
+.seg-modal-plantilla {
+  max-width: 440px;
+}
+.seg-modal-plantilla-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e2d5a;
+}
+.seg-modal-btn-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 14px;
+  padding: 2px 6px;
+}
+.seg-modal-btn-close:hover { color: #374151; }
+
+/* ── Adjuntos ── */
+.seg-adjuntos-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #fff;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.seg-dropzone {
+  border: 1.5px dashed #C9D9FF;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #9ca3af;
+  cursor: default;
+  transition: all .15s;
+  background: #fafbff;
+  min-height: 72px;
+}
+.seg-dropzone-over {
+  border-color: #9961FF;
+  background: #f5f0ff;
+  color: #9961FF;
+}
+.seg-dropzone-over .seg-dropzone-trigger i { color: #9961FF; }
+
+/* Zona clickeable con el texto "arrastra / selecciona" */
+.seg-dropzone-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background .12s;
+}
+.seg-dropzone-trigger:hover { background: #eff6ff; }
+.seg-dropzone-trigger i { font-size: 16px; color: #C9D9FF; flex-shrink: 0; }
+
+.seg-dropzone-btn {
+  color: #9961FF;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Lista de archivos dentro del dropzone */
+.seg-adjuntos-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 0 6px;
+}
+.seg-adjuntos-lista:empty { display: none; }
+
+/* Tarjeta de adjunto */
+.seg-adj-card {
+  position: relative;
+  width: 76px;
+  flex-shrink: 0;
+}
+
+.seg-adj-card-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.seg-adj-card-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color .15s, box-shadow .15s;
+}
+.seg-adj-card-link:hover .seg-adj-card-preview {
+  border-color: #9961FF;
+  box-shadow: 0 0 0 3px #9961FF12;
+}
+
+/* Miniatura para imágenes */
+.seg-adj-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 7px;
+}
+
+/* Icono para documentos */
+.seg-adj-card-icon {
+  font-size: 28px;
+  color: #7D84C1;
+}
+.seg-adj-card-icon.fa-file-pdf   { color: #ef4444; }
+.seg-adj-card-icon.fa-file-word  { color: #2563eb; }
+.seg-adj-card-icon.fa-file-excel { color: #16a34a; }
+.seg-adj-card-icon.fa-image      { color: #f59e0b; }
+.seg-adj-card-icon.fa-video      { color: #8b5cf6; }
+.seg-adj-card-icon.fa-music      { color: #ec4899; }
+
+/* Nombre del archivo */
+.seg-adj-card-nombre {
+  font-size: 10px;
+  color: #6b7280;
+  width: 72px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* Botón eliminar en esquina */
+.seg-adj-card-remove {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #374151;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity .15s, background .15s;
+  z-index: 2;
+}
+.seg-adj-card:hover .seg-adj-card-remove { opacity: 1; }
+.seg-adj-card-remove:hover { background: #ef4444; }
+
+/* Tarjeta en estado subiendo */

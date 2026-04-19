@@ -1,0 +1,379 @@
+/* ═══════════════════════════════════════════════════════
+   SEGUIMIENTO — seg-adjuntos.css
+   Dropzone de adjuntos, preview de archivos, modal system (confirm/prompt), steps
+═══════════════════════════════════════════════════════ */
+
+.seg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 45, 90, 0.35);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.seg-modal-overlay.seg-modal-visible {
+  display: flex;
+  animation: segFadeIn .15s ease;
+}
+
+@keyframes segFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.seg-modal {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(30, 45, 90, .18);
+  width: 100%;
+  max-width: 380px;
+  margin: 16px;
+  transform: translateY(8px);
+  transition: transform .2s;
+  overflow: hidden;
+}
+
+.seg-modal-overlay.seg-modal-visible .seg-modal {
+  transform: translateY(0);
+}
+
+.seg-modal-body {
+  padding: 20px 22px 16px;
+}
+
+.seg-modal-msg {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+
+.seg-modal-input {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 0.5px solid #C9D9FF;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #374151;
+  outline: none;
+  transition: border .15s;
+}
+
+.seg-modal-input:focus {
+  border-color: #9961FF;
+  box-shadow: 0 0 0 3px #9961FF12;
+}
+
+.seg-modal-footer {
+  padding: 12px 22px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 0.5px solid #f3f4f6;
+}
+
+.seg-modal-btn {
+  padding: 7px 18px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all .15s;
+}
+
+.seg-modal-btn-cancel {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.seg-modal-btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+.seg-modal-btn-ok {
+  background: #9961FF;
+  color: #fff;
+}
+
+.seg-modal-btn-ok:hover {
+  background: #8450ef;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE — MÓVIL
+   Breakpoint: < 768px
+   Patrón: dos vistas separadas (lista ↔ detalle)
+   - .seg-mobile-detail  → clase que activa la vista de detalle
+═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+
+  /* ── Layout principal: flex horizontal — paneles se colapsan con panel-hidden ── */
+  #page-seguimiento {
+    flex-direction: row;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ── Panel izquierdo: overlay fijo sobre el contenido ── */
+  .seg-left-panel {
+    position: fixed;
+    left: 0;
+    top: 40px;
+    bottom: 0;
+    z-index: 200;
+    width: 280px !important;
+    box-shadow: 2px 0 16px rgba(0,0,0,.15);
+    transition: width .25s ease;
+  }
+
+  .seg-left-panel.panel-hidden {
+    width: 0 !important;
+    min-width: 0 !important;
+    box-shadow: none;
+    border: none !important;
+  }
+
+  /* ── Área principal: siempre ocupa todo el ancho ── */
+  .seg-main-area {
+    width: 100%;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Hero: más compacto ── */
+  .seg-hero {
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .seg-hero-avatar {
+    width: 38px;
+    height: 38px;
+    font-size: 20px;
+  }
+
+  .seg-hero-name { font-size: 14px; }
+  .seg-hero-sub  { font-size: 10px; }
+
+  .seg-hero-chips { gap: 4px; }
+
+  .seg-hchip {
+    font-size: 9px;
+    padding: 2px 8px;
+  }
+
+  /* ── Timeline: scroll horizontal ── */
+  .seg-tl-content {
+    padding: 4px 14px 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Tabs: scroll horizontal ── */
+  .seg-tabs-bar {
+    padding: 0 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    gap: 0;
+  }
+
+  .seg-tab {
+    padding: 10px 10px;
+    font-size: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .seg-tabs-spacer { display: none; }
+
+  /* ── Body: columna única ── */
+  .seg-body {
+    flex-direction: column;
+    padding: 10px 14px;
+    gap: 10px;
+    overflow-y: auto;
+  }
+
+  .seg-tab-panel {
+    flex-direction: column !important;
+  }
+
+  .seg-col-main {
+    width: 100%;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+
+  /* Columna lateral va debajo */
+  .seg-col-side {
+    width: 100% !important;
+    overflow-y: visible;
+    flex-direction: column;
+  }
+
+  .seg-col-side.panel-hidden {
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* ── Barra de acciones ── */
+  .seg-actions-bar {
+    padding: 8px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .seg-btn-save,
+  .seg-btn-ai {
+    flex: 1;
+    justify-content: center;
+    font-size: 12px;
+    padding: 9px 10px;
+  }
+
+  .seg-actions-spacer { display: none; }
+
+  .seg-btn-promover {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* ── Resumen card ── */
+  .seg-resumen-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .seg-resumen-actions .seg-btn-save,
+  .seg-resumen-actions .seg-btn-ai,
+  .seg-resumen-actions .seg-btn-secondary {
+    flex: 1;
+    min-width: 100px;
+    justify-content: center;
+  }
+
+  .seg-ml-auto { margin-left: 0; }
+
+  /* ── Entity list: más padding táctil ── */
+  .seg-entity-item { padding: 11px 12px; }
+  .seg-entity-avatar { width: 38px; height: 38px; }
+  .seg-entity-name { font-size: 13px; }
+  .seg-entity-meta { font-size: 11px; }
+
+  /* ── Empty state ── */
+  .seg-empty-state { padding: 40px 20px; }
+
+  /* ── Toast ── */
+  .seg-toast {
+    left: 16px;
+    right: 16px;
+    bottom: 80px;
+    justify-content: center;
+  }
+
+  /* ── Modal ── */
+  .seg-modal {
+    max-width: calc(100% - 24px);
+    margin: 12px;
+  }
+
+  /* Ocultar botón volver antiguo */
+  .seg-back-btn { display: none !important; }
+}
+
+/* ── Botón volver: oculto en desktop ── */
+.seg-back-btn {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NUEVAS CLASES — Features completos del preview
+═══════════════════════════════════════════════════════════ */
+
+/* ── Step Tabs ── */
+.seg-steps-bar {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.seg-step-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all .15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.seg-step-btn:hover .seg-step-num { background: #9961FF; color: #fff; }
+.seg-step-btn:hover .seg-step-label { color: #9961FF; }
+
+.seg-step-btn.active .seg-step-num { background: #9961FF; color: #fff; }
+.seg-step-btn.active { color: #9961FF; font-weight: 600; font-size: 12px; }
+
+.seg-step-btn.done .seg-step-num { background: #10b981; color: #fff; }
+.seg-step-btn.done { color: #10b981; font-size: 12px; }
+
+.seg-step-btn:not(.active):not(.done) { color: #7D84C1; font-size: 12px; }
+
+.seg-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #7D84C1;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+
+.seg-step-num-icon {
+  background: #EFF6FF;
+  color: #7D84C1;
+  font-size: 10px;
+}
+
+.seg-step-divider {
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+  min-width: 16px;
+  max-width: 40px;
+}
+
+.seg-steps-spacer { flex: 1; }
+
+.seg-step-btn-sm {
+  font-size: 10px !important;
+  color: #b0b9c8 !important;
+  padding: 4px 8px;
+}
+
+.seg-step-btn-sm .seg-step-num { display: none; }
+.seg-step-btn-sm.active { color: #9961FF !important; }

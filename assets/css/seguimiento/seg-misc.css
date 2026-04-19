@@ -1,0 +1,246 @@
+/* ═══════════════════════════════════════════════════════
+   SEGUIMIENTO — seg-misc.css
+   Utilidades, clases JS dinámicas, timeline editable, etiquetas, avatares
+═══════════════════════════════════════════════════════ */
+
+/* Visibilidad — controlada por JS via classList */
+.seg-hidden { display: none !important; }
+
+/* Texto del nombre de empresa en el selector */
+.seg-company-name-text {
+  font-size: 12px;
+  color: #374151;
+}
+
+/* Icono del timeline bar */
+.seg-tl-bar-icon {
+  font-size: 10px;
+  color: #7D84C1;
+}
+
+/* Icono check en tab número */
+.seg-tab-check-icon {
+  font-size: 7px;
+}
+
+/* Tabs */
+.seg-tab-icon {
+  font-size: 10px;
+}
+
+.seg-tab-label-inline {
+  margin-left: 3px;
+}
+
+/* Tab secundario (línea de tiempo) — tono apagado */
+.seg-tab-secondary {
+  font-size: 10px;
+  color: #b0b9c8;
+}
+
+/* Iconos con opacidad dentro de field-label */
+.seg-icon-muted {
+  opacity: .6;
+}
+
+/* Textarea tamaño pequeño (próxima sesión) */
+.seg-textarea-sm {
+  min-height: 50px;
+}
+
+/* Separación superior en títulos de sección lateral */
+.seg-mt-xs {
+  margin-top: 4px;
+}
+
+/* Etiquetas activas en panel lateral */
+.seg-etiquetas-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* ── Resumen IA ── */
+.seg-resumen-vacio {
+  padding: 20px 0;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.seg-resumen-vacio-icon {
+  font-size: 22px;
+  color: #C9D9FF;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.seg-resumen-generando {
+  padding: 16px 0;
+  text-align: center;
+}
+
+.seg-spinner-centered {
+  margin: 0 auto 8px;
+}
+
+.seg-generando-txt {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* resumen-text: oculto por defecto, sin outline al editar */
+.seg-resumen-text {
+  outline: none;
+}
+
+/* ── Variante side card punteada (programados) ── */
+.seg-side-card-dashed {
+  justify-content: center;
+  border-style: dashed;
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+/* ── Espaciado de iconos dentro de botones ── */
+.seg-icon-mr {
+  margin-right: 5px;
+}
+
+.seg-icon-mr-sm {
+  margin-right: 4px;
+}
+
+/* ── Utilidades de layout ── */
+.seg-ml-auto    { margin-left: auto; }
+.seg-full-width { width: 100%; }
+
+/* ── Descripción sync IA en tab timeline ── */
+.seg-sync-desc {
+  font-size: 11px;
+  color: #9ca3af;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+/* ── Lista editable de eventos timeline ── */
+.seg-tl-edit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ESTILOS PARA HTML DINÁMICO (generado en seguimiento.js)
+   Aplica a elementos creados con innerHTML en el JS
+═══════════════════════════════════════════════════════════ */
+
+/* Fila de evento en seg-tl-edit-list (segRenderizarTLEdit) */
+.seg-tl-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: #f9fafb;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.seg-tl-edit-row-year {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9961FF;
+  min-width: 44px;
+}
+
+.seg-tl-edit-row-label {
+  font-size: 12px;
+  color: #374151;
+  flex: 1;
+}
+
+.seg-tl-edit-row-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 4px;
+}
+
+.seg-tl-edit-row-btn:hover {
+  color: #ef4444;
+}
+
+/* Loading row en lista de entidades */
+.seg-loading-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 12px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* Etiquetas inline en notas display (segRenderizarNotasDisplay) */
+.seg-etiqueta-inline {
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.seg-etiqueta-inline.t1 { background: #fff5f5; color: #d4908a; }
+.seg-etiqueta-inline.t2 { background: #eff6ff; color: #6b8cce; }
+.seg-etiqueta-inline.t3 { background: #f5f0ff; color: #a07fd4; }
+
+/* ── Clases para HTML dinámico adicional (generado en JS) ── */
+
+/* Icono en info banner */
+.seg-banner-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Textos vacíos / placeholder */
+.seg-text-empty {
+  color: #b0b9c8;
+  font-size: 10px;
+}
+
+.seg-text-empty-sm {
+  color: #b0b9c8;
+  font-size: 10px;
+  padding: 0 4px;
+}
+
+.seg-text-empty-md {
+  color: #b0b9c8;
+  font-size: 11px;
+}
+
+/* Nodo "Hoy" en timeline — color lila */
+.seg-tl-year-today  { color: #9961FF; }
+.seg-tl-label-today { color: #9961FF; }
+
+/* Ícono spinner dentro de botón (innerHTML dinámico) */
+.seg-btn-spinner-icon {
+  margin-right: 5px;
+}
+
+/* Avatar imagen (Cloudinary URL) */
+.seg-entity-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+/* Avatar emoji */
+.seg-entity-avatar-emoji {
+  font-size: 18px;
+  line-height: 1;
+}

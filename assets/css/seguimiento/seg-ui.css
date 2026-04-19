@@ -1,0 +1,217 @@
+/* ═══════════════════════════════════════════════════════
+   SEGUIMIENTO — seg-ui.css
+   Resumen IA, tab programados, barra de acciones, spinners, toasts, botones, scrollbar
+═══════════════════════════════════════════════════════ */
+
+/* Plantillas / plain card */
+.seg-side-card-plain {
+  background: #fff;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 11px;
+  color: #9ca3af;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: border-color .12s;
+}
+
+.seg-side-card-plain:hover { border-color: #C9D9FF; }
+.seg-side-card-plain i { font-size: 9px; }
+
+/* ── Resumen IA (Tab 2) ── */
+.seg-resumen-card {
+  background: #fff;
+  border: 0.5px solid #C9D9FF;
+  border-radius: 10px;
+  padding: 14px 16px;
+  flex: 1;
+}
+
+.seg-resumen-text {
+  font-size: 12px;
+  color: #374151;
+  line-height: 1.8;
+  padding: 6px 0 12px;
+  min-height: 80px;
+}
+
+.seg-resumen-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Tab programados empty */
+.seg-prog-empty {
+  padding: 24px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.seg-prog-empty i {
+  font-size: 26px;
+  color: #C9D9FF;
+  display: block;
+  margin-bottom: 8px;
+}
+
+/* ── Barra de acciones ── */
+.seg-actions-bar {
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.seg-btn-save {
+  background: #fff;
+  border: 1px solid #C9D9FF;
+  color: #7D84C1;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.seg-btn-save:hover {
+  border-color: #9961FF;
+  color: #9961FF;
+  background: #EFF6FF;
+}
+
+.seg-btn-ai {
+  background: #9961FF;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background .15s;
+}
+
+.seg-btn-ai:hover { background: #8450ef; }
+.seg-btn-ai i { font-size: 11px; }
+.seg-btn-ai:disabled { background: #b49be0; cursor: not-allowed; }
+
+.seg-actions-spacer { flex: 1; }
+
+.seg-btn-promover {
+  background: #fff;
+  border: 1px solid #C9D9FF;
+  color: #9ca3af;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.seg-btn-promover:hover {
+  border-color: #10b981;
+  color: #10b981;
+  background: #f0fdf4;
+}
+
+/* ── Spinners / loading ── */
+.seg-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #C9D9FF;
+  border-top-color: #9961FF;
+  border-radius: 50%;
+  animation: seg-spin .6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes seg-spin { to { transform: rotate(360deg); } }
+
+.seg-loading-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* ── Notificaciones toast ── */
+.seg-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #1e2d5a;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all .2s;
+  pointer-events: none;
+}
+
+.seg-toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.seg-toast.success { background: #065f46; }
+.seg-toast.error   { background: #991b1b; }
+
+/* ── Botones comunes (reutiliza de la app) ── */
+.seg-btn-secondary {
+  background: #fff;
+  color: #7D84C1;
+  border: 1px solid #C9D9FF;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.seg-btn-secondary:hover {
+  background: #EFF6FF;
+  border-color: #9961FF;
+  color: #9961FF;
+}
+
+/* ── Scrollbar ── */
+.seg-entity-list::-webkit-scrollbar,
+.seg-body::-webkit-scrollbar,
+.seg-tl-content::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.seg-entity-list::-webkit-scrollbar-track,
+.seg-body::-webkit-scrollbar-track { background: transparent; }
+
+.seg-entity-list::-webkit-scrollbar-thumb,
+.seg-body::-webkit-scrollbar-thumb,
+.seg-tl-content::-webkit-scrollbar-thumb {
+  background: #C9D9FF;
+  border-radius: 4px;
+}

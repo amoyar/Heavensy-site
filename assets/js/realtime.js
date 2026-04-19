@@ -65,7 +65,7 @@ function connectRealtime() {
             rtConnecting = false;   // 👈 NUEVO
             
             // Unirse al room de la empresa actual
-            syncRooms();
+            //syncRooms();
         });
 
         rtSocket.on('disconnect', (reason) => {
@@ -85,16 +85,41 @@ function connectRealtime() {
         // =============================================
 
         // Mensaje nuevo desde WhatsApp (usuario o respuesta IA del webhook)
+        // rtSocket.on('new_message', (data) => {
+        //     console.log('📨 [realtime] new_message:', data);
+        //     handleNewMessage(data);
+        // });
+
         rtSocket.on('new_message', (data) => {
-            console.log('📨 [realtime] new_message:', data);
-            handleNewMessage(data);
-        });
+            if (window.rtEvents) {
+            window.rtEvents.emit('new_message', data);
+        }});
 
         // Respuesta del admin (desde otro panel o confirmación propia)
+        // rtSocket.on('admin_reply', (data) => {
+        //     console.log('📨 [realtime] admin_reply:', data);
+        //     handleAdminReply(data);
+        // });
+
         rtSocket.on('admin_reply', (data) => {
-            console.log('📨 [realtime] admin_reply:', data);
-            handleAdminReply(data);
+            if (window.rtEvents) {
+            window.rtEvents.emit('admin_reply', data);
+        }});
+
+        // Línea de tiempo IA — actualización desde backend
+        // rtSocket.on('seguimiento_timeline_updated', (data) => {
+        //     console.log('📅 [realtime] seguimiento_timeline_updated:', data);
+        //     if (typeof window.segOnTimelineUpdated === 'function') {
+        //         window.segOnTimelineUpdated(data);
+        //     }
+        // });
+
+        rtSocket.on('seguimiento_timeline_updated', (data) => {
+            console.log('📅 timeline event:', data);
+            window.rtEvents.emit('seguimiento_timeline_updated', data);
         });
+        // Exponer socket globalmente para que otros módulos puedan usarlo
+        window.rtSocket = rtSocket;
 
         // Debug: escuchar todos los eventos
         rtSocket.onAny((event, ...args) => {
@@ -111,49 +136,86 @@ function connectRealtime() {
 // ============================================
 // ROOMS: Sincronizar con estado de conversaciones
 // ============================================
-function syncRooms() {
-    const state = getConvState();
+// function syncRooms() {
+//     const state = getConvState();
 
-    // Join company room
-    if (state.currentCompanyId && state.currentCompanyId !== rtCurrentCompanyId) {
-        if (rtCurrentCompanyId) {
-            leaveRoom('company', rtCurrentCompanyId);
-        }
-        rtCurrentCompanyId = state.currentCompanyId;
-        joinRoom('company', rtCurrentCompanyId);
-    }
+//     // Join company room
+//     if (state.currentCompanyId && state.currentCompanyId !== rtCurrentCompanyId) {
+//         if (rtCurrentCompanyId) {
+//             leaveRoom('company', rtCurrentCompanyId);
+//         }
+//         rtCurrentCompanyId = state.currentCompanyId;
+//         joinRoom('company', rtCurrentCompanyId);
+//     }
 
-    // Join user room si hay conversación abierta
-    const newUserId = state.currentConversation?.id || null;
-    if (newUserId !== rtCurrentUserId) {
-        if (rtCurrentUserId && rtCurrentCompanyId) {
-            leaveRoom('user', rtCurrentCompanyId, rtCurrentUserId);
-        }
-        rtCurrentUserId = newUserId;
-        if (rtCurrentUserId && rtCurrentCompanyId) {
-            joinRoom('user', rtCurrentCompanyId, rtCurrentUserId);
-        }
-    }
-}
+//     // Join user room si hay conversación abierta
+//     const newUserId = state.currentConversation?.id || null;
+//     if (newUserId !== rtCurrentUserId) {
+//         if (rtCurrentUserId && rtCurrentCompanyId) {
+//             leaveRoom('user', rtCurrentCompanyId, rtCurrentUserId);
+//         }
+//         rtCurrentUserId = newUserId;
+//         if (rtCurrentUserId && rtCurrentCompanyId) {
+//             joinRoom('user', rtCurrentCompanyId, rtCurrentUserId);
+//         }
+//     }
+// }
 
-function joinRoom(type, companyId, userId) {
+// function joinRoom(type, companyId, userId) {
+//     if (!rtSocket || !rtSocket.connected) return;
+    
+//     const data = { type, company_id: companyId };
+//     if (userId) data.user_id = userId;
+    
+//     rtSocket.emit('join_room', data);
+//     console.log(`🔌 join_room: ${type}:${companyId}${userId ? ':' + userId : ''}`);
+// }
+
+function joinRoom(type, companyId, value) {
     if (!rtSocket || !rtSocket.connected) return;
-    
+
     const data = { type, company_id: companyId };
-    if (userId) data.user_id = userId;
-    
+
+    if (type === 'user') {
+        data.user_id = value;
+    }
+
+    if (type === 'feature') {
+        data.feature = value;
+    }
+
     rtSocket.emit('join_room', data);
-    console.log(`🔌 join_room: ${type}:${companyId}${userId ? ':' + userId : ''}`);
+
+    console.log(`🔌 join_room: ${type}:${companyId}${value ? ':' + value : ''}`);
 }
 
-function leaveRoom(type, companyId, userId) {
+// function leaveRoom(type, companyId, userId) {
+//     if (!rtSocket || !rtSocket.connected) return;
+    
+//     const data = { type, company_id: companyId };
+//     if (userId) data.user_id = userId;
+    
+//     rtSocket.emit('leave_room', data);
+// }
+
+function leaveRoom(type, companyId, value) {
     if (!rtSocket || !rtSocket.connected) return;
-    
+
     const data = { type, company_id: companyId };
-    if (userId) data.user_id = userId;
-    
+
+    if (type === 'user') {
+        data.user_id = value;
+    }
+
+    if (type === 'feature') {
+        data.feature = value;
+    }
+
     rtSocket.emit('leave_room', data);
+
+    console.log(`🔌 leave_room: ${type}:${companyId}${value ? ':' + value : ''}`);
 }
+
 
 // ============================================
 // HELPER: Estado de conversaciones
@@ -523,7 +585,10 @@ function setupRealtimeHooks() {
     const companySelect = document.getElementById('conversacionesCompanyFilter');
     if (companySelect) {
         companySelect.addEventListener('change', () => {
-            setTimeout(syncRooms, 200);
+            const state = getConvState();
+            if (state.currentCompanyId) {
+                setRealtimeContext({ companyId: state.currentCompanyId });
+            }
         });
     }
 
@@ -531,7 +596,11 @@ function setupRealtimeHooks() {
     const chatHeader = document.getElementById('chatHeaderName');
     if (chatHeader) {
         const observer = new MutationObserver(() => {
-            setTimeout(syncRooms, 100);
+            const state = getConvState();
+            const userId = state.currentConversation?.id || null;
+            if (state.currentCompanyId) {
+                setRealtimeContext({ companyId: state.currentCompanyId, userId });
+            }
         });
         observer.observe(chatHeader, { childList: true, characterData: true, subtree: true });
     }
@@ -540,27 +609,114 @@ function setupRealtimeHooks() {
     setInterval(() => {
         const state = getConvState();
         const needsSync = (
-            (state.currentCompanyId && state.currentCompanyId !== rtCurrentCompanyId) ||
-            ((state.currentConversation?.id || null) !== rtCurrentUserId)
+            (state.currentCompanyId && state.currentCompanyId !== rtContext.companyId) ||
+            ((state.currentConversation?.id || null) !== rtContext.userId)
         );
-        if (needsSync) syncRooms();
+        if (needsSync) {
+            setRealtimeContext({
+                companyId: state.currentCompanyId,
+                userId: state.currentConversation?.id || null
+            });
+        }
     }, 2000);
 }
 
 // ============================================
 // AUTO-INIT
 // ============================================
+// function waitAndInit() {
+//     if (window.conversacionesAPI) {
+//         console.log('🔌 conversacionesAPI detectado, iniciando realtime...');
+//         injectNotificationStyles();
+//         initRealtime();
+//         setTimeout(setupRealtimeHooks, 2000);
+//     } else {
+//         setTimeout(waitAndInit, 500);
+//     }
+// }
+
 function waitAndInit() {
+    console.log("🔌 Inicializando realtime (modo global)");
+
+    injectNotificationStyles();
+    initRealtime();
+
+    // Hooks SOLO si existe conversaciones (no obligatorio)
     if (window.conversacionesAPI) {
-        console.log('🔌 conversacionesAPI detectado, iniciando realtime...');
-        injectNotificationStyles();
-        initRealtime();
         setTimeout(setupRealtimeHooks, 2000);
-    } else {
-        setTimeout(waitAndInit, 500);
     }
 }
+
 
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(waitAndInit, 1500);
 });
+
+// ============================================
+// EVENT BUS (para desacoplar módulos)
+// ============================================
+window.rtEvents = {
+    handlers: {},
+
+    on(event, callback) {
+        if (!this.handlers[event]) {
+            this.handlers[event] = [];
+        }
+        this.handlers[event].push(callback);
+    },
+
+    emit(event, data) {
+        if (!this.handlers[event]) return;
+        this.handlers[event].forEach(cb => {
+            try { cb(data); } catch(e) {
+                console.error("❌ Error en handler:", event, e);
+            }
+        });
+    }
+};
+
+const rtContext = {
+  companyId: null,
+  userId: null,
+  feature: null
+};
+
+let pendingContext = null;
+function setRealtimeContext({ companyId, userId, feature }) {
+    if (!rtSocket || !rtSocket.connected) {
+        console.warn("⚠️ Socket no conectado aún");
+        return;
+    }
+
+    // COMPANY
+    if (companyId && companyId !== rtContext.companyId) {
+        if (rtContext.companyId) {
+            leaveRoom('company', rtContext.companyId);
+        }
+        rtContext.companyId = companyId;
+        joinRoom('company', companyId);
+    }
+
+    // USER
+    if (userId && userId !== rtContext.userId) {
+        if (rtContext.userId && rtContext.companyId) {
+            leaveRoom('user', rtContext.companyId, rtContext.userId);
+        }
+        rtContext.userId = userId;
+        joinRoom('user', rtContext.companyId, userId);
+    }
+
+    // FEATURE 🔥
+    if (feature && feature !== rtContext.feature) {
+        if (rtContext.feature && rtContext.companyId) {
+            leaveRoom('feature', rtContext.companyId, rtContext.feature);
+        }
+        rtContext.feature = feature;
+        joinRoom('feature', rtContext.companyId, feature);
+    }
+
+    console.log("🧠 RT Context:", rtContext);
+}
+
+// 👇 MUY IMPORTANTE
+window.setRealtimeContext = setRealtimeContext;
