@@ -1,61 +1,183 @@
-/* ═══════════════════════════════════════════════════════
-   SEGUIMIENTO — seg-derivaciones.js
-   Panel de derivaciones/asignaciones de profesionales.
-   Multi-rubro: salud, fitness, educación, cowork, etc.
-═══════════════════════════════════════════════════════ */
+/* ─────────────────────────────────────────
+   CUSTOM DROPDOWNS — reemplazan <select> nativos
+───────────────────────────────────────── */
+var _segDdState = {};
 
+/* ─────────────────────────────────────────
+   ESTADO DEL MÓDULO DERIVACIONES
+───────────────────────────────────────── */
 var _segDer = {
-  visible:      false,
-  chipActivo:   null,          // nombre del chip seleccionado
-  derivaciones: {},            // { chip_nombre: [{ ...doc }] }
-  panelChips:   [],            // chips arrastrados al panel (persisten en BD)
-  profesionales: [],           // lista internos de la empresa
-  colorChip:    null,          // color badge del chip activo
-  modalProf:    null,          // profesional activo en modal historial
-  dragOver:     false,         // estado drag & drop
+  panelChips:    [],   // chips arrastrados al panel
+  derivaciones:  {},   // { chip_nombre: [derivacion, ...] }
+  profesionales: [],   // lista de profesionales internos
+  chipActivo:    null, // chip seleccionado actualmente
+  colorChip:     null,
+  modalProf:     null, // profesional del modal historial abierto
+  _historialTexto: '' // texto plano para envío por canal
 };
 
-// Datos dummy de asignaciones (terapeuta + servicio por chip).
-// TODO: reemplazar con datos reales de agenda cuando esté disponible.
-var _segDerAsignaciones = {};  // { chip_nombre: { profesional, servicio } }
+var _segDerAsignaciones = {}; // { chip_nombre: { profesional, servicio } }
+
+function segDdToggle(id) {
+  var trigger = document.getElementById('seg-dd-' + id + '-trigger');
+  var list    = document.getElementById('seg-dd-' + id + '-list');
+  if (!trigger || !list) return;
+
+  // Si ya hay uno abierto, cerrarlo primero
+  var prevId = document.body.getAttribute('data-dd-open');
+  if (prevId) {
+    var prevList    = document.getElementById('seg-dd-' + prevId + '-list');
+    var prevWrap    = document.getElementById('seg-dd-' + prevId + '-wrap');
+    var prevTrigger = document.getElementById('seg-dd-' + prevId + '-trigger');
+    if (prevList && prevWrap) prevWrap.appendChild(prevList);
+    if (prevTrigger) prevTrigger.classList.remove('open');
+    list.classList.add('seg-hidden');
+    document.body.removeAttribute('data-dd-open');
+    if (prevId === id) return; // mismo — solo cerrar
+  }
+
+  // Mover la lista al body con posición fija
+  var rect = trigger.getBoundingClientRect();
+  list.classList.remove('seg-hidden');
+  list.style.position = 'fixed';
+  list.style.top      = (rect.bottom + 4) + 'px';
+  list.style.left     = rect.left + 'px';
+  list.style.width    = rect.width + 'px';
+  list.style.zIndex   = '9999';
+  document.body.appendChild(list);
+  document.body.setAttribute('data-dd-open', id);
+  trigger.classList.add('open');
+
+  setTimeout(function() {
+    document.addEventListener('click', function _c(e) {
+      if (!list.contains(e.target) && !trigger.contains(e.target)) {
+        var wrap = document.getElementById('seg-dd-' + id + '-wrap');
+        if (wrap) wrap.appendChild(list);
+        list.classList.add('seg-hidden');
+        list.style.cssText = '';
+        trigger.classList.remove('open');
+        document.body.removeAttribute('data-dd-open');
+        document.removeEventListener('click', _c);
+      }
+    });
+  }, 10);
+}
+
+function segDdSeleccionar(id, val, label) {
+  var valEl   = document.getElementById('seg-dd-' + id + '-value');
+  var hidden  = document.getElementById('seg-der-sel-' + id);
+  var trigger = document.getElementById('seg-dd-' + id + '-trigger');
+  var list    = document.getElementById('seg-dd-' + id + '-list');
+  var wrap    = document.getElementById('seg-dd-' + id + '-wrap');
+  if (valEl)  valEl.textContent = label || val || '— selecciona —';
+  if (hidden) { hidden.value = val; hidden.setAttribute('data-nombre', label || ''); }
+  // Return list to wrap
+  if (list && wrap) { wrap.appendChild(list); list.classList.add('seg-hidden'); list.style.cssText = ''; }
+  if (trigger) trigger.classList.remove('open');
+  document.body.removeAttribute('data-dd-open');
+  if (id === 'area') segDerFiltrarProfesionales();
+}
+
+function _segDdMakeItem(ddid, val, label, extra) {
+  return '<div class="seg-dd-item" data-ddid="' + ddid + '" data-val="' +
+    segEscape(val) + '" data-label="' + segEscape(label) +
+    '" onclick="segDdItemClick(this)">' + segEscape(label) + (extra || '') + '</div>';
+}
+
+function _segDdPoblar(id, items, placeholder) {
+  var list = document.getElementById('seg-dd-' + id + '-list');
+  if (!list) return;
+  var html = _segDdMakeItem(id, '', placeholder, '');
+  items.forEach(function(item) { html += _segDdMakeItem(id, item, item, ''); });
+  list.innerHTML = html;
+  if (list.firstElementChild) list.firstElementChild.classList.add('seg-dd-placeholder');
+  var valEl  = document.getElementById('seg-dd-' + id + '-value');
+  var hidden = document.getElementById('seg-der-sel-' + id);
+  if (valEl)  valEl.textContent = placeholder;
+  if (hidden) hidden.value = '';
+}
+
+function _segDdPoblarProfs(id, profs, placeholder) {
+  var list = document.getElementById('seg-dd-' + id + '-list');
+  if (!list) return;
+  var html = _segDdMakeItem(id, '', placeholder, '');
+  profs.forEach(function(p) {
+    var sub = p.area ? '<span class="seg-dd-item-sub">' + segEscape(p.area) + '</span>' : '';
+    html += _segDdMakeItem(id, p._id, p.nombre, sub);
+  });
+  list.innerHTML = html;
+  if (list.firstElementChild) list.firstElementChild.classList.add('seg-dd-placeholder');
+  var valEl  = document.getElementById('seg-dd-' + id + '-value');
+  var hidden = document.getElementById('seg-der-sel-' + id);
+  if (valEl)  valEl.textContent = placeholder;
+  if (hidden) { hidden.value = ''; hidden.setAttribute('data-nombre', ''); }
+}
+
+function segDdItemClick(el) {
+  var id    = el.getAttribute('data-ddid')  || '';
+  var val   = el.getAttribute('data-val')   || '';
+  var label = el.getAttribute('data-label') || '';
+  segDdSeleccionar(id, val, label);
+}
+
 
 /* ─────────────────────────────────────────
-   INIT — carga al seleccionar cliente
+   INIT — llamado al cambiar de paciente
 ───────────────────────────────────────── */
 function segDerInit() {
-  _segDer.visible       = false;
-  _segDer.chipActivo    = null;
-  _segDer.derivaciones  = {};
-  _segDer.panelChips    = [];
-  _segDer.profesionales = [];
-  _segDer.colorChip     = null;
-  _segDerAsignaciones   = {};
+  // Resetear estado
+  _segDer.panelChips     = [];
+  _segDer.derivaciones   = {};
+  _segDer.chipActivo     = null;
+  _segDer.colorChip      = null;
+  _segDer.modalProf      = null;
+  _segDer._historialTexto = '';
+  _segDerAsignaciones    = {};
 
+  // Ocultar contenido y detalle
   var content = document.getElementById('seg-der-content');
-  var chev    = document.getElementById('seg-der-chev');
   var detail  = document.getElementById('seg-der-detail');
+  var chev    = document.getElementById('seg-der-chev');
   if (content) content.classList.add('seg-hidden');
-  if (chev)    chev.style.transform = 'rotate(0deg)';
   if (detail)  detail.classList.add('seg-hidden');
+  if (chev)    chev.style.transform = 'rotate(-90deg)';
 
-  segDerCargar();
-  segDerCargarProfesionales();
+  // Limpiar chips del panel
+  var chips = document.getElementById('seg-der-chips');
+  if (chips) chips.innerHTML = '';
+
+  // Actualizar subtítulo
+  segDerActualizarSub();
 }
 
-/* ─────────────────────────────────────────
-   TOGGLE panel
-───────────────────────────────────────── */
 function segToggleDer() {
-  _segDer.visible = !_segDer.visible;
   var content = document.getElementById('seg-der-content');
   var chev    = document.getElementById('seg-der-chev');
-  if (content) content.classList.toggle('seg-hidden', !_segDer.visible);
-  if (chev)    chev.style.transform = _segDer.visible ? 'rotate(90deg)' : 'rotate(0deg)';
+  if (!content) return;
+  var isOpen = !content.classList.contains('seg-hidden');
+  if (isOpen) {
+    content.classList.add('seg-hidden');
+    if (chev) chev.style.transform = 'rotate(-90deg)';
+  } else {
+    content.classList.remove('seg-hidden');
+    if (chev) chev.style.transform = '';
+    if (!_segDer.panelChips.length && !_segDer.profesionales.length) segDerCargar();
+  }
 }
 
-/* ─────────────────────────────────────────
-   CARGAR derivaciones del cliente
-───────────────────────────────────────── */
+function segDerResumenCopiar() {
+  var ta = document.getElementById('seg-der-resumen-texto');
+  if (!ta) return;
+  try {
+    navigator.clipboard.writeText(ta.value);
+    segToast('Resumen copiado al portapapeles', 'ok');
+  } catch(e) {
+    ta.select();
+    document.execCommand('copy');
+    segToast('Resumen copiado', 'ok');
+  }
+}
+
 function segDerCargar() {
   if (!SEG.clienteId) return;
   var panelLoaded = false;
@@ -89,6 +211,9 @@ function segDerCargar() {
     },
     function() { derLoaded = true; _done(); }
   );
+
+  // Cargar profesionales internos (para los selects)
+  segDerCargarProfesionales();
 }
 
 /* ─────────────────────────────────────────
@@ -101,6 +226,7 @@ function segDerCargarProfesionales() {
     function(data) {
       _segDer.profesionales = (data && data.profesionales) || [];
       segDerRenderizarAreas();
+      segDerActualizarHeroChips(); // actualizar chips del hero con datos reales
     },
     function() {}
   );
@@ -118,7 +244,7 @@ function segDerRenderizarChips() {
   var dropEmptyHtml = !panelNames.length
     ? '<div class="seg-der-drop-empty">' +
         '<i class="fas fa-code-branch"></i>' +
-        '<span>Arrastra un problema desde el encabezado del cliente</span>' +
+        '<span>Arrastra un problema aquí · Click en el chip para asignar profesionales</span>' +
       '</div>'
     : '';
 
@@ -142,6 +268,7 @@ function segDerRenderizarChips() {
 
     return '<div class="seg-der-chip' + activo + '" ' +
       'data-nombre="' + segEscape(nombre) + '" ' +
+      'data-seg-tooltip="Click para asignar profesionales" ' +
       'onclick="segDerSeleccionarChipEl(this)">' +
       '<div class="seg-der-chip-top">' +
         '<span class="seg-der-chip-nombre">' + segEscape(nombre) + '</span>' +
@@ -150,7 +277,8 @@ function segDerRenderizarChips() {
           : '<span class="seg-der-chip-badge" style="background:#e5e7eb;color:#9ca3af">·</span>') +
         '<span class="seg-der-chip-quitar" ' +
           'onclick="event.stopPropagation();segDerQuitarDelPanelDirect(this)" ' +
-          'data-nombre="' + segEscape(nombre) + '">' +
+          'data-nombre="' + segEscape(nombre) + '" ' +
+          'data-seg-tooltip="Quitar del panel de derivaciones">' +
           '<i class="fas fa-times"></i>' +
         '</span>' +
       '</div>' +
@@ -158,12 +286,7 @@ function segDerRenderizarChips() {
     '</div>';
   }).join('');
 
-  var addBtn = panelNames.length
-    ? '<div class="seg-der-add-chip-btn" ' +
-        'ondragover="segDerDragOver(event)" ondragleave="segDerDragLeave(event)" ondrop="segDerDrop(event)">' +
-        '<i class="fas fa-plus"></i> Añadir problema' +
-      '</div>'
-    : '';
+  var addBtn = '';  // Drop sobre el cuadro violeta ya es suficiente
 
   el.innerHTML = '<div class="seg-der-drop-zone' + (!panelNames.length ? '' : ' seg-der-drop-zone-has-chips') + '" ' +
     'id="seg-der-drop-zone" ' +
@@ -196,6 +319,62 @@ function segDerSeleccionarChipEl(el) {
 function segDerQuitarDelPanelDirect(btn) {
   var nombre = btn.getAttribute('data-nombre');
   if (!nombre || !SEG.clienteId) return;
+
+  // Mostrar confirm inline debajo del chip
+  var chip = btn.closest('.seg-der-chip');
+  if (!chip) return;
+
+  // Si ya hay un confirm para este chip, cancelarlo
+  var existing = chip.querySelector('.seg-der-panel-confirm');
+  if (existing) { existing.remove(); return; }
+
+  // Popover flotante — no ocupa espacio en el layout
+  var pop = document.createElement('div');
+  pop.className = 'seg-der-panel-confirm';
+  var nombreCorto = nombre.length > 35 ? nombre.substring(0, 33) + '…' : nombre;
+  pop.innerHTML =
+    '<p class="seg-der-panel-confirm-msg">' +
+      '<i class="fas fa-exclamation-triangle"></i> ' +
+      '¿Quitar <strong>' + segEscape(nombreCorto) + '</strong> del panel?' +
+    '</p>' +
+    '<div class="seg-der-panel-confirm-btns">' +
+      '<button onclick="segDerCerrarPanelConfirm(this)">Cancelar</button>' +
+      '<button class="ok" data-nombre="' + segEscape(nombre) + '" onclick="segDerQuitarPanelConfirmado(this)">Quitar</button>' +
+    '</div>';
+
+  // Anclar al chip — mismo ancho
+  var rect = chip.getBoundingClientRect();
+  pop.style.position = 'fixed';
+  pop.style.top      = (rect.bottom + 4) + 'px';
+  pop.style.left     = rect.left + 'px';
+  pop.style.width    = Math.max(rect.width, 240) + 'px';
+  pop.style.zIndex   = '200';
+  document.body.appendChild(pop);
+
+  // Cerrar al click fuera
+  setTimeout(function() {
+    document.addEventListener('click', function _close(e) {
+      if (!pop.contains(e.target) && e.target !== btn) {
+        pop.remove();
+        document.removeEventListener('click', _close);
+      }
+    });
+  }, 10);
+}
+
+function segDerCerrarPanelConfirm(btn) {
+  var pop = btn.closest('.seg-der-panel-confirm');
+  if (pop) pop.remove();
+}
+
+function segDerQuitarPanelConfirmado(btn) {
+  var nombre = btn.getAttribute('data-nombre');
+  var pop    = btn.closest('.seg-der-panel-confirm');
+  if (pop) pop.remove();
+  _segDerQuitarDelPanelExec(nombre);
+}
+
+function _segDerQuitarDelPanelExec(nombre) {
   segFetch(
     '/api/seguimiento/clientes/' + SEG.clienteId + '/derivaciones/panel',
     { method: 'DELETE', body: JSON.stringify({ company_id: SEG.companyId, chip_nombre: nombre }) },
@@ -320,23 +499,28 @@ function segDerQuitarDelPanel(nombre) {
 }
 
 /* ─────────────────────────────────────────
-   HERO CHIPS — agregar terapeuta + servicio (dummy)
-   TODO: conectar con datos reales de agenda
+   HERO CHIPS — subline con profesional asignado
 ───────────────────────────────────────── */
 function segDerActualizarHeroChips() {
-  // Poblar datos dummy con profesionales de la empresa
-  // Se usa el primer profesional disponible como responsable por chip
   var nombres = _segChips ? _segChips.trabajar || [] : [];
-  nombres.forEach(function(nombre, i) {
-    if (!_segDerAsignaciones[nombre]) {
-      var prof  = _segDer.profesionales[i % Math.max(_segDer.profesionales.length, 1)];
+  nombres.forEach(function(nombre) {
+    var ders = _segDer.derivaciones[nombre] || [];
+    if (ders.length) {
+      // Construir subline con todos los profesionales (abreviados)
+      var profs = ders.map(function(d) {
+        var n     = d.profesional_nombre || '';
+        var parts = n.split(' ');
+        var abrev = parts.length > 1 ? parts[0].charAt(0) + '. ' + parts.slice(1).join(' ') : n;
+        return abrev + (d.tipo === 'externo' ? ' (ext)' : '');
+      });
       _segDerAsignaciones[nombre] = {
-        profesional: prof ? prof.nombre : 'Sin asignar',
-        servicio:    prof ? (prof.area || 'General') : '—',
+        profesional: profs.join(' · '),
+        servicio:    '',
       };
+    } else {
+      _segDerAsignaciones[nombre] = { profesional: 'Sin asignar', servicio: '' };
     }
   });
-  // Re-renderizar hero chips con datos de terapeuta + servicio
   segActualizarHeroChipsTrabajar();
 }
 
@@ -462,7 +646,9 @@ function segDerRenderizarLista() {
 
     var delBtn = !d.es_responsable
       ? '<div class="seg-der-icon-btn del" ' +
-        'onclick="segDerConfirmarQuitar(this,' + JSON.stringify(d._id) + ',' + JSON.stringify(d.profesional_nombre) + ')" ' +
+        'data-id="' + segEscape(d._id) + '" ' +
+        'data-nombre="' + segEscape(d.profesional_nombre) + '" ' +
+        'onclick="segDerConfirmarQuitarEl(this)" ' +
         'data-seg-tooltip="Quitar derivación">' +
         '<i class="fas fa-trash"></i></div>'
       : '';
@@ -473,13 +659,18 @@ function segDerRenderizarLista() {
           '¿Quitar la derivación a <strong>' + segEscape(d.profesional_nombre) + '</strong>? ' +
           'Se eliminará el vínculo con este problema.</div>' +
           '<div class="seg-der-confirm-btns">' +
-            '<button class="seg-der-confirm-cancel" onclick="segDerCancelarConfirm(' + JSON.stringify(d._id) + ')">Cancelar</button>' +
-            '<button class="seg-der-confirm-ok" onclick="segDerEliminar(' + JSON.stringify(d._id) + ')">Quitar</button>' +
+            '<button class="seg-der-confirm-cancel" ' +
+              'data-id="' + segEscape(d._id) + '" ' +
+              'onclick="segDerCancelarConfirmEl(this)">Cancelar</button>' +
+            '<button class="seg-der-confirm-ok" ' +
+              'data-id="' + segEscape(d._id) + '" ' +
+              'onclick="segDerEliminarEl(this)">Quitar</button>' +
           '</div>' +
         '</div>'
       : '';
 
-    return '<div class="seg-der-card">' +
+    return '<div class="seg-der-card" ' +
+      'data-seg-tooltip="' + segEscape(d.profesional_nombre) + (d.area_nombre ? ' · ' + d.area_nombre : '') + '">' +
       '<div class="seg-der-avatar" style="background:' + avatarBg + ';color:' + avatarClr + '">' + iniciales + '</div>' +
       '<div class="seg-der-card-info">' +
         '<div class="seg-der-card-nombre">' + segEscape(d.profesional_nombre) + '</div>' +
@@ -502,7 +693,6 @@ function segDerRenderizarLista() {
 function segDerRenderizarAreas() {
   var sel = document.getElementById('seg-der-sel-area');
   if (!sel) return;
-  // Recoger todas las áreas únicas de todos los profesionales
   var areas = [];
   _segDer.profesionales.forEach(function(p) {
     var profAreas = p.areas && p.areas.length ? p.areas : (p.area ? [p.area] : []);
@@ -528,9 +718,7 @@ function segDerFiltrarProfesionales() {
     : _segDer.profesionales;
   sel.innerHTML = '<option value="">— profesional —</option>' +
     filtrados.map(function(p) {
-      return '<option value="' + p._id + '" ' +
-        'data-nombre="' + segEscape(p.nombre) + '" ' +
-        'data-area="' + segEscape(area || p.area || '') + '">' +
+      return '<option value="' + segEscape(p._id) + '" data-nombre="' + segEscape(p.nombre) + '">' +
         segEscape(p.nombre) + '</option>';
     }).join('');
 }
@@ -569,6 +757,7 @@ function segDerAgregarInterno() {
       segDerRenderizarLista();
       segDerRenderizarChips();
       segDerActualizarSub();
+      segDerActualizarHeroChips();
       segToast('Profesional asignado', 'ok');
       if (selProf) selProf.value = '';
     },
@@ -601,6 +790,7 @@ function segDerAgregarExterno() {
       segDerRenderizarLista();
       segDerRenderizarChips();
       segDerActualizarSub();
+      segDerActualizarHeroChips();
       segToast('Profesional externo agregado', 'ok');
       ['seg-der-ext-nombre','seg-der-ext-area','seg-der-ext-lugar'].forEach(function(id) {
         var el = document.getElementById(id); if (el) el.value = '';
@@ -613,6 +803,21 @@ function segDerAgregarExterno() {
 /* ─────────────────────────────────────────
    CONFIRMAR / CANCELAR / ELIMINAR
 ───────────────────────────────────────── */
+// Wrappers that read from data attributes
+function segDerConfirmarQuitarEl(btn) {
+  var id     = btn.getAttribute('data-id');
+  var nombre = btn.getAttribute('data-nombre');
+  segDerConfirmarQuitar(btn, id, nombre);
+}
+function segDerCancelarConfirmEl(btn) {
+  var id = btn.getAttribute('data-id');
+  segDerCancelarConfirm(id);
+}
+function segDerEliminarEl(btn) {
+  var id = btn.getAttribute('data-id');
+  segDerEliminar(id);
+}
+
 function segDerConfirmarQuitar(btn, id, nombre) {
   // Cerrar cualquier confirm abierto
   document.querySelectorAll('.seg-der-confirm.show').forEach(function(el) { el.classList.remove('show'); });
@@ -636,6 +841,7 @@ function segDerEliminar(id) {
       segDerRenderizarLista();
       segDerRenderizarChips();
       segDerActualizarSub();
+      segDerActualizarHeroChips();
       segToast('Derivación eliminada', 'ok');
     },
     function() { segToast('Error al eliminar derivación', 'error'); }
@@ -995,6 +1201,41 @@ function _segDerEnviarTextoEmail(texto, asunto) {
   } else {
     _doSend(emailCtx);
   }
+}
+
+function segDerResumenIA() {
+  if (!_segDer.chipActivo) { segToast('Selecciona un problema primero', 'warn'); return; }
+  var chip    = _segDer.chipActivo;
+  var chipEnc = encodeURIComponent(chip);
+  segToast('Cargando registros...', 'info');
+  segFetch(
+    '/api/seguimiento/clientes/' + SEG.clienteId + '/derivaciones/historial?company_id=' + SEG.companyId + '&chip=' + chipEnc,
+    {},
+    function(data) {
+      var registros = data.registros || [];
+      if (!registros.length) { segToast('Sin registros para este problema', 'warn'); return; }
+      var partes = registros.map(function(r, i) {
+        var fecha  = _segDerFormatFecha(r.fecha) + (r.hora ? ' ' + r.hora : '');
+        var cuerpo = r.resumen_editado || r.resumen_ia ||
+          [r.contenido_principal, r.notas_internas].filter(Boolean).join('\n') || '(sin resumen)';
+        return 'Registro ' + (i+1) + ' — ' + fecha + '\n' + cuerpo;
+      });
+      var prof  = _segDer.modalProf ? _segDer.modalProf.profesional_nombre : 'todos los profesionales';
+      var sep   = '\n' + '─'.repeat(30) + '\n\n';
+      var texto = 'RESUMEN PARA DERIVACION' +
+        '\nProblema: ' + chip +
+        '\nProfesional: ' + prof +
+        '\n' + '─'.repeat(30) + '\n\n' +
+        partes.join(sep);
+      var overlay = document.getElementById('seg-der-resumen-overlay');
+      var ta      = document.getElementById('seg-der-resumen-texto');
+      var sub     = document.getElementById('seg-der-resumen-subtitulo');
+      if (sub) sub.textContent = chip + ' · ' + registros.length + ' registros';
+      if (ta)  ta.value = texto;
+      if (overlay) overlay.classList.remove('seg-hidden');
+    },
+    function() { segToast('Error al cargar registros', 'error'); }
+  );
 }
 
 function segDerResumenIAModal() { segDerResumenIA(); }

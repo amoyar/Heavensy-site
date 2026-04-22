@@ -66,12 +66,15 @@ function segSeleccionarCliente(clienteId, nombre, avatar) {
     SEG.registroId = data.registro_activo ? data.registro_activo._id : null;
     segMostrarRegistroWrap();
     segRenderizarContexto(data);
-    // Cargar intensidades del registro activo
+    // Cargar intensidades primero, luego derivaciones (secuencial — evita race condition)
     _segIntensidades = {};
-    segCargarIntensidades();
+    segCargarIntensidades(function() {
+      // Una vez cargadas las intensidades, cargar derivaciones
+      // Así segActualizarHeroChipsTrabajar siempre tiene _segIntensidades disponible
+      if (typeof segDerCargar === 'function') segDerCargar();
+    });
     // Mostrar botón colapsar ahora que hay paciente
     var btnCol = document.getElementById('seg-btn-collapse-left');
-    if (btnCol) btnCol.classList.remove('seg-hidden');
     if (btnCol) btnCol.classList.remove('seg-hidden');
   }, function() {
     segMostrarEmptyMain();
@@ -117,10 +120,7 @@ function segRenderizarContexto(ctx) {
   var statusEl = document.getElementById('seg-hero-status');
   if (statusEl) {
     if (reg._id) {
-      statusEl.classList.remove('seg-hidden');
-      statusEl.textContent = reg.estado === 'en_curso' ? (lb.status_active||'En curso')
-                           : reg.estado === 'enviado'  ? (lb.status_sent||'Enviado')
-                           : (lb.status_pending||'Pendiente');
+      segSetHeroStatus(reg.estado, lb);
     } else {
       statusEl.classList.add('seg-hidden');
     }
@@ -136,8 +136,9 @@ function segRenderizarContexto(ctx) {
                      (Math.floor(hoy.getMinutes()/5)*5).toString().padStart(2,'0');
   segSetFecha(reg.fecha || fechaDefault);
   segSetHora(reg.hora   || horaDefault);
-  if (badgeEl) badgeEl.textContent = reg.estado === 'en_curso'
-    ? (lb.status_active||'En curso') : (lb.status_pending||'Pendiente');
+  if (badgeEl) badgeEl.textContent = reg.estado === 'en_curso' ? (lb.status_active||'En curso')
+    : reg.estado === 'enviado' ? (lb.status_sent||'Enviado')
+    : (lb.status_pending||'Pendiente');
 
   // Notas privadas + etiquetas del registro
   // ctx.etiquetas = lista de strings disponibles del template
@@ -241,6 +242,30 @@ function segRenderizarNotasDisplay(reg, lb, etiquetas) {
   el.innerHTML = html;
 }
 
+function segSetHeroStatus(estado, lb) {
+  var el = document.getElementById('seg-hero-status');
+  if (!el) return;
+  el.classList.remove('estado-en-curso', 'estado-enviado', 'estado-pendiente');
+  if (estado === 'en_curso') {
+    el.textContent = (lb && lb.status_active)  || 'En curso';
+    el.classList.add('estado-en-curso');
+  } else if (estado === 'enviado') {
+    el.textContent = (lb && lb.status_sent)    || 'Enviado';
+    el.classList.add('estado-enviado');
+  } else {
+    el.textContent = (lb && lb.status_pending) || 'Pendiente';
+    el.classList.add('estado-pendiente');
+  }
+  el.classList.remove('seg-hidden');
+}
+
+function segRenderizarTimelineActual() {
+  var ctx = SEG.contexto;
+  if (!ctx || !ctx.timeline) return;
+  var lb = SEG.labels || {};
+  segRenderizarTimeline(ctx.timeline, lb.timeline_titulo, lb.timeline_inicio);
+}
+
 function segRenderizarTimeline(eventos, titulo, inicio) {
   var tlTitle = document.getElementById('seg-tl-titulo');
   if (tlTitle) tlTitle.textContent = titulo || 'Linea de tiempo';
@@ -252,14 +277,48 @@ function segRenderizarTimeline(eventos, titulo, inicio) {
     tlEl.innerHTML = '<div style="font-size:10px;color:#b0b9c8;padding:0 4px">' + (inicio||'Sin eventos') + '</div>';
     return;
   }
+  var _MESES_TL = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  var toggleBtn = document.getElementById('seg-tl-toggle-hora');
+  var _tlMostrarHora = toggleBtn ? toggleBtn.classList.contains('activo') : true;
+
   tlEl.innerHTML = eventos.map(function(ev, i) {
     var isFirst = i === 0, isLast = i === eventos.length - 1;
     var dotCls = isFirst ? 'birth' : isLast ? 'today' : '';
-    var clr = isLast ? 'color:#9961FF' : '';
+    var clr    = isLast ? 'color:#9961FF' : '';
+    var evId   = ev._id || ev.id || '';
+    var evLabel= ev.label || ev.titulo || '';
+
+    // Formato fecha: si tiene mes → "Abr 2026", si no → "2026"
+    var anio = ev.year || ev.anio || '';
+    var mes  = ev.mes  || ev.month || null;
+    var dia  = ev.dia  || null;
+    var evHora = ev.hora || '';
+    var fechaTxt = anio ? String(anio) : '';
+    if (mes && mes >= 1 && mes <= 12) fechaTxt = _MESES_TL[mes - 1] + ' ' + anio;
+    if (dia) fechaTxt = dia + ' ' + fechaTxt;
+
+    var evYear = fechaTxt; // used by data attributes for edit
+
+    var dotClick = (!isFirst && evId)
+      ? 'onclick="segTlPuntoClick(event, this)" ' +
+        'data-ev-id="' + segEscape(evId) + '" ' +
+        'data-ev-year="' + segEscape(String(anio)) + '" ' +
+        'data-ev-mes="' + segEscape(String(mes || '')) + '" ' +
+        'data-ev-dia="' + segEscape(String(dia || '')) + '" ' +
+        'data-ev-hora="' + segEscape(evHora) + '" ' +
+        'data-ev-label="' + segEscape(evLabel) + '" ' +
+        'style="cursor:pointer" data-seg-tooltip="Editar o eliminar"'
+      : '';
+
+    var horaHtml = (_tlMostrarHora && evHora)
+      ? '<div class="seg-tl-hora" style="' + clr + '">' + segEscape(evHora.slice(0,5)) + '</div>'
+      : '';
+
     var html = '<div class="seg-tl-item">' +
-      '<div class="seg-tl-dot ' + dotCls + '"></div>' +
-      '<div class="seg-tl-year" style="' + clr + '">' + segEscape(String(ev.year||ev.anio||'')) + '</div>' +
-      '<div class="seg-tl-label" style="' + clr + '" data-seg-tooltip="' + segEscape(ev.label||ev.titulo||'') + '">' + segEscape(ev.label||ev.titulo||'') + '</div>' +
+      '<div class="seg-tl-dot ' + dotCls + '" ' + dotClick + '></div>' +
+      '<div class="seg-tl-year" style="' + clr + '">' + segEscape(fechaTxt) + '</div>' +
+      horaHtml +
+      '<div class="seg-tl-label" style="' + clr + '" data-seg-tooltip="' + segEscape(evLabel) + '">' + segEscape(evLabel) + '</div>' +
     '</div>';
     if (!isLast) html += '<div class="seg-tl-line"></div>';
     return html;
@@ -342,8 +401,8 @@ function segRenderizarHistorial(historial, lb) {
 
     return '<div class="seg-hist-card' + (i===0?' active':'') + '" id="hist-' + segEscape(rid) + '">' +
       '<div class="seg-hist-card-top" onclick="segSeleccionarRegistro(\'' + segEscape(rid) + '\')">' +
-        '<div class="seg-hist-date">' + segFormatFechaCorta(h.fecha) + '</div>' +
-        '<button class="seg-hist-delete-btn" title="Eliminar sesión" ' +
+        '<div class="seg-hist-date">' + segFormatFechaCorta(h.fecha) + (h.hora ? '<span class="seg-hist-hora">' + h.hora + '</span>' : '') + '</div>' +
+        '<button class="seg-hist-delete-btn" data-seg-tooltip="Eliminar sesión" ' +
           'onclick="event.stopPropagation();segMostrarConfirmEliminar(\'' + segEscape(rid) + '\')">' +
           '<i class="fas fa-trash"></i>' +
         '</button>' +

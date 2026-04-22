@@ -100,49 +100,148 @@ function segCargarClientes(companyId) {
   });
 }
 
+/* ─────────────────────────────────────────
+   FILTROS AGENDA — Hoy / Semana / Todos
+───────────────────────────────────────── */
+var _segFiltroActivo  = 'hoy';
+var _segAgendaActual  = []; // pacientes actualmente mostrados en la lista
+
+function segRenderizarFiltrosAgenda(containerEl) {
+  // Evitar duplicados — solo insertar si no existen aún
+  if (containerEl.querySelector('.seg-agenda-filtros')) {
+    // Solo actualizar activo
+    containerEl.querySelectorAll('.seg-agenda-filtro-chip').forEach(function(c) {
+      c.classList.toggle('activo', c.getAttribute('data-filtro') === _segFiltroActivo);
+    });
+    return;
+  }
+  var filtros = [
+    { id: 'hoy',    label: 'Hoy' },
+    { id: 'semana', label: 'Semana' },
+    { id: 'todos',  label: 'Todos' },
+  ];
+  var html = '<div class="seg-agenda-filtros">' +
+    filtros.map(function(f) {
+      return '<span class="seg-agenda-filtro-chip' + (_segFiltroActivo === f.id ? ' activo' : '') + '" ' +
+        'data-filtro="' + f.id + '" onclick="segCambiarFiltroAgendaEl(this)">' + f.label + '</span>';
+    }).join('') +
+  '</div>';
+  containerEl.insertAdjacentHTML('afterbegin', html);
+}
+
+function segCambiarFiltroAgendaEl(el) {
+  segCambiarFiltroAgenda(el.getAttribute('data-filtro') || 'hoy');
+}
+
+function segCambiarFiltroAgenda(filtro) {
+  _segFiltroActivo = filtro;
+  if (filtro === 'todos') {
+    segFetch('/api/seguimiento/clientes?company_id=' + SEG.companyId, {}, function(data) {
+      segRenderizarListaNormal(data.clientes || []);
+    }, function() {});
+  } else {
+    segCargarAgendaDia(filtro);
+  }
+}
+
+function segCargarAgendaDia(rango) {
+  var listEl = document.getElementById('seg-entity-list');
+  if (!listEl) return;
+  var hoy = new Date();
+  var fechaStr = hoy.getFullYear() + '-' +
+    String(hoy.getMonth()+1).padStart(2,'0') + '-' +
+    String(hoy.getDate()).padStart(2,'0');
+
+  listEl.innerHTML = '<div class="seg-list-empty"><i class="fas fa-spinner fa-spin"></i> Cargando agenda...</div>';
+
+  segFetch('/api/seguimiento/agenda-pacientes?company_id=' + SEG.companyId + '&rango=' + rango + '&fecha=' + fechaStr, {},
+    function(data) {
+      var pacientes = data.pacientes || [];
+      if (!pacientes.length) {
+        listEl.innerHTML = '<div class="seg-list-empty"><i class="fas fa-calendar-day"></i>' +
+          (rango === 'hoy' ? 'Sin pacientes agendados hoy' : 'Sin pacientes en la semana') +
+          '</div>';
+        segRenderizarFiltrosAgenda(listEl);
+        return;
+      }
+      var html = pacientes.map(function(p) {
+        var active = (SEG.clienteId && SEG.clienteId === p.wa_id) ? ' active' : '';
+        var nombre = segEscape(p.nombre || p.wa_id);
+        var avatar = p.avatar || '?';
+        var metaParts = [];
+        if (p.hora_inicio) metaParts.push('<span class="seg-entity-hora">' + p.hora_inicio + '</span>');
+        if (p.servicio)    metaParts.push(segEscape(p.servicio));
+        if (p.duracion)    metaParts.push(p.duracion + ' min');
+        var meta = metaParts.join(' · ');
+
+        return '<div class="seg-entity-item' + active + '" data-wa-id="' + segEscape(p.wa_id) + '"' +
+          ' onclick="segSeleccionarCliente(\'' + segEscape(p.wa_id) + '\',\'' + nombre + '\',\'' + segEscape(avatar) + '\')">' +
+          '<div class="seg-entity-avatar">' + segBuildAvatar(avatar) + '</div>' +
+          '<div class="seg-entity-info">' +
+            '<div class="seg-entity-name">' + nombre + '</div>' +
+            '<div class="seg-entity-meta">' + meta + '</div>' +
+          '</div>' +
+          '<div class="seg-entity-dot dot-active"></div>' +
+        '</div>';
+      }).join('');
+
+      _segAgendaActual = pacientes;
+      listEl.innerHTML = html;
+      segRenderizarFiltrosAgenda(listEl);
+    },
+    function() {
+      // Si falla (usuario sin agenda), cargar lista normal
+      segFetch('/api/seguimiento/clientes?company_id=' + SEG.companyId, {}, function(data) {
+        segRenderizarListaNormal(data.clientes || []);
+      }, function() {});
+    }
+  );
+}
+
 function segRenderizarLista(lista) {
+  _segFiltroActivo = 'hoy';
+  // Al cargar empresa, arrancar con agenda del día
+  segCargarAgendaDia('hoy');
+}
+
+function segRenderizarListaNormal(lista) {
   var listEl = document.getElementById('seg-entity-list');
   if (!listEl) return;
   var lb = SEG.labels;
-  var bannerTxt = 'Solo <strong>' + (lb.clientes||'clientes') + '</strong> con <strong>' + (lb.registros||'registros') + '</strong>';
 
   if (!lista || lista.length === 0) {
-    listEl.innerHTML =
-      '<div class="seg-info-banner"><i class="fas fa-info-circle" style="flex-shrink:0;margin-top:1px"></i><span>' + bannerTxt + '</span></div>' +
-      '<div class="seg-list-empty"><i class="fas fa-user-slash"></i>No hay ' + (lb.clientes||'clientes') + ' con ' + (lb.registros||'registros') + '</div>';
+    listEl.innerHTML = '<div class="seg-list-empty"><i class="fas fa-user-slash"></i>No hay ' +
+      (lb.clientes||'pacientes') + ' con registros</div>';
+    segRenderizarFiltrosAgenda(listEl);
     return;
   }
 
-  var html = '<div class="seg-info-banner"><i class="fas fa-info-circle" style="flex-shrink:0;margin-top:1px"></i><span>' + bannerTxt + '</span></div>';
-
-  lista.forEach(function(e) {
-    var dot = e.estado_registro === 'en_curso' ? 'dot-active'
-            : e.estado_registro === 'enviado'  ? 'dot-sent'
-            : 'dot-pending';
-    var nombre  = e.nombre || e.wa_id || '-';
-    var avatar  = e.avatar || (e.es_recurso ? '?' : '?');
-    var meta    = segBuildMeta(e, lb);
-    var active  = (SEG.clienteId && SEG.clienteId === e.wa_id) ? ' active' : '';
-
-    html += '<div class="seg-entity-item' + active + '" data-wa-id="' + segEscape(e.wa_id) + '"' +
+  _segAgendaActual = lista;
+  var html = lista.map(function(e) {
+    var dot    = e.estado_registro === 'en_curso' ? 'dot-active'
+               : e.estado_registro === 'enviado'  ? 'dot-sent' : 'dot-pending';
+    var nombre = e.nombre || e.wa_id || '-';
+    var avatar = e.avatar || '?';
+    var active = (SEG.clienteId && SEG.clienteId === e.wa_id) ? ' active' : '';
+    return '<div class="seg-entity-item' + active + '" data-wa-id="' + segEscape(e.wa_id) + '"' +
       ' onclick="segSeleccionarCliente(\'' + segEscape(e.wa_id) + '\',\'' + segEscape(nombre) + '\',\'' + segEscape(avatar) + '\')">' +
       '<div class="seg-entity-avatar">' + segBuildAvatar(avatar) + '</div>' +
       '<div class="seg-entity-info">' +
         '<div class="seg-entity-name">' + segEscape(nombre) + '</div>' +
-        '<div class="seg-entity-meta">' + meta + '</div>' +
+        '<div class="seg-entity-meta">' + segBuildMeta(e, lb) + '</div>' +
       '</div>' +
       '<div class="seg-entity-dot ' + dot + '"></div>' +
     '</div>';
-  });
+  }).join('');
 
   listEl.innerHTML = html;
+  segRenderizarFiltrosAgenda(listEl);
 }
 
 function segBuildMeta(e, lb) {
   var parts = [];
-  if (e.total_registros) parts.push(e.total_registros + ' ' + (lb.registros||'registros'));
   if (e.especialidad || e.servicio || e.tipo) parts.push(e.especialidad || e.servicio || e.tipo);
-  return parts.join(' - ') || '-';
+  return parts.join(' · ') || '-';
 }
 
 function segBuildAvatar(avatar) {

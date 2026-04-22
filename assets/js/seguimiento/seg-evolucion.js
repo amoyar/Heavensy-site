@@ -87,14 +87,13 @@ function segRenderizarEvolucion(evolucion) {
     return;
   }
 
-  // Labels de fechas — agregar hora si hay más de una sesión el mismo día
-  var fechaCount = {};
-  evolucion.forEach(function(s) { fechaCount[s.fecha] = (fechaCount[s.fecha] || 0) + 1; });
+  // Labels de fechas — siempre mostrar fecha y hora (dos líneas)
   var labels = evolucion.map(function(s) {
     if (!s.fecha) return '';
     var p = s.fecha.split('-');
     var base = p[2] + '/' + p[1];
-    return (fechaCount[s.fecha] > 1 && s.hora) ? base + ' ' + s.hora.slice(0,5) : base;
+    var hora = s.hora ? s.hora.slice(0, 5) : '';
+    return hora ? [base, hora] : [base];
   });
 
   if (sesEl) sesEl.textContent = evolucion.length + ' sesiones';
@@ -172,12 +171,31 @@ function segRenderizarEvolucion(evolucion) {
   var canvas = document.getElementById('seg-evo-chart');
   if (!canvas) return;
 
+  // Ancho: ocupa todo el contenedor disponible, expande si hay muchas sesiones
+  var scroll = document.querySelector('.seg-evo-chart-scroll');
+  // Medir el contenedor real — puede estar oculto, usar offsetParent como fallback
+  var containerW = 0;
+  if (scroll && scroll.offsetParent !== null) {
+    containerW = scroll.clientWidth;
+  } else {
+    // Contenedor oculto — medir el panel izquierdo del timeline como referencia
+    var tlWrap = document.querySelector('.seg-scroll-area');
+    containerW = tlWrap ? tlWrap.clientWidth - 32 : 500;
+  }
+  if (containerW < 100) containerW = 500; // fallback seguro
+  var pxPorSesion = 42;
+  var chartW = Math.max(evolucion.length * pxPorSesion, containerW);
+  var wrap = document.querySelector('.seg-evo-chart-wrap');
+  if (wrap) wrap.style.width = chartW + 'px';
+  canvas.width  = chartW;
+  canvas.height = 140;
+
   _segEvoChart = new Chart(canvas, {
     type: 'line',
     plugins: [puntosPlugin],
     data: { labels: labels, datasets: datasets },
     options: {
-      responsive: true,
+      responsive: false,
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
@@ -304,7 +322,7 @@ function segResetEvolucion() {
   var content = document.getElementById('seg-evo-content');
   var chev    = document.getElementById('seg-evo-chev');
   var sesEl   = document.getElementById('seg-evo-sesiones');
-  if (content) { content.classList.add('seg-hidden'); content.innerHTML = '<div class="seg-evo-legend" id="seg-evo-legend"></div><div class="seg-evo-chart-wrap"><canvas id="seg-evo-chart" role="img" aria-label="Evolución de intensidades por sesión"></canvas></div><div class="seg-evo-stats" id="seg-evo-stats"></div>'; }
+  if (content) { content.classList.add('seg-hidden'); content.innerHTML = '<div class="seg-evo-legend" id="seg-evo-legend"></div><div class="seg-evo-chart-scroll"><div class="seg-evo-chart-wrap"><canvas id="seg-evo-chart" role="img" aria-label="Evolución de intensidades por sesión"></canvas></div></div><div class="seg-evo-stats" id="seg-evo-stats"></div>'; }
   if (chev)    chev.style.transform = 'rotate(-90deg)';
   if (sesEl)   sesEl.textContent = '';
   if (_segEvoChart) { _segEvoChart.destroy(); _segEvoChart = null; }

@@ -42,9 +42,10 @@
 
 /* ── Content ── */
 .seg-der-content {
-  padding: 8px 20px 14px;
+  padding: 6px 20px 12px;
   max-height: 480px;
   overflow-y: auto;
+  overflow-x: visible;
 }
 .seg-der-content::-webkit-scrollbar { width: 4px; }
 .seg-der-content::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 99px; }
@@ -114,7 +115,7 @@
 .seg-der-detail {
   border: 0.5px solid #C9D9FF;
   border-radius: 10px;
-  overflow: hidden;
+  overflow: visible;
   margin-top: 10px;
   max-width: 560px;
   background: #EFF6FF;
@@ -131,7 +132,7 @@
 .seg-der-detail-dot { font-size: 11px; }
 .seg-der-detail-nombre { font-weight: 600; color: #374151; }
 .seg-der-detail-sub { color: #9ca3af; margin-left: 2px; }
-.seg-der-detail-body { padding: 10px; background: #EFF6FF; }
+.seg-der-detail-body { padding: 10px; background: #EFF6FF; overflow: visible; }
 
 /* ── Cards de profesionales ── */
 .seg-der-card {
@@ -146,6 +147,7 @@
   position: relative;
 }
 .seg-der-card:last-child { margin-bottom: 0; }
+.seg-der-card:hover { background: #f5f3ff; border-color: #c4b5fd; transition: all .12s; }
 .seg-der-avatar {
   width: 30px;
   height: 30px;
@@ -262,6 +264,7 @@
   gap: 5px;
   flex-wrap: wrap;
   max-width: 480px;
+  position: relative;
 }
 .seg-der-add-row select,
 .seg-der-add-row input {
@@ -269,12 +272,33 @@
   min-width: 80px;
   max-width: 180px;
   font-size: 11px;
-  padding: 5px 8px;
-  border: 0.5px solid #C9D9FF;
-  border-radius: 7px;
+  padding: 5px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   background: #fff;
   color: #374151;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: border .15s;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239961FF'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
 }
+.seg-der-add-row select:focus,
+.seg-der-add-row input:focus {
+  border-color: #9961FF;
+  box-shadow: 0 0 0 3px #9961FF12;
+}
+.seg-der-add-row input {
+  background-image: none;
+  padding-right: 10px;
+}
+.seg-der-add-interno,
+.seg-der-add-externo { position: relative; }
 .seg-der-add-externo { margin-top: 6px; }
 .seg-der-add-btn {
   font-size: 10px;
@@ -565,15 +589,24 @@
 .seg-der-chip-quitar {
   margin-left: auto;
   font-size: 9px;
-  color: #c4b5fd;
+  color: #9ca3af;
   cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 3px;
-  line-height: 1;
-  transition: all .12s;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 1px solid #d1d5db;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  transition: all .12s;
+  background: #fff;
 }
-.seg-der-chip-quitar:hover { color: #dc2626; background: #fef2f2; }
+.seg-der-chip.activo .seg-der-chip-quitar {
+  color: #a78bfa;
+  border-color: #a78bfa;
+}
+.seg-der-chip-quitar:hover { color: #dc2626; background: #fef2f2; border-color: #fca5a5; }
 /* ── Botón cerrar detalle ── */
 .seg-der-detail-close {
   margin-left: auto;
@@ -630,3 +663,42 @@
 }
 .seg-der-campo-label::after { content: ': '; }
 .seg-der-campo-valor { font-weight: 500; word-break: break-word; }
+/* ── Confirm flotante quitar chip del panel ── */
+.seg-der-panel-confirm {
+  padding: 10px 14px;
+  background: #fff;
+  border: 0.5px solid #fcd34d;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.14);
+}
+.seg-der-panel-confirm-msg {
+  font-size: 11px;
+  color: #374151;
+  line-height: 1.5;
+  margin: 0 0 8px;
+}
+.seg-der-panel-confirm-msg i { color: #d97706; margin-right: 5px; }
+.seg-der-panel-confirm-btns {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.seg-der-panel-confirm-btns button {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 0.5px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all .12s;
+  white-space: nowrap;
+}
+.seg-der-panel-confirm-btns button:hover { background: #f3f4f6; }
+.seg-der-panel-confirm-btns button.ok {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+.seg-der-panel-confirm-btns button.ok:hover { background: #fee2e2; }

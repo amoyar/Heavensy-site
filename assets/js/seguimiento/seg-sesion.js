@@ -16,7 +16,16 @@ function segNuevaSesion() {
 }
 
 function segNuevaSesionConfirm() {
-  // Resetear modo plantilla → siempre partir desde editor
+  // Guardar plantilla activa y chips actuales ANTES de limpiar
+  var plantillaActiva = _segPn ? _segPn.formActivo : null;
+  var chipsBak = {
+    sintoma:     (_segChips.sintoma     || []).slice(),
+    diagnostico: (_segChips.diagnostico || []).slice(),
+    hipotesis:   (_segChips.hipotesis   || []).slice(),
+    trabajar:    (_segChips.trabajar    || []).slice()
+  };
+
+  // Resetear modo plantilla
   segPnResetearVista();
 
   // Limpiar todos los campos
@@ -38,21 +47,24 @@ function segNuevaSesionConfirm() {
   if (tt) tt.value = '';
   if (tp) tp.value = '';
   if (tn) tn.innerText = '';
+
+  // Limpiar chips del DOM pero restaurar desde estado actual (el más actualizado)
   segLimpiarTodosChips();
-  _segIntensidades = {};
   _segDiagMode = false;
   _segHipMode  = false;
 
-  // Precargar chips acumulados de sesiones anteriores
-  var acum = SEG.contexto && SEG.contexto.chips_acumulados;
-  if (acum) {
-    var _bak = SEG.hayUnsaved;
-    SEG.hayUnsaved = false;
-    (acum.sintoma     || []).forEach(function(c) { segAgregarChip('sintoma',     c); });
-    (acum.diagnostico || []).forEach(function(c) { segAgregarChip('diagnostico', c); });
-    (acum.hipotesis   || []).forEach(function(c) { segAgregarChip('hipotesis',   c); });
-    SEG.hayUnsaved = _bak;
-  }
+  // Heredar chips de la sesión anterior (usar estado actual, no acumulados del contexto)
+  var _bak = SEG.hayUnsaved;
+  SEG.hayUnsaved = false;
+  chipsBak.sintoma.forEach(function(c)     { segAgregarChip('sintoma',     c); });
+  chipsBak.diagnostico.forEach(function(c) { segAgregarChip('diagnostico', c); });
+  chipsBak.hipotesis.forEach(function(c)   { segAgregarChip('hipotesis',   c); });
+  chipsBak.trabajar.forEach(function(c)    { segAgregarChip('trabajar',    c); });
+  SEG.hayUnsaved = _bak;
+
+  // Actualizar derivaciones hero y panel
+  if (typeof segDerActualizarHeroChips === 'function') segDerActualizarHeroChips();
+  if (typeof segDerRenderizarChips     === 'function') segDerRenderizarChips();
 
   segSetFecha(fechaStr);
   segSetHora(horaStr);
@@ -60,25 +72,55 @@ function segNuevaSesionConfirm() {
   segRenderizarAdjuntos();
   segLimpiarResumen();
 
+  // Hero status → En curso (con color violeta)
+  if (typeof segSetHeroStatus === 'function') segSetHeroStatus('en_curso', SEG.labels);
   var badgeEl = document.getElementById('seg-badge-estado');
   if (badgeEl) badgeEl.textContent = SEG.labels.status_active || 'En curso';
 
   segMostrarRegistroWrap();
   segSetTab('notas', document.getElementById('seg-tab-notas'));
 
+  // Re-abrir plantilla activa si había una
+  if (plantillaActiva) {
+    setTimeout(function() {
+      if (typeof segPnFormAbrir === 'function') segPnFormAbrir(plantillaActiva);
+    }, 100);
+  }
+
   // Crear registro en BD inmediatamente y agregar tarjeta al historial
   var payload = {
-    company_id: SEG.companyId,
-    cliente_id: SEG.clienteId,
-    fecha:      fechaStr,
-    hora:       horaStr,
-    estado:     'en_curso',
+    company_id:        SEG.companyId,
+    cliente_id:        SEG.clienteId,
+    fecha:             fechaStr,
+    hora:              horaStr,
+    estado:            'en_curso',
+    chips_sintoma:     (_segChips.sintoma     || []).slice(),
+    chips_diagnostico: (_segChips.diagnostico || []).slice(),
+    chips_hipotesis:   (_segChips.hipotesis   || []).slice(),
+    chips_trabajar:    (_segChips.trabajar     || []).slice(),
+    modo_notas:        plantillaActiva ? 'plantilla:' + plantillaActiva : 'editor',
   };
   segFetch('/api/seguimiento/registros', { method: 'POST', body: JSON.stringify(payload) },
     function(data) {
       SEG.registroId = data._id || data.id;
       SEG.hayUnsaved = false;
-      // Agregar tarjeta al historial inmediatamente
+
+      // Copiar intensidades del registro anterior al nuevo
+      // Así persisten en BD y se muestran al recargar el paciente
+      if (_segIntensidades && SEG.registroId) {
+        Object.keys(_segIntensidades).forEach(function(nombre) {
+          var nivel = _segIntensidades[nombre];
+          if (nivel && nivel > 0) {
+            segFetch(
+              '/api/seguimiento/registros/' + SEG.registroId + '/intensidades/' + encodeURIComponent(nombre),
+              { method: 'PUT', body: JSON.stringify({ nivel: nivel, company_id: SEG.companyId, cliente_id: SEG.clienteId }) },
+              function() {}, function() {}
+            );
+          }
+        });
+      }
+
+      // Agregar tarjeta al historial con chips e intensidades heredados
       segAgregarTarjetaHistorial({
         _id:          SEG.registroId,
         fecha:        fechaStr,
@@ -86,10 +128,10 @@ function segNuevaSesionConfirm() {
         estado:       'en_curso',
         resumen_corto: SEG.labels.registro ? SEG.labels.registro + ' registrado.' : 'Sesión registrada.',
         etiquetas:    [],
-        chips_sintoma:     [],
-        chips_diagnostico: [],
-        chips_trabajar:    [],
-        intensidades:      {},
+        chips_sintoma:     (_segChips.sintoma     || []).slice(),
+        chips_diagnostico: (_segChips.diagnostico || []).slice(),
+        chips_trabajar:    (_segChips.trabajar     || []).slice(),
+        intensidades:      Object.assign({}, _segIntensidades || {}),
       });
     },
     function() {}
@@ -104,11 +146,50 @@ function segAgregarTarjetaHistorial(h) {
   var lb  = SEG.labels || {};
   var rid = h._id || h.id || '';
 
+  // Construir secciones de chips para la tarjeta del historial
+  var MAX_LEN = 18;
+  var sintomas = [].concat(h.chips_sintoma || [], h.chips_diagnostico || []);
+  var trabajar = h.chips_trabajar || [];
+  var intens   = h.intensidades || {};
+  var colors   = typeof SEG_INTENS_COLORS !== 'undefined' ? SEG_INTENS_COLORS : {};
+  var texts    = typeof SEG_INTENS_TEXT   !== 'undefined' ? SEG_INTENS_TEXT   : {};
+
+  var sintChips = sintomas.map(function(n) {
+    var t = n.length > MAX_LEN ? n.slice(0, MAX_LEN) + '...' : n;
+    var tip = n.length > MAX_LEN ? ' data-seg-tooltip="' + segEscape(n) + '"' : '';
+    return '<span class="seg-hist-chip" style="background:#ede9fe;color:#5b21b6;border:0.5px solid #c4b5fd"' + tip + '>' + segEscape(t) + '</span>';
+  }).join('');
+
+  var trabChipsHtml = trabajar.map(function(n) {
+    var esDiag = (h.chips_diagnostico || []).indexOf(n) !== -1;
+    var esSint = (h.chips_sintoma || []).indexOf(n) !== -1;
+    var nivel  = (esDiag || esSint) ? (intens[n] || 0) : null;
+    var t = n.length > MAX_LEN ? n.slice(0, MAX_LEN) + '...' : n;
+    var tip = n.length > MAX_LEN ? ' data-seg-tooltip="' + segEscape(n) + '"' : '';
+    var badge = '';
+    if (nivel !== null) {
+      var bg  = (nivel && colors[nivel]) ? colors[nivel] : '#e5e7eb';
+      var txt = (nivel && texts[nivel])  ? texts[nivel]  : '#9ca3af';
+      badge = '<span class="seg-hist-intens-badge" style="background:' + bg + ';color:' + txt + '">' + (nivel || '·') + '</span>';
+    }
+    return '<span class="seg-hist-chip seg-hist-chip-trabajar"' + tip + '>' + segEscape(t) + badge + '</span>';
+  }).join('');
+
+  var secSint = sintChips
+    ? '<div class="seg-hist-chips-sec"><span class="seg-hist-chips-label">Síntomas</span><div class="seg-hist-chips-row">' + sintChips + '</div></div>'
+    : '';
+  var secTrab = trabChipsHtml
+    ? '<div class="seg-hist-chips-sec"><span class="seg-hist-chips-label">Lo que se abordó</span><div class="seg-hist-chips-row">' + trabChipsHtml + '</div></div>'
+    : '';
+  var chipsWrap = (secSint || secTrab)
+    ? '<div class="seg-hist-chips-wrap" onclick="segSeleccionarRegistro(\'' + segEscape(rid) + '\')">' + secSint + secTrab + '</div>'
+    : '';
+
   var cardHtml =
     '<div class="seg-hist-card active" id="hist-' + segEscape(rid) + '">' +
       '<div class="seg-hist-card-top" onclick="segSeleccionarRegistro(\'' + segEscape(rid) + '\')">' +
-        '<div class="seg-hist-date">' + segFormatFechaCorta(h.fecha) + '</div>' +
-        '<button class="seg-hist-delete-btn" title="Eliminar sesión" ' +
+        '<div class="seg-hist-date">' + segFormatFechaCorta(h.fecha) + (h.hora ? '<span class="seg-hist-hora">' + h.hora + '</span>' : '') + '</div>' +
+        '<button class="seg-hist-delete-btn" data-seg-tooltip="Eliminar sesión" ' +
           'onclick="event.stopPropagation();segMostrarConfirmEliminar(\'' + segEscape(rid) + '\')">' +
           '<i class="fas fa-trash"></i>' +
         '</button>' +
@@ -116,6 +197,7 @@ function segAgregarTarjetaHistorial(h) {
       '<div class="seg-hist-preview" onclick="segSeleccionarRegistro(\'' + segEscape(rid) + '\')">' +
         segEscape(h.resumen_corto || '') +
       '</div>' +
+      chipsWrap +
       '<span class="seg-hist-badge nueva" onclick="segSeleccionarRegistro(\'' + segEscape(rid) + '\')">' +
         (lb.status_active || 'En curso') +
       '</span>' +

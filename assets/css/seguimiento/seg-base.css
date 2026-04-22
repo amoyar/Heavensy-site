@@ -408,6 +408,7 @@
   font-weight: 600;
   display: inline-flex;
   flex-direction: column;
+  align-items: flex-start;
   cursor: grab;
   user-select: none;
 }
@@ -415,13 +416,28 @@
 .seg-hchip-main {
   display: flex;
   align-items: center;
+  width: 100%;
+  justify-content: space-between;
+  gap: 5px;
+}
+.seg-hchip-main-label {
+  flex: 1;
+  min-width: 0;
 }
 .seg-hchip-sub {
   font-size: 8px;
   color: #6b7280;
-  margin-top: 1px;
+  margin-top: 2px;
   font-weight: 400;
   line-height: 1.3;
+  text-align: left;
+  align-self: flex-start;
+  padding-left: 10px;
+}
+.seg-hchip-sub::before {
+  content: '·  ';
+  margin-left: -10px;
+  color: #9ca3af;
 }
 
 .seg-hero-nota {
@@ -442,4 +458,39 @@
   font-weight: 600;
   white-space: nowrap;
   align-self: flex-start;
+}
+.seg-hero-status.estado-en-curso  { background: #E1DEFF; color: #7c3aed; }
+.seg-hero-status.estado-enviado   { background: #d1fae5; color: #065f46; }
+.seg-hero-status.estado-pendiente { background: #fef3c7; color: #92400e; }
+/* ── Filtros agenda (Hoy / Semana / Todos) ── */
+.seg-agenda-filtros {
+  display: flex;
+  gap: 5px;
+  padding: 8px 10px 6px;
+  border-bottom: 0.5px solid #f3f4f6;
+  flex-shrink: 0;
+}
+.seg-agenda-filtro-chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all .12s;
+  user-select: none;
+}
+.seg-agenda-filtro-chip:hover { border-color: #9961FF; color: #9961FF; }
+.seg-agenda-filtro-chip.activo {
+  background: #f5f0ff;
+  border-color: #9961FF;
+  color: #9961FF;
+}
+
+/* ── Hora en tarjeta de paciente ── */
+.seg-entity-hora {
+  font-weight: 700;
+  color: #9961FF;
+  font-size: 10px;
 }

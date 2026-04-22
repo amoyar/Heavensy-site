@@ -28,6 +28,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  align-self: flex-start; /* no estirarse — crecer con el contenido */
 }
 
 /* Fecha/hora row */

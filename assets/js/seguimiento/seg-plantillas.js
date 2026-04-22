@@ -450,7 +450,7 @@ function _segPnFijoRestaurarWrapConValor(idx, val, tipo) {
   var display = _segFijoFormatDisplay(val, tipo);
   wrap.innerHTML =
     '<span class="seg-pn-fijo-valor" id="seg-pn-fijo-val-' + idx + '">' + segEscape(display || '—') + '</span>' +
-    '<button class="seg-pn-fijo-edit-btn" onclick="segPnFijoEditar(' + idx + ')" title="Editar"><i class="fas fa-pencil-alt"></i></button>' +
+    '<button class="seg-pn-fijo-edit-btn" onclick="segPnFijoEditar(' + idx + ')" data-seg-tooltip="Editar"><i class="fas fa-pencil-alt"></i></button>' +
     '<input type="hidden" id="seg-pn-form-f-' + idx + '" value="' + segEscape(val || '') + '">';
 }
 
@@ -627,8 +627,8 @@ function segPnRenderChips() {
       '<i class="fas fa-check seg-chip-check seg-hidden" id="pnchk-' + pidEsc + '"></i>' +
       segEscape(p.nombre) +
       '<span class="seg-chip-actions">' +
-        '<i class="fas fa-pencil-alt" onclick="event.stopPropagation();segNuevaPlantillaNotas(\'' + pidEsc + '\')" title="Editar"></i>' +
-        '<i class="fas fa-trash" onclick="event.stopPropagation();segPnEliminarPlantilla(\'' + pidEsc + '\')" title="Eliminar"></i>' +
+        '<i class="fas fa-pencil-alt" onclick="event.stopPropagation();segNuevaPlantillaNotas(\'' + pidEsc + '\')" data-seg-tooltip="Editar"></i>' +
+        '<i class="fas fa-trash" onclick="event.stopPropagation();segPnEliminarPlantilla(\'' + pidEsc + '\')" data-seg-tooltip="Eliminar"></i>' +
       '</span>' +
     '</span>';
   }).join('');
@@ -792,7 +792,7 @@ function segPnFormAbrir(plantillaId, valores) {
           : '<span class="seg-pn-fijo-valor" id="seg-pn-fijo-val-' + i + '">—</span>';
       input = '<div class="seg-pn-fijo-wrap" id="seg-pn-fijo-wrap-' + i + '">' +
         displayFijo +
-        '<button class="seg-pn-fijo-edit-btn" onclick="segPnFijoEditar(' + i + ')" title="Editar">' +
+        '<button class="seg-pn-fijo-edit-btn" onclick="segPnFijoEditar(' + i + ')" data-seg-tooltip="Editar">' +
           '<i class="fas fa-pencil-alt"></i>' +
         '</button>' +
         '<input type="hidden" id="seg-pn-form-f-' + i + '" value="">' +

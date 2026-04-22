@@ -112,10 +112,10 @@ function segRenderizarAdjuntos() {
       : '<i class="' + segIconoAdjunto(mime) + ' seg-adj-card-icon"></i>';
 
     return '<div class="seg-adj-card">' +
-      '<button class="seg-adj-card-remove" onclick="event.preventDefault();segEliminarAdjunto(' + i + ')" title="Eliminar">' +
+      '<button class="seg-adj-card-remove" onclick="event.preventDefault();segEliminarAdjunto(' + i + ')" data-seg-tooltip="Eliminar">' +
         '<i class="fas fa-times"></i>' +
       '</button>' +
-      '<a class="seg-adj-card-link" href="' + segEscape(a.url || '#') + '" target="_blank" title="' + nombre + '">' +
+      '<a class="seg-adj-card-link" href="' + segEscape(a.url || '#') + '" target="_blank" data-seg-tooltip="' + nombre + '">' +
         '<div class="seg-adj-card-preview">' + preview + '</div>' +
         '<span class="seg-adj-card-nombre">' + nombre + '</span>' +
       '</a>' +
@@ -216,8 +216,8 @@ function segRenderizarChipsPlantillas(tipo) {
       '<i class="fas fa-check seg-chip-check seg-hidden" id="chk-' + pid + '"></i>' +
       segEscape(p.nombre) +
       '<span class="seg-chip-actions">' +
-        '<i class="fas fa-pencil-alt" onclick="event.stopPropagation();segEditarPlantilla(\'' + pid + '\',\'' + tipo + '\')" title="Editar"></i>' +
-        '<i class="fas fa-trash" onclick="event.stopPropagation();segEliminarPlantilla(\'' + pid + '\',\'' + tipo + '\')" title="Eliminar"></i>' +
+        '<i class="fas fa-pencil-alt" onclick="event.stopPropagation();segEditarPlantilla(\'' + pid + '\',\'' + tipo + '\')" data-seg-tooltip="Editar"></i>' +
+        '<i class="fas fa-trash" onclick="event.stopPropagation();segEliminarPlantilla(\'' + pid + '\',\'' + tipo + '\')" data-seg-tooltip="Eliminar"></i>' +
       '</span>' +
     '</span>';
   }).join('');

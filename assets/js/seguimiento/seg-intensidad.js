@@ -53,16 +53,27 @@ function segCargarIntensidadLabels() {
   );
 }
 
-function segCargarIntensidades() {
-  if (!SEG.registroId) return;
+function segCargarIntensidades(onDone) {
+  if (!SEG.registroId) {
+    if (onDone) onDone();
+    return;
+  }
   segFetch('/api/seguimiento/registros/' + SEG.registroId + '/intensidades', {},
     function(data) {
-      _segIntensidades = data.intensidades || {};
+      var nuevas = data.intensidades || {};
+      // Si el nuevo registro no tiene intensidades propias, mantener las heredadas
+      // Si sí tiene, reemplazar completamente (sesión con datos propios)
+      if (Object.keys(nuevas).length > 0) {
+        _segIntensidades = nuevas;
+      }
       segRenderizarSeccionTrabajar();
-      segActualizarHeroChipsTrabajar(); // actualizar header con intensidades cargadas
-      if (typeof segDerRenderizarChips === 'function') segDerRenderizarChips(); // actualizar panel derivaciones
+      segActualizarHeroChipsTrabajar();
+      if (typeof segDerRenderizarChips === 'function') segDerRenderizarChips();
+      if (onDone) onDone();
     },
-    function() {} // silencioso
+    function() {
+      if (onDone) onDone();
+    }
   );
 }
 

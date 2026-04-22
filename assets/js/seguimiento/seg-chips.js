@@ -99,8 +99,10 @@ function segActualizarHeroChipsTrabajar() {
       'ondragend="segDerChipDragEnd(event)" ' +
       'data-seg-tooltip="Arrastra al panel de derivaciones para derivar">' +
       '<span class="seg-hchip-main">' +
-        '<i class="fas fa-check" style="font-size:8px;margin-right:3px;color:#16a34a"></i>' +
-        segEscape(nombre) +
+        '<span class="seg-hchip-main-label">' +
+          '<i class="fas fa-check" style="font-size:8px;margin-right:3px;color:#16a34a"></i>' +
+          segEscape(nombre) +
+        '</span>' +
         (esDiag
           ? '<span class="seg-intens-badge"' +
               ' style="background:' + badgeColor + ';color:' + badgeTextColor + '"' +
@@ -110,7 +112,7 @@ function segActualizarHeroChipsTrabajar() {
             '</span>'
           : '') +
       '</span>' +
-      (subline ? '<span class="seg-hchip-sub">' + segEscape(subline) + '</span>' : '') +
+      (subline ? '' : '') +
     '</span>';
   }).join('');
 }
@@ -194,6 +196,8 @@ function segRenderizarSeccionTrabajar() {
 function segRenderizarTodosChips() {
   ['sintoma','diagnostico','hipotesis'].forEach(segRenderizarSeccionChips);
   segRenderizarSeccionTrabajar();
+  // Mantener chips de derivaciones sincronizados
+  if (typeof segDerRenderizarChips === 'function') segDerRenderizarChips();
 }
 
 function segLimpiarTodosChips() {
@@ -227,7 +231,7 @@ function segRenderizarChipsEtiquetas() {
   el.innerHTML = SEG.etiquetasActivas.map(function(e) {
     return '<span class="seg-etiqueta-chip">' +
       segEscape(e) +
-      '<button class="seg-chip-remove" onclick="segRemoverEtiqueta(\'' + segEscape(e) + '\')" title="Quitar">' +
+      '<button class="seg-chip-remove" onclick="segRemoverEtiqueta(\'' + segEscape(e) + '\')" data-seg-tooltip="Quitar">' +
         '<i class="fas fa-times"></i>' +
       '</button>' +
     '</span>';
