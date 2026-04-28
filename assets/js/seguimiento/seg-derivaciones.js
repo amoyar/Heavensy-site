@@ -166,13 +166,12 @@ function segToggleDer() {
 }
 
 function segDerResumenCopiar() {
-  var ta = document.getElementById('seg-der-resumen-texto');
-  if (!ta) return;
+  var texto = _segDerResumenTextoPlano();
+  if (!texto) return;
   try {
-    navigator.clipboard.writeText(ta.value);
+    navigator.clipboard.writeText(texto);
     segToast('Resumen copiado al portapapeles', 'ok');
   } catch(e) {
-    ta.select();
     document.execCommand('copy');
     segToast('Resumen copiado', 'ok');
   }
@@ -597,10 +596,19 @@ function segDerSeleccionarChip(nombre, color) {
   });
 
   // Header detalle
-  var dot   = document.getElementById('seg-der-detail-dot');
-  var title = document.getElementById('seg-der-detail-nombre');
-  if (dot)   dot.style.color = color;
-  if (title) title.textContent = nombre;
+  var dot    = document.getElementById('seg-der-detail-dot');
+  var title  = document.getElementById('seg-der-detail-nombre');
+  var codigo = document.getElementById('seg-der-detail-codigo');
+  if (dot) dot.style.color = color;
+  // Separar código entre paréntesis al final: "Nombre largo (A07.8)" → "Nombre largo" + "(A07.8)"
+  var matchCod = nombre.match(/^(.*?)\s*(\([^)]+\))\s*$/);
+  if (matchCod) {
+    if (title)  title.textContent  = matchCod[1];
+    if (codigo) codigo.textContent = matchCod[2];
+  } else {
+    if (title)  title.textContent  = nombre;
+    if (codigo) codigo.textContent = '';
+  }
 
   // Mostrar panel detalle (estaba oculto)
   var detail = document.getElementById('seg-der-detail');
@@ -703,6 +711,7 @@ function segDerRenderizarAreas() {
   areas.sort();
   sel.innerHTML = '<option value="">— área / servicio —</option>' +
     areas.map(function(a) { return '<option value="' + segEscape(a) + '">' + segEscape(a) + '</option>'; }).join('');
+  segDerDdRenderizarArea(areas);
   segDerFiltrarProfesionales();
 }
 
@@ -721,6 +730,7 @@ function segDerFiltrarProfesionales() {
       return '<option value="' + segEscape(p._id) + '" data-nombre="' + segEscape(p.nombre) + '">' +
         segEscape(p.nombre) + '</option>';
     }).join('');
+  segDerDdRenderizarProf(filtrados);
 }
 
 /* ─────────────────────────────────────────
@@ -1046,17 +1056,180 @@ function segDerHistorialEnviarEmail() {
   _segDerEnviarTextoEmail(_segDer._historialTexto, asunto);
 }
 
+function _segDerResumenTextoPlano() {
+  var cuerpo = document.getElementById('seg-der-resumen-texto');
+  if (!cuerpo) return '';
+  var texto = '';
+  cuerpo.childNodes.forEach(function(n) {
+    if (n.nodeType === 1) {
+      var t = n.textContent.trim();
+      if (n.tagName === 'DIV' && n.style && n.style.textTransform === 'uppercase') {
+        texto += '\n' + t + '\n';
+      } else {
+        texto += t + '\n';
+      }
+    }
+  });
+  return texto.trim();
+}
+
+function _segDerGenerarResumenPDF(callback) {
+  var cuerpo = document.getElementById('seg-der-resumen-texto');
+  if (!cuerpo) { segToast('Sin contenido para generar PDF', 'warn'); return; }
+
+  function buildPDF() {
+    var jsPDF = window.jspdf && window.jspdf.jsPDF;
+    if (!jsPDF) { segToast('Error cargando jsPDF', 'error'); return; }
+
+    var doc      = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    var pageW    = doc.internal.pageSize.getWidth();
+    var margin   = 18;
+    var maxW     = pageW - margin * 2;
+    var y        = 20;
+    var chip     = _segDer.chipActivo || 'Derivación';
+
+    // Header
+    doc.setFillColor(245, 240, 255);
+    doc.rect(0, 0, pageW, 22, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(90, 33, 182);
+    doc.text('Informe de Derivación', margin, 14);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(107, 114, 128);
+    doc.text(chip, margin, 19.5);
+    y = 30;
+
+    // Parsear nodos del div renderizado
+    cuerpo.childNodes.forEach(function(n) {
+      if (n.nodeType !== 1) return;
+      var t = n.textContent.trim();
+      if (!t) return;
+
+      if (n.tagName === 'DIV' && n.style && n.style.textTransform === 'uppercase') {
+        // Título de sección
+        if (y > 20) y += 4;
+        doc.setDrawColor(200, 200, 200);
+        doc.line(margin, y, pageW - margin, y);
+        y += 5;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(125, 132, 193);
+        doc.text(t.toUpperCase(), margin, y);
+        y += 5;
+      } else if (n.tagName === 'DIV') {
+        // Línea "Campo: Valor"
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        var ci = t.indexOf(': ');
+        if (ci !== -1 && ci < 35) {
+          var label = t.substring(0, ci + 1);
+          var valor = t.substring(ci + 2);
+          doc.setTextColor(107, 114, 128);
+          doc.text(label, margin, y);
+          var lw = doc.getTextWidth(label + ' ');
+          doc.setTextColor(55, 65, 81);
+          doc.setFont('helvetica', 'bold');
+          var lines = doc.splitTextToSize(valor, maxW - lw);
+          doc.text(lines, margin + lw, y);
+          doc.setFont('helvetica', 'normal');
+          y += lines.length * 4.5;
+        } else {
+          doc.setTextColor(55, 65, 81);
+          var lines = doc.splitTextToSize(t, maxW);
+          doc.text(lines, margin, y);
+          y += lines.length * 4.5;
+        }
+      } else if (n.tagName === 'P') {
+        // Párrafo
+        y += 2;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(55, 65, 81);
+        var lines = doc.splitTextToSize(t, maxW);
+        lines.forEach(function(line) {
+          if (y > 275) { doc.addPage(); y = 20; }
+          doc.text(line, margin, y);
+          y += 5;
+        });
+        y += 2;
+      }
+      if (y > 275) { doc.addPage(); y = 20; }
+    });
+
+    // Footer
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(156, 163, 175);
+    doc.text('Generado por Heavensy', margin, 287);
+
+    var b64 = doc.output('datauristring').split(',')[1];
+    callback(b64);
+  }
+
+  if (window.jspdf && window.jspdf.jsPDF) {
+    buildPDF();
+  } else {
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload = buildPDF;
+    s.onerror = function() { segToast('Error cargando jsPDF', 'error'); };
+    document.head.appendChild(s);
+  }
+}
+
 function segDerResumenEnviarWA() {
-  var ta = document.getElementById('seg-der-resumen-texto');
-  if (!ta || !ta.value) return;
-  _segDerEnviarTexto(ta.value, 'whatsapp', '');
+  var chip = _segDer.chipActivo || 'derivacion';
+  var filename = 'resumen_derivacion_' + chip.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30) + '.pdf';
+  segToast('Generando PDF...', 'info');
+  _segDerGenerarResumenPDF(function(b64) {
+    segFetch(
+      '/api/seguimiento/clientes/' + SEG.clienteId + '/derivaciones/resumen-ia/enviar',
+      { method: 'POST', body: JSON.stringify({
+        canal: 'whatsapp', pdf_base64: b64,
+        filename: filename, company_id: SEG.companyId
+      })},
+      function(data) {
+        if (data && data.ok) segToast('PDF enviado por WhatsApp', 'ok');
+        else segToast((data && data.error) || 'Error enviando por WhatsApp', 'error');
+      },
+      function() { segToast('Error enviando por WhatsApp', 'error'); }
+    );
+  });
 }
 
 function segDerResumenEnviarEmail() {
-  var ta = document.getElementById('seg-der-resumen-texto');
-  if (!ta || !ta.value) return;
-  var asunto = 'Resumen derivacion: ' + (_segDer.chipActivo || '');
-  _segDerEnviarTextoEmail(ta.value, asunto);
+  var chip = _segDer.chipActivo || 'derivacion';
+  var filename = 'resumen_derivacion_' + chip.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30) + '.pdf';
+  var emailCtx = (SEG.contexto && SEG.contexto.cliente && SEG.contexto.cliente.email) || '';
+
+  function doEnviar(email) {
+    segToast('Generando PDF...', 'info');
+    _segDerGenerarResumenPDF(function(b64) {
+      segFetch(
+        '/api/seguimiento/clientes/' + SEG.clienteId + '/derivaciones/resumen-ia/enviar',
+        { method: 'POST', body: JSON.stringify({
+          canal: 'email', pdf_base64: b64,
+          filename: filename, email: email, company_id: SEG.companyId
+        })},
+        function(data) {
+          if (data && data.ok) segToast('PDF enviado por email', 'ok');
+          else segToast((data && data.error) || 'Error enviando por email', 'error');
+        },
+        function() { segToast('Error enviando por email', 'error'); }
+      );
+    });
+  }
+
+  if (emailCtx) {
+    doEnviar(emailCtx);
+  } else {
+    segPrompt('Email del destinatario:', function(email) {
+      if (email && email.indexOf('@') !== -1) doEnviar(email);
+      else segToast('Email inválido', 'warn');
+    });
+  }
 }
 
 // Shared: enviar por WhatsApp (API si hay registro activo, sino wa.me fallback)
@@ -1206,35 +1379,75 @@ function _segDerEnviarTextoEmail(texto, asunto) {
 function segDerResumenIA() {
   if (!_segDer.chipActivo) { segToast('Selecciona un problema primero', 'warn'); return; }
   var chip    = _segDer.chipActivo;
-  var chipEnc = encodeURIComponent(chip);
-  segToast('Cargando registros...', 'info');
+  var overlay = document.getElementById('seg-der-resumen-overlay');
+  var sub     = document.getElementById('seg-der-resumen-subtitulo');
+  var loading = document.getElementById('seg-der-resumen-loading');
+  var cuerpo  = document.getElementById('seg-der-resumen-texto');
+
+  // Abrir modal con estado de carga
+  if (sub)     sub.textContent = chip;
+  if (loading) { loading.style.display = ''; }
+  if (cuerpo)  { cuerpo.style.display = 'none'; cuerpo.innerHTML = ''; }
+  if (overlay) overlay.classList.remove('seg-hidden');
+
   segFetch(
-    '/api/seguimiento/clientes/' + SEG.clienteId + '/derivaciones/historial?company_id=' + SEG.companyId + '&chip=' + chipEnc,
-    {},
+    '/api/seguimiento/clientes/' + SEG.clienteId + '/derivaciones/resumen-ia',
+    { method: 'POST', body: JSON.stringify({ chip: chip, company_id: SEG.companyId }) },
     function(data) {
-      var registros = data.registros || [];
-      if (!registros.length) { segToast('Sin registros para este problema', 'warn'); return; }
-      var partes = registros.map(function(r, i) {
-        var fecha  = _segDerFormatFecha(r.fecha) + (r.hora ? ' ' + r.hora : '');
-        var cuerpo = r.resumen_editado || r.resumen_ia ||
-          [r.contenido_principal, r.notas_internas].filter(Boolean).join('\n') || '(sin resumen)';
-        return 'Registro ' + (i+1) + ' — ' + fecha + '\n' + cuerpo;
-      });
-      var prof  = _segDer.modalProf ? _segDer.modalProf.profesional_nombre : 'todos los profesionales';
-      var sep   = '\n' + '─'.repeat(30) + '\n\n';
-      var texto = 'RESUMEN PARA DERIVACION' +
-        '\nProblema: ' + chip +
-        '\nProfesional: ' + prof +
-        '\n' + '─'.repeat(30) + '\n\n' +
-        partes.join(sep);
-      var overlay = document.getElementById('seg-der-resumen-overlay');
-      var ta      = document.getElementById('seg-der-resumen-texto');
-      var sub     = document.getElementById('seg-der-resumen-subtitulo');
-      if (sub) sub.textContent = chip + ' · ' + registros.length + ' registros';
-      if (ta)  ta.value = texto;
-      if (overlay) overlay.classList.remove('seg-hidden');
+      if (!data || !data.ok) {
+        segToast(data.error || 'Error al generar resumen', 'error');
+        if (overlay) overlay.classList.add('seg-hidden');
+        return;
+      }
+      if (sub) sub.textContent = chip + ' · ' + (data.total_registros || '') + ' sesiones';
+
+      // Renderizar informe estructurado — parsear secciones
+      if (cuerpo && data.resumen) {
+        var lineas     = data.resumen.split('\n');
+        var html       = '';
+        var bufP       = [];
+        var primerTit  = true;
+
+        function flushP() {
+          var txt = bufP.join(' ').trim();
+          if (txt) html += '<p style="margin:0 0 10px">' + segEscape(txt) + '</p>';
+          bufP = [];
+        }
+
+        lineas.forEach(function(linea) {
+          var t = linea.trim();
+          if (!t) { flushP(); return; }
+          // Título: toda la línea en mayúsculas, 4+ chars, no empieza con número
+          if (t === t.toUpperCase() && t.replace(/[^A-ZÁÉÍÓÚÑ ]/gi,'').length >= 4 && !/^[0-9]/.test(t)) {
+            flushP();
+            var bord = primerTit ? 'padding-top:0' :
+              'padding-top:12px;border-top:0.5px solid #e8ecf5';
+            primerTit = false;
+            html += '<div style="font-size:9px;font-weight:700;color:#7D84C1;text-transform:uppercase;' +
+                    'letter-spacing:.05em;margin:0 0 8px;' + bord + '">' + segEscape(t) + '</div>';
+          } else if (t.indexOf(': ') !== -1 && t.indexOf(': ') < 35) {
+            // Línea tipo "Campo: Valor"
+            flushP();
+            var ci    = t.indexOf(': ');
+            var label = t.substring(0, ci).trim();
+            var valor = t.substring(ci + 2).trim();
+            html += '<div style="font-size:11px;color:#6b7280;margin-bottom:3px">' +
+                    segEscape(label) + ': <span style="color:#374151;font-weight:500">' +
+                    segEscape(valor) + '</span></div>';
+          } else {
+            bufP.push(t);
+          }
+        });
+        flushP();
+        cuerpo.innerHTML = html;
+        cuerpo.style.display = '';
+      }
+      if (loading) loading.style.display = 'none';
     },
-    function() { segToast('Error al cargar registros', 'error'); }
+    function() {
+      segToast('Error al generar resumen IA', 'error');
+      if (overlay) overlay.classList.add('seg-hidden');
+    }
   );
 }
 
@@ -1446,3 +1659,157 @@ function _segDerFormatFecha(isoStr) {
     _segDerDragNombre = null;
   });
 })();
+/* ─────────────────────────────────────────
+   CUSTOM DROPDOWNS — área y profesional
+───────────────────────────────────────── */
+function segDerDdToggle(tipo) {
+  var listId = tipo === 'area' ? 'seg-der-dd-area-list' : 'seg-der-dd-prof-list';
+  var chevId = tipo === 'area' ? 'seg-der-dd-area-chev' : 'seg-der-dd-prof-chev';
+  var btnId  = tipo === 'area' ? 'seg-der-dd-area-btn'  : 'seg-der-dd-prof-btn';
+  var list   = document.getElementById(listId);
+  var chev   = document.getElementById(chevId);
+  var btn    = document.getElementById(btnId);
+  if (!list) return;
+  var isOpen = !list.classList.contains('seg-hidden');
+  // Cerrar ambos primero
+  ['seg-der-dd-area-list','seg-der-dd-prof-list'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.add('seg-hidden');
+  });
+  ['seg-der-dd-area-chev','seg-der-dd-prof-chev'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.transform = '';
+  });
+  ['seg-der-dd-area-btn','seg-der-dd-prof-btn'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('open');
+  });
+  if (!isOpen) {
+    list.classList.remove('seg-hidden');
+    if (chev) chev.style.transform = 'rotate(180deg)';
+    if (btn)  btn.classList.add('open');
+    // Enfocar buscador al abrir
+    var searchEl = document.getElementById(tipo === 'area' ? 'seg-der-dd-area-search' : 'seg-der-dd-prof-search');
+    if (searchEl) { searchEl.value = ''; segDerDdFiltrar(tipo); setTimeout(function(){ searchEl.focus(); }, 30); }
+    // Cerrar al click fuera
+    setTimeout(function() {
+      document.addEventListener('click', function _close(e) {
+        var wrap = document.getElementById(tipo === 'area' ? 'seg-der-dd-area-wrap' : 'seg-der-dd-prof-wrap');
+        if (wrap && !wrap.contains(e.target)) {
+          list.classList.add('seg-hidden');
+          if (chev) chev.style.transform = '';
+          if (btn)  btn.classList.remove('open');
+          document.removeEventListener('click', _close);
+        }
+      });
+    }, 10);
+  }
+}
+
+function segDerDdRenderizarArea(areas) {
+  var list  = document.getElementById('seg-der-dd-area-list');
+  var label = document.getElementById('seg-der-dd-area-label');
+  if (!list) return;
+  list.innerHTML =
+    '<div class="seg-der-dd-search-wrap">' +
+      '<i class="fas fa-search"></i>' +
+      '<input class="seg-der-dd-search" id="seg-der-dd-area-search" type="text" placeholder="Buscar..." autocomplete="off" ' +
+        'oninput="segDerDdFiltrar(\'area\')">' +
+    '</div>' +
+    '<div id="seg-der-dd-area-opts">' +
+      areas.map(function(a) {
+        return '<div class="seg-der-dd-opt" data-val="' + segEscape(a) + '" data-label="' + segEscape(a) + '" onclick="segDerDdSelAreaEl(this)">' +
+          '<span class="seg-der-dd-dot"></span>' + segEscape(a) + '</div>';
+      }).join('') +
+    '</div>';
+  var curVal = (document.getElementById('seg-der-sel-area') || {}).value || '';
+  if (!curVal && label) label.textContent = '— área / servicio —';
+}
+function segDerDdRenderizarProf(profs) {
+  var list  = document.getElementById('seg-der-dd-prof-list');
+  var label = document.getElementById('seg-der-dd-prof-label');
+  if (!list) return;
+  list.innerHTML =
+    '<div class="seg-der-dd-search-wrap">' +
+      '<i class="fas fa-search"></i>' +
+      '<input class="seg-der-dd-search" id="seg-der-dd-prof-search" type="text" placeholder="Buscar..." autocomplete="off" ' +
+        'oninput="segDerDdFiltrar(\'prof\')">' +
+    '</div>' +
+    '<div id="seg-der-dd-prof-opts">' +
+      profs.map(function(p) {
+        return '<div class="seg-der-dd-opt" data-val="' + segEscape(p._id) + '" data-label="' + segEscape(p.nombre) + '" onclick="segDerDdSelProfEl(this)">' +
+          '<span class="seg-der-dd-dot"></span>' + segEscape(p.nombre) + '</div>';
+      }).join('') +
+    '</div>';
+  if (label) label.textContent = '— profesional —';
+}
+function segDerDdFiltrar(tipo) {
+  var inputId = tipo === 'area' ? 'seg-der-dd-area-search' : 'seg-der-dd-prof-search';
+  var optsId  = tipo === 'area' ? 'seg-der-dd-area-opts'   : 'seg-der-dd-prof-opts';
+  var input   = document.getElementById(inputId);
+  var opts    = document.getElementById(optsId);
+  if (!input || !opts) return;
+  var q = input.value.toLowerCase().trim();
+  var items = opts.querySelectorAll('.seg-der-dd-opt');
+  var visible = 0;
+  items.forEach(function(item) {
+    var match = item.getAttribute('data-label').toLowerCase().indexOf(q) !== -1;
+    item.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  var empty = opts.querySelector('.seg-der-dd-empty');
+  if (visible === 0) {
+    if (!empty) {
+      var e = document.createElement('div');
+      e.className = 'seg-der-dd-empty';
+      e.textContent = 'Sin resultados';
+      opts.appendChild(e);
+    }
+  } else {
+    if (empty) empty.remove();
+  }
+}
+
+function segDerDdSelAreaEl(el) {
+  segDerDdSelArea(el.getAttribute('data-val') || '', el.getAttribute('data-label') || '');
+}
+
+function segDerDdSelProfEl(el) {
+  segDerDdSelProf(el.getAttribute('data-val') || '', el.getAttribute('data-label') || '');
+}
+
+function segDerDdSelArea(val, label) {
+  var sel = document.getElementById('seg-der-sel-area');
+  var lbl = document.getElementById('seg-der-dd-area-label');
+  var list = document.getElementById('seg-der-dd-area-list');
+  var chev = document.getElementById('seg-der-dd-area-chev');
+  var btn  = document.getElementById('seg-der-dd-area-btn');
+  if (sel) { sel.value = val; sel.dispatchEvent(new Event('change')); }
+  if (lbl) lbl.textContent = label;
+  if (list) {
+    list.querySelectorAll('.seg-der-dd-opt').forEach(function(o) {
+      o.classList.toggle('selected', o.textContent.trim() === label && val !== '');
+    });
+    list.classList.add('seg-hidden');
+  }
+  if (chev) chev.style.transform = '';
+  if (btn)  btn.classList.remove('open');
+}
+
+function segDerDdSelProf(val, label) {
+  var sel  = document.getElementById('seg-der-sel-prof');
+  var lbl  = document.getElementById('seg-der-dd-prof-label');
+  var list = document.getElementById('seg-der-dd-prof-list');
+  var chev = document.getElementById('seg-der-dd-prof-chev');
+  var btn  = document.getElementById('seg-der-dd-prof-btn');
+  if (sel) sel.value = val;
+  if (lbl) lbl.textContent = label;
+  if (list) {
+    list.querySelectorAll('.seg-der-dd-opt').forEach(function(o) {
+      o.classList.toggle('selected', o.textContent.trim() === label && val !== '');
+    });
+    list.classList.add('seg-hidden');
+  }
+  if (chev) chev.style.transform = '';
+  if (btn)  btn.classList.remove('open');
+}

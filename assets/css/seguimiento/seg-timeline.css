@@ -4,8 +4,9 @@
 ═══════════════════════════════════════════════════════ */
 
 .seg-tl-wrap {
+  border-top: 1px solid #c4b5fd;
+  border-radius: 10px 10px 0 0;
   background: #fff;
-  border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
 }
 
@@ -16,10 +17,13 @@
   cursor: pointer;
   gap: 8px;
   user-select: none;
+  background: #f4f7fc;
+  border-radius: 10px 10px 0 0;
+  border-bottom: 1px solid #e8ecf5;
 }
 
 .seg-tl-bar:hover {
-  background: #fafbff;
+  background: #edf1f9;
 }
 
 .seg-tl-bar-title {
@@ -116,7 +120,9 @@
 
 /* ── Panel evolución de intensidades ── */
 .seg-evo-panel {
-  border-top: 0.5px solid #e5e7eb;
+  border-top: 1px solid #c4b5fd;
+  border-radius: 10px 10px 0 0;
+  background: #fff;
 }
 .seg-evo-bar {
   display: flex;
@@ -126,8 +132,11 @@
   cursor: pointer;
   user-select: none;
   transition: background .12s;
+  background: #f4f7fc;
+  border-radius: 10px 10px 0 0;
+  border-bottom: 1px solid #e8ecf5;
 }
-.seg-evo-bar:hover { background: #fafbff; }
+.seg-evo-bar:hover { background: #edf1f9; }
 .seg-evo-title {
   font-size: 10px;
   font-weight: 700;
@@ -251,8 +260,10 @@
 
 /* ── Tabs ── */
 .seg-tabs-bar {
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  background: #f0fafd;
+  border-top: 2px solid #67c2d8;
+  border-bottom: 1px solid #e0f4f8;
+  border-radius: 10px 10px 0 0;
   padding: 0 20px;
   display: flex;
   align-items: center;

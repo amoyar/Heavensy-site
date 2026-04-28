@@ -11,6 +11,8 @@ var SEG = {
   companyNombre:        null,
   clienteId:            null,
   registroId:           null,
+  citaId:               null,
+  citaStatus:           null,
   template:             null,
   labels:               {},
   contexto:             null,

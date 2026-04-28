@@ -286,7 +286,7 @@
   max-height: 2000px;
   overflow: visible;
   transition: max-height 0.28s ease, padding 0.28s ease, opacity 0.2s ease;
-  padding: 8px 10px;
+  padding: 0 8px 6px;
   opacity: 1;
 }
 .seg-side-panel-body.collapsed {
@@ -307,7 +307,7 @@
 .seg-side-panel-scroll::-webkit-scrollbar-thumb { background: #e0e7ff; border-radius: 99px; }
 
 /* Historial — sin límite de altura, scroll lo maneja seg-col-side */
-#seg-body-historial { padding: 6px 8px; }
+#seg-body-historial { padding: 0 8px 6px; }
 #seg-body-historial .seg-side-panel-scroll { max-height: none; overflow-y: visible; }
 
 /* Etiquetas activas — caben ~4 chips (2 filas) */

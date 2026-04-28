@@ -3,21 +3,27 @@
    segSeleccionarCliente, segRenderizarContexto, segSetHero, segRenderizarHistorial, segRenderizarTimeline, segRenderizarTLEdit.
 ═══════════════════════════════════════════════════════ */
 
-function segSeleccionarCliente(clienteId, nombre, avatar) {
-  if (SEG.clienteId === clienteId) return;
+function segSeleccionarCliente(clienteId, nombre, avatar, citaId, citaStatus) {
+  // Mismo cliente Y misma cita → no recargar
+  if (SEG.clienteId === clienteId && SEG.citaId === (citaId || null)) return;
 
   if (SEG.hayUnsaved) {
     segConfirm('Hay cambios sin guardar. ¿Continuar sin guardar?', function() {
       SEG.hayUnsaved = false;
-      segSeleccionarCliente(clienteId, nombre, avatar);
+      segSeleccionarCliente(clienteId, nombre, avatar, citaId, citaStatus);
     });
     return;
   }
 
   SEG.clienteId  = clienteId;
   SEG.registroId = null;
+  SEG.citaId     = citaId   || null;
+  SEG.citaStatus = citaStatus || null;
   SEG.hayUnsaved = false;
   SEG._canal     = 'whatsapp';
+
+  // Actualizar visual active en la lista sin re-renderizar
+  if (typeof segActualizarActivoLista === 'function') segActualizarActivoLista();
 
   // Resetear panel de evolución
   segResetEvolucion();
@@ -46,11 +52,14 @@ function segSeleccionarCliente(clienteId, nombre, avatar) {
   // Volver siempre al Tab 1
   segSetTab('notas', document.getElementById('seg-tab-notas'));
 
-  // Marcar activo en lista
+  // Marcar activo en lista — usar citaId si está disponible para distinguir citas del mismo paciente
   document.querySelectorAll('.seg-entity-item').forEach(function(el) {
     el.classList.remove('active');
   });
-  var target = document.querySelector('.seg-entity-item[data-wa-id="' + clienteId + '"]');
+  var selector = SEG.citaId
+    ? '.seg-entity-item[data-wa-id="' + clienteId + '"][data-cita-id="' + SEG.citaId + '"]'
+    : '.seg-entity-item[data-wa-id="' + clienteId + '"]';
+  var target = document.querySelector(selector);
   if (target) target.classList.add('active');
 
   // Mostrar spinner mientras carga
@@ -126,6 +135,13 @@ function segRenderizarContexto(ctx) {
     }
   }
 
+  // Resetear siempre al cargar un registro, luego activar modo lectura si está cerrado
+  segDesactivarModoLectura();
+  segActualizarBtnCerrar(reg._id ? reg.estado : null);
+  if (reg._id && reg.estado === 'cerrado') {
+    setTimeout(segActivarModoLectura, 100);
+  }
+
   segRenderizarTimeline(ctx.timeline||[], lb.timeline_titulo, lb.timeline_inicio);
 
   // Fecha y hora — cargar desde registro activo o poner hoy/ahora como default
@@ -136,9 +152,14 @@ function segRenderizarContexto(ctx) {
                      (Math.floor(hoy.getMinutes()/5)*5).toString().padStart(2,'0');
   segSetFecha(reg.fecha || fechaDefault);
   segSetHora(reg.hora   || horaDefault);
-  if (badgeEl) badgeEl.textContent = reg.estado === 'en_curso' ? (lb.status_active||'En curso')
-    : reg.estado === 'enviado' ? (lb.status_sent||'Enviado')
-    : (lb.status_pending||'Pendiente');
+  if (badgeEl) {
+    var estadoTxt = reg.estado === 'en_curso'  ? (lb.status_active||'En curso')
+                  : reg.estado === 'enviado'   ? (lb.status_sent||'Enviado')
+                  : reg.estado === 'cerrado'   ? 'Cerrado'
+                  : (lb.status_pending||'Pendiente');
+    badgeEl.textContent = estadoTxt;
+    badgeEl.className = 'seg-badge-cur seg-badge-' + (reg.estado || 'pendiente');
+  }
 
   // Notas privadas + etiquetas del registro
   // ctx.etiquetas = lista de strings disponibles del template
@@ -245,13 +266,16 @@ function segRenderizarNotasDisplay(reg, lb, etiquetas) {
 function segSetHeroStatus(estado, lb) {
   var el = document.getElementById('seg-hero-status');
   if (!el) return;
-  el.classList.remove('estado-en-curso', 'estado-enviado', 'estado-pendiente');
+  el.classList.remove('estado-en-curso', 'estado-enviado', 'estado-pendiente', 'estado-cerrado');
   if (estado === 'en_curso') {
     el.textContent = (lb && lb.status_active)  || 'En curso';
     el.classList.add('estado-en-curso');
   } else if (estado === 'enviado') {
     el.textContent = (lb && lb.status_sent)    || 'Enviado';
     el.classList.add('estado-enviado');
+  } else if (estado === 'cerrado') {
+    el.textContent = 'Cerrado';
+    el.classList.add('estado-cerrado');
   } else {
     el.textContent = (lb && lb.status_pending) || 'Pendiente';
     el.classList.add('estado-pendiente');
@@ -362,8 +386,14 @@ function segRenderizarHistorial(historial, lb) {
 
   el.innerHTML = historial.map(function(h, i) {
     var rid        = h._id || h.id || '';
-    var badgeCls   = h.estado === 'enviado' ? 'enviado' : h.estado === 'en_curso' ? 'nueva' : 'pendiente';
-    var badgeTxt   = h.estado === 'enviado' ? 'Enviado' : h.estado === 'en_curso' ? 'En curso' : 'Pendiente';
+    var badgeCls   = h.estado === 'enviado'  ? 'enviado'
+                   : h.estado === 'en_curso' ? 'nueva'
+                   : h.estado === 'cerrado'  ? 'cerrado'
+                   : 'pendiente';
+    var badgeTxt   = h.estado === 'enviado'  ? 'Enviado'
+                   : h.estado === 'en_curso' ? 'En curso'
+                   : h.estado === 'cerrado'  ? 'Cerrado'
+                   : 'Pendiente';
     var preview    = h.resumen_corto || h.contenido_principal || '';
     var intens     = h.intensidades || {};
     var colors     = SEG_INTENS_COLORS;
@@ -505,4 +535,69 @@ function segRenderizarTLEdit(eventos, titulo) {
       '</button>' +
     '</div>';
   }).join('');
+}
+/* ─────────────────────────────────────────
+   MODO LECTURA — sesión cerrada
+───────────────────────────────────────── */
+function segActivarModoLectura() {
+  // Bloquear todos los campos editables
+  var campos = ['seg-campo-notas', 'seg-campo-contenido', 'seg-campo-tareas', 'seg-campo-proxima'];
+  campos.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.setAttribute('contenteditable', 'false');
+      el.setAttribute('readonly', true);
+      el.classList.add('seg-campo-cerrado');
+    }
+  });
+  // Deshabilitar botón guardar (no ocultar — mantiene visible la barra)
+  var btnGuardar = document.getElementById('seg-btn-guardar');
+  if (btnGuardar) { btnGuardar.disabled = true; btnGuardar.classList.add('seg-campo-cerrado'); }
+  // Ocultar botones de edición secundarios
+  var ocultar = ['seg-btn-generar-ia', 'seg-btn-enviar-cliente',
+                 'seg-btn-nueva-sesion', 'seg-tl-add-btn'];
+  ocultar.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.add('seg-hidden');
+  });
+  // Ocultar botón cerrar, mostrar badge
+  var btnCerrar = document.getElementById('seg-btn-cerrar-sesion');
+  if (btnCerrar) btnCerrar.classList.add('seg-hidden');
+  // Deshabilitar autoguardado
+  SEG._cerrado = true;
+}
+
+function segDesactivarModoLectura() {
+  // Restaurar campos editables
+  var campos = ['seg-campo-notas', 'seg-campo-contenido', 'seg-campo-tareas', 'seg-campo-proxima'];
+  campos.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.setAttribute('contenteditable', id === 'seg-campo-notas' ? 'true' : 'false');
+      el.removeAttribute('readonly');
+      el.classList.remove('seg-campo-cerrado');
+    }
+  });
+  // Restaurar botón guardar
+  var btnGuardar = document.getElementById('seg-btn-guardar');
+  if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.classList.remove('seg-campo-cerrado'); }
+  // Restaurar botones secundarios
+  var mostrar = ['seg-btn-generar-ia', 'seg-btn-nueva-sesion'];
+  mostrar.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('seg-hidden');
+  });
+  SEG._cerrado = false;
+}
+
+function segActualizarBtnCerrar(estado) {
+  var btn = document.getElementById('seg-btn-cerrar-sesion');
+  if (!btn) return;
+  if (estado === 'cerrado') {
+    btn.classList.add('seg-hidden');
+  } else if (estado && SEG.registroId) {
+    btn.classList.remove('seg-hidden');
+  } else {
+    btn.classList.add('seg-hidden');
+  }
 }

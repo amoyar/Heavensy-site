@@ -75,6 +75,24 @@ function segSeleccionarRegistro(registroId) {
                   : (lb.status_pending||'Pendiente');
     if (badgeEl) badgeEl.textContent = estadoTxt;
     if (typeof segSetHeroStatus === 'function') segSetHeroStatus(data.estado, lb);
+    // Actualizar fecha, hora y badge de estado con la sesión seleccionada
+    if (typeof segSetFecha === 'function') segSetFecha(data.fecha || '');
+    if (typeof segSetHora  === 'function') segSetHora(data.hora   || '');
+    var badgeEl = document.getElementById('seg-badge-estado');
+    if (badgeEl) {
+      var estadoTxt = data.estado === 'en_curso'  ? (lb.status_active||'En curso')
+                    : data.estado === 'enviado'   ? (lb.status_sent||'Enviado')
+                    : data.estado === 'cerrado'   ? 'Cerrado'
+                    : (lb.status_pending||'Pendiente');
+      badgeEl.textContent = estadoTxt;
+      badgeEl.className = 'seg-badge-cur seg-badge-' + (data.estado || 'pendiente');
+    }
+    // Resetear/activar modo lectura según estado del registro cargado
+    if (typeof segDesactivarModoLectura === 'function') segDesactivarModoLectura();
+    if (typeof segActualizarBtnCerrar === 'function') segActualizarBtnCerrar(data.estado);
+    if (data.estado === 'cerrado' && typeof segActivarModoLectura === 'function') {
+      setTimeout(segActivarModoLectura, 100);
+    }
     SEG.hayUnsaved = false;
     // Restaurar cards — quitar loading, marcar activa
     document.querySelectorAll('.seg-hist-card').forEach(function(el) {
@@ -295,6 +313,11 @@ function segTlCalNavMes(delta) {
   segTlRenderizarCalendario();
 }
 
+function segTlCalNavAnio(delta) {
+  _segTlCal.anio += delta;
+  segTlRenderizarCalendario();
+}
+
 function segTlRenderizarCalendario() {
   var tituloEl = document.getElementById('seg-tl-cal-titulo');
   var diasEl   = document.getElementById('seg-tl-cal-dias');
@@ -449,9 +472,11 @@ function segTlEditarPunto(evId, evYear, evLabel) {
               '</button>' +
               '<div class="seg-datepicker seg-hidden" id="seg-tl-datepicker">' +
                 '<div class="cal-nav">' +
+                  '<button class="cal-nav-btn" onclick="segTlCalNavAnio(-1)" type="button" title="Año anterior"><i class="fas fa-angle-double-left"></i></button>' +
                   '<button class="cal-nav-btn" onclick="segTlCalNavMes(-1)" type="button"><i class="fas fa-chevron-left"></i></button>' +
                   '<span class="cal-nav-title" id="seg-tl-cal-titulo"></span>' +
                   '<button class="cal-nav-btn" onclick="segTlCalNavMes(1)" type="button"><i class="fas fa-chevron-right"></i></button>' +
+                  '<button class="cal-nav-btn" onclick="segTlCalNavAnio(1)" type="button" title="Año siguiente"><i class="fas fa-angle-double-right"></i></button>' +
                 '</div>' +
                 '<div class="cal-grid" style="padding:4px 4px 2px">' +
                   '<div class="cal-day-header">Lun</div><div class="cal-day-header">Mar</div>' +
@@ -594,4 +619,196 @@ function segTlEliminarPunto(evId, evLabel) {
       function() { segToast('Error al eliminar', 'error'); }
     );
   });
+}
+
+/* ─────────────────────────────────────────
+   TIMELINE — agregar nuevo evento (modal igual al de edición)
+───────────────────────────────────────── */
+function segAddEvento() {
+  // Cerrar popover si hubiera alguno abierto
+  var pop = document.getElementById('seg-tl-popover');
+  if (pop) pop.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'seg-tl-edit-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:900;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML =
+    '<div style="background:#fff;border-radius:12px;width:340px;">' +
+      '<div style="padding:12px 16px;border-bottom:.5px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;">' +
+        '<span style="font-size:13px;font-weight:600;color:#374151">Nuevo evento</span>' +
+        '<button data-close-tl-modal="1" style="border:none;background:none;font-size:18px;cursor:pointer;color:#9ca3af;line-height:1">×</button>' +
+      '</div>' +
+      '<div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px;">' +
+        '<div>' +
+          '<label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px">Descripción</label>' +
+          '<input id="seg-tl-edit-label" type="text" value="" placeholder="Ej: Diagnóstico inicial" style="width:100%;box-sizing:border-box;font-size:12px;padding:7px 10px;border:.5px solid #d1d5db;border-radius:8px;font-family:inherit">' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative">' +
+          '<div>' +
+            '<label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px">Fecha</label>' +
+            '<div class="seg-picker-wrap" id="seg-tl-fecha-wrap">' +
+              '<button class="seg-picker-btn" id="seg-tl-fecha-btn" onclick="segTlToggleDatePicker()" type="button" style="width:100%">' +
+                '<i class="fas fa-calendar-alt" style="color:#9961FF;font-size:11px"></i>' +
+                '<span id="seg-tl-fecha-display">—</span>' +
+              '</button>' +
+              '<div class="seg-datepicker seg-hidden" id="seg-tl-datepicker">' +
+                '<div class="cal-nav">' +
+                  '<button class="cal-nav-btn" onclick="segTlCalNavAnio(-1)" type="button" title="Año anterior"><i class="fas fa-angle-double-left"></i></button>' +
+                  '<button class="cal-nav-btn" onclick="segTlCalNavMes(-1)" type="button"><i class="fas fa-chevron-left"></i></button>' +
+                  '<span class="cal-nav-title" id="seg-tl-cal-titulo"></span>' +
+                  '<button class="cal-nav-btn" onclick="segTlCalNavMes(1)" type="button"><i class="fas fa-chevron-right"></i></button>' +
+                  '<button class="cal-nav-btn" onclick="segTlCalNavAnio(1)" type="button" title="Año siguiente"><i class="fas fa-angle-double-right"></i></button>' +
+                '</div>' +
+                '<div class="cal-grid" style="padding:4px 4px 2px">' +
+                  '<div class="cal-day-header">Lun</div><div class="cal-day-header">Mar</div>' +
+                  '<div class="cal-day-header">Mié</div><div class="cal-day-header">Jue</div>' +
+                  '<div class="cal-day-header">Vie</div><div class="cal-day-header">Sáb</div>' +
+                  '<div class="cal-day-header">Dom</div>' +
+                '</div>' +
+                '<div class="cal-grid cal-days-grid" id="seg-tl-cal-dias"></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div>' +
+            '<label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px">Hora <span style="font-size:10px;color:#9ca3af">(opcional)</span></label>' +
+            '<div class="seg-picker-wrap" id="seg-tl-hora-wrap">' +
+              '<button class="seg-picker-btn" id="seg-tl-hora-btn" onclick="segTlToggleTimePicker()" type="button" style="width:100%">' +
+                '<i class="fas fa-clock" style="color:#9961FF;font-size:11px"></i>' +
+                '<span id="seg-tl-hora-display">—</span>' +
+              '</button>' +
+              '<div class="seg-timepicker seg-hidden" id="seg-tl-timepicker">' +
+                '<div class="seg-tp-title">HH : MM</div>' +
+                '<div class="seg-tp-cols">' +
+                  '<div class="seg-tp-col-wrap"><div class="seg-tp-col" id="seg-tl-tp-horas"></div></div>' +
+                  '<div class="seg-tp-col-wrap"><div class="seg-tp-col" id="seg-tl-tp-minutos"></div></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:flex-end;gap:8px;padding-top:4px">' +
+          '<button data-close-tl-modal="1" style="font-size:12px;padding:6px 14px;border-radius:20px;border:.5px solid #d1d5db;background:transparent;cursor:pointer;color:#6b7280">Cancelar</button>' +
+          '<button data-save-tl-modal="1" style="font-size:12px;padding:6px 14px;border-radius:20px;border:none;background:#9961FF;color:#fff;cursor:pointer;font-weight:600">Guardar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  // Inicializar pickers vacíos, calendario apunta a hoy
+  var hoy = new Date();
+  _segTlCal = { anio: hoy.getFullYear(), mes: hoy.getMonth(), fechaSel: '' };
+  _segTlTp  = { hora: null, min: null };
+
+  document.body.appendChild(overlay);
+
+  // Wire botones via JS — evitar anidamiento de comillas en strings HTML
+  overlay.querySelectorAll('[data-close-tl-modal]').forEach(function(btn) {
+    btn.addEventListener('click', function() { overlay.remove(); });
+  });
+  var saveBtn = overlay.querySelector('[data-save-tl-modal]');
+  if (saveBtn) saveBtn.addEventListener('click', segGuardarNuevoEvento);
+
+  // Cerrar pickers TL al click fuera
+  document.addEventListener('click', function _tlOutsideClick(e) {
+    var fw = document.getElementById('seg-tl-fecha-wrap');
+    var hw = document.getElementById('seg-tl-hora-wrap');
+    var dp = document.getElementById('seg-tl-datepicker');
+    var tp = document.getElementById('seg-tl-timepicker');
+    if (dp && fw && !fw.contains(e.target)) dp.classList.add('seg-hidden');
+    if (tp && hw && !hw.contains(e.target)) tp.classList.add('seg-hidden');
+    if (!document.getElementById('seg-tl-edit-modal')) {
+      document.removeEventListener('click', _tlOutsideClick);
+    }
+  });
+
+  setTimeout(function() { var inp = document.getElementById('seg-tl-edit-label'); if (inp) inp.focus(); }, 80);
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+}
+
+function segGuardarNuevoEvento() {
+  var label = (document.getElementById('seg-tl-edit-label') || {}).value || '';
+  if (!label.trim()) { segToast('Escribe una descripción', 'warn'); return; }
+
+  var fecha = _segTlCal.fechaSel || '';
+  if (!fecha) { segToast('Selecciona una fecha', 'warn'); return; }
+
+  var parts = fecha.split('-');
+  if (parts.length !== 3) { segToast('Fecha inválida', 'warn'); return; }
+
+  var payload = {
+    company_id: SEG.companyId,
+    titulo:     label.trim(),
+    anio:       parseInt(parts[0]),
+    mes:        parseInt(parts[1]),
+    dia:        parseInt(parts[2])
+  };
+
+  // Hora (opcional)
+  if (_segTlTp.hora !== null) {
+    payload.hora = String(_segTlTp.hora).padStart(2,'0') + ':' +
+                   String(_segTlTp.min !== null ? _segTlTp.min : 0).padStart(2,'0');
+  }
+
+  var overlay = document.getElementById('seg-tl-edit-modal');
+  if (overlay) overlay.remove();
+
+  segFetch('/api/seguimiento/clientes/' + SEG.clienteId + '/timeline',
+    { method: 'POST', body: JSON.stringify(payload) },
+    function() {
+      segToast('Evento agregado', 'ok');
+      segFetch('/api/seguimiento/clientes/' + SEG.clienteId + '/contexto?company_id=' + SEG.companyId, {},
+        function(data) {
+          if (data && data.timeline) {
+            segRenderizarTimeline(data.timeline,
+              data.labels && data.labels.timeline_titulo,
+              data.labels && data.labels.timeline_inicio);
+          }
+        },
+        function() {}
+      );
+    },
+    function() { segToast('Error al agregar evento', 'error'); }
+  );
+}
+/* ─────────────────────────────────────────
+   NOTAS — colapsar/expandir panel
+───────────────────────────────────────── */
+var _segNotasVisible = true;
+
+function segToggleNotas() {
+  _segNotasVisible = !_segNotasVisible;
+  var body = document.getElementById('seg-body') || document.querySelector('.seg-body');
+  var chev = document.getElementById('seg-notas-chev');
+  if (body) body.classList.toggle('seg-hidden', !_segNotasVisible);
+  if (chev) chev.style.transform = _segNotasVisible ? '' : 'rotate(-90deg)';
+}
+/* ─────────────────────────────────────────
+   CERRAR SESIÓN
+───────────────────────────────────────── */
+function segCerrarSesion() {
+  if (!SEG.registroId) return;
+  segConfirm(
+    '¿Cerrar esta sesión? Una vez cerrada no podrá volver a editarse.',
+    function() {
+      segFetch(
+        '/api/seguimiento/registros/' + SEG.registroId + '/cerrar',
+        { method: 'POST', body: JSON.stringify({ company_id: SEG.companyId }) },
+        function(data) {
+          if (data && data.ok) {
+            segToast('Sesión cerrada', 'ok');
+            segSetHeroStatus('cerrado', SEG.labels);
+            segActivarModoLectura();
+            // Actualizar badge en la tarjeta activa del historial
+            var cardActiva = document.querySelector('.seg-hist-card.active .seg-hist-badge');
+            if (cardActiva) {
+              cardActiva.className = 'seg-hist-badge cerrado';
+              cardActiva.textContent = 'Cerrado';
+            }
+          } else {
+            segToast((data && data.error) || 'Error al cerrar', 'error');
+          }
+        },
+        function() { segToast('Error al cerrar la sesión', 'error'); }
+      );
+    }
+  );
 }

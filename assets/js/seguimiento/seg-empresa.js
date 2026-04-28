@@ -144,6 +144,15 @@ function segCambiarFiltroAgenda(filtro) {
   }
 }
 
+function segFormatFechaAgenda(fechaStr) {
+  if (!fechaStr) return '';
+  var d = new Date(fechaStr + 'T12:00:00');
+  if (isNaN(d)) return '';
+  var dias  = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+  var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return dias[d.getDay()] + ' · ' + d.getDate() + ' ' + meses[d.getMonth()];
+}
+
 function segCargarAgendaDia(rango) {
   var listEl = document.getElementById('seg-entity-list');
   if (!listEl) return;
@@ -165,7 +174,7 @@ function segCargarAgendaDia(rango) {
         return;
       }
       var html = pacientes.map(function(p) {
-        var active = (SEG.clienteId && SEG.clienteId === p.wa_id) ? ' active' : '';
+        var active = (SEG.clienteId && SEG.clienteId === p.wa_id && SEG.citaId === (p.cita_id || null)) ? ' active' : '';
         var nombre = segEscape(p.nombre || p.wa_id);
         var avatar = p.avatar || '?';
         var metaParts = [];
@@ -173,15 +182,21 @@ function segCargarAgendaDia(rango) {
         if (p.servicio)    metaParts.push(segEscape(p.servicio));
         if (p.duracion)    metaParts.push(p.duracion + ' min');
         var meta = metaParts.join(' · ');
+        var fechaMeta = segFormatFechaAgenda(p.fecha || '');
 
-        return '<div class="seg-entity-item' + active + '" data-wa-id="' + segEscape(p.wa_id) + '"' +
-          ' onclick="segSeleccionarCliente(\'' + segEscape(p.wa_id) + '\',\'' + nombre + '\',\'' + segEscape(avatar) + '\')">' +
-          '<div class="seg-entity-avatar">' + segBuildAvatar(avatar) + '</div>' +
+        var citaId = segEscape(p.cita_id || '');
+        var citaStatus = segEscape(p.status || '');
+        return '<div class="seg-entity-item seg-entity-item--agenda' + active + '" data-wa-id="' + segEscape(p.wa_id) + '" data-cita-id="' + citaId + '" data-cita-status="' + citaStatus + '"' +
+          ' onclick="segSeleccionarCliente(\'' + segEscape(p.wa_id) + '\',\'' + nombre + '\',\'' + segEscape(avatar) + '\',\'' + citaId + '\',\'' + citaStatus + '\')">' +
+          '<div class="seg-entity-avatar seg-entity-avatar--sm">' + segBuildAvatar(avatar) + '</div>' +
           '<div class="seg-entity-info">' +
-            '<div class="seg-entity-name">' + nombre + '</div>' +
+            '<div class="seg-entity-name-row">' +
+              '<span class="seg-entity-name">' + nombre + '</span>' +
+              (fechaMeta ? '<span class="seg-entity-fecha">' + fechaMeta + '</span>' : '') +
+            '</div>' +
             '<div class="seg-entity-meta">' + meta + '</div>' +
+            '<div class="seg-cita-chips" onclick="event.stopPropagation()">' + segBuildCitaChips(citaId, p.status || '') + '</div>' +
           '</div>' +
-          '<div class="seg-entity-dot dot-active"></div>' +
         '</div>';
       }).join('');
 
@@ -251,4 +266,113 @@ function segBuildAvatar(avatar) {
       'onerror="this.parentNode.innerHTML=\'?\'">'; 
   }
   return avatar;
+}
+/* ─────────────────────────────────────────
+   CHIPS DE ESTADO DE CITA
+───────────────────────────────────────── */
+var _SEG_CITA_CHIPS = [
+  { status: 'arrived', label: 'Presentado', icon: 'fa-user-check', tooltip: 'El paciente se presentó a la cita' },
+  { status: 'no_show', label: 'Ausente',  icon: 'fa-user-times', tooltip: 'El paciente no se presentó a la cita' }
+];
+
+function segBuildCitaChips(citaId, currentStatus) {
+  if (!citaId) return '';
+  return _SEG_CITA_CHIPS.map(function(c) {
+    var isActive = currentStatus === c.status;
+    return '<span class="seg-cita-chip' + (isActive ? ' activo status-' + c.status : '') + '" ' +
+      'data-cita-id="' + citaId + '" data-status="' + c.status + '" ' +
+
+      'onclick="segActualizarCitaStatus(this)">' +
+      '<i class="fas ' + c.icon + '"></i> ' + c.label +
+    '</span>';
+  }).join('');
+}
+
+var _segTipEl = null;
+function segChipTooltipShow(el) {
+  segChipTooltipHide();
+  var text = el.getAttribute('data-tip');
+  if (!text) return;
+  var tip = document.createElement('span');
+  tip.className = 'seg-tooltip-body';
+  tip.textContent = text;
+  document.body.appendChild(tip);
+  _segTipEl = tip;
+  var r = el.getBoundingClientRect();
+  tip.style.opacity = '0';
+  requestAnimationFrame(function() {
+    var tw = tip.offsetWidth;
+    var left = r.left + r.width / 2 - tw / 2;
+    var top  = r.top - tip.offsetHeight - 6 + window.scrollY;
+    if (left < 6) left = 6;
+    if (left + tw > window.innerWidth - 6) left = window.innerWidth - tw - 6;
+    tip.style.left = left + 'px';
+    tip.style.top  = top + 'px';
+    tip.style.opacity = '1';
+  });
+}
+function segChipTooltipHide() {
+  if (_segTipEl) { _segTipEl.remove(); _segTipEl = null; }
+}
+
+function segActualizarCitaStatus(el) {
+  var citaId = el.getAttribute('data-cita-id');
+  var status  = el.getAttribute('data-status');
+  if (!citaId || !status) return;
+
+  // Si ya está activo, no hacer nada
+  if (el.classList.contains('activo')) return;
+
+  var url    = status === 'cancelled'
+    ? '/api/agenda/appointments/' + citaId + '/cancel'
+    : '/api/agenda/appointments/' + citaId + '/status';
+  var method = 'PATCH';
+  var body   = status === 'cancelled' ? {} : { status: status };
+
+  // Feedback optimista — marcar chip activo inmediatamente
+  var container = el.closest('.seg-cita-chips');
+  if (container) {
+    container.querySelectorAll('.seg-cita-chip').forEach(function(c) {
+      c.classList.remove('activo', 'status-arrived', 'status-no_show', 'status-cancelled');
+    });
+    el.classList.add('activo', 'status-' + status);
+  }
+
+  // Actualizar SEG.citaStatus si es la cita activa
+  if (SEG.citaId && SEG.citaId === citaId) {
+    SEG.citaStatus = status;
+  }
+
+  segFetch(url, { method: method, body: JSON.stringify(body) },
+    function() {
+      segToast('Estado actualizado', 'ok');
+      // Actualizar data-cita-status en la tarjeta
+      var card = el.closest('[data-cita-id]');
+      if (card) card.setAttribute('data-cita-status', status);
+    },
+    function() {
+      segToast('Error al actualizar estado', 'error');
+      // Revertir feedback optimista
+      if (container) {
+        container.querySelectorAll('.seg-cita-chip').forEach(function(c) {
+          c.classList.remove('activo', 'status-arrived', 'status-no_show', 'status-cancelled');
+        });
+      }
+    }
+  );
+}
+
+/* ─────────────────────────────────────────
+   Actualizar clase active en lista sin re-renderizar
+───────────────────────────────────────── */
+function segActualizarActivoLista() {
+  var listEl = document.getElementById('seg-entity-list');
+  if (!listEl) return;
+  listEl.querySelectorAll('.seg-entity-item').forEach(function(el) {
+    var waId   = el.getAttribute('data-wa-id');
+    var citaId = el.getAttribute('data-cita-id');
+    var isActive = SEG.clienteId && waId === SEG.clienteId &&
+                   (citaId || null) === SEG.citaId;
+    el.classList.toggle('active', !!isActive);
+  });
 }

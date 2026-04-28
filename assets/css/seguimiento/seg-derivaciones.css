@@ -6,8 +6,8 @@
 
 /* ── Panel bar ── */
 .seg-der-panel {
-  border-top: 0.5px solid #e5e7eb;
-  border-bottom: 0.5px solid #e5e7eb;
+  border-top: 1px solid #c4b5fd;
+  border-radius: 10px 10px 0 0;
   background: #fff;
 }
 .seg-der-bar {
@@ -18,8 +18,11 @@
   cursor: pointer;
   user-select: none;
   transition: background .12s;
+  background: #f4f7fc;
+  border-radius: 10px 10px 0 0;
+  border-bottom: 1px solid #e8ecf5;
 }
-.seg-der-bar:hover { background: #fafbff; }
+.seg-der-bar:hover { background: #edf1f9; }
 .seg-der-bar.drag-over { background: #f5f3ff; border-bottom: 1.5px dashed #c4b5fd; }
 .seg-der-title {
   font-size: 11px;
@@ -122,16 +125,46 @@
 }
 .seg-der-detail-hdr {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   padding: 7px 10px;
   background: #dbeafe;
   border-bottom: 0.5px solid #C9D9FF;
   font-size: 11px;
 }
-.seg-der-detail-dot { font-size: 11px; }
-.seg-der-detail-nombre { font-weight: 600; color: #374151; }
-.seg-der-detail-sub { color: #9ca3af; margin-left: 2px; }
+.seg-der-detail-dot {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.seg-der-detail-title-group {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  overflow: hidden;
+}
+.seg-der-detail-nombre {
+  font-weight: 600;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.seg-der-detail-codigo {
+  font-weight: 600;
+  color: #374151;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.seg-der-detail-sub {
+  color: #9ca3af;
+  width: 100%;
+  padding-left: 16px;
+  margin-top: 1px;
+}
 .seg-der-detail-body { padding: 10px; background: #EFF6FF; overflow: visible; }
 
 /* ── Cards de profesionales ── */
@@ -702,3 +735,150 @@
   color: #dc2626;
 }
 .seg-der-panel-confirm-btns button.ok:hover { background: #fee2e2; }
+/* ── Custom dropdowns área / profesional ── */
+.seg-der-dd-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 80px;
+}
+
+.seg-der-dd-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 10px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #9ca3af;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .12s;
+  text-align: left;
+}
+
+.seg-der-dd-btn:hover {
+  border-color: #c4b5fd;
+  color: #7c3aed;
+}
+
+.seg-der-dd-btn.open {
+  border-color: #9961FF;
+  color: #374151;
+  box-shadow: 0 0 0 3px #9961FF15;
+}
+
+.seg-der-dd-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.seg-der-dd-chev {
+  font-size: 8px;
+  color: #9961FF;
+  flex-shrink: 0;
+  transition: transform .15s;
+}
+
+.seg-der-dd-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: #fff;
+  border: 0.5px solid #c4b5fd;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(153,97,255,.10);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.seg-der-dd-list::-webkit-scrollbar { width: 3px; }
+.seg-der-dd-list::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 99px; }
+
+.seg-der-dd-opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  color: #374151;
+  cursor: pointer;
+  transition: background .1s;
+}
+
+.seg-der-dd-opt:hover {
+  background: #f5f0ff;
+  color: #7c3aed;
+}
+
+.seg-der-dd-opt.selected {
+  background: #f5f0ff;
+  color: #9961FF;
+  font-weight: 600;
+}
+
+.seg-der-dd-opt.seg-der-dd-placeholder {
+  color: #9ca3af;
+  border-bottom: 0.5px solid #f3f4f6;
+}
+
+.seg-der-dd-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: 0.5px solid #f3f4f6;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+.seg-der-dd-search-wrap i {
+  font-size: 10px;
+  color: #c4b5fd;
+  flex-shrink: 0;
+}
+
+.seg-der-dd-search {
+  border: none;
+  outline: none;
+  font-size: 11px;
+  color: #374151;
+  background: transparent;
+  font-family: inherit;
+  width: 100%;
+}
+
+.seg-der-dd-search::placeholder {
+  color: #c4b5fd;
+}
+
+.seg-der-dd-empty {
+  padding: 8px 10px;
+  font-size: 11px;
+  color: #9ca3af;
+  font-style: italic;
+  text-align: center;
+}
+
+.seg-der-dd-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c4b5fd;
+  flex-shrink: 0;
+}
+
+.seg-der-dd-opt.selected .seg-der-dd-dot {
+  background: #9961FF;
+}
