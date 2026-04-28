@@ -111,7 +111,6 @@
             <div class="seg-hero-nota seg-hidden" id="seg-hero-nota"></div>
           </div>
         </div>
-        <span class="seg-hero-status seg-hidden" id="seg-hero-status"></span>
       </div>
 
       <!-- TIMELINE -->
@@ -161,16 +160,19 @@
           <i class="fas fa-code-branch" style="font-size:9px;color:#7D84C1;opacity:.7;"></i>
           <span class="seg-der-title" id="seg-der-labels-title">Derivaciones</span>
           <span class="seg-der-sub" id="seg-der-sub"></span>
-          <i class="fas fa-chevron-right seg-der-chev" id="seg-der-chev"></i>
+          <i class="fas fa-chevron-down seg-der-chev" id="seg-der-chev"></i>
         </div>
         <div class="seg-der-content seg-hidden" id="seg-der-content">
           <div class="seg-der-chips" id="seg-der-chips"></div>
           <div class="seg-der-detail seg-hidden" id="seg-der-detail">
             <div class="seg-der-detail-hdr">
               <span class="seg-der-detail-dot" id="seg-der-detail-dot">●</span>
-              <span class="seg-der-detail-nombre" id="seg-der-detail-nombre"></span>
-              <span class="seg-der-detail-sub" id="seg-der-labels-asignados">— profesionales asignados</span>
+              <div class="seg-der-detail-title-group">
+                <span class="seg-der-detail-nombre" id="seg-der-detail-nombre"></span>
+                <span class="seg-der-detail-codigo" id="seg-der-detail-codigo"></span>
+              </div>
               <button class="seg-der-detail-close" onclick="segDerCerrarDetalle()" data-seg-tooltip="Cerrar"><i class="fas fa-times"></i></button>
+              <span class="seg-der-detail-sub" id="seg-der-labels-asignados">— profesionales asignados</span>
             </div>
             <div class="seg-der-detail-body">
               <div id="seg-der-lista"></div>
@@ -178,10 +180,27 @@
               <div class="seg-der-add-interno">
                 <div class="seg-der-add-label" id="seg-der-labels-interno">Agregar profesional interno</div>
                 <div class="seg-der-add-row">
-                  <select id="seg-der-sel-area" onchange="segDerFiltrarProfesionales()">
+                  <!-- Custom dropdown área -->
+                  <div class="seg-der-dd-wrap" id="seg-der-dd-area-wrap">
+                    <button class="seg-der-dd-btn" type="button" id="seg-der-dd-area-btn" onclick="segDerDdToggle('area')">
+                      <span class="seg-der-dd-label" id="seg-der-dd-area-label">— área / servicio —</span>
+                      <i class="fas fa-chevron-down seg-der-dd-chev" id="seg-der-dd-area-chev"></i>
+                    </button>
+                    <div class="seg-der-dd-list seg-hidden" id="seg-der-dd-area-list"></div>
+                  </div>
+                  <!-- Custom dropdown profesional -->
+                  <div class="seg-der-dd-wrap" id="seg-der-dd-prof-wrap">
+                    <button class="seg-der-dd-btn" type="button" id="seg-der-dd-prof-btn" onclick="segDerDdToggle('prof')">
+                      <span class="seg-der-dd-label" id="seg-der-dd-prof-label">— profesional —</span>
+                      <i class="fas fa-chevron-down seg-der-dd-chev" id="seg-der-dd-prof-chev"></i>
+                    </button>
+                    <div class="seg-der-dd-list seg-hidden" id="seg-der-dd-prof-list"></div>
+                  </div>
+                  <!-- Selects ocultos — usados por JS existente -->
+                  <select id="seg-der-sel-area" style="display:none" onchange="segDerFiltrarProfesionales()">
                     <option value="">— área / servicio —</option>
                   </select>
-                  <select id="seg-der-sel-prof">
+                  <select id="seg-der-sel-prof" style="display:none">
                     <option value="">— profesional —</option>
                   </select>
                   <button class="seg-der-add-btn" onclick="segDerAgregarInterno()">+ Asignar</button>
@@ -226,12 +245,11 @@
               <i class="fas fa-times"></i>
             </button>
           </div>
-          <div class="seg-der-modal-body" style="padding:0">
-            <textarea id="seg-der-resumen-texto"
-              style="width:100%;min-height:320px;padding:14px 16px;border:none;
-                     font-size:11px;line-height:1.6;color:#374151;resize:vertical;
-                     font-family:inherit;background:#fafaf9;outline:none"
-              spellcheck="false"></textarea>
+          <div class="seg-der-modal-body" style="padding:0;overflow-y:auto;max-height:60vh">
+            <div id="seg-der-resumen-cuerpo" style="padding:14px 16px">
+              <div id="seg-der-resumen-loading" style="font-size:11px;color:#9ca3af;font-style:italic">Generando resumen con IA...</div>
+              <div id="seg-der-resumen-texto" style="font-size:12px;line-height:1.7;color:#374151;display:none"></div>
+            </div>
           </div>
           <div class="seg-der-modal-footer">
             <button class="seg-der-footer-btn" style="background:#f0fdf4;border:1px solid #86efac;color:#16a34a" onclick="segDerResumenCopiar()">
@@ -287,11 +305,10 @@
           <div class="seg-tab-num">2</div>
           Para el <span id="lbl-tab-cliente" class="seg-tab-label-inline">cliente</span>
         </div>
-        <div class="seg-tab" id="seg-tab-prog" onclick="segSetTab('prog', this)">
-          <i class="fas fa-paper-plane seg-tab-icon"></i>
-          Programados
-        </div>
         <div class="seg-tabs-spacer"></div>
+        <button class="seg-tabs-collapse-btn" id="seg-tabs-collapse-btn" onclick="segToggleNotas()" data-seg-tooltip="Colapsar notas">
+          <i class="fas fa-chevron-down" id="seg-notas-chev"></i>
+        </button>
 
       </div>
 
@@ -356,7 +373,7 @@
               <!-- Botón nueva sesión junto al calendario -->
               <button class="seg-btn-nueva-sesion-inline" id="seg-btn-nueva-sesion"
                 onclick="segNuevaSesion()" data-seg-tooltip="Nueva sesión">
-                <i class="fas fa-plus"></i>
+                <i class="fas fa-plus seg-icon-mr-sm"></i>
                 Nueva <span id="lbl-nueva-sesion">sesión</span>
               </button>
             </div>
@@ -645,39 +662,8 @@
 
           </div>
 
-          <div class="seg-col-side">
-            <div class="seg-side-section-title">Mensajes programados</div>
-            <div class="seg-side-card-plain seg-side-card-dashed" id="seg-prog-count">
-              Sin mensajes pendientes
-            </div>
-          </div>
-
         </div><!-- /#seg-panel-cliente -->
 
-
-        <!-- TAB 3: Programados -->
-        <div class="seg-tab-panel" id="seg-panel-prog">
-
-          <div class="seg-col-main">
-            <div class="seg-field-card">
-              <div class="seg-field-label">
-                <i class="fas fa-clock"></i>
-                Mensajes programados
-              </div>
-              <div class="seg-prog-empty" id="seg-prog-list">
-                <i class="fas fa-paper-plane"></i>
-                No hay mensajes programados para este <span id="lbl-prog-cliente">cliente</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="seg-col-side">
-            <button class="seg-btn-secondary seg-full-width" onclick="segNuevoMensajeProg()">
-              <i class="fas fa-plus seg-icon-mr-sm"></i>Programar mensaje
-            </button>
-          </div>
-
-        </div><!-- /#seg-panel-prog -->
 
 
 
@@ -688,11 +674,16 @@
 
       <!-- BARRA DE ACCIONES -->
       <div class="seg-actions-bar">
-        <button class="seg-btn-guardar-principal" id="seg-btn-guardar" onclick="segGuardar()">
-          <i class="fas fa-save seg-icon-mr"></i>Guardar <span id="lbl-btn-guardar">sesión</span>
-        </button>
         <span class="seg-autosave" id="seg-autosave-indicator"></span>
         <div class="seg-actions-spacer"></div>
+        <div class="seg-actions-group">
+          <button class="seg-btn-guardar-principal" id="seg-btn-guardar" onclick="segGuardar()">
+            <i class="fas fa-save seg-icon-mr"></i>Guardar <span id="lbl-btn-guardar">sesión</span>
+          </button>
+          <button class="seg-btn-guardar-principal seg-hidden" id="seg-btn-cerrar-sesion" onclick="segCerrarSesion()">
+            <i class="fas fa-lock seg-icon-mr-sm"></i>Cerrar Sesión
+          </button>
+        </div>
         <button class="seg-btn-promover seg-hidden" id="seg-btn-promover" onclick="segPromover()">
           <i class="fas fa-arrow-up seg-icon-mr-sm"></i>Promover a <span id="lbl-promover-cliente">cliente</span>
         </button>
@@ -1037,5 +1028,7 @@
   </div>
 </div>
 
-<!-- Chart.js para evolución de intensidades -->
+<!-- Chart.js — librería de gráficos para la evolución de intensidades -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- jsPDF — genera archivos PDF en el navegador, usado para exportar el informe de derivación -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
