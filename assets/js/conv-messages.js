@@ -273,6 +273,12 @@ async function selectConversation(userId, element) {
         loadSeguimiento(userId, currentCompanyId);
     }
 
+    // Notificar cambio de contacto a la agenda — actualiza contact_id inmediatamente
+    // y recarga el panel si la sección de agenda está visible
+    if (typeof window._agendaOnContactChange === "function") {
+        window._agendaOnContactChange(currentCompanyId, userId);
+    }
+
     if (window.onConversationSelectedForContacts) {
         window.onConversationSelectedForContacts(
             currentConversation.id,

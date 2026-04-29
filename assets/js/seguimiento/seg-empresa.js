@@ -315,6 +315,25 @@ function segChipTooltipHide() {
   if (_segTipEl) { _segTipEl.remove(); _segTipEl = null; }
 }
 
+function segActualizarCitaStatusById(citaId, status) {
+  // Busca el chip en el DOM y llama segActualizarCitaStatus con el elemento correcto
+  var chip = document.querySelector('.seg-cita-chip[data-cita-id="' + citaId + '"][data-status="' + status + '"]');
+  if (chip) {
+    segActualizarCitaStatus(chip);
+  } else {
+    // Feedback visual directo si no encuentra el chip exacto
+    var container = document.querySelector('.seg-cita-chips');
+    if (container) {
+      container.querySelectorAll('.seg-cita-chip').forEach(function(c) {
+        c.classList.remove('activo', 'status-arrived', 'status-no_show', 'status-cancelled');
+      });
+      var arrivedChip = container.querySelector('[data-status="arrived"]');
+      if (arrivedChip) arrivedChip.classList.add('activo', 'status-arrived');
+    }
+    SEG.citaStatus = status;
+  }
+}
+
 function segActualizarCitaStatus(el) {
   var citaId = el.getAttribute('data-cita-id');
   var status  = el.getAttribute('data-status');

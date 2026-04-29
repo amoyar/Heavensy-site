@@ -1441,6 +1441,15 @@ function segDerResumenIA() {
         flushP();
         cuerpo.innerHTML = html;
         cuerpo.style.display = '';
+        // Activar edición
+        cuerpo.setAttribute('contenteditable', 'true');
+        cuerpo.style.border = '1px dashed #c4b5fd';
+        cuerpo.style.padding = '6px 8px';
+        cuerpo.style.borderRadius = '6px';
+        cuerpo.style.background = '#fafbff';
+        // Mostrar hint editable
+        var hint = document.getElementById('seg-der-resumen-edit-hint');
+        if (hint) hint.style.display = '';
       }
       if (loading) loading.style.display = 'none';
     },

@@ -105,6 +105,19 @@ function segNuevaSesionConfirm() {
       SEG.registroId = data._id || data.id;
       SEG.hayUnsaved = false;
 
+      // Marcar cita como Presentado automáticamente al crear nueva sesión
+      if (SEG.citaId) {
+        segFetch(
+          '/api/agenda/appointments/' + SEG.citaId + '/status',
+          { method: 'PATCH', body: JSON.stringify({ status: 'arrived', company_id: SEG.companyId }) },
+          function() {
+            // Actualizar chip visualmente usando el helper que busca el elemento por id
+            if (typeof segActualizarCitaStatusById === 'function') segActualizarCitaStatusById(SEG.citaId, 'arrived');
+          },
+          function() {}
+        );
+      }
+
       // Copiar intensidades del registro anterior al nuevo
       // Así persisten en BD y se muestran al recargar el paciente
       if (_segIntensidades && SEG.registroId) {

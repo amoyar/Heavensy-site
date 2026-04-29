@@ -170,8 +170,7 @@
 
 /* ── Botón colapsar panel notas ── */
 .seg-tabs-collapse-btn {
-  margin-left: auto;
-  flex-shrink: 0;
+  margin-left: 4px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -190,6 +189,13 @@
 .seg-tabs-collapse-btn i {
   transition: transform .2s;
 }
+/* ── Badge estado en date-row ── */
+.seg-badge-cur.seg-badge-en_curso   { background: #E1DEFF !important; color: #7c3aed !important; }
+.seg-badge-cur.seg-badge-enviado    { background: #d1fae5 !important; color: #065f46 !important; }
+.seg-badge-cur.seg-badge-pendiente  { background: #fef3c7 !important; color: #92400e !important; }
+.seg-badge-cur.seg-badge-completado { background: #fef3c7 !important; color: #92400e !important; }
+.seg-badge-cur.seg-badge-cerrado    { background: #f1f5f9 !important; color: #475569 !important; }
+
 /* ── Botón Nueva Sesión en date-row ── */
 .seg-btn-nueva-sesion-inline {
   display: inline-flex;
@@ -213,10 +219,3 @@
   border-color: #9961FF;
   color: #9961FF;
 }
-
-/* ── Badge estado en date-row ── */
-.seg-badge-cur { font-size: 10px; padding: 2px 9px; border-radius: 8px; font-weight: 600; }
-.seg-badge-en_curso  { background: #E1DEFF; color: #7c3aed; }
-.seg-badge-enviado   { background: #d1fae5; color: #065f46; }
-.seg-badge-pendiente { background: #fef3c7; color: #92400e; }
-.seg-badge-cerrado   { background: #f1f5f9; color: #475569; }

@@ -2060,6 +2060,18 @@ async function _agendaConfirmPayment(appointmentId) {
 window._agendaConfirmPayment  = _agendaConfirmPayment;
 window._agendaHideBannerById  = _agendaHideBannerById;
 
+// Hook para cargar agenda cuando se abre la sección en el panel derecho
+window._onToggleRightSection = (function(_prev) {
+    return function(sectionId, isOpen) {
+        if (_prev) _prev(sectionId, isOpen);
+        if (isOpen && sectionId === 'contactAgendaSection') {
+            if (_agendaCurrentCompanyId && _agendaCurrentUserId) {
+                loadAgenda(_agendaCurrentCompanyId, _agendaCurrentUserId);
+            }
+        }
+    };
+})(window._onToggleRightSection);
+
 // Refresh manual de la agenda
 window._agendaRefresh = function(el) {
     if (el) {
@@ -2164,6 +2176,25 @@ function _agendaSendReservationMsg() {
         });
     }
 }
+
+// ── Notificar cambio de contacto desde selectConversation ──
+window._agendaOnContactChange = function(companyId, userId) {
+    // Actualizar variables y re-renderizar inmediatamente
+    _agendaCurrentUserId    = userId;
+    _agendaCurrentCompanyId = companyId;
+    _agendaSelectedDate     = null;
+    _agendaSelectedService  = null;
+    _agendaSelectedSvcGroup = null;
+    _agendaBooking          = false;
+    _agendaSlots            = [];
+
+    // Solo recargar si la sección está visible
+    const section = document.getElementById('contactAgendaSection');
+    const isOpen  = section && section.classList.contains('rp-open');
+    if (isOpen) {
+        loadAgenda(companyId, userId);
+    }
+};
 
 // ── Exponer _reloadAgenda globalmente para realtime.js ──
 window._reloadAgenda = function() {

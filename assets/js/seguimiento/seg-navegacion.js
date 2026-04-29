@@ -68,12 +68,6 @@ function segSeleccionarRegistro(registroId) {
     var resumenTexto = data.resumen_editado || data.resumen_ia || data.resumen;
     if (resumenTexto) segMostrarResumen(resumenTexto);
     else segLimpiarResumen();
-    // Actualizar badge de estado y hero status con color correcto
-    var badgeEl = document.getElementById('seg-badge-estado');
-    var estadoTxt = data.estado === 'en_curso'  ? (lb.status_active||'En curso')
-                  : data.estado === 'enviado'   ? (lb.status_sent||'Enviado')
-                  : (lb.status_pending||'Pendiente');
-    if (badgeEl) badgeEl.textContent = estadoTxt;
     if (typeof segSetHeroStatus === 'function') segSetHeroStatus(data.estado, lb);
     // Actualizar fecha, hora y badge de estado con la sesión seleccionada
     if (typeof segSetFecha === 'function') segSetFecha(data.fecha || '');
