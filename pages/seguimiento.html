@@ -248,7 +248,12 @@
           <div class="seg-der-modal-body" style="padding:0;overflow-y:auto;max-height:60vh">
             <div id="seg-der-resumen-cuerpo" style="padding:14px 16px">
               <div id="seg-der-resumen-loading" style="font-size:11px;color:#9ca3af;font-style:italic">Generando resumen con IA...</div>
-              <div id="seg-der-resumen-texto" style="font-size:12px;line-height:1.7;color:#374151;display:none"></div>
+              <div id="seg-der-resumen-edit-hint" style="display:none;font-size:10px;color:#9961FF;margin-bottom:6px;display:none">
+                <i class="fas fa-pencil-alt" style="font-size:9px"></i> Puedes editar el contenido antes de enviarlo
+              </div>
+              <div id="seg-der-resumen-texto" contenteditable="false"
+                style="font-size:12px;line-height:1.7;color:#374151;display:none;outline:none;
+                       border-radius:6px;transition:background .15s,border .15s"></div>
             </div>
           </div>
           <div class="seg-der-modal-footer">

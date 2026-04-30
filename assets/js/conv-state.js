@@ -81,8 +81,21 @@ function formatTimestamp(timestamp) {
     if (!timestamp) return '';
 
     try {
-        const date = new Date(timestamp);
-        if (isNaN(date.getTime())) return timestamp;
+        let ts = timestamp;
+        if (typeof ts === 'number') {
+            // Unix timestamp en segundos (WA) → convertir a ms
+            ts = ts < 1e12 ? ts * 1000 : ts;
+        } else if (typeof ts === 'string' && /^\d{4}-\d{2}-\d{2}/.test(ts)) {
+            // ISO sin tzinfo (Python isoformat() naive): "2026-04-29T20:01:00.000000"
+            // Browser lo trata como local pero es UTC — forzar Z
+            ts = ts.replace(' ', 'T');
+            if (!ts.endsWith('Z') && !/[+\-]\d{2}:\d{2}/.test(ts.slice(-6))) {
+                ts = ts + 'Z';
+            }
+        }
+        // Otros formatos como "Wed, 29 Apr 2026 20:02:43 GMT" los parsea new Date() directo
+        const date = new Date(ts);
+        if (isNaN(date.getTime())) return String(timestamp);
 
         const now = new Date();
         const isToday = date.toDateString() === now.toDateString();

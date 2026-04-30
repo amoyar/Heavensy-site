@@ -62,10 +62,15 @@ function connectRealtime() {
         rtSocket.on('connect', () => {
             console.log(`🔌 Realtime conectado: ${rtSocket.id}`);
             rtInitialized = true;
-            rtConnecting = false;   // 👈 NUEVO
-            
-            // Unirse al room de la empresa actual
-            //syncRooms();
+            rtConnecting = false;
+
+            // Re-unirse a los rooms al conectar/reconectar
+            if (rtContext.companyId) {
+                joinRoom('company', rtContext.companyId);
+            }
+            if (rtContext.userId && rtContext.companyId) {
+                joinRoom('user', rtContext.companyId, rtContext.userId);
+            }
         });
 
         rtSocket.on('disconnect', (reason) => {
@@ -91,20 +96,16 @@ function connectRealtime() {
         // });
 
         rtSocket.on('new_message', (data) => {
-            if (window.rtEvents) {
-            window.rtEvents.emit('new_message', data);
-        }});
-
-        // Respuesta del admin (desde otro panel o confirmación propia)
-        // rtSocket.on('admin_reply', (data) => {
-        //     console.log('📨 [realtime] admin_reply:', data);
-        //     handleAdminReply(data);
-        // });
+            console.log('📨 [realtime] new_message:', data);
+            handleNewMessage(data);
+            if (window.rtEvents) window.rtEvents.emit('new_message', data);
+        });
 
         rtSocket.on('admin_reply', (data) => {
-            if (window.rtEvents) {
-            window.rtEvents.emit('admin_reply', data);
-        }});
+            console.log('📨 [realtime] admin_reply:', data);
+            handleAdminReply(data);
+            if (window.rtEvents) window.rtEvents.emit('admin_reply', data);
+        });
 
         // Línea de tiempo IA — actualización desde backend
         // rtSocket.on('seguimiento_timeline_updated', (data) => {
@@ -307,10 +308,22 @@ function handleAdminReply(data) {
 // ============================================
 // ACTUALIZAR LISTA DE CONVERSACIONES
 // ============================================
+// ============================================
+// HELPER: Normalizar timestamp (WA envía Unix segundos)
+// ============================================
+function normalizeTimestamp(ts) {
+    if (!ts) return new Date().toISOString();
+    const n = Number(ts);
+    if (!isNaN(n) && n > 0) {
+        return new Date(n < 1e12 ? n * 1000 : n).toISOString();
+    }
+    return ts;
+}
+
 function updateConversationList(data, state, api) {
     const userId = data.user_id;
     const text = data.text || "";
-    const timestamp = data.timestamp || new Date().toISOString();
+    const timestamp = normalizeTimestamp(data.timestamp);
 
     const conv = state.conversations.find(c => c.id === userId);
 
@@ -364,14 +377,15 @@ function addMessageToChat(data, state, api) {
     direction: senderType === "user" ? "inbound" : "outbound",
     content: data.text || "",
     text: data.text || "",
-    timestamp: data.timestamp || new Date().toISOString(),
+    timestamp: normalizeTimestamp(data.timestamp),
     type: data.type || "text",
     media_url: data.media_url || null,
     cloudinary_url: data.cloudinary_url || null,
     cloudinary_id: data.cloudinary_id || null,
     mime_type: data.mime_type || null,
     read: false,
-    responses: []
+    responses: [],
+    context_wamid: data.context_wamid || null  // reply nativo WA
     };
 
 
@@ -683,30 +697,34 @@ const rtContext = {
 
 let pendingContext = null;
 function setRealtimeContext({ companyId, userId, feature }) {
+    // Si socket no conectado: guardar contexto para que on('connect') lo use
     if (!rtSocket || !rtSocket.connected) {
-        console.warn("⚠️ Socket no conectado aún");
+        if (companyId) rtContext.companyId = companyId;
+        if (userId !== undefined) rtContext.userId = userId;
+        if (feature !== undefined) rtContext.feature = feature;
+        console.warn("⚠️ Socket no conectado — contexto guardado para reconexión");
         return;
     }
 
-    // COMPANY
+    // COMPANY — solo hacer join si cambió
     if (companyId && companyId !== rtContext.companyId) {
-        if (rtContext.companyId) {
-            leaveRoom('company', rtContext.companyId);
-        }
+        if (rtContext.companyId) leaveRoom('company', rtContext.companyId);
         rtContext.companyId = companyId;
         joinRoom('company', companyId);
     }
 
-    // USER
-    if (userId && userId !== rtContext.userId) {
+    // USER — solo hacer join si cambió
+    if (userId !== undefined && userId !== rtContext.userId) {
         if (rtContext.userId && rtContext.companyId) {
             leaveRoom('user', rtContext.companyId, rtContext.userId);
         }
         rtContext.userId = userId;
-        joinRoom('user', rtContext.companyId, userId);
+        if (userId && rtContext.companyId) {
+            joinRoom('user', rtContext.companyId, userId);
+        }
     }
 
-    // FEATURE 🔥
+    // FEATURE
     if (feature && feature !== rtContext.feature) {
         if (rtContext.feature && rtContext.companyId) {
             leaveRoom('feature', rtContext.companyId, rtContext.feature);

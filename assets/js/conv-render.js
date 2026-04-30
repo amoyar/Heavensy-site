@@ -9,6 +9,66 @@ console.log('✅ conv-render.js cargado');
 // RENDER: Lista de conversaciones (sidebar)
 // ============================================
 
+// ============================================
+// HELPER: Bloque de cita (mensaje recibido con reply nativo de WA)
+// ============================================
+function findQuotedMessage(contextWamid) {
+    if (!contextWamid) return null;
+    const msgs = (typeof currentMessages !== 'undefined' && currentMessages)
+        || (typeof getConvState === 'function' && getConvState().currentConversation?.messages)
+        || [];
+
+    // 1. Buscar en mensajes directos (mensajes de usuario)
+    const found = msgs.find(m => m.message_id === contextWamid);
+    if (found) return found;
+
+    // 2. Buscar en responses de admin por wamid (guardado al enviar desde Heavensy)
+    for (const msg of msgs) {
+        if (!msg.responses) continue;
+        const resp = msg.responses.find(r => r.wamid === contextWamid || r.wa_message_id === contextWamid);
+        if (resp) return { message_id: contextWamid, content: resp.text, text: resp.text, direction: 'outbound', role: 'assistant' };
+    }
+    return null;
+}
+
+function renderQuotedBlock(contextWamid) {
+    if (!contextWamid) return '';
+    const quoted = findQuotedMessage(contextWamid);
+    if (!quoted) {
+        return `<div class="border-l-2 border-blue-400 bg-blue-50 rounded px-2 py-1 mb-1 text-[11px] text-gray-400 italic">(mensaje no disponible)</div>`;
+    }
+    const isOutbound = quoted.role === 'assistant' || quoted.sender_type === 'assistant' || quoted.direction === 'outbound';
+    const label = isOutbound ? 'Tú' : '';
+    const msgType = quoted.type || '';
+    const quotedText = quoted.content || quoted.text || '';
+    const imgUrl = quoted.cloudinary_url || quoted.media_url || null;
+    const isImage = msgType === 'image' || (imgUrl && (msgType === 'image' || !quotedText));
+
+    // Thumbnail si hay imagen
+    const thumbHtml = imgUrl
+        ? `<img src="${imgUrl}" class="w-10 h-10 object-cover rounded flex-shrink-0 ml-1" onerror="this.style.display='none'">`
+        : '';
+
+    // Texto del bloque de cita
+    let previewText = '';
+    if (!quotedText) {
+        if (msgType === 'image' || imgUrl) previewText = '📷 Imagen';
+        else if (msgType === 'audio') previewText = '🎵 Audio';
+        else if (msgType === 'video') previewText = '🎬 Video';
+        else if (msgType === 'document') previewText = '📄 Documento';
+        else previewText = '(multimedia)';
+    } else {
+        previewText = (imgUrl ? '📷 ' : '') + quotedText.substring(0, 50);
+    }
+
+    const labelHtml = label ? `<span class="font-medium text-blue-500">${escapeHtml(label)}</span> ` : '';
+
+    return `<div class="border-l-2 border-blue-400 bg-blue-50 rounded px-2 py-1 mb-1 flex items-center justify-between gap-1 min-w-0">
+        <div class="text-[11px] text-gray-500 truncate">${labelHtml}${escapeHtml(previewText)}</div>
+        ${thumbHtml}
+    </div>`;
+}
+
 function renderConversations(list = conversations) {
     const container = document.getElementById('conversationsList');
     if (!container) return;
@@ -162,7 +222,7 @@ function renderMessages() {
         const messageDiv = document.createElement('div');
         messageDiv.className = 'mb-3';
 
-        const isUser = msg.role === 'user' || msg.sender_type === 'user';
+        const isUser = msg.role === 'user' || msg.sender_type === 'user' || msg.direction === 'inbound';
         const messageTime = formatTimestamp(msg.timestamp);
 
         let mediaContent = '';
@@ -178,34 +238,40 @@ function renderMessages() {
 
             messageDiv.innerHTML = `
                 <div 
-                    class="flex justify-end items-start gap-2 mb-2 cursor-pointer hover:opacity-80 transition ${isSelected ? 'ring-2 ring-purple-400 rounded-3xl' : ''}"
+                    class="flex justify-start items-start gap-2 mb-2 cursor-pointer hover:opacity-80 transition"
                     onclick="selectMessageByIndex(${msgIndex})"
                     title="Click para responder este mensaje"
                 >
-                    <div class="bg-[#e7f0fd] rounded-3xl rounded-tr-md px-4 py-3 max-w-md shadow-md">
-                        ${mediaContent}
-                        ${messageText ? `<p class="text-sm text-gray-800 whitespace-pre-wrap ${mediaContent ? 'mt-2' : ''}">${escapeHtml(messageText)}</p>` : ''}
-                        <div class="flex items-center justify-end gap-2 mt-2">
-                            <span class="text-xs text-gray-500">${messageTime}</span>
-                            <i class="fas fa-check-double text-blue-500 text-xs"></i>
-                        </div>
-                    </div>
-                    <div class="w-8 h-8 rounded-full bg-[#80b5ec] flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <div class="w-8 h-8 rounded-full bg-[#80b5ec] flex items-center justify-center flex-shrink-0 shadow-md">
                         <i class="fas fa-user text-white text-xs"></i>
+                    </div>
+                    <div class="${isSelected ? 'bg-[#b8d4f8]' : 'bg-[#e7f0fd]'} rounded-3xl rounded-tl-md px-3 py-2 max-w-md shadow-md">
+                        ${msg.context_wamid ? renderQuotedBlock(msg.context_wamid) : ''}
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
+                                ${mediaContent}
+                                ${messageText ? `<p class="text-sm text-gray-800 whitespace-pre-wrap ${mediaContent ? 'mt-1' : ''}">${escapeHtml(messageText)}</p>` : ''}
+                            </div>
+                            <span class="text-[10px] text-gray-400 flex-shrink-0 mt-0.5 whitespace-nowrap flex items-center gap-1">${messageTime} <i class="fas fa-check-double text-blue-400"></i></span>
+                        </div>
                     </div>
                 </div>
                 ${renderResponses(msg)}
             `;
         } else {
             messageDiv.innerHTML = `
-                <div class="flex justify-start items-start gap-2">
-                    <div class="w-8 h-8 rounded-full bg-[#b6b2f1] flex items-center justify-center flex-shrink-0 shadow-sm">
-                        <i class="fas fa-robot text-white text-xs"></i>
+                <div class="flex justify-end items-start gap-2">
+                    <div class="bg-white rounded-3xl rounded-tr-md px-3 py-2 max-w-md shadow-md border border-gray-100">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
+                                ${mediaContent}
+                                ${messageText ? `<p class="text-sm text-gray-800 whitespace-pre-wrap ${mediaContent ? 'mt-1' : ''}">${escapeHtml(messageText)}</p>` : ''}
+                            </div>
+                            <span class="text-[10px] text-gray-400 flex-shrink-0 mt-0.5 whitespace-nowrap flex items-center gap-1">${messageTime} <i class="fas fa-check-double text-blue-400"></i></span>
+                        </div>
                     </div>
-                    <div class="bg-white rounded-3xl rounded-tl-md px-4 py-3 max-w-md shadow-md border border-gray-100">
-                        ${mediaContent}
-                        ${messageText ? `<p class="text-sm text-gray-800 whitespace-pre-wrap ${mediaContent ? 'mt-2' : ''}">${escapeHtml(messageText)}</p>` : ''}
-                        <span class="text-xs text-gray-500 mt-2 block">${messageTime}</span>
+                    <div class="w-8 h-8 rounded-full bg-[#b6b2f1] flex items-center justify-center flex-shrink-0 shadow-md">
+                        <i class="fas fa-robot text-white text-xs"></i>
                     </div>
                 </div>
             `;
@@ -245,18 +311,16 @@ function renderResponses(msg) {
 
         return `
                     <div class="flex justify-end items-start gap-2">
-                        <div class="bg-[#d3f9e3] rounded-3xl rounded-tr-md px-4 py-3 max-w-md shadow-md">
-                            ${mediaContent}
-                            ${resp.text ? `<p class="text-sm text-gray-800 whitespace-pre-wrap ${mediaContent ? 'mt-2' : ''}">${escapeHtml(resp.text)}</p>` : ''}
-                            <div class="flex items-center justify-end gap-2 mt-2">
-                                <span class="text-xs text-gray-600">
-                                    <i class="fas fa-user-shield"></i> ${escapeHtml(sentBy)}
-                                </span>
-                                <span class="text-xs text-gray-500">${respTime}</span>
-                                <i class="fas fa-check-double text-green-600 text-xs"></i>
+                        <div class="bg-[#d3f9e3] rounded-3xl rounded-tr-md px-3 py-2 max-w-md shadow-md">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex-1 min-w-0">
+                                    ${mediaContent}
+                                    ${resp.text ? `<p class="text-sm text-gray-800 whitespace-pre-wrap ${mediaContent ? 'mt-1' : ''}">${escapeHtml(resp.text)}</p>` : ''}
+                                </div>
+                                <span class="text-[10px] text-gray-400 flex-shrink-0 mt-0.5 whitespace-nowrap flex items-center gap-1">${respTime} <i class="fas fa-check-double text-green-500"></i></span>
                             </div>
                         </div>
-                        <div class="w-8 h-8 rounded-full bg-[#72d298] flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <div class="w-8 h-8 rounded-full bg-[#72d298] flex items-center justify-center flex-shrink-0 shadow-md">
                             <i class="fas fa-user-shield text-white text-xs"></i>
                         </div>
                     </div>
@@ -443,7 +507,7 @@ function showSystemBubble(text) {
     const bubble = document.createElement("div");
     bubble.className = "flex justify-center my-3";
     bubble.innerHTML = `
-        <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs px-4 py-2 rounded-full shadow-sm">
+        <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs px-4 py-2 rounded-full shadow-md">
             ${text}
         </div>
     `;

@@ -203,8 +203,9 @@ async function cargarMensajesDeConversacion(userId) {
         const messages = data.messages || [];
 
         return messages.map(msg => ({
-            role: msg.direction === 'inbound' ? 'user' : 'assistant',
-            sender_type: msg.direction === 'inbound' ? 'user' : 'assistant',
+            role: msg.role || (msg.direction === 'inbound' ? 'user' : 'assistant'),
+            sender_type: msg.sender_type || msg.role || (msg.direction === 'inbound' ? 'user' : 'assistant'),
+            direction: msg.direction || (msg.role === 'user' ? 'inbound' : 'outbound'),
             content: msg.text || msg.content || '',
             text: msg.text || msg.content || '',
             timestamp: msg.timestamp,
@@ -213,7 +214,8 @@ async function cargarMensajesDeConversacion(userId) {
             cloudinary_id: msg.cloudinary_id,
             mime_type: msg.mime_type,
             message_id: msg.message_id || msg._id,
-            responses: msg.responses || []
+            responses: msg.responses || [],
+            context_wamid: msg.context_wamid || null  // ← este era el bug: no se mapeaba
         }));
 
     } catch (error) {
@@ -302,6 +304,21 @@ function loadMessages() {
         currentMessages = currentConversation.messages || [];
         console.log(`✅ ${currentMessages.length} mensajes cargados`);
         messagesOrderReversed = false;
+        // Preservar selección si el mensaje aún existe tras actualización
+        if (selectedMessageToReply && !selectedMessageToReply._noContext) {
+            const stillExists = currentMessages.find(m => m.message_id === selectedMessageToReply.message_id);
+            if (!stillExists) {
+                selectedMessageToReply = null;
+                const _inp = document.getElementById('messageInput');
+                if (_inp) _inp.placeholder = 'Escribe un mensaje...';
+            } else {
+                const _inp = document.getElementById('messageInput');
+                if (_inp) {
+                    const _prev = (selectedMessageToReply.content || selectedMessageToReply.text || '').substring(0, 30);
+                    _inp.placeholder = `Respondiendo a: "${_prev}..."`;
+                }
+            }
+        }
         renderMessages();
 
         setTimeout(() => {
@@ -405,7 +422,7 @@ async function sendMessage() {
     if (!selectedMessageToReply) {
         const lastUserMsg = [...currentMessages].reverse().find(m => m.role === 'user');
         if (lastUserMsg) {
-            selectedMessageToReply = lastUserMsg;
+            selectedMessageToReply = { ...lastUserMsg, _noContext: true };
         } else {
             showMessageError('No hay mensajes del usuario para responder');
             return;
@@ -434,13 +451,20 @@ async function sendMessage() {
         if (!messageToUpdate.responses) messageToUpdate.responses = [];
         messageToUpdate.responses.push(adminResponse);
 
+        // Capturar _noCtx ANTES de resetear selectedMessageToReply
+        const _noCtx = selectedMessageToReply?._noContext;
+
         selectedMessageToReply = null;
         input.value = '';
-        input.style.height = 'auto'; // resetear altura del textarea
+        input.style.height = 'auto';
         renderMessages();
 
         const formData = new FormData();
         formData.append('text', message || '');
+        // Incluir reply_to_wamid SOLO si fue selección explícita
+        if (!_noCtx && messageToUpdate.message_id && messageToUpdate.message_id.startsWith('wamid.')) {
+            formData.append('reply_to_wamid', messageToUpdate.message_id);
+        }
 
         if (fileToSend) {
             formData.append('file', fileToSend);
