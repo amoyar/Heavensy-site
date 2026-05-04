@@ -117,7 +117,11 @@ function procesarConversaciones(conversationsData) {
     console.log('🔧 Procesando conversaciones del backend:', conversationsData.length, 'items');
 
     conversations = conversationsData.map(conv => {
-        const userName = conv.name || conv.user_id;
+        // Usar profile_name si existe, sino name, sino user_id
+        const userName = conv.profile_name || conv.name || conv.user_id;
+
+        // Canal viene directamente desde el backend (source en MongoDB)
+        const detectedSource = conv.source || conv.messaging_product || 'whatsapp';
 
         return {
             id: conv.user_id,
@@ -132,6 +136,7 @@ function procesarConversaciones(conversationsData) {
             blocked: conv.blocked || false,
             ia_enabled: conv.ia_enabled !== false,
             has_unanswered: conv.has_unanswered || false,
+            source: detectedSource,
             tags: conv.tags || [],
             plan: conv.plan || '',
             rating: conv.rating || 0,
@@ -434,9 +439,10 @@ async function sendMessage() {
     setSendingUI(true);
 
     try {
+        const now = new Date().toISOString();
         const adminResponse = {
             text: message,
-            sent_at: new Date().toISOString(),
+            sent_at: now,
             sent_by: { user_id: 'current_admin', name: 'Super Admin' }
         };
 
@@ -448,8 +454,21 @@ async function sendMessage() {
         );
         if (!messageToUpdate) throw new Error('Mensaje no encontrado');
 
-        if (!messageToUpdate.responses) messageToUpdate.responses = [];
-        messageToUpdate.responses.push(adminResponse);
+        // Agregar como mensaje independiente con timestamp real
+        // para que quede en el orden cronológico correcto
+        const tempAdminMsg = {
+            message_id: `admin_temp_${Date.now()}`,
+            role: 'admin',
+            sender_type: 'admin',
+            direction: 'outbound',
+            text: message,
+            content: message,
+            timestamp: now,
+            type: 'text',
+            responses: [],
+            _sent_by: 'Super Admin',
+        };
+        currentMessages.push(tempAdminMsg);
 
         // Capturar _noCtx ANTES de resetear selectedMessageToReply
         const _noCtx = selectedMessageToReply?._noContext;

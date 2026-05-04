@@ -6,6 +6,26 @@
 console.log('✅ conv-render.js cargado');
 
 // ============================================
+// HELPERS: Canal de mensajes (whatsapp/instagram/messenger)
+// ============================================
+function getChannelInfo(source) {
+    switch ((source || '').toLowerCase()) {
+        case 'instagram': return { icon: 'fab fa-instagram', color: '#E1306C', label: 'Instagram' };
+        case 'messenger': return { icon: 'fab fa-facebook-messenger', color: '#0084FF', label: 'Messenger' };
+        default:          return { icon: 'fab fa-whatsapp',  color: '#25D366', label: 'WhatsApp' };
+    }
+}
+
+function getChannelBadge(source) {
+    const ch = getChannelInfo(source);
+    return `<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded flex-shrink-0" style="background:${ch.color}" title="${ch.label}">
+        <i class="${ch.icon} text-white" style="font-size:8px;"></i>
+    </span>`;
+}
+
+
+
+// ============================================
 // RENDER: Lista de conversaciones (sidebar)
 // ============================================
 
@@ -111,11 +131,14 @@ function renderConversations(list = conversations) {
 
                 <div class="flex-1 min-w-0">
                     <div class="flex justify-between items-center">
-                        <!-- Nombre + mini etiqueta -->
-                        <div class="flex items-center gap-2 min-w-0">
+                        <!-- Nombre + badge canal + mini etiqueta -->
+                        <div class="flex items-center gap-1.5 min-w-0">
                             <span class="font-medium text-sm text-gray-800 truncate">
                                 ${conv.name || conv.phone}
                             </span>
+
+                            <!-- 📡 Badge de canal (whatsapp/instagram/messenger) -->
+                            ${getChannelBadge(conv.source || conv.messaging_product)}
 
                             <!-- 🏷️ Mini etiqueta decorativa -->
                                 <span 
@@ -222,7 +245,8 @@ function renderMessages() {
         const messageDiv = document.createElement('div');
         messageDiv.className = 'mb-3';
 
-        const isUser = msg.role === 'user' || msg.sender_type === 'user' || msg.direction === 'inbound';
+        const isUser  = msg.role === 'user'  || msg.sender_type === 'user'  || msg.direction === 'inbound';
+        const isAdmin = msg.role === 'admin' || msg.sender_type === 'admin';
         const messageTime = formatTimestamp(msg.timestamp);
 
         let mediaContent = '';
@@ -257,6 +281,23 @@ function renderMessages() {
                     </div>
                 </div>
                 ${renderResponses(msg)}
+            `;
+        } else if (isAdmin) {
+            messageDiv.innerHTML = `
+                <div class="flex justify-end items-start gap-2">
+                    <div class="bg-[#d3f9e3] rounded-3xl rounded-tr-md px-3 py-2 max-w-md shadow-md">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex-1 min-w-0">
+                                ${mediaContent}
+                                ${messageText ? `<p class="text-sm text-gray-800 whitespace-pre-wrap ${mediaContent ? 'mt-1' : ''}">${escapeHtml(messageText)}</p>` : ''}
+                            </div>
+                            <span class="text-[10px] text-gray-400 flex-shrink-0 mt-0.5 whitespace-nowrap flex items-center gap-1">${messageTime} <i class="fas fa-check-double text-green-500"></i></span>
+                        </div>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-[#72d298] flex items-center justify-center flex-shrink-0 shadow-md">
+                        <i class="fas fa-user-shield text-white text-xs"></i>
+                    </div>
+                </div>
             `;
         } else {
             messageDiv.innerHTML = `
@@ -438,18 +479,55 @@ function updateChatHeader() {
     });
 }
 
+// ============================================
+// HELPER: Ícono y color por canal
+// Retorna { icon, color, label } según el source de la conversación
+// source puede ser: 'whatsapp', 'instagram', 'messenger'
+// ============================================
+function getChannelInfo(source) {
+    switch ((source || '').toLowerCase()) {
+        case 'instagram':
+            return { icon: 'fab fa-instagram', color: '#E1306C', label: 'Instagram' };
+        case 'messenger':
+            return { icon: 'fab fa-facebook-messenger', color: '#0084FF', label: 'Messenger' };
+        case 'whatsapp':
+        default:
+            return { icon: 'fab fa-whatsapp', color: '#25D366', label: 'WhatsApp' };
+    }
+}
+
+// ============================================
+// HELPER: Ícono HTML pequeño para sidebar (badge junto al nombre)
+// ============================================
+function getChannelBadge(source) {
+    const ch = getChannelInfo(source);
+    return `<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded flex-shrink-0" style="background:${ch.color}" title="${ch.label}">
+        <i class="${ch.icon} text-white" style="font-size:8px;"></i>
+    </span>`;
+}
+
 function updateContactPanel() {
     if (!currentConversation) return;
 
-    const nameEl = document.getElementById("contactHeaderName");
-    const avatarEl = document.getElementById("contactHeaderAvatar");
-    const phoneEl = document.getElementById("contactPhone");
+    const nameEl    = document.getElementById("contactHeaderName");
+    const avatarEl  = document.getElementById("contactHeaderAvatar");
+    const phoneEl   = document.getElementById("contactPhone");
+    const channelEl = document.getElementById("contactChannelIcon");
 
-    const name = currentConversation.name || "Sin nombre";
-    const phone = currentConversation.phone || "";
+    const name   = currentConversation.name || "Sin nombre";
+    const phone  = currentConversation.phone || "";
+    const source = currentConversation.source || currentConversation.messaging_product || 'whatsapp';
 
-    if (nameEl) nameEl.textContent = name;
+    if (nameEl)  nameEl.textContent  = name;
     if (phoneEl) phoneEl.textContent = phone;
+
+    // Actualizar ícono de canal según source
+    if (channelEl) {
+        const ch = getChannelInfo(source);
+        channelEl.style.background = ch.color;
+        channelEl.innerHTML = `<i class="${ch.icon} text-white" style="font-size:10px;"></i>`;
+        channelEl.title = ch.label;
+    }
 
     if (avatarEl) {
         const currentUrl = avatarEl.getAttribute("data-avatar-url") || "";
