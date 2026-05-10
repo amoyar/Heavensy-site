@@ -1092,7 +1092,7 @@ async function _agendaRenderSlots(container) {
         const results = await Promise.all(specialists.map(async spec => {
             try {
                 const res = await fetch(
-                    `${API_BASE_URL || ''}/api/agenda/availability/${spec.resource_id}/${spec.service_id}?date=${_agendaSelectedDate}`,
+                    `${API_BASE_URL || ''}/api/agenda/availability/${spec.resource_id}/${spec.service_id}?date=${_agendaSelectedDate}&include_reserved=true`,
                     { headers: _agendaAuthHeaders() }
                 );
                 if (!res.ok) return { spec, slots: [] };
@@ -1162,7 +1162,16 @@ async function _agendaRenderSlots(container) {
                     resource_name: slot.resource_name || spec.resource_name,
                     service_id:    slot.service_id    || spec.service_id
                 };
+                const isOccupied = slot.occupied === true;
                 const btn = document.createElement('button');
+                if (isOccupied) {
+                    btn.disabled = true;
+                    btn.dataset.start = slot.start;
+                    btn.style.cssText = 'border-color:#e5e7eb;background:#f9fafb;cursor:not-allowed;opacity:0.6;';
+                    btn.innerHTML = `<span class="agenda-slot-time-txt" style="text-decoration:line-through;color:#9ca3af;">${slot.start}</span><span style="font-size:9px;color:#ef4444;font-weight:600;">${slot.status === 'confirmed' ? 'Confirmada' : 'Reservada'}</span>`;
+                    grid.appendChild(btn);
+                    return;
+                }
                 btn.className = 'agenda-slot-btn';
                 btn.dataset.start = slot.start;
                 btn.dataset.end   = slot.end;
@@ -1474,9 +1483,17 @@ async function _agendaLoadContactAppointments(container) {
             </div>
         `;
 
-        appts.slice(0, 5).forEach(appt => {
+        const listWrapper = document.createElement('div');
+        listWrapper.className = 'agenda-appts-list';
+        container.appendChild(listWrapper);
+
+        appts.forEach(appt => {
             const item = document.createElement('div');
             item.className = 'agenda-appt-item';
+
+            // Color del borde izquierdo según especialista (intenso, igual que calendario)
+            const specColor = _agendaGetSpecColor(appt.resource_id);
+            item.style.borderLeftColor = specColor.text;
 
             const statusClass = {
                 scheduled:   'agenda-status--scheduled',
@@ -1504,7 +1521,8 @@ async function _agendaLoadContactAppointments(container) {
                     <span class="agenda-appt-time">${appt.start}</span>
                 </div>
                 <div class="agenda-appt-info">
-                    <span class="agenda-appt-service">${appt.service_id}</span>
+                    <span class="agenda-appt-service">${appt.service_name || appt.service_id}</span>
+                    ${appt.resource_name ? `<span style="font-size:10px;color:#6b7280;">${appt.resource_name}</span>` : ''}
                     <span class="agenda-appt-status ${statusClass}">${statusLabel}</span>
                 </div>
                 <button class="agenda-appt-cancel-btn" data-tooltip="Cancelar cita"
@@ -1513,7 +1531,7 @@ async function _agendaLoadContactAppointments(container) {
                 </button>
             `;
 
-            container.appendChild(item);
+            listWrapper.appendChild(item);
         });
 
     } catch (err) {
@@ -2042,6 +2060,9 @@ async function _agendaConfirmPayment(appointmentId) {
                 setTimeout(function() {
                     if (typeof loadAgenda === 'function' && _agendaCurrentCompanyId && _agendaCurrentUserId) {
                         loadAgenda(_agendaCurrentCompanyId, _agendaCurrentUserId);
+                    }
+                    if (typeof loadFunnels === 'function') {
+                        loadFunnels(_agendaCurrentCompanyId, _agendaCurrentUserId);
                     }
                 }, 1800);
             }, 350);

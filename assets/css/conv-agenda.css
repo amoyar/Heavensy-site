@@ -342,6 +342,14 @@
         margin: 0;
     }
 
+    .agenda-appts-list {
+        max-height: 260px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #C9D9FF transparent;
+        padding-right: 3px;
+    }
+
     /* ── Citas del contacto ─────────────────── */
     .agenda-contact-appts {
         margin-top: 8px;
@@ -368,12 +376,19 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 5px 6px;
+        padding: 5px 8px 5px 10px;
         border-radius: 6px;
-        margin-bottom: 3px;
-        transition: background .1s;
+        margin-bottom: 4px;
+        background: #fff;
+        border: 0.5px solid #f3f4f6;
+        border-left: 3px solid #c4b5fd;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        transition: background .1s, box-shadow .1s;
     }
-    .agenda-appt-item:hover { background: #f9fafb; }
+    .agenda-appt-item:hover {
+        background: #fafafa;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    }
     .agenda-appt-date {
         display: flex;
         flex-direction: column;
