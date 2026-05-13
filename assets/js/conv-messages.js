@@ -32,36 +32,56 @@ function setSendingUI(sending) {
 // ============================================
 // CARGAR EMPRESAS Y CONVERSACIONES
 // ============================================
+function _getUserCompanies() {
+    // Superadmin ve todas las empresas → usa la API completa
+    try {
+        const token = localStorage.getItem('token');
+        if (token) {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const roles = payload.roles || [];
+            if (roles.includes('SUPERADMIN_ROL') || roles.includes('superadmin')) return null;
+        }
+    } catch {}
+    // Usuario normal → usa empresas guardadas al hacer login
+    try {
+        const stored = localStorage.getItem('hs_user_companies');
+        if (stored) return JSON.parse(stored);
+    } catch {}
+    return null;
+}
+
 async function cargarEmpresasYConversaciones() {
-    console.log('🔄 Cargando empresas y conversaciones...');
+    console.log('🔄 Cargando empresa activa desde JWT...');
 
     try {
+        // Leer empresa activa del JWT (seleccionada en el login)
         const token = localStorage.getItem('token') || getToken();
-        const response = await fetch(`${API_BASE_URL}/api/companies`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
+        if (!token) { mostrarEstadoVacio('Sesión no iniciada'); return; }
 
-        if (!response.ok) {
-            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const companyId   = payload.company_id;
+        const companyName = payload.company_name || companyId;
+
+        if (!companyId) { mostrarEstadoVacio('No hay empresa asignada'); return; }
+
+        // Mostrar nombre en la etiqueta
+        const label = document.getElementById('companyDropdownLabel');
+        if (label) label.textContent = companyName;
+
+        // Sincronizar select oculto (compatibilidad con resto del código)
+        const select = document.getElementById('conversacionesCompanyFilter');
+        if (select) {
+            select.innerHTML = `<option value="${companyId}" selected>${companyName}</option>`;
         }
 
-        const data = await response.json();
-        const companies = data.companies || [];
+        console.log(`✅ Empresa activa: ${companyName} (${companyId})`);
 
-        console.log(`✅ ${companies.length} empresas encontradas`);
-
-        poblarSelectorEmpresas(companies);
-
-        if (companies.length === 0) {
-            mostrarEstadoVacio('No hay empresas disponibles');
-        }
+        // Cargar conversaciones directamente
+        await cargarConversacionesPorEmpresa(companyId);
 
     } catch (error) {
-        console.error('❌ Error cargando empresas:', error);
-        mostrarEstadoVacio('Error al cargar empresas');
+        console.error('❌ Error cargando empresa:', error);
+        mostrarEstadoVacio('Error al cargar empresa');
     }
 }
 
@@ -74,7 +94,7 @@ function poblarSelectorEmpresas(companies) {
     companies.forEach(company => {
         const option = document.createElement('option');
         option.value = company.company_id;
-        option.textContent = company.name || company.company_id;
+        option.textContent = company.name || company.company_name || company.company_id;
         select.appendChild(option);
     });
 

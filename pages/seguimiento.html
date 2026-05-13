@@ -14,20 +14,14 @@
         </button>
       </div>
 
-      <!-- Selector de Empresa — mismo patrón que conversaciones -->
-      <div class="seg-company-dropdown-wrap" id="segCompanyDropdownWrap" style="position:relative;margin-bottom:9px;">
-        <button id="segCompanyDropdownBtn" type="button"
-          style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:#fff;border:0.5px solid #e5e7eb;border-radius:10px;cursor:pointer;font-size:13px;color:#9ca3af;text-align:left;">
-          <span id="segCompanyDropdownLabel">Cargando empresas...</span>
-          <i class="fas fa-chevron-down" id="segCompanyDropdownIcon" style="font-size:10px;color:#7D84C1;transition:transform .2s;"></i>
-        </button>
-        <div id="segCompanyDropdownList"
-          style="display:none;position:absolute;z-index:50;width:100%;margin-top:3px;background:#fff;border:0.5px solid #e5e7eb;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08);">
-          <div style="max-height:200px;overflow-y:auto;" id="segCompanyDropdownItems"></div>
+      <!-- Empresa activa (viene del JWT, sin dropdown) -->
+      <div id="segCompanyDropdownWrap" style="margin-bottom:9px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;background:#eff4fe;border:0.5px solid #d0dcf5;border-radius:10px;">
+          <i class="fas fa-building" style="font-size:11px;color:#7D84C1;flex-shrink:0;"></i>
+          <span id="segCompanyDropdownLabel" style="font-size:13px;font-weight:600;color:#374151;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Cargando...</span>
         </div>
-        <select id="segCompanyFilter" style="display:none;">
-          <option value="">Cargando empresas...</option>
-        </select>
+        <!-- Select oculto — necesario para compatibilidad con el resto del código -->
+        <select id="segCompanyFilter" style="display:none;"></select>
       </div>
 
       <div class="seg-search-wrap">

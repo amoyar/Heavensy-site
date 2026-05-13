@@ -33,15 +33,35 @@ var SEG = {
    INIT
 ───────────────────────────────────────── */
 function segInit() {
-  var companyId = localStorage.getItem('company_id');
-  if (!companyId) return;
+  // Leer empresa activa desde el JWT
+  try {
+    var token = localStorage.getItem('token');
+    if (!token) return;
+    var payload = JSON.parse(atob(token.split('.')[1]));
+    var companyId   = payload.company_id;
+    var companyName = payload.company_name || companyId;
+    if (!companyId) return;
 
-  segInitCompanyDropdown();
-  segCargarEmpresas(companyId);
+    // Mostrar nombre en la etiqueta
+    var label = document.getElementById('segCompanyDropdownLabel');
+    if (label) label.textContent = companyName;
 
-  window.onCompanyChange = function(id, nom) {
-    segSetCompany(id, nom);
-  };
+    // Sincronizar select oculto (compatibilidad con segSetCompany)
+    var sel = document.getElementById('segCompanyFilter');
+    if (sel) {
+      sel.innerHTML = '<option value="' + companyId + '" selected>' + companyName + '</option>';
+      sel.value = companyId;
+    }
+
+    // Cargar datos de seguimiento directamente
+    segSetCompany(companyId, companyName);
+
+    window.onCompanyChange = function(id, nom) {
+      segSetCompany(id, nom);
+    };
+  } catch(e) {
+    console.error('segInit error:', e);
+  }
 }
 
 /* Dropdown idéntico al de conversaciones */
@@ -140,11 +160,29 @@ function segInitCompanyDropdown() {
   }
 }
 
+function segGetUserCompanies() {
+  // Superadmin usa la API completa
+  try {
+    var token = localStorage.getItem('token');
+    if (token) {
+      var payload = JSON.parse(atob(token.split('.')[1]));
+      var roles = payload.roles || [];
+      if (roles.indexOf('SUPERADMIN_ROL') !== -1 || roles.indexOf('superadmin') !== -1) return null;
+    }
+  } catch(e) {}
+  // Usuario normal — usa empresas guardadas al hacer login
+  try {
+    var stored = localStorage.getItem('hs_user_companies');
+    if (stored) return JSON.parse(stored);
+  } catch(e) {}
+  return null;
+}
+
 function segCargarEmpresas(defaultId) {
   // Solo poblar el select oculto — igual que poblarSelectorEmpresas en conversaciones
   // El MutationObserver en segInitCompanyDropdown se encarga del resto
-  apiCall('/api/companies').then(function(res) {
-    var companies = (res.ok && res.data && res.data.companies) ? res.data.companies : [];
+
+  function _populate(companies) {
     var sel = document.getElementById('segCompanyFilter');
     if (!sel) return;
 
@@ -152,7 +190,7 @@ function segCargarEmpresas(defaultId) {
     companies.forEach(function(c) {
       var opt = document.createElement('option');
       opt.value = c.company_id;
-      opt.textContent = c.name || c.company_id;
+      opt.textContent = c.name || c.company_name || c.company_id;
       sel.appendChild(opt);
     });
 
@@ -161,10 +199,22 @@ function segCargarEmpresas(defaultId) {
       var c = companies[0];
       sel.value = c.company_id;
       var label = document.getElementById('segCompanyDropdownLabel');
-      if (label) { label.textContent = c.name || c.company_id; label.style.color = '#374151'; }
-      segSetCompany(c.company_id, c.name || c.company_id);
+      if (label) { label.textContent = c.name || c.company_name || c.company_id; label.style.color = '#374151'; }
+      segSetCompany(c.company_id, c.name || c.company_name || c.company_id);
     }
+  }
 
+  // Usar empresas del usuario si están disponibles (no superadmin)
+  var userCompanies = segGetUserCompanies();
+  if (userCompanies) {
+    _populate(userCompanies);
+    return;
+  }
+
+  // Fallback: API completa (superadmin o sesión antigua)
+  apiCall('/api/companies').then(function(res) {
+    var companies = (res.ok && res.data && res.data.companies) ? res.data.companies : [];
+    _populate(companies);
   }).catch(function() {
     var label = document.getElementById('segCompanyDropdownLabel');
     if (label) label.textContent = 'Error al cargar empresas';
