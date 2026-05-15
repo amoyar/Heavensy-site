@@ -432,3 +432,51 @@
 .emb-move-row:hover { background:#f5f0ff; }
 .emb-move-row i { color:#9961FF; font-size:13px; }
 .emb-move-row span { flex:1; font-size:13px; font-weight:500; color:#383838; }
+
+/* ── Stage chip dropdown ── */
+.emb-stage-wrap { position: relative; display: inline-block; }
+.emb-stage-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 9.5px; font-weight: 600; padding: 2px 7px;
+  border-radius: 20px; background: rgba(153,97,255,0.1);
+  color: #9961FF; cursor: pointer; user-select: none;
+}
+.emb-stage-chip:hover { background: rgba(153,97,255,0.18); }
+.emb-stage-chip svg { flex-shrink: 0; transition: transform .15s; }
+.emb-stage-chip.open svg { transform: rotate(180deg); }
+.emb-stage-dropdown {
+  display: none; flex-direction: column;
+  position: fixed;
+  min-width: 130px; z-index: 9999;
+  background: #fff; border: 0.5px solid rgba(153,97,255,0.25);
+  border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  overflow: hidden;
+}
+.emb-stage-dropdown.open { display: flex; }
+.emb-stage-option {
+  font-size: 11px; font-weight: 500; padding: 7px 12px;
+  cursor: pointer; color: #374151; transition: background .12s;
+  white-space: nowrap;
+}
+.emb-stage-option:hover { background: #f5f0ff; color: #9961FF; }
+.emb-stage-option.active { color: #9961FF; font-weight: 600; background: #f0ebff; }
+
+/* ── Filtro de etapas custom ── */
+.emb-filter-stage-chip {
+  display: inline-flex; align-items: center; justify-content: space-between;
+  gap: 6px; width: 100%; padding: 6px 10px;
+  border: 1px solid rgba(153,97,255,0.3); border-radius: 8px;
+  background: #fff; color: #9961FF; font-size: 12px; font-weight: 500;
+  cursor: pointer; user-select: none;
+}
+.emb-filter-stage-chip:hover { background: rgba(153,97,255,0.05); }
+.emb-filter-stage-chip svg { flex-shrink:0; transition: transform .15s; }
+.emb-filter-stage-chip.open svg { transform: rotate(180deg); }
+.emb-filter-stage-dropdown {
+  display: none; flex-direction: column;
+  position: fixed; min-width: 160px; z-index: 9999;
+  background: #fff; border: 0.5px solid rgba(153,97,255,0.25);
+  border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,.1);
+  overflow: hidden;
+}
+.emb-filter-stage-dropdown.open { display: flex; }

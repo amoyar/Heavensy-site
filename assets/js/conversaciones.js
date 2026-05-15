@@ -234,13 +234,13 @@ async function initConversacionesPage() {
     window.ConversacionesModuleInitialized = true;
 
     applyCompanyLabels();
+    setupConversacionesEventListeners();  // ANTES de cargar — el change event debe tener listener
     try {
         await cargarEmpresasYConversaciones();
     } catch(err) {
         mostrarErrorConversaciones(err?.message);
         return;
     }
-    setupConversacionesEventListeners();
     setTimeout(() => setInputBarEnabled(false), 150);
 
     console.log('✅ Página de conversaciones inicializada');

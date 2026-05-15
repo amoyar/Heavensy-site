@@ -84,32 +84,19 @@ var _embCanalLabel = {
 };
 
 // ── DEMO DATA ──
-var _embDemo = {
-  funnels: [
-    { id:'f1', nombre:'Prospectos',           etapas:['Nuevo','Contactado','Interesado','Cerrado']      },
-    { id:'f2', nombre:'Psicoterapia',         etapas:['Interesado','En proceso','Cerrado']              },
-    { id:'f3', nombre:'Masaje terapéutico',   etapas:['Interesado','En proceso','Cerrado']              },
-    { id:'f4', nombre:'Reiki',                etapas:['Interesado','En proceso','Cerrado']              },
-    { id:'f5', nombre:'Curso de Hipnosis',    etapas:['Inscrito','En curso','Completado']               },
-    { id:'f6', nombre:'Taller de Ventrílocuo',etapas:['Inscrito','En curso','Completado']               }
-  ],
-  contacts: [
-    { id:'c1', nombre:'Josefina Araya',    pais:'Chile', region:'RM', ciudad:'La Reina',     canal:'heavensy',  unread:3,  last_msg: new Date(Date.now() - 1000*60*10).toISOString(),         funnel_ids:['f1','f2','f4'], etapas:{ f1:'Interesado', f2:'En proceso', f4:'Cerrado'    } },
-    { id:'c2', nombre:'Roberto del Río',   pais:'Chile', region:'RM', ciudad:'La Reina',     canal:'instagram', unread:0,  last_msg: new Date(Date.now() - 1000*60*60*2).toISOString(),       funnel_ids:['f1','f3'],      etapas:{ f1:'En proceso', f3:'Interesado'                  } },
-    { id:'c3', nombre:'Casa Merkaba',      pais:'Chile', region:'RM', ciudad:'Providencia',  canal:'messenger', unread:12, last_msg: new Date(Date.now() - 1000*60*60*26).toISOString(),      funnel_ids:['f2','f5'],      etapas:{ f2:'Interesado', f5:'En proceso'                  } },
-    { id:'c4', nombre:'Sandra Paltas',     pais:'Chile', region:'RM', ciudad:'La Reina',     canal:'whatsapp',  unread:1,  last_msg: new Date(Date.now() - 1000*60*30).toISOString(),         funnel_ids:['f1','f3','f6'], etapas:{ f1:'Interesado', f3:'Cerrado',    f6:'En proceso' } },
-    { id:'c5', nombre:'Marcela Fuentes',   pais:'Chile', region:'RM', ciudad:'Santiago',     canal:'whatsapp',  unread:0,  last_msg: new Date(Date.now() - 1000*60*60*24*3).toISOString(),   funnel_ids:['f2'],           etapas:{ f2:'En proceso'                                  } },
-    { id:'c6', nombre:'Tomás Herrera',     pais:'Chile', region:'RM', ciudad:'Ñuñoa',        canal:'instagram', unread:5,  last_msg: new Date(Date.now() - 1000*60*60*24*1.5).toISOString(), funnel_ids:['f3','f4'],      etapas:{ f3:'Interesado', f4:'En proceso'                  } },
-    { id:'c7', nombre:'Valentina Soto',    pais:'Chile', region:'V',  ciudad:'Viña del Mar', canal:'heavensy',  unread:0,  last_msg: new Date(Date.now() - 1000*60*60*24*10).toISOString(),  funnel_ids:['f5','f6'],      etapas:{ f5:'Cerrado',    f6:'Interesado'                  } },
-    { id:'c8', nombre:'Felipe Castillo',   pais:'Chile', region:'RM', ciudad:'Maipú',        canal:'messenger', unread:2,  last_msg: new Date(Date.now() - 1000*60*5).toISOString(),          funnel_ids:['f1','f5'],      etapas:{ f1:'Interesado', f5:'En proceso'                  } },
-    { id:'c9', nombre:'Carla Rojas',       pais:'Chile', region:'RM', ciudad:'Las Condes',   canal:'instagram', unread:0,  last_msg: new Date(Date.now() - 1000*60*60*24*6).toISOString(),   funnel_ids:['f4','f6'],      etapas:{ f4:'Cerrado',    f6:'Interesado'                  } }
-  ]
-};
-
 // ── INIT ──
 function initEmbudosPage() {
   try {
-    _embCompany = localStorage.getItem('company_id') || '';
+    // Leer company_id desde el JWT (fuente de verdad tras login)
+    var token = localStorage.getItem('token');
+    if (token) {
+      var payload = JSON.parse(atob(token.split('.')[1]));
+      _embCompany = payload.company_id || '';
+    }
+    // Fallback a valores anteriores si no hay token
+    if (!_embCompany) {
+      _embCompany = localStorage.getItem('company_id') || '';
+    }
     if (!_embCompany) {
       var cfg = JSON.parse(localStorage.getItem('company_config') || '{}');
       _embCompany = cfg.company_id || '';
@@ -196,8 +183,9 @@ function _embLoad() {
 }
 
 function _embLoadDemo() {
-  _embFunnels  = _embDemo.funnels;
-  _embContacts = _embDemo.contacts;
+  // Sin datos de demo — mostrar estado vacío
+  _embFunnels  = [];
+  _embContacts = [];
   _embRenderBoard();
   _embPopulateEmbudoSelect();
 }
@@ -223,22 +211,187 @@ window.embToggleFiltros = embToggleFiltros;
 
 // Cerrar panel al click fuera
 document.addEventListener('click', function(e) {
-  if (!e.target.closest('.emb-filter-wrap')) {
+  // No cerrar si el click fue en los dropdowns custom (están fuera del .emb-filter-wrap)
+  if (!e.target.closest('.emb-filter-wrap')
+      && !e.target.closest('#emb-embudo-filter-drop')
+      && !e.target.closest('#emb-etapa-filter-drop')) {
     var panel = document.getElementById('emb-filter-panel');
     var btn   = document.getElementById('emb-filter-btn');
     if (panel) panel.classList.remove('open');
     if (btn)   btn.classList.remove('active');
+    // Cerrar dropdowns también
+    ['emb-embudo-filter-drop','emb-etapa-filter-drop'].forEach(function(id){
+      var d = document.getElementById(id); if (d) d.classList.remove('open');
+    });
+    ['emb-filter-embudo-chip','emb-filter-etapa-chip'].forEach(function(id){
+      var c = document.getElementById(id); if (c) c.classList.remove('open');
+    });
   }
 });
 
 function _embPopulateEmbudoSelect() {
+  // Poblar select oculto de embudos
   var sel = document.getElementById('emb-filter-embudo');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">Todos los embudos</option>' +
-    _embFunnels.map(function(f){
-      return '<option value="' + f.id + '">' + f.nombre + '</option>';
-    }).join('');
+  if (sel) {
+    sel.innerHTML = '<option value="">Todos los embudos</option>' +
+      _embFunnels.map(function(f){
+        return '<option value="' + f.id + '">' + f.nombre + '</option>';
+      }).join('');
+  }
+  // Construir dropdown custom de embudos
+  _embBuildEmbudoDropdown(_embFunnels);
+
+  // Poblar select oculto de etapas
+  var selE = document.getElementById('emb-filter-etapa');
+  if (selE) {
+    var seen = {};
+    var allStages = [];
+    _embFunnels.forEach(function(f) {
+      (f.stages || []).forEach(function(s) {
+        if (!seen[s.label]) { seen[s.label] = true; allStages.push(s); }
+      });
+    });
+    selE.innerHTML = '<option value="">Todos</option>' +
+      allStages.map(function(s){
+        return '<option value="' + s.label + '">' + s.label + '</option>';
+      }).join('');
+    _embBuildEtapaDropdown(allStages);
+  }
 }
+
+function _embBuildEtapaDropdown(stages) {
+  var chip = document.getElementById('emb-filter-etapa-chip');
+  if (!chip) return;
+  var existing = document.getElementById('emb-etapa-filter-drop');
+  if (existing) existing.remove();
+
+  var drop = document.createElement('div');
+  drop.id = 'emb-etapa-filter-drop';
+  drop.className = 'emb-filter-stage-dropdown';
+
+  var allOpt = document.createElement('div');
+  allOpt.className = 'emb-stage-option active';
+  allOpt.dataset.value = '';
+  allOpt.textContent = 'Todos';
+  drop.appendChild(allOpt);
+
+  stages.forEach(function(s) {
+    var opt = document.createElement('div');
+    opt.className = 'emb-stage-option';
+    opt.dataset.value = s.label;
+    opt.textContent = s.label;
+    drop.appendChild(opt);
+  });
+
+  document.body.appendChild(drop);
+
+  drop.querySelectorAll('.emb-stage-option').forEach(function(opt) {
+    opt.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var val = opt.dataset.value;
+      var selE = document.getElementById('emb-filter-etapa');
+      if (selE) selE.value = val;
+      var chipLabel = document.getElementById('emb-filter-etapa-label');
+      if (chipLabel) chipLabel.textContent = val || 'Todos';
+      drop.querySelectorAll('.emb-stage-option').forEach(function(o){ o.classList.remove('active'); });
+      opt.classList.add('active');
+      drop.classList.remove('open');
+      chip.classList.remove('open');
+      embFiltrar();
+    });
+  });
+}
+
+function embToggleEtapaFilter(e) {
+  e.stopPropagation();
+  var chip = document.getElementById('emb-filter-etapa-chip');
+  var drop = document.getElementById('emb-etapa-filter-drop');
+  if (!drop) return;
+  var isOpen = drop.classList.contains('open');
+  ['emb-embudo-filter-drop','emb-etapa-filter-drop'].forEach(function(id){
+    var d = document.getElementById(id); if (d) d.classList.remove('open');
+  });
+  ['emb-filter-embudo-chip','emb-filter-etapa-chip'].forEach(function(id){
+    var c = document.getElementById(id); if (c) c.classList.remove('open');
+  });
+  if (!isOpen) {
+    var rect = chip.getBoundingClientRect();
+    drop.style.position = 'fixed';
+    drop.style.top  = (rect.bottom + 4) + 'px';
+    drop.style.left = rect.left + 'px';
+    drop.classList.add('open');
+    chip.classList.add('open');
+  }
+}
+window.embToggleEtapaFilter = embToggleEtapaFilter;
+
+function _embBuildEmbudoDropdown(funnels) {
+  var chip = document.getElementById('emb-filter-embudo-chip');
+  if (!chip) return;
+  var existing = document.getElementById('emb-embudo-filter-drop');
+  if (existing) existing.remove();
+
+  var drop = document.createElement('div');
+  drop.id = 'emb-embudo-filter-drop';
+  drop.className = 'emb-filter-stage-dropdown';
+
+  var allOpt = document.createElement('div');
+  allOpt.className = 'emb-stage-option active';
+  allOpt.dataset.value = '';
+  allOpt.textContent = 'Todos los embudos';
+  drop.appendChild(allOpt);
+
+  funnels.forEach(function(f) {
+    var opt = document.createElement('div');
+    opt.className = 'emb-stage-option';
+    opt.dataset.value = f.id;
+    opt.textContent = f.nombre;
+    drop.appendChild(opt);
+  });
+
+  document.body.appendChild(drop);
+
+  drop.querySelectorAll('.emb-stage-option').forEach(function(opt) {
+    opt.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var val = opt.dataset.value;
+      var label = val ? funnels.find(function(f){ return f.id === val; })?.nombre : 'Todos los embudos';
+      var selF = document.getElementById('emb-filter-embudo');
+      if (selF) selF.value = val;
+      var chipLabel = document.getElementById('emb-filter-embudo-label');
+      if (chipLabel) chipLabel.textContent = label || 'Todos los embudos';
+      drop.querySelectorAll('.emb-stage-option').forEach(function(o){ o.classList.remove('active'); });
+      opt.classList.add('active');
+      drop.classList.remove('open');
+      chip.classList.remove('open');
+      embFiltrar();
+    });
+  });
+}
+
+function embToggleEmbudoFilter(e) {
+  e.stopPropagation();
+  var chip = document.getElementById('emb-filter-embudo-chip');
+  var drop = document.getElementById('emb-embudo-filter-drop');
+  if (!drop) return;
+  var isOpen = drop.classList.contains('open');
+  // Cerrar ambos dropdowns
+  ['emb-embudo-filter-drop','emb-etapa-filter-drop'].forEach(function(id){
+    var d = document.getElementById(id); if (d) d.classList.remove('open');
+  });
+  ['emb-filter-embudo-chip','emb-filter-etapa-chip'].forEach(function(id){
+    var c = document.getElementById(id); if (c) c.classList.remove('open');
+  });
+  if (!isOpen) {
+    var rect = chip.getBoundingClientRect();
+    drop.style.position = 'fixed';
+    drop.style.top  = (rect.bottom + 4) + 'px';
+    drop.style.left = rect.left + 'px';
+    drop.classList.add('open');
+    chip.classList.add('open');
+  }
+}
+window.embToggleEmbudoFilter = embToggleEmbudoFilter;
 
 var _embFilterVip = false;
 
@@ -445,6 +598,15 @@ function _embMakeCard(contact, funnelId) {
   var unread = contact.unread || 0;
   var timeStr = (typeof formatTimestamp === 'function') ? formatTimestamp(contact.last_msg) : '';
 
+  // Construir opciones del dropdown de etapas
+  var funnel = _embFunnels.find(function(f){ return f.id === funnelId; });
+  var stages = (funnel && funnel.stages) || [];
+  var stageId = contact.stage_ids && contact.stage_ids[funnelId];
+  var stageOptions = stages.map(function(s) {
+    var isActive = s.id === stageId || s.label === etapa;
+    return '<div class="emb-stage-option' + (isActive ? ' active' : '') + '" data-stage-id="' + s.id + '">' + s.label + '</div>';
+  }).join('');
+
   card.innerHTML =
     (unread > 0 ? '<div class="emb-unread-badge">' + unread + '</div>' : '') +
     '<button class="emb-card-move" title="Gestionar embudos" onclick="embAbrirMove(event,\'' + contact.id + '\')"><i class="fas fa-arrows-alt-h"></i></button>' +
@@ -459,7 +621,15 @@ function _embMakeCard(contact, funnelId) {
       '</div>' +
     '</div>' +
     '<div class="emb-card-bottom">' +
-      (etapa ? '<span class="emb-tag emb-tag-stage">' + etapa + '</span>' : '<span></span>') +
+      (stages.length ?
+        '<div class="emb-stage-wrap">' +
+          '<div class="emb-stage-chip" data-contact-id="' + contact.id + '" data-funnel-id="' + (funnelId||'') + '">' +
+            '<span class="emb-stage-chip-label">' + (etapa || '—') + '</span>' +
+            '<svg width="7" height="5" viewBox="0 0 7 5" fill="none"><path d="M0 0l3.5 5L7 0z" fill="#9961FF"/></svg>' +
+          '</div>' +
+          '<div class="emb-stage-dropdown">' + stageOptions + '</div>' +
+        '</div>'
+        : '<span></span>') +
       (timeStr ? '<span class="emb-card-time">' + timeStr + '</span>' : '') +
     '</div>';
 
@@ -479,9 +649,63 @@ function _embMakeCard(contact, funnelId) {
     if (ph) ph.remove();
     document.querySelectorAll('.emb-col').forEach(function(c){ c.classList.remove('drag-over'); });
   });
+  // Dropdown de etapas — toggle
+  var chip = card.querySelector('.emb-stage-chip');
+  var drop = card.querySelector('.emb-stage-dropdown');
+  if (chip && drop) {
+    chip.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var isOpen = drop.classList.contains('open');
+      // Cerrar todos los otros
+      document.querySelectorAll('.emb-stage-dropdown.open').forEach(function(d){ d.classList.remove('open'); });
+      document.querySelectorAll('.emb-stage-chip.open').forEach(function(c){ c.classList.remove('open'); });
+      if (!isOpen) {
+        // Mover al body para escapar cualquier transform/overflow ancestro
+        if (drop.parentElement !== document.body) {
+          document.body.appendChild(drop);
+        }
+        var rect = chip.getBoundingClientRect();
+        drop.style.position = 'fixed';
+        drop.style.top  = (rect.bottom + 4) + 'px';
+        drop.style.left = rect.left + 'px';
+        drop.classList.add('open');
+        chip.classList.add('open');
+      }
+    });
+    // Seleccionar etapa
+    drop.querySelectorAll('.emb-stage-option').forEach(function(opt) {
+      opt.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var newStageId = opt.dataset.stageId;
+        var newLabel   = opt.textContent;
+        // Actualizar UI
+        chip.querySelector('.emb-stage-chip-label').textContent = newLabel;
+        drop.querySelectorAll('.emb-stage-option').forEach(function(o){ o.classList.remove('active'); });
+        opt.classList.add('active');
+        drop.classList.remove('open');
+        chip.classList.remove('open');
+        // Actualizar estado local
+        if (!contact.etapas) contact.etapas   = {};
+        if (!contact.stage_ids) contact.stage_ids = {};
+        contact.etapas[funnelId]    = newLabel;
+        contact.stage_ids[funnelId] = newStageId;
+        // Llamar API
+        var cId = contact.id;
+        var cmp = _embCompany;
+        apiCall('/api/funnels/' + cmp + '/contact/' + cId + '/stage', {
+          method: 'PUT',
+          body: JSON.stringify({ funnel_id: funnelId, stage_id: newStageId })
+        }).then(function(res) {
+          if (!res.ok) console.error('Error cambiando etapa:', res.data);
+        });
+      });
+    });
+  }
+
   card.addEventListener('click', function(e) {
     if (_wasDragged) return;
     if (e.target.closest('.emb-card-move')) return;
+    if (e.target.closest('.emb-stage-chip') || e.target.closest('.emb-stage-dropdown')) return;
     embToggleSelect(contact.id, card);
   });
 
@@ -943,3 +1167,19 @@ window.embSelCanal           = embSelCanal;
 window.embAbrirMove          = embAbrirMove;
 window.embCerrarMove         = embCerrarMove;
 window.embMoverDesdeModal    = embMoverDesdeModal;
+// Cerrar dropdowns de etapa al hacer click fuera
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.emb-stage-chip') && !e.target.closest('.emb-stage-dropdown')) {
+    document.querySelectorAll('.emb-stage-dropdown.open').forEach(function(d){ d.classList.remove('open'); });
+    document.querySelectorAll('.emb-stage-chip.open').forEach(function(c){ c.classList.remove('open'); });
+  }
+});
+// Cerrar dropdown filtro embudo al click fuera
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#emb-filter-embudo-chip') && !e.target.closest('#emb-embudo-filter-drop')) {
+    var drop = document.getElementById('emb-embudo-filter-drop');
+    var chip = document.getElementById('emb-filter-embudo-chip');
+    if (drop) drop.classList.remove('open');
+    if (chip) chip.classList.remove('open');
+  }
+});

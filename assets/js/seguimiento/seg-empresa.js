@@ -25,7 +25,9 @@ function segSetCompany(companyId, nombre) {
   segMostrarEmptyMain();
 
   segCargarLabels(companyId, function() {
-    segCargarClientes(companyId);
+    // Cargar agenda directamente — segCargarClientes se llama solo al cambiar a filtro "Todos"
+    _segFiltroActivo = 'hoy';
+    segCargarAgendaDia('hoy');
     segCargarIntensidadLabels();
   });
 }
