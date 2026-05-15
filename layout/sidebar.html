@@ -1,7 +1,27 @@
 <aside id="appSidebar" class="w-44 bg-white border-r min-h-screen transition-all duration-300 relative">
-<div id="sidebarTitle" class="px-4 py-3">
+<div id="sidebarTitle" class="px-4 py-3" style="position:relative;">
   <div id="sidebarTitleSkeleton" class="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
-  <div id="sidebarTitleText" class="hidden text-sm font-bold text-[#193d6d] uppercase sidebar-text"></div>
+
+  <!-- Empresa activa (1 empresa) -->
+  <div id="sidebarCompanyLabel"
+    class="hidden text-sm font-bold text-[#193d6d] uppercase sidebar-text"
+    style="cursor:default;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+
+  <!-- Selector de empresa (múltiples empresas) -->
+  <button id="sidebarCompanyBtn"
+    class="hidden sidebar-text"
+    style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:4px;background:none;border:none;padding:0;cursor:pointer;text-align:left;">
+    <span id="sidebarCompanyBtnLabel"
+      style="font-size:.8rem;font-weight:700;color:#193d6d;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;"></span>
+    <i class="fas fa-chevron-down" id="sidebarCompanyChevron"
+      style="font-size:9px;color:#7D84C1;transition:transform .2s;flex-shrink:0;"></i>
+  </button>
+
+  <!-- Dropdown empresas -->
+  <div id="sidebarCompanyDropdown"
+    style="display:none;position:absolute;left:8px;right:8px;top:100%;z-index:100;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.1);overflow:hidden;">
+    <div id="sidebarCompanyList"></div>
+  </div>
 </div>
   <nav class="px-3 space-y-1">
     <a href="#dashboard" title="Dashboard" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">

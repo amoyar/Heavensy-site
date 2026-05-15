@@ -14,24 +14,26 @@ async function loadLayout() {
     initSidebarToggle();
     initSidebarActive();
     if (typeof loadSidebarCompanyName === 'function') loadSidebarCompanyName();
-    _navUpdateEmpresaLink();
   } catch (e) {
     console.error('❌ Error cargando layout', e);
   }
 }
 
 function initUserMenu() {
-  // Manejado por navbar.js (toggleUserMenu)
+  const btn  = document.getElementById('userMenuBtn');
+  const menu = document.getElementById('userMenu');
+  if (!btn || !menu) return;
+  btn.addEventListener('click', e => { e.stopPropagation(); menu.classList.toggle('hidden'); });
+  document.addEventListener('click', e => {
+    if (!menu.contains(e.target) && !btn.contains(e.target)) menu.classList.add('hidden');
+  });
 }
 
 function loadTopbarUsername() {
   try {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    const name = userData.username || userData.email || 'Usuario';
-    const el = document.getElementById('nav-username');
-    if (el) el.textContent = name;
-    const av = document.getElementById('nav-avatar');
-    if (av) av.textContent = name.charAt(0).toUpperCase();
+    const el = document.getElementById('topbarUsername');
+    if (el) el.textContent = userData.username || userData.email || 'Usuario';
   } catch(e) {}
 }
 
@@ -48,15 +50,13 @@ function openProfileModal() {
       document.getElementById('profileUsername').value  = payload.username || '';
     } catch(e) {}
   }
-  document.getElementById('user-dropdown')?.classList.remove('open');
-  document.querySelector('.hv-nav-user')?.classList.remove('open');
+  document.getElementById('userMenu')?.classList.add('hidden');
 }
 
 function closeProfileModal()  { document.getElementById('profileModal')?.classList.add('hidden'); }
 function openSecurityModal()  {
   document.getElementById('securityModal')?.classList.remove('hidden');
-  document.getElementById('user-dropdown')?.classList.remove('open');
-  document.querySelector('.hv-nav-user')?.classList.remove('open');
+  document.getElementById('userMenu')?.classList.add('hidden');
 }
 function closeSecurityModal() { document.getElementById('securityModal')?.classList.add('hidden'); }
 
@@ -153,28 +153,6 @@ function initSidebarToggle() {
 
 document.addEventListener('DOMContentLoaded', loadLayout);
 
-function _navUpdateEmpresaLink() {
-  const label = document.getElementById('nav-empresa-label');
-  if (!label) return;
-  const hasEmpresa = !!localStorage.getItem('company_id') ||
-                     !!localStorage.getItem('company_config') ||
-                     !!localStorage.getItem('empresa_publicada');
-  label.textContent = hasEmpresa ? 'Mi empresa' : 'Crear mi empresa';
-}
-
-function _navEmpresaClick() {
-  toggleUserMenu();
-  // Tiene empresa si tiene company_id, company_config o empresa_publicada
-  const hasEmpresa = !!localStorage.getItem('company_id') ||
-                     !!localStorage.getItem('company_config') ||
-                     !!localStorage.getItem('empresa_publicada');
-  if (hasEmpresa) {
-    loadPage('dashboard');
-  } else {
-    loadPage('configuracion');
-  }
-}
-
 // ================================
 // SIDEBAR ACTIVE STATE
 // ================================
@@ -188,4 +166,137 @@ function initSidebarActive() {
   }
   updateActive();
   window.addEventListener('hashchange', updateActive);
+}
+
+// ================================
+// SIDEBAR — SELECTOR DE EMPRESA
+// ================================
+function loadSidebarCompanyName() {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const payload      = JSON.parse(atob(token.split('.')[1]));
+    const companyId    = payload.company_id;
+    const companyName  = payload.company_name || companyId;
+
+    const skeleton  = document.getElementById('sidebarTitleSkeleton');
+    const label     = document.getElementById('sidebarCompanyLabel');
+    const btn       = document.getElementById('sidebarCompanyBtn');
+    const btnLabel  = document.getElementById('sidebarCompanyBtnLabel');
+
+    if (skeleton) skeleton.style.display = 'none';
+
+    // Obtener empresas del usuario
+    let userCompanies = [];
+    try {
+      const stored = localStorage.getItem('hs_user_companies');
+      if (stored) userCompanies = JSON.parse(stored);
+    } catch {}
+
+    if (userCompanies.length > 1) {
+      // Ya tenemos empresas → mostrar dropdown
+      if (btnLabel) btnLabel.textContent = companyName;
+      if (btn) { btn.classList.remove('hidden'); btn.style.display = 'flex'; }
+      _initSidebarCompanyDropdown(userCompanies, companyId);
+    } else if (userCompanies.length === 1) {
+      // Una empresa → solo nombre
+      if (label) { label.textContent = companyName; label.classList.remove('hidden'); label.style.display = 'block'; }
+    } else {
+      // Sin datos en localStorage → cargar desde API
+      apiCall('/api/auth/my-companies').then(function(res) {
+        if (res.ok && res.data && res.data.companies) {
+          userCompanies = res.data.companies;
+          localStorage.setItem('hs_user_companies', JSON.stringify(userCompanies));
+        }
+        if (userCompanies.length > 1) {
+          if (btnLabel) btnLabel.textContent = companyName;
+          if (btn) { btn.classList.remove('hidden'); btn.style.display = 'flex'; }
+          _initSidebarCompanyDropdown(userCompanies, companyId);
+        } else {
+          if (label) { label.textContent = companyName; label.classList.remove('hidden'); label.style.display = 'block'; }
+        }
+      }).catch(function() {
+        if (label) { label.textContent = companyName; label.classList.remove('hidden'); label.style.display = 'block'; }
+      });
+    }
+  } catch(e) {
+    console.error('loadSidebarCompanyName error:', e);
+  }
+}
+
+function _initSidebarCompanyDropdown(companies, currentCompanyId) {
+  const btn      = document.getElementById('sidebarCompanyBtn');
+  const dropdown = document.getElementById('sidebarCompanyDropdown');
+  const list     = document.getElementById('sidebarCompanyList');
+  const chevron  = document.getElementById('sidebarCompanyChevron');
+  if (!btn || !dropdown || !list) return;
+
+  // Construir lista
+  list.innerHTML = '';
+  companies.forEach(c => {
+    const name    = c.company_name || c.company_id;
+    const active  = c.company_id === currentCompanyId;
+    const item    = document.createElement('button');
+    item.type     = 'button';
+    item.style.cssText = `width:100%;text-align:left;padding:9px 14px;font-size:.82rem;
+      font-weight:${active ? '700' : '400'};color:${active ? '#7D84C1' : '#374151'};
+      background:${active ? '#eff4fe' : '#fff'};border:none;cursor:pointer;
+      border-left:${active ? '3px solid #7D84C1' : '3px solid transparent'};`;
+    item.textContent = name;
+    item.addEventListener('mouseenter', () => { if (!active) item.style.background = '#f5f7ff'; });
+    item.addEventListener('mouseleave', () => { if (!active) item.style.background = '#fff'; });
+    item.addEventListener('click', () => _switchSidebarCompany(c.company_id, name));
+    list.appendChild(item);
+  });
+
+  // Toggle dropdown
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const open = dropdown.style.display === 'block';
+    dropdown.style.display = open ? 'none' : 'block';
+    chevron.style.transform = open ? '' : 'rotate(180deg)';
+  });
+
+  // Cerrar al hacer click fuera
+  document.addEventListener('click', e => {
+    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.style.display = 'none';
+      chevron.style.transform = '';
+    }
+  });
+}
+
+async function _switchSidebarCompany(companyId, companyName) {
+  try {
+    const res = await apiCall('/api/auth/switch-company', {
+      method: 'POST',
+      body: JSON.stringify({ company_id: companyId })
+    });
+    if (!res.ok || !res.data.access_token) throw new Error('Error al cambiar empresa');
+
+    // Actualizar token y recargar
+    localStorage.setItem('token', res.data.access_token);
+    // Actualizar label
+    const btnLabel = document.getElementById('sidebarCompanyBtnLabel');
+    if (btnLabel) btnLabel.textContent = companyName;
+    const dropdown = document.getElementById('sidebarCompanyDropdown');
+    const chevron  = document.getElementById('sidebarCompanyChevron');
+    if (dropdown) dropdown.style.display = 'none';
+    if (chevron)  chevron.style.transform = '';
+
+    // Recargar módulos sin salto visual
+    const page = location.hash.replace('#', '') || 'dashboard';
+    if (page === 'conversaciones' && typeof cargarEmpresasYConversaciones === 'function') {
+      cargarEmpresasYConversaciones();
+    } else if (page === 'seguimiento' && typeof segInit === 'function') {
+      segInit();
+    } else if (typeof loadPage === 'function') {
+      loadPage(page);
+    } else {
+      // Último recurso: soft reload sin parpadeo
+      window.dispatchEvent(new Event('hashchange'));
+    }
+  } catch(e) {
+    console.error('Error cambiando empresa:', e);
+  }
 }
