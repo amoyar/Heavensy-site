@@ -1,0 +1,335 @@
+<div class="cal-page">
+
+  <!-- TOOLBAR -->
+  <div class="cal-toolbar">
+    <div class="cal-nav-btn" onclick="navigate(-1)"><i class="fas fa-chevron-left"></i></div>
+    <div class="cal-nav-btn" onclick="navigate(1)"><i class="fas fa-chevron-right"></i></div>
+    <button class="cal-today-btn" onclick="goToday()">Hoy</button>
+    <span class="cal-range" id="cal-range-label"></span>
+    <div class="cal-view-toggle">
+      <button class="cal-view-btn" onclick="setView('day')">Día</button>
+      <button class="cal-view-btn active" onclick="setView('week')">Semana</button>
+      <button class="cal-view-btn" onclick="setView('month')">Mes</button>
+    </div>
+    <div class="cal-actions">
+<button id="btn-bloques" class="cal-btn" onclick="openBloques()" style="background:#9961FF;color:#fff;border:none"><i class="fas fa-layer-group"></i> Bloques masivos</button>
+      <button class="cal-btn cal-btn-secondary" onclick="openExceptions()"><i class="fas fa-ban"></i> Bloqueos</button>
+    </div>
+  </div>
+
+  <!-- FILTRO PROFESIONALES (solo aparece si hay más de 1) -->
+  <div id="cal-prof-bar" style="display:none" class="cal-prof-bar">
+    <div id="cal-prof-chips" class="cal-prof-chips"></div>
+    <input id="cal-prof-search" class="cal-prof-search" type="text"
+           placeholder="Buscar profesional..." oninput="_calProfSearch(this.value)">
+  </div>
+
+  <!-- CALENDAR BODY -->
+  <div class="cal-body">
+
+    <!-- WEEK VIEW -->
+    <div class="week-view active" id="view-week">
+      <div class="week-header" id="week-header"></div>
+      <div class="week-grid" id="week-grid"></div>
+    </div>
+
+    <!-- DAY VIEW -->
+    <div class="day-view" id="view-day">
+      <div class="day-header-single" id="day-header"></div>
+      <div class="day-grid" id="day-grid"></div>
+    </div>
+
+    <!-- MONTH VIEW -->
+    <div class="month-view" id="view-month">
+      <div class="month-header">
+        <div class="month-day-hd">Lun</div><div class="month-day-hd">Mar</div>
+        <div class="month-day-hd">Mié</div><div class="month-day-hd">Jue</div>
+        <div class="month-day-hd">Vie</div><div class="month-day-hd">Sáb</div>
+        <div class="month-day-hd">Dom</div>
+      </div>
+      <div class="month-grid" id="month-grid"></div>
+    </div>
+
+  </div>
+
+  <!-- LEGEND -->
+  <div class="cal-legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#7AAAD8"></div> Hipnosis</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#85CCA8"></div> Psicoterapia</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#E070A8"></div> Coaching</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#9D8FF5"></div> Taller</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#5BAFC0"></div> Masoterapia</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#E0A000"></div> Cliente VIP</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#D95050"></div> Bloqueado</div>
+  </div>
+
+</div>
+
+<!-- MODAL NUEVA CITA -->
+<div class="modal-overlay" id="modal-appt" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title"><i class="fas fa-calendar-plus" style="color:#9961FF;margin-right:8px"></i>Nueva hora</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Servicio -->
+      <div class="form-group">
+        <label>Servicio</label>
+        <div id="appt-service-chips" class="svc-chips-wrap"></div>
+        <input type="hidden" id="appt-service">
+      </div>
+
+      <!-- Mini calendario -->
+      <div class="form-group">
+        <label>Fecha</label>
+        <div class="appt-modal-cal">
+          <div class="appt-modal-cal-header">
+            <button class="appt-cal-nav" onclick="calModalDpNav(-1)">&#8249;</button>
+            <span id="appt-modal-cal-month"></span>
+            <button class="appt-cal-nav" onclick="calModalDpNav(1)">&#8250;</button>
+          </div>
+          <div class="appt-modal-cal-wdays">
+            <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sa</span><span>Do</span>
+          </div>
+          <div class="appt-modal-cal-grid" id="appt-modal-cal-grid"></div>
+        </div>
+      </div>
+
+      <!-- Slots disponibles -->
+      <div class="form-group" id="appt-slots-group" style="display:none">
+        <label>Hora disponible</label>
+        <div class="appt-slots-wrap" id="appt-slots-container"></div>
+      </div>
+
+      <!-- Cliente + Notas -->
+      <div class="form-group">
+        <label>Cliente</label>
+        <input type="text" id="appt-client" placeholder="Nombre o número del cliente">
+      </div>
+
+      <!-- Campos ocultos -->
+      <textarea id="appt-notes" style="display:none"></textarea>
+      <input type="hidden" id="appt-date">
+      <input type="hidden" id="appt-start">
+      <input type="hidden" id="appt-end">
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveAppt()"><i class="fas fa-check" style="margin-right:5px"></i>Guardar hora</button>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL BLOQUEOS -->
+<div class="exc-panel" id="exc-panel">
+  <div class="exc-panel-header">
+    <span class="exc-panel-title"><i class="fas fa-ban" style="color:#ef4444;margin-right:8px"></i>Bloqueos de agenda</span>
+    <button class="modal-close" onclick="closeExceptions()">✕</button>
+  </div>
+  <div class="exc-panel-body">
+    <div id="exc-list"></div>
+    <div class="exc-add-form">
+      <div class="exc-add-title">+ Agregar bloqueo</div>
+      <div class="form-group"><label>Profesional</label>
+        <select id="exc-resource"><option>Juana Machuca</option><option>Carlos Mendoza</option><option>Todos</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Fecha</label><input type="date" id="exc-date"></div>
+        <div class="form-group"><label>Tipo</label>
+          <select id="exc-type"><option value="block">Bloqueo</option><option value="vacation">Vacaciones</option><option value="sick">Ausencia</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Inicio</label><input type="time" id="exc-start" value="09:00"></div>
+        <div class="form-group"><label>Fin</label><input type="time" id="exc-end" value="18:00"></div>
+      </div>
+      <div class="form-group"><label>Motivo</label><input type="text" id="exc-reason" placeholder="Ej: Feriado, capacitación..."></div>
+      <button class="btn-save" style="width:100%;margin-top:4px" onclick="addException()">Agregar bloqueo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BLOQUES MASIVOS -->
+<div class="bm-overlay" id="bm-overlay" onclick="if(event.target===this)closeBloques()">
+<div class="bm-modal">
+  <div class="bm-header">
+    <div class="bm-header-title"><i class="fas fa-layer-group" style="margin-right:9px"></i>Bloques masivos</div>
+    <div class="bm-header-sub">Define el servicio, fechas y horarios de tu agenda grupal</div>
+    <button class="bm-close" onclick="closeBloques()">✕</button>
+  </div>
+  <div class="bm-steps" id="bm-steps">
+    <div class="bm-step active" id="bm-s0"><div class="bm-step-circle" id="bm-sc0">1</div><div class="bm-step-label">Servicio</div></div>
+    <div class="bm-step" id="bm-s1"><div class="bm-step-circle" id="bm-sc1">2</div><div class="bm-step-label">Fechas</div></div>
+    <div class="bm-step" id="bm-s2"><div class="bm-step-circle" id="bm-sc2">3</div><div class="bm-step-label">Días</div></div>
+    <div class="bm-step" id="bm-s3"><div class="bm-step-circle" id="bm-sc3">4</div><div class="bm-step-label">Horario</div></div>
+    <div class="bm-step" id="bm-s4"><div class="bm-step-circle" id="bm-sc4">5</div><div class="bm-step-label">Resumen</div></div>
+  </div>
+  <div class="bm-body">
+    <!-- Step 1: Servicio -->
+    <div id="bm-panel-0">
+      <div class="bm-section-title">1. ¿Qué servicio vas a ofrecer?</div>
+      <div class="bm-section-sub">Selecciona desde tus servicios grupales creados en Perfil</div>
+      <div class="bm-chips" id="bm-chips-container">
+        <div style="color:#9ca3af;font-size:12px;padding:12px 0"><i class="fas fa-spinner fa-spin" style="margin-right:6px"></i>Cargando programas...</div>
+      </div>
+    </div>
+    <!-- Step 2: Fechas -->
+    <div id="bm-panel-1" style="display:none">
+      <div class="bm-section-title">2. ¿En qué período?</div>
+      <div class="bm-section-sub">Define el rango de fechas en que se repetirá este bloque</div>
+      <div class="bm-date-row">
+        <div class="bm-field">
+          <label>Fecha de inicio</label>
+          <div class="bm-dp-wrap" id="bm-dp-wrap">
+            <div class="bm-dp-input" id="bm-dp-display" onclick="bmDpToggle()">
+              <i class="fas fa-calendar-alt" style="color:#9961FF;font-size:13px"></i>
+              <span id="bm-dp-label" style="color:#9BA3C0">Seleccionar fecha</span>
+              <i class="fas fa-chevron-down" style="margin-left:auto;font-size:10px;color:#9BA3C0"></i>
+            </div>
+            <input type="hidden" id="bm-date-start">
+            <div class="bm-dp-dropdown" id="bm-dp-dropdown" style="display:none">
+              <div class="bm-dp-header">
+                <button class="bm-dp-nav" onclick="bmDpNav(-1)">&#8249;</button>
+                <span class="bm-dp-month-label" id="bm-dp-month"></span>
+                <button class="bm-dp-nav" onclick="bmDpNav(1)">&#8250;</button>
+              </div>
+              <div class="bm-dp-weekdays"><span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sa</span><span>Do</span></div>
+              <div class="bm-dp-grid" id="bm-dp-grid"></div>
+            </div>
+          </div>
+        </div>
+        <div class="bm-field">
+          <label>Fecha de término (calculada)</label>
+          <div class="bm-dp-input bm-dp-disabled">
+            <i class="fas fa-calendar-check" style="color:#9BA3C0;font-size:13px"></i>
+            <span id="bm-dp-end-label" style="color:#9BA3C0">Se calcula automáticamente</span>
+          </div>
+          <input type="hidden" id="bm-date-end">
+        </div>
+      </div>
+    </div>
+    <!-- Step 3: Calendario -->
+    <div id="bm-panel-2" style="display:none">
+      <div class="bm-section-title">3. Fechas del programa</div>
+      <div class="bm-section-sub" id="bm-cal-sub">Las fechas se generan automáticamente. Toca una fecha para activarla o desactivarla.</div>
+      <div class="bm-fc-wrap">
+        <div class="bm-fc-header">
+          <button class="bm-fc-nav" onclick="bmCalNav(-1)">&#8249;</button>
+          <span class="bm-fc-month" id="bm-fc-month"></span>
+          <button class="bm-fc-nav" onclick="bmCalNav(1)">&#8250;</button>
+        </div>
+        <div class="bm-fc-grid-hd"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div>
+        <div class="bm-fc-grid" id="bm-fc-grid"></div>
+      </div>
+      <div class="bm-fc-legend">
+        <span class="bm-fc-leg-item"><span class="bm-fc-leg-dot" style="background:#9961FF"></span>Sesión programada</span>
+        <span class="bm-fc-leg-item"><span class="bm-fc-leg-dot" style="background:#e4e9f5"></span>Sin sesión</span>
+      </div>
+    </div>
+    <!-- Step 4: Horario -->
+    <div id="bm-panel-3" style="display:none">
+      <div class="bm-section-title">4. Horario del servicio</div>
+      <div class="bm-section-sub" id="bm-horario-sub">Los intervalos se dividen automáticamente según la duración del servicio</div>
+      <div class="bm-time-row">
+        <div class="bm-field"><label>Hora de inicio</label><input type="time" id="bm-time-start" value="10:00" oninput="bmUpdateSlots()" onchange="bmUpdateSlots()"></div>
+        <div class="bm-field"><label>Hora de término</label><input type="time" id="bm-time-end" value="13:00" oninput="bmUpdateSlots()" onchange="bmUpdateSlots()"></div>
+        <div class="bm-slots-preview">
+          <div class="bm-slots-preview-label">Vista previa de slots generados</div>
+          <div class="bm-slots" id="bm-slots"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Step 5: Resumen -->
+    <div id="bm-panel-4" style="display:none">
+      <div class="bm-section-title">5. Resumen</div>
+      <div class="bm-section-sub">Revisa los detalles antes de confirmar</div>
+      <div class="bm-summary">
+        <div class="bm-summary-grid">
+          <div class="bm-summary-item"><label>Profesional</label><span id="bm-r-profesional">—</span></div>
+          <div class="bm-summary-item"><label>Servicio</label><span id="bm-r-servicio">—</span></div>
+          <div class="bm-summary-item"><label>Período</label><span id="bm-r-periodo">—</span></div>
+          <div class="bm-summary-item"><label>Sesiones</label><span id="bm-r-dias">—</span></div>
+          <div class="bm-summary-item"><label>Horario</label><span id="bm-r-horario">—</span></div>
+          <div class="bm-summary-item"><label>Duración por sesión</label><span id="bm-r-slots">—</span></div>
+          <div class="bm-summary-item"><label>Total estimado</label><span id="bm-r-total">—</span></div>
+        </div>
+        <div style="margin-top:14px;border-top:1px solid #ebebed;padding-top:12px">
+          <div style="font-size:11px;font-weight:700;color:#9961FF;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Fechas programadas</div>
+          <div id="bm-r-fechas" style="display:flex;flex-wrap:wrap;gap:6px;max-height:120px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bm-footer">
+    <div style="display:flex;gap:8px">
+      <button class="bm-btn-cancel" onclick="closeBloques()">Cancelar</button>
+      <button class="bm-btn-back" id="bm-btn-back" style="display:none" onclick="bmBack()"><i class="fas fa-chevron-left" style="font-size:10px;margin-right:4px"></i>Atrás</button>
+    </div>
+    <button class="bm-btn-next" id="bm-btn-next" onclick="bmNext()">Siguiente <i class="fas fa-chevron-right" style="font-size:10px;margin-left:4px"></i></button>
+  </div>
+</div>
+</div>
+
+<!-- TOOLTIP DRAG -->
+<div id="drag-tooltip" style="display:none;position:fixed;background:#1E2140;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;pointer-events:none;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-family:'Poppins',sans-serif;letter-spacing:.02em"></div>
+
+<!-- MODAL ENVIAR MENSAJE -->
+<div class="msg-overlay" id="msg-overlay" onclick="if(event.target===this)closeMsgModal()">
+  <div class="msg-modal">
+    <div class="msg-header">
+      <div>
+        <div class="msg-header-title">Enviar mensaje</div>
+        <div class="msg-header-sub">A los clientes seleccionados</div>
+      </div>
+      <button class="msg-close" onclick="closeMsgModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="msg-recipients" id="msg-recipients"></div>
+    <div class="msg-body">
+      <label class="msg-label">Mensaje</label>
+      <textarea class="msg-textarea" id="msg-text" placeholder="Escribe tu mensaje aquí..." rows="5"></textarea>
+      <label class="msg-label" style="margin-top:14px">Enviar por</label>
+      <div class="msg-channels">
+        <button class="msg-channel-btn active" id="ch-whatsapp" onclick="selectChannel('whatsapp')"><i class="fab fa-whatsapp"></i><span>WhatsApp</span></button>
+        <button class="msg-channel-btn" id="ch-email" onclick="selectChannel('email')"><i class="fas fa-envelope"></i><span>Email</span></button>
+        <button class="msg-channel-btn" id="ch-heavensy" onclick="selectChannel('heavensy')"><i class="fas fa-comment-dots"></i><span>Heavensy</span></button>
+      </div>
+    </div>
+    <div class="msg-footer">
+      <button class="msg-btn-cancel" onclick="closeMsgModal()">Cancelar</button>
+      <button class="msg-btn-send" onclick="doSendMessage()"><i class="fas fa-paper-plane"></i> Enviar</button>
+    </div>
+    <div class="msg-success" id="msg-success">
+      <div class="msg-success-icon"><i class="fas fa-check"></i></div>
+      <div class="msg-success-title">¡Mensaje enviado!</div>
+      <div class="msg-success-sub" id="msg-success-sub"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BARRA DE SELECCIÓN -->
+<div class="cal-select-bar" id="cal-select-bar">
+  <div class="cal-select-info">
+    <div class="cal-select-count" id="cal-select-count"></div>
+    <div class="cal-select-names" id="cal-select-names"></div>
+  </div>
+  <div class="cal-select-actions">
+    <button class="cal-select-clear" onclick="clearSelection()"><i class="fas fa-times"></i> Cancelar</button>
+    <button class="cal-select-send" onclick="sendMessageToSelected()"><i class="fas fa-paper-plane"></i> Enviar mensaje</button>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR ELIMINAR -->
+<div class="cal-confirm-overlay" id="cal-confirm-overlay">
+  <div class="cal-confirm-box">
+    <div class="cal-confirm-icon"><i class="fas fa-trash-alt"></i></div>
+    <div class="cal-confirm-title">Eliminar cita</div>
+    <div class="cal-confirm-msg" id="cal-confirm-msg"></div>
+    <div class="cal-confirm-btns">
+      <button class="cal-confirm-cancel" onclick="calConfirmReject()">Cancelar</button>
+      <button class="cal-confirm-ok" onclick="calConfirmAccept()"><i class="fas fa-trash-alt" style="margin-right:6px"></i>Eliminar</button>
+    </div>
+  </div>
+</div>

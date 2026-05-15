@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Programa — Heavensy</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Poppins:wght@400;500;600;700&family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="../assets/css/programa_detalle.css">
+<style>
+.hv-nav{position:sticky;top:0;z-index:9999;height:54px;background:rgba(70,90,180,0.96);backdrop-filter:blur(14px);border-bottom:1px solid rgba(150,175,255,0.16);display:flex;align-items:center;padding:0 24px;gap:16px;box-shadow:0 2px 20px rgba(10,20,70,0.4)}
+.hv-nav-brand{display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0}
+.hv-nav-links{display:flex;align-items:center;gap:6px}
+.hv-nav-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="hv-nav">
+  <a class="hv-nav-brand" href="portada.html">
+    <div class="hv-nav-logo"><img src="../assets/img/LOGOFINAL.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
+    <span class="hv-nav-name">Heavensy</span>
+  </a>
+  <div class="hv-nav-links">
+    <a class="hv-nav-link" id="nav-link-planes" href="planes_heavensy.html">Planes</a>
+    <a class="hv-nav-link" href="busqueda_heavensy.html">Buscar servicios</a>
+  </div>
+  <div style="flex:1"></div>
+  <div class="hv-nav-right">
+    <a id="nav-btn-login" href="login.html" style="font-size:13px;font-weight:600;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:6px 16px;border-radius:8px;text-decoration:none;display:none;">Iniciar sesión</a>
+    <div id="nav-user-wrap" style="display:none;align-items:center;gap:12px;">
+      <div class="hv-nav-bell">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="hv-nav-bell-dot">3</span>
+      </div>
+      <div class="hv-nav-divider"></div>
+      <div class="hv-nav-status">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        IA
+      </div>
+      <div class="hv-nav-user-wrap">
+        <div class="hv-nav-user" onclick="toggleHvNav()">
+          <div class="hv-nav-avatar" id="nav-avatar">U</div>
+          <span class="hv-nav-user-name" id="nav-username">Usuario</span>
+          <svg class="hv-nav-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hv-nav-dropdown" id="hv-user-dropdown">
+          <a href="../index.html#perfil_personal_interno">Mi Perfil</a>
+          <a href="../index.html#configuracion">Mi empresa</a>
+          <div class="hv-nav-dropdown-sep"></div>
+          <a href="#" class="danger" onclick="localStorage.clear();sessionStorage.clear();window.location.href='portada.html';return false;">Cerrar sesión</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="prog-hero" id="prog-hero" style="background:linear-gradient(135deg,#9497F4,#89B9F8)">
+  <div class="prog-hero-overlay"></div>
+  <div id="prog-tipo-chip" style="display:none"></div>
+  <h1 class="prog-hero-title" id="prog-title">Cargando…</h1>
+</div>
+
+<!-- CONTENIDO -->
+<div class="prog-page">
+  <div class="prog-layout">
+
+    <!-- IZQUIERDA: creador + temario + incluye + requisitos -->
+    <aside>
+      <div class="glass-card creator-card">
+        <div class="creator-avatar" id="creator-avatar">?</div>
+        <div class="creator-sep"></div>
+        <div class="creator-name" id="creator-name">—</div>
+        <div class="creator-specs" id="creator-specs"></div>
+        <div class="creator-exp" id="creator-exp" style="display:none">
+          <i class="fas fa-star" style="color:#f59e0b;font-size:11px"></i>
+          <span id="creator-exp-txt"></span> años de experiencia
+        </div>
+      </div>
+
+      <!-- TEMARIO -->
+      <div id="prog-modulos-wrap" style="display:none;margin-top:16px">
+        <div class="glass-card">
+          <div class="section-ttl" id="pd-ttl-temario"><i class="fas fa-list-ol"></i>Temario</div>
+          <div id="prog-modulos-list-view"></div>
+        </div>
+      </div>
+
+      <!-- QUÉ INCLUYE -->
+      <div id="prog-includes-wrap" style="display:none;margin-top:16px">
+        <div class="glass-card">
+          <div class="section-ttl" id="pd-ttl-incluye"><i class="fas fa-check-circle"></i>Qué incluye</div>
+          <div id="prog-includes-list-view" class="includes-grid"></div>
+        </div>
+      </div>
+
+      <!-- REQUISITOS -->
+      <div id="prog-requisitos-wrap" style="display:none;margin-top:16px">
+        <div class="glass-card">
+          <div class="section-ttl" id="pd-ttl-requisitos"><i class="fas fa-clipboard-list"></i>Requisitos</div>
+          <ul id="prog-requisitos-list-view" class="req-list"></ul>
+        </div>
+      </div>
+    </aside>
+
+    <!-- DERECHA: descripción, media, info, galería, precio -->
+    <div>
+
+      <!-- DESCRIPCIÓN -->
+      <div class="glass-card" style="margin-bottom:16px">
+        <div class="section-ttl" id="pd-ttl-desc"><i class="fas fa-align-left"></i>Descripción</div>
+        <p class="prog-desc" id="prog-desc"></p>
+        <div id="prog-desc-empty" style="font-size:13px;color:#9ca3af;font-style:italic">Sin descripción disponible.</div>
+      </div>
+
+      <!-- MEDIA PROMOCIONAL -->
+      <div id="prog-media-wrap" style="display:none;margin-bottom:16px">
+        <div class="glass-card" style="padding:0;overflow:hidden;border-radius:16px">
+          <img id="prog-media-img" src="" alt="" style="display:none;width:100%;max-height:380px;object-fit:cover;border-radius:16px">
+          <div id="prog-media-video-wrap" style="display:none;position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:16px">
+            <iframe id="prog-media-iframe" src="" frameborder="0" allowfullscreen allow="autoplay; encrypted-media" style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:16px"></iframe>
+          </div>
+          <video id="prog-media-video" src="" controls playsinline style="display:none;width:100%;max-height:380px;border-radius:16px;background:transparent;object-fit:cover"></video>
+        </div>
+      </div>
+
+      <!-- INFO -->
+      <div class="glass-card" style="margin-bottom:16px">
+        <div class="section-ttl" id="pd-ttl-detalles"><i class="fas fa-info-circle"></i>Detalles del programa</div>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-icon"><i class="fas fa-layer-group"></i></div>
+            <div><div class="info-label">N° de sesiones</div><div class="info-value" id="info-encuentros">—</div></div>
+          </div>
+          <div class="info-item">
+            <div class="info-icon"><i class="fas fa-hourglass-half"></i></div>
+            <div><div class="info-label">Duración por sesión</div><div class="info-value" id="info-duracion">—</div></div>
+          </div>
+          <div class="info-item">
+            <div class="info-icon"><i class="fas fa-calendar-alt"></i></div>
+            <div><div class="info-label">Frecuencia</div><div class="info-value" id="info-frecuencia">—</div></div>
+          </div>
+          <div class="info-item">
+            <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
+            <div><div class="info-label">Modalidad</div><div class="info-value" id="info-modalidad">—</div></div>
+          </div>
+          <div id="cupos-wrap" style="display:none;grid-column:1/-1">
+            <div class="info-item cupos-item">
+              <div class="info-icon"><i class="fas fa-users"></i></div>
+              <div><div class="info-label">Cupos disponibles</div><div class="info-value cupos-num-val" id="cupos-num">—</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GALERÍA -->
+      <div id="prog-galeria-wrap" style="display:none;margin-bottom:16px">
+        <div class="carousel-wrap">
+          <button class="carousel-btn prev" onclick="carouselMove(-1)" id="car-prev"><i class="fas fa-chevron-left"></i></button>
+          <div class="carousel-track-wrap">
+            <div class="carousel-track" id="car-track"></div>
+          </div>
+          <button class="carousel-btn next" onclick="carouselMove(1)" id="car-next"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="carousel-dots" id="car-dots"></div>
+      </div>
+
+      <!-- PRECIO + CTA -->
+      <div class="glass-card" style="margin-bottom:16px">
+        <div class="price-row">
+          <div>
+            <div class="price-label" id="prog-precio-label">Inversión total</div>
+            <div class="price-value" id="prog-precio">—</div>
+          </div>
+          <i class="fas fa-tag" style="font-size:1.4rem;color:#9497F4;opacity:.6"></i>
+        </div>
+        <a class="btn-cta" id="btn-reservar" href="agendar_integracion.html" onclick="return tomarCupo(event)">
+          <i class="fas fa-calendar-check"></i>Reservar mi cupo
+        </a>
+      </div>
+
+      <!-- COMPARTIR -->
+      <div class="glass-card share-card" style="margin-bottom:16px;padding:12px 18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span class="share-title-inline" id="pd-ttl-compartir"><i class="fas fa-share-alt"></i> Comparte este programa</span>
+          <div class="share-row">
+            <button class="share-btn share-btn-copy" onclick="copiarLink()" id="btn-copy-link">
+              <i class="fas fa-copy"></i> Copiar link
+            </button>
+            <a class="share-btn share-btn-wa" id="btn-share-wa" href="#" target="_blank" onclick="compartirWA();return false;">
+              <i class="fab fa-whatsapp"></i> WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESEÑAS -->
+      <div class="glass-card">
+        <div class="section-ttl" id="pd-ttl-resenas"><i class="fas fa-star"></i>Reseñas de quienes han participado</div>
+        <div id="prog-comments-list"></div>
+        <div id="prog-comments-empty" style="font-size:12.5px;color:#9ca3af;font-style:italic;padding:8px 0">Aún no hay reseñas. ¡Sé el primero en compartir tu experiencia!</div>
+        <div id="prog-comment-btn-wrap" style="display:none;margin-top:16px">
+          <button class="btn-cta" style="font-size:13px;padding:11px 20px" onclick="abrirFormComentario()">
+            <i class="fas fa-pen"></i> Agregar mi reseña
+          </button>
+        </div>
+        <div id="prog-no-pago-msg" style="display:none;margin-top:12px;font-size:12px;color:#9ca3af;text-align:center">
+          <i class="fas fa-lock" style="margin-right:5px"></i>Solo los participantes del programa pueden dejar una reseña.
+        </div>
+      </div>
+
+    </div><!-- /derecha -->
+  </div><!-- /prog-layout -->
+</div>
+
+<!-- MODAL TEMARIO COMPLETO -->
+<div class="otp-overlay" id="temario-overlay" onclick="if(event.target===this)cerrarModalTemario()">
+  <div class="otp-modal temario-modal">
+    <button type="button" class="otp-close" onclick="cerrarModalTemario()"><i class="fas fa-times"></i></button>
+    <div class="otp-icon"><i class="fas fa-list-ol"></i></div>
+    <h3 class="otp-title">Temario completo</h3>
+    <div id="temario-modal-body" class="temario-modal-body"></div>
+  </div>
+</div>
+
+<!-- MODAL RESEÑA -->
+<div class="otp-overlay" id="comment-overlay">
+  <div class="otp-modal" style="max-width:440px">
+    <button type="button" class="otp-close" onclick="cerrarFormComentario()"><i class="fas fa-times"></i></button>
+    <div class="otp-icon"><i class="fas fa-star"></i></div>
+    <h3 class="otp-title">Tu reseña</h3>
+    <p class="otp-sub">Comparte tu experiencia con este programa</p>
+    <div style="display:flex;gap:6px;justify-content:center;margin-bottom:16px" id="comment-stars">
+      <span class="comment-star" data-val="1" onclick="setCommentStar(1)">★</span>
+      <span class="comment-star" data-val="2" onclick="setCommentStar(2)">★</span>
+      <span class="comment-star" data-val="3" onclick="setCommentStar(3)">★</span>
+      <span class="comment-star" data-val="4" onclick="setCommentStar(4)">★</span>
+      <span class="comment-star" data-val="5" onclick="setCommentStar(5)">★</span>
+    </div>
+    <textarea id="comment-text" style="width:100%;border:1.5px solid #e0e7ff;border-radius:10px;padding:10px 12px;font-size:13px;font-family:'DM Sans',sans-serif;resize:none;min-height:100px;color:#374151;outline:none;margin-bottom:6px" maxlength="900" placeholder="Escribe tu experiencia (máx. 900 caracteres)…" oninput="document.getElementById('comment-chars').textContent=this.value.length+'/900'"></textarea>
+    <div style="text-align:right;font-size:11px;color:#9ca3af;margin-bottom:12px" id="comment-chars">0/900</div>
+    <button id="btn-anonimo" class="btn-anonimo-toggle" onclick="toggleCommentAnonimo()">
+      <i class="fas fa-user-secret"></i> Publicar como anónimo
+    </button>
+    <button class="otp-btn-verify" onclick="enviarComentario()"><i class="fas fa-paper-plane"></i> Publicar reseña</button>
+  </div>
+</div>
+
+<div id="prog-toast" style="position:fixed;bottom:24px;right:24px;background:#10b981;color:#fff;padding:10px 18px;border-radius:10px;font-size:12px;font-weight:600;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.15);transform:translateY(80px);opacity:0;transition:all .3s">
+  <i class="fas fa-check-circle"></i><span id="prog-toast-msg"></span>
+</div>
+
+<script src="../assets/js/programa_detalle.js"></script>
+</body>
+</html>

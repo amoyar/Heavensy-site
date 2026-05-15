@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="0;url=pages/login.html">
+    <script>window.location.replace('pages/login.html');</script>
     <title>Heavensy — Acceso</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="./assets/css/login.css">
@@ -14,6 +16,9 @@
 <body>
 
     <div class="panel-left">
+        <a href="#" class="btn-back" onclick="history.length>1?history.back():window.location.href='pages/portada.html';return false;">
+          <i class="fas fa-arrow-left"></i> Volver
+        </a>
         <div class="brand">
             <div class="brand-header">
                 <img src="assets/img/heavensy-logo.png" alt="" style="width:100px;height:100px;object-fit:contain;display:block;flex-shrink:0;">

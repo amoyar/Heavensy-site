@@ -1,0 +1,683 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heavensy — Eleva tus ganancias, eleva tu vida</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<link rel="stylesheet" href="../assets/css/portada.css">
+<style>
+.hv-nav{position:sticky;top:0;z-index:9999;height:54px;background:rgba(70,90,180,0.96);backdrop-filter:blur(14px);border-bottom:1px solid rgba(150,175,255,0.16);display:flex;align-items:center;padding:0 24px;gap:16px;box-shadow:0 2px 20px rgba(10,20,70,0.4)}
+.hv-nav-brand{display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0}
+.hv-nav-links{display:flex;align-items:center;gap:6px}
+.hv-nav-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+</style>
+</head>
+<body>
+<!-- HEAVENSY NAV -->
+<nav class="hv-nav">
+  <a class="hv-nav-brand" href="#">
+    <div class="hv-nav-logo"><img src="../assets/img/LOGOFINAL.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
+    <span class="hv-nav-name">Heavensy</span>
+  </a>
+  <div class="hv-nav-links">
+    <a class="hv-nav-link" id="nav-link-planes" href="planes_heavensy.html">Planes</a>
+    <a class="hv-nav-link" href="busqueda_heavensy.html">Buscar servicios</a>
+  </div>
+  <div style="flex:1"></div>
+  <div class="hv-nav-right">
+    <!-- Botón login — solo sin sesión -->
+    <a id="nav-btn-login" href="login.html" style="font-size:13px;font-weight:600;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:6px 16px;border-radius:8px;text-decoration:none;display:none;">Iniciar sesión</a>
+
+    <!-- Menú usuario — solo con sesión -->
+    <div id="nav-user-wrap" style="display:flex;align-items:center;gap:12px;">
+      <div class="hv-nav-status">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        IA
+      </div>
+      <div class="hv-nav-divider"></div>
+      <div class="hv-nav-bell">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="hv-nav-bell-dot">3</span>
+      </div>
+      <div class="hv-nav-divider"></div>
+      <div class="hv-nav-user-wrap">
+        <div class="hv-nav-user" onclick="toggleHvNav()">
+          <div class="hv-nav-avatar" id="nav-avatar">U</div>
+          <span class="hv-nav-user-name" id="nav-username">Usuario</span>
+          <svg class="hv-nav-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hv-nav-dropdown" id="hv-user-dropdown">
+          <a href="../index.html#perfil_personal_interno">Mi Perfil</a>
+          <a href="../index.html#configuracion">Mi empresa</a>
+          <div class="hv-nav-dropdown-sep"></div>
+          <a href="#" class="danger" onclick="cerrarSesionPortada();return false;">Cerrar sesión</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+
+<!-- SKY + CLOUDS -->
+<div id="sky-bg"></div>
+<canvas id="cloud-canvas"></canvas>
+
+
+<!-- HERO -->
+<section class="hero">
+  <!-- VIDEO DE FONDO -->
+  <video autoplay muted loop playsinline
+    style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;">
+    <source src="../assets/img/video-portada.mp4" type="video/mp4">
+  </video>
+  <!-- Degradado blanco inferior sobre el video -->
+  </section>
+
+  <!-- FEATURES STRIP -->
+<div class="features-strip">
+  <div class="features-strip-inner">
+    <div class="strip-item">
+      <div class="strip-icon"><i class="fas fa-robot"></i></div>
+      <div class="strip-text">
+        <strong>IA que responde por ti</strong>
+        <span>24/7 sin que intervengas</span>
+      </div>
+    </div>
+    <div class="strip-item">
+      <div class="strip-icon"><i class="fas fa-calendar-check"></i></div>
+      <div class="strip-text">
+        <strong>Agenda automatizada</strong>
+        <span>Clientes reservan solos</span>
+      </div>
+    </div>
+    <div class="strip-item">
+      <div class="strip-icon"><i class="fas fa-handshake"></i></div>
+      <div class="strip-text">
+        <strong>Red de alianzas</strong>
+        <span>Crece con otros profesionales</span>
+      </div>
+    </div>
+    <div class="strip-item">
+      <div class="strip-icon"><i class="fas fa-coins"></i></div>
+      <div class="strip-text">
+        <strong>Comisiones automáticas</strong>
+        <span>50% comisiones, 15% por derivaciones</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- CTA EMPEZAR -->
+  <div style="display:flex;justify-content:center;margin-top:-2rem;padding:0.5rem 1rem 3.5rem;background:rgba(72,90,156,0.58);">
+    <a href="planes_heavensy.html"><button class="btn-hero-primary btn-aurora" style="padding:16px 100px;font-size:1.15rem;letter-spacing:0.04em;">Empezar</button></a>
+  </div>
+
+<!-- CÓMO FUNCIONA -->
+<section class="how">
+  <div class="how-inner">
+    <div class="section-title">
+      <h2>Actívalo gratis</h2>
+      <p>En 3 pasos tu negocio está automatizado y creciendo</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Elige tu Plan</h3>
+        <p>Tienes 10 días para probar gratis el plan que te conviene.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Activación de IA</h3>
+        <p>Tu secretar-IA responde tus redes sociales, agenda y gestiona clientes.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Configura tu negocio</h3>
+        <p>Personaliza tu rubro, servicios y forma de trabajo, en tu Perfil profesional de negocio.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CRECE EN COMUNIDAD -->
+<section class="crece-comunidad">
+  <div class="crece-inner">
+    <div class="section-title">
+      <h2>Red de ganancias</h2>
+      <p>Herramientas diseñadas para que tu red trabaje contigo</p>
+    </div>
+    <div class="crece-grid">
+
+      <div class="crece-card">
+        <div class="crece-card-icon">
+          <i class="fas fa-handshake"></i>
+        </div>
+        <h3>Sistema de Aliados</h3>
+        <p>Heavensy te ayuda a derivar clientes con los mejores en su rubro. Todo lo que no puedas resolver, lo derivas y ganas un <strong>15% de comisión</strong> — con un solo clic.</p>
+        <div class="crece-badge"><span class="crece-badge-text">Haz crecer tu red ganando extra</span></div>
+      </div>
+
+      <div class="crece-card">
+        <div class="crece-card-icon crece-card-icon--vip">
+          <i class="fas fa-gift"></i>
+        </div>
+        <h3>Clientes VIP</h3>
+        <p>Cualquier persona interesada en lo que ofreces puede convertirse en tu cliente preferencial. Dales atenciones especiales, regalos. Asi fidelizas a quienes realmente te eligen.</p>
+        <div class="crece-badge"><span class="crece-badge-text">Fideliza clientes</span></div>
+      </div>
+
+      <div class="crece-card crece-card--highlight">
+        <div class="crece-card-icon crece-card-icon--gold">
+          <i class="fas fa-coins"></i>
+        </div>
+        <h3>Ingresos extra, con o sin gestión</h3>
+        <p>Cada cliente tuyo lleva tu código de comisiones. Si se suscribe a un plan pagado de Heavensy, recibes automáticamente el <strong>50% de comisión</strong> de forma pasiva — sin gestionar.</p>
+        <div class="crece-badge"><span class="crece-badge-text">Hasta 3 millones CLP en extras</span></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ¿PARA QUIÉN ES? -->
+<section class="para-quien">
+  <div class="para-quien-inner">
+    <div class="section-title">
+      <h2>¿Para quién es Heavensy?</h2>
+      <p>Para todo emprendedor, profesional, empresa o grupo de personas que usen agendamiento. Les ayudamos a organizar, automatizar y crecer en red</p>
+    </div>
+    <div class="rubros-grid">
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-stethoscope"></i></div>
+        <h3>Salud y bienestar</h3>
+        <p>Organiza tus citas, automatiza recordatorios y expande tu cartera de pacientes.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-graduation-cap"></i></div>
+        <h3>Educación</h3>
+        <p>Agenda clases, automatiza seguimiento de estudiantes y crece tu oferta educativa.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-briefcase"></i></div>
+        <h3>Asesoría</h3>
+        <p>Gestiona consultas, automatiza procesos y multiplica tus clientes.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-coins"></i></div>
+        <h3>Finanzas</h3>
+        <p>Organiza sesiones de asesoramiento, automatiza seguimiento y crece sin límite.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-spa"></i></div>
+        <h3>Belleza</h3>
+        <p>Agenda servicios, automatiza confirmaciones y expande tu negocio estético.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-dumbbell"></i></div>
+        <h3>Deporte</h3>
+        <p>Gestiona sesiones, automatiza planes y crece tu comunidad de clientes activos.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-house"></i></div>
+        <h3>Espacios</h3>
+        <p>Organiza reservas, automatiza disponibilidad y maximiza el uso de tus espacios.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-calendar-check"></i></div>
+        <h3>Eventos</h3>
+        <p>Coordina detalles, automatiza confirmaciones y ejecuta eventos sin estrés.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-wrench"></i></div>
+        <h3>Servicios técnicos</h3>
+        <p>Agenda mantenimientos, automatiza presupuestos y expande tu base de clientes.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-laptop-code"></i></div>
+        <h3>Servicios digitales</h3>
+        <p>Gestiona proyectos, automatiza entregas y crece tu cartera de clientes online.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-handshake"></i></div>
+        <h3>Acompañamiento personal</h3>
+        <p>Organiza sesiones, automatiza seguimiento y crea vínculos duraderos con clientes.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-utensils"></i></div>
+        <h3>Gastronomía</h3>
+        <p>Gestiona reservas, menús y pedidos con flujos automáticos para restaurantes y cafés.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-plane"></i></div>
+        <h3>Turismo</h3>
+        <p>Organiza tours, automatiza confirmaciones y mejora la experiencia de viajeros.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-bag-shopping"></i></div>
+        <h3>Retail</h3>
+        <p>Administra ventas, stock y clientes fieles con automatizaciones inteligentes.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-leaf"></i></div>
+        <h3>Bienestar integral</h3>
+        <p>Coordina terapias, rutinas y seguimientos para programas de bienestar personal.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-building"></i></div>
+        <h3>Inmobiliario</h3>
+        <p>Gestiona visitas, clientes y propiedades con procesos automáticos y profesionales.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-stethoscope"></i></div>
+        <h3>Salud y bienestar</h3>
+        <p>Organiza tus citas, automatiza recordatorios y expande tu cartera de pacientes.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-graduation-cap"></i></div>
+        <h3>Educación</h3>
+        <p>Agenda clases, automatiza seguimiento de estudiantes y crece tu oferta educativa.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-briefcase"></i></div>
+        <h3>Asesoría</h3>
+        <p>Gestiona consultas, automatiza procesos y multiplica tus clientes.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-coins"></i></div>
+        <h3>Finanzas</h3>
+        <p>Organiza sesiones de asesoramiento, automatiza seguimiento y crece sin límite.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-spa"></i></div>
+        <h3>Belleza</h3>
+        <p>Agenda servicios, automatiza confirmaciones y expande tu negocio estético.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-dumbbell"></i></div>
+        <h3>Deporte</h3>
+        <p>Gestiona sesiones, automatiza planes y crece tu comunidad de clientes activos.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-house"></i></div>
+        <h3>Espacios</h3>
+        <p>Organiza reservas, automatiza disponibilidad y maximiza el uso de tus espacios.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-calendar-check"></i></div>
+        <h3>Eventos</h3>
+        <p>Coordina detalles, automatiza confirmaciones y ejecuta eventos sin estrés.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-wrench"></i></div>
+        <h3>Servicios técnicos</h3>
+        <p>Agenda mantenimientos, automatiza presupuestos y expande tu base de clientes.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-laptop-code"></i></div>
+        <h3>Servicios digitales</h3>
+        <p>Gestiona proyectos, automatiza entregas y crece tu cartera de clientes online.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-handshake"></i></div>
+        <h3>Acompañamiento personal</h3>
+        <p>Organiza sesiones, automatiza seguimiento y crea vínculos duraderos con clientes.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-utensils"></i></div>
+        <h3>Gastronomía</h3>
+        <p>Gestiona reservas, menús y pedidos con flujos automáticos para restaurantes y cafés.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-plane"></i></div>
+        <h3>Turismo</h3>
+        <p>Organiza tours, automatiza confirmaciones y mejora la experiencia de viajeros.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-bag-shopping"></i></div>
+        <h3>Retail</h3>
+        <p>Administra ventas, stock y clientes fieles con automatizaciones inteligentes.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-leaf"></i></div>
+        <h3>Bienestar integral</h3>
+        <p>Coordina terapias, rutinas y seguimientos para programas de bienestar personal.</p>
+      </div>
+      <div class="rubro-card">
+        <div class="rubro-emoji"><i class="fas fa-building"></i></div>
+        <h3>Inmobiliario</h3>
+        <p>Gestiona visitas, clientes y propiedades con procesos automáticos y profesionales.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMUNIDAD -->
+<!-- MIEMBROS DESTACADOS -->
+<section class="members">
+  <div class="members-inner">
+    <div class="section-title">
+      <h2>Miembros destacados</h2>
+      <p>Mira quiénes han obtenido crecimiento destacado en la plataforma este mes</p>
+    </div>
+    <div class="member-slider">
+      <div class="mcn-cards-wrap">
+      <div class="mcn-card">
+        <div class="mcn-left">
+          <div class="mcn-avatar"><i class="fas fa-user"></i></div>
+          <div class="mcn-name">María Pía Moya</div>
+          <div class="mcn-spec">Psicóloga, Hipnosis, Regresiones, Presencial y online</div>
+          <div class="mcn-location"><span>🇨🇱</span> Chile</div>
+          <div class="mcn-tags">
+            <span class="mcn-tag"><i class="fas fa-gift" style="font-size:.6rem;color:#9780FF;"></i> 45 VIP</span>
+            <span class="mcn-tag"><i class="fas fa-handshake" style="font-size:.6rem;color:#4A9FD4;"></i> 300 aliados</span>
+          </div>
+        </div>
+        <div class="mcn-vdivider"></div>
+        <div class="mcn-right">
+          <div class="mcn-metrics">
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon green"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="14" cy="6" rx="5" ry="3" fill="currentColor" opacity="0.9"/><path d="M9 6v4c0 1.66 2.24 3 5 3s5-1.34 5-3V6" fill="currentColor" opacity="0.7"/><ellipse cx="10" cy="13" rx="5" ry="3" fill="currentColor"/><path d="M5 13v4c0 1.66 2.24 3 5 3s5-1.34 5-3v-4" fill="currentColor" opacity="0.8"/></svg></div>
+                <div class="mcn-metric-label">Comisiones</div>
+              </div>
+              <div class="mcn-metric-value">$1.300.000</div>
+            </div>
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon rosa"><i class="fas fa-chart-bar"></i></div>
+                <div class="mcn-metric-label">Ganancias</div>
+              </div>
+              <div class="mcn-metric-value">+60%</div>
+            </div>
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon azul"><i class="fas fa-ban"></i></div>
+                <div class="mcn-metric-label">Cancelaciones</div>
+              </div>
+              <div class="mcn-metric-value">5%</div>
+            </div>
+          </div>
+          <div class="mcn-metrics-row2">
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon purple"><i class="fas fa-calendar-check"></i></div>
+                <div class="mcn-metric-label">Ocupación agenda</div>
+              </div>
+              <div class="mcn-metric-value">97%</div>
+            </div>
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon teal2"><i class="fas fa-clock"></i></div>
+                <div class="mcn-metric-label">Hrs gestión ahorradas</div>
+              </div>
+              <div class="mcn-metric-value">20 hrs</div>
+            </div>
+          </div>
+          <div class="mcn-growth">
+            <div class="mcn-growth-label">Crecimiento total</div>
+            <div class="mcn-growth-value">+90%</div>
+          </div>
+        </div>
+      </div>
+      <div class="mcn-card" style="display:none;">
+        <div class="mcn-left">
+          <div class="mcn-avatar" style="background:linear-gradient(135deg,#9497F4,#89B9F8);"><i class="fas fa-spa"></i></div>
+          <div class="mcn-name">Camila Araya Valdez</div>
+          <div class="mcn-spec">Masajista, Reiki, Aromaterapia</div>
+          <div class="mcn-location"><span>🇨🇱</span> Chile</div>
+          <div class="mcn-tags">
+            <span class="mcn-tag"><i class="fas fa-gift" style="font-size:.6rem;color:#9780FF;"></i> 38 VIP</span>
+            <span class="mcn-tag"><i class="fas fa-handshake" style="font-size:.6rem;color:#4A9FD4;"></i> 530 aliados</span>
+          </div>
+        </div>
+        <div class="mcn-vdivider"></div>
+        <div class="mcn-right">
+          <div class="mcn-metrics">
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon green"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="14" cy="6" rx="5" ry="3" fill="currentColor" opacity="0.9"/><path d="M9 6v4c0 1.66 2.24 3 5 3s5-1.34 5-3V6" fill="currentColor" opacity="0.7"/><ellipse cx="10" cy="13" rx="5" ry="3" fill="currentColor"/><path d="M5 13v4c0 1.66 2.24 3 5 3s5-1.34 5-3v-4" fill="currentColor" opacity="0.8"/></svg></div>
+                <div class="mcn-metric-label">Comisiones</div>
+              </div>
+              <div class="mcn-metric-value">$1.050.000</div>
+            </div>
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon rosa"><i class="fas fa-chart-bar"></i></div>
+                <div class="mcn-metric-label">Ganancias</div>
+              </div>
+              <div class="mcn-metric-value">+54%</div>
+            </div>
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon azul"><i class="fas fa-ban"></i></div>
+                <div class="mcn-metric-label">Cancelaciones</div>
+              </div>
+              <div class="mcn-metric-value">7%</div>
+            </div>
+          </div>
+          <div class="mcn-metrics-row2">
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon purple"><i class="fas fa-calendar-check"></i></div>
+                <div class="mcn-metric-label">Ocupación agenda</div>
+              </div>
+              <div class="mcn-metric-value">95%</div>
+            </div>
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon teal2"><i class="fas fa-clock"></i></div>
+                <div class="mcn-metric-label">Hrs gestión ahorradas</div>
+              </div>
+              <div class="mcn-metric-value">30 hrs</div>
+            </div>
+          </div>
+          <div class="mcn-growth">
+            <div class="mcn-growth-label">Crecimiento total</div>
+            <div class="mcn-growth-value">+89%</div>
+          </div>
+        </div>
+      </div>
+      <div class="mcn-card" style="display:none;">
+        <div class="mcn-left">
+          <div class="mcn-avatar" style="background:linear-gradient(135deg,#9497F4,#89B9F8);"><i class="fas fa-user-md"></i></div>
+          <div class="mcn-name">Guillermo Fernández</div>
+          <div class="mcn-spec">Quiropráctico</div>
+          <div class="mcn-location"><span>🇨🇱</span> Chile</div>
+          <div class="mcn-tags">
+            <span class="mcn-tag"><i class="fas fa-gift" style="font-size:.6rem;color:#9780FF;"></i> 22 VIP</span>
+            <span class="mcn-tag"><i class="fas fa-handshake" style="font-size:.6rem;color:#4A9FD4;"></i> 193 aliados</span>
+          </div>
+        </div>
+        <div class="mcn-vdivider"></div>
+        <div class="mcn-right">
+          <div class="mcn-metrics">
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon green"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="14" cy="6" rx="5" ry="3" fill="currentColor" opacity="0.9"/><path d="M9 6v4c0 1.66 2.24 3 5 3s5-1.34 5-3V6" fill="currentColor" opacity="0.7"/><ellipse cx="10" cy="13" rx="5" ry="3" fill="currentColor"/><path d="M5 13v4c0 1.66 2.24 3 5 3s5-1.34 5-3v-4" fill="currentColor" opacity="0.8"/></svg></div>
+                <div class="mcn-metric-label">Comisiones</div>
+              </div>
+              <div class="mcn-metric-value">$720.000</div>
+            </div>
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon rosa"><i class="fas fa-chart-bar"></i></div>
+                <div class="mcn-metric-label">Ganancias</div>
+              </div>
+              <div class="mcn-metric-value">+70%</div>
+            </div>
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon azul"><i class="fas fa-ban"></i></div>
+                <div class="mcn-metric-label">Cancelaciones</div>
+              </div>
+              <div class="mcn-metric-value">10%</div>
+            </div>
+          </div>
+          <div class="mcn-metrics-row2">
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon purple"><i class="fas fa-calendar-check"></i></div>
+                <div class="mcn-metric-label">Ocupación agenda</div>
+              </div>
+              <div class="mcn-metric-value">85%</div>
+            </div>
+            <div class="mcn-metric">
+              <div class="mcn-metric-head">
+                <div class="mcn-metric-icon teal2"><i class="fas fa-clock"></i></div>
+                <div class="mcn-metric-label">Hrs gestión ahorradas</div>
+              </div>
+              <div class="mcn-metric-value">28 hrs</div>
+            </div>
+          </div>
+          <div class="mcn-growth">
+            <div class="mcn-growth-label">Crecimiento total</div>
+            <div class="mcn-growth-value">+81%</div>
+          </div>
+        </div>
+      </div><!-- /mcn-cards-wrap -->
+      <div class="slider-nav">
+        <button class="slider-arrow" id="ms-prev"><i class="fas fa-chevron-left"></i></button>
+        <div class="slider-dots"><div class="slider-dot active" data-idx="0"></div><div class="slider-dot" data-idx="1"></div><div class="slider-dot" data-idx="2"></div></div>
+        <button class="slider-arrow" id="ms-next"><i class="fas fa-chevron-right"></i></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="community">
+  <div class="community-inner">
+    <div class="section-title">
+      <h2>Crece en comunidad</h2>
+      <p>Miembros que comparten lo que saben, ganan visibilidad y ayudan a crecer a toda la comunidad en nuestra red social</p>
+    </div>
+    <div class="comm-carousel-label"><span>Últimos videos de la comunidad</span></div>
+    <div class="comm-carousel-wrap">
+      <div class="comm-carousel">
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">5:22</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">💆‍♀️</div><div><div class="comm-card-creator-name">Valentina Torres</div><div class="comm-card-rubro">Masoterapeuta · Valparaíso</div></div></div><div class="comm-card-title">Automaticé mis citas y recuperé 2 horas diarias</div><div class="comm-card-stats"><span>👁 1.8k</span><span>❤️ 97</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">4:08</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">🦴</div><div><div class="comm-card-creator-name">Rodrigo Fuentes</div><div class="comm-card-rubro">Quiropráctico · Concepción</div></div></div><div class="comm-card-title">Red de alianzas: cómo genero ingresos sin trabajar extra</div><div class="comm-card-stats"><span>👁 3.1k</span><span>❤️ 210</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">6:45</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">💼</div><div><div class="comm-card-creator-name">Ana González</div><div class="comm-card-rubro">Coach de negocios · Buenos Aires</div></div></div><div class="comm-card-title">Mi estrategia VIP para fidelizar clientes de alto valor</div><div class="comm-card-stats"><span>👁 4.2k</span><span>❤️ 318</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">3:55</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">⚖️</div><div><div class="comm-card-creator-name">Diego Morales</div><div class="comm-card-rubro">Abogado · Montevideo</div></div></div><div class="comm-card-title">Gestión automática de consultas jurídicas, paso a paso</div><div class="comm-card-stats"><span>👁 2.0k</span><span>❤️ 143</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">8:12</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">📸</div><div><div class="comm-card-creator-name">Camila Reyes</div><div class="comm-card-rubro">Fotógrafa · Lima</div></div></div><div class="comm-card-title">Cómo vendo sesiones sin publicar en redes sociales</div><div class="comm-card-stats"><span>👁 5.7k</span><span>❤️ 422</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">5:38</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">🧮</div><div><div class="comm-card-creator-name">Matías López</div><div class="comm-card-rubro">Contador · Santiago</div></div></div><div class="comm-card-title">Derivaciones inteligentes que generan el 30% de mis ingresos</div><div class="comm-card-stats"><span>👁 1.5k</span><span>❤️ 88</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">4:50</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">🧘‍♀️</div><div><div class="comm-card-creator-name">Fernanda Castro</div><div class="comm-card-rubro">Terapeuta · Bogotá</div></div></div><div class="comm-card-title">De 5 a 20 pacientes mensuales en 60 días</div><div class="comm-card-stats"><span>👁 6.3k</span><span>❤️ 501</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">6:02</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">🏋️</div><div><div class="comm-card-creator-name">Sebastián Ruiz</div><div class="comm-card-rubro">Entrenador personal · Mendoza</div></div></div><div class="comm-card-title">Cómo llené mis clases online sin invertir en publicidad</div><div class="comm-card-stats"><span>👁 2.9k</span><span>❤️ 176</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">5:22</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">💆‍♀️</div><div><div class="comm-card-creator-name">Valentina Torres</div><div class="comm-card-rubro">Masoterapeuta · Valparaíso</div></div></div><div class="comm-card-title">Automaticé mis citas y recuperé 2 horas diarias</div><div class="comm-card-stats"><span>👁 1.8k</span><span>❤️ 97</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">4:08</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">🦴</div><div><div class="comm-card-creator-name">Rodrigo Fuentes</div><div class="comm-card-rubro">Quiropráctico · Concepción</div></div></div><div class="comm-card-title">Red de alianzas: cómo genero ingresos sin trabajar extra</div><div class="comm-card-stats"><span>👁 3.1k</span><span>❤️ 210</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">6:45</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">💼</div><div><div class="comm-card-creator-name">Ana González</div><div class="comm-card-rubro">Coach de negocios · Buenos Aires</div></div></div><div class="comm-card-title">Mi estrategia VIP para fidelizar clientes de alto valor</div><div class="comm-card-stats"><span>👁 4.2k</span><span>❤️ 318</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">3:55</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">⚖️</div><div><div class="comm-card-creator-name">Diego Morales</div><div class="comm-card-rubro">Abogado · Montevideo</div></div></div><div class="comm-card-title">Gestión automática de consultas jurídicas, paso a paso</div><div class="comm-card-stats"><span>👁 2.0k</span><span>❤️ 143</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">8:12</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">📸</div><div><div class="comm-card-creator-name">Camila Reyes</div><div class="comm-card-rubro">Fotógrafa · Lima</div></div></div><div class="comm-card-title">Cómo vendo sesiones sin publicar en redes sociales</div><div class="comm-card-stats"><span>👁 5.7k</span><span>❤️ 422</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">5:38</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">🧮</div><div><div class="comm-card-creator-name">Matías López</div><div class="comm-card-rubro">Contador · Santiago</div></div></div><div class="comm-card-title">Derivaciones inteligentes que generan el 30% de mis ingresos</div><div class="comm-card-stats"><span>👁 1.5k</span><span>❤️ 88</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">4:50</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">🧘‍♀️</div><div><div class="comm-card-creator-name">Fernanda Castro</div><div class="comm-card-rubro">Terapeuta · Bogotá</div></div></div><div class="comm-card-title">De 5 a 20 pacientes mensuales en 60 días</div><div class="comm-card-stats"><span>👁 6.3k</span><span>❤️ 501</span></div></div></div>
+        <div class="comm-video-card"><div class="comm-card-thumb" style="background:linear-gradient(135deg,#2d3f7a,#3d5499)"><div class="comm-card-play"><i class="fas fa-play" style="margin-left:2px"></i></div><span class="comm-card-dur">6:02</span></div><div class="comm-card-body"><div class="comm-card-creator"><div class="comm-card-avatar">🏋️</div><div><div class="comm-card-creator-name">Sebastián Ruiz</div><div class="comm-card-rubro">Entrenador personal · Mendoza</div></div></div><div class="comm-card-title">Cómo llené mis clases online sin invertir en publicidad</div><div class="comm-card-stats"><span>👁 2.9k</span><span>❤️ 176</span></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- CTA BAND -->
+<section class="cta-band">
+  <h2>El siguiente nivel de tu negocio<br>y tu vida comienza aquí</h2>
+  <p>Únete a nuestra red de emprendedores que ya han multiplicado sus ganancias y han hecho de su rubro su fuente de expansión.</p>
+  <div class="cta-band-btns">
+    <a href="planes_heavensy.html"><button class="btn-hero-primary btn-aurora btn-aurora--bright" style="padding:16px 100px;font-size:1.15rem;letter-spacing:0.04em;">Empezar</button></a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+
+    <p>© 2026 Heavensy · Todos los derechos reservados</p>
+    <div class="footer-social">
+      <a href="#" style="color:#25D366;font-size:1.3rem;text-decoration:none;"><i class="fab fa-whatsapp"></i></a>
+      <a href="#" style="color:#1877F2;font-size:1.3rem;text-decoration:none;"><i class="fab fa-facebook"></i></a>
+    </div>
+    <div class="footer-links">
+      <a href="#">Términos</a>
+      <a href="#">Privacidad</a>
+      <a href="#">Contacto</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ── CHAT WIDGET ── -->
+
+<!-- Chat bubble button -->
+<button class="chat-bubble-btn" id="chatBubbleBtn" aria-label="Abrir chat">
+  <div class="chat-notif-dot"></div>
+  <!-- Chat icon -->
+  <svg class="icon-chat" width="26" height="26" viewBox="0 0 24 24" fill="none">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="white"/>
+  </svg>
+  <!-- Close icon -->
+  <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none">
+    <path d="M18 6L6 18M6 6l12 12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>
+</button>
+
+<!-- Chat panel -->
+<div class="chat-panel" id="chatPanel" role="dialog" aria-label="Chat con Heavensy">
+  <div class="chat-header">
+    <div class="chat-header-avatar" style="background:transparent;border:none;padding:0;overflow:hidden;"></div>
+    <div class="chat-header-info">
+      <span class="chat-header-name">Equipo Heavensy</span>
+      <span class="chat-header-status">
+        <span class="chat-status-dot"></span>
+        En línea · responde al instante
+      </span>
+    </div>
+    <button class="chat-header-close" id="chatCloseBtn" aria-label="Cerrar chat">✕</button>
+  </div>
+
+  <div class="chat-messages" id="chatMessages">
+    <!-- Initial bot message -->
+    <div class="msg bot">
+      <div class="msg-avatar">H</div>
+      <div>
+        <div class="msg-bubble">¡Hola! 👋 Bienvenido/a a <strong>Heavensy</strong>. Estoy aquí para ayudarte a descubrir cómo podemos multiplicar tus ganancias.</div>
+        <span class="msg-time">Ahora</span>
+      </div>
+    </div>
+    <div class="msg bot">
+      <div class="msg-avatar">H</div>
+      <div>
+        <div class="msg-bubble">¿En qué te puedo ayudar hoy? 😊</div>
+        <span class="msg-time">Ahora</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick replies -->
+  <div class="chat-quick-replies" id="quickReplies">
+    <button class="quick-reply-btn" onclick="sendQuickReply(this, '¿Cómo funciona Heavensy?')">¿Cómo funciona?</button>
+    <button class="quick-reply-btn" onclick="sendQuickReply(this, '¿Cuáles son los planes y precios?')">Planes y precios</button>
+    <button class="quick-reply-btn" onclick="sendQuickReply(this, 'Quiero unirme a la red')">Quiero unirme</button>
+    <button class="quick-reply-btn" onclick="sendQuickReply(this, '¿Funciona para mí?')">¿Funciona para mí?</button>
+  </div>
+
+  <div class="chat-input-area">
+    <input
+      class="chat-input"
+      id="chatInput"
+      type="text"
+      placeholder="Escribe tu mensaje..."
+      maxlength="300"
+      autocomplete="off"
+    />
+    <button class="chat-send-btn" id="chatSendBtn" aria-label="Enviar mensaje" style="background:#5D65CF!important">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- Aurora fija + carrusel controlado por JS -->
+
+<script src="../assets/js/portada.js"></script>
+</body>
+</html>
+
+

@@ -1,0 +1,141 @@
+<div class="emb-wrap">
+
+  <!-- TOPBAR -->
+  <div class="emb-topbar">
+    <div class="emb-topbar-left">
+      <i class="fas fa-filter" style="color:#9961FF"></i>
+      <span class="emb-topbar-title">Embudos</span>
+    </div>
+
+    <div class="emb-topbar-right">
+      <!-- BUSCADOR -->
+      <div class="emb-search-wrap">
+        <div class="emb-search-box">
+          <i class="fas fa-search emb-search-ico"></i>
+          <input type="text" id="emb-search-input" class="emb-search-input" placeholder="Buscar..." oninput="embFiltrar()">
+        </div>
+        <div class="emb-filter-wrap">
+          <button class="emb-filter-btn" id="emb-filter-btn" onclick="embToggleFiltros()" title="Filtros">
+            <i class="fas fa-sliders-h"></i>
+            <span class="emb-filter-dot" id="emb-filter-dot" style="display:none"></span>
+          </button>
+          <div class="emb-filter-panel" id="emb-filter-panel">
+            <div class="emb-filter-label">Embudo</div>
+            <select class="emb-filter-select" id="emb-filter-embudo" onchange="embFiltrar()">
+              <option value="">Todos</option>
+            </select>
+            <div class="emb-filter-label" style="margin-top:10px">Estado</div>
+            <select class="emb-filter-select" id="emb-filter-etapa" onchange="embFiltrar()">
+              <option value="">Todos</option>
+              <option value="Interesado">Interesado</option>
+              <option value="En proceso">En proceso</option>
+              <option value="Cerrado">Cerrado</option>
+            </select>
+            <div class="emb-filter-label" style="margin-top:10px">Cliente</div>
+            <button class="emb-filter-vip" id="emb-filter-vip" onclick="embToggleVip()">
+              <i class="fas fa-gift" style="color:#9961FF"></i>
+              Solo VIP
+            </button>
+            <button class="emb-filter-clear" onclick="embLimpiarFiltros()">Limpiar filtros</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BOARD -->
+  <div class="emb-board" id="emb-board">
+    <!-- columnas generadas por JS -->
+  </div>
+
+
+  <!-- MODAL MENSAJE GRUPAL -->
+  <div class="emb-overlay" id="emb-overlay-msg" onclick="if(event.target===this)embCerrarMensaje()">
+    <div class="emb-modal" style="max-width:420px">
+      <div class="emb-modal-head">
+        <span id="emb-msg-title">Mensaje grupal</span>
+        <button class="emb-modal-close" onclick="embCerrarMensaje()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="emb-modal-body">
+        <div id="emb-msg-recipients" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px"></div>
+
+        <!-- SELECTOR DE CANAL -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:10px;font-weight:700;color:rgba(56,56,56,0.45);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Enviar por</div>
+          <div style="display:flex;gap:8px">
+            <button class="emb-canal-btn active" id="emb-canal-wa" onclick="embSelCanal('whatsapp',this)">
+              <i class="fab fa-whatsapp"></i> WhatsApp
+            </button>
+            <button class="emb-canal-btn" id="emb-canal-email" onclick="embSelCanal('email',this)">
+              <i class="fas fa-envelope"></i> Correo
+            </button>
+            <button class="emb-canal-btn" id="emb-canal-hv" onclick="embSelCanal('heavensy',this)">
+              <i class="fas fa-star"></i> Heavensy
+            </button>
+          </div>
+        </div>
+
+        <!-- ASUNTO (solo email) -->
+        <div id="emb-msg-asunto-wrap" style="display:none;margin-bottom:10px">
+          <input id="emb-msg-asunto" type="text" placeholder="Asunto del correo" style="width:100%;border:1.5px solid rgba(0,0,0,0.12);border-radius:10px;padding:10px 14px;font-size:13px;font-family:'DM Sans',sans-serif;color:#383838;outline:none;box-sizing:border-box">
+        </div>
+
+        <textarea id="emb-msg-text" placeholder="Escribe el mensaje..." style="width:100%;border:1.5px solid rgba(0,0,0,0.12);border-radius:10px;padding:12px;font-size:13px;font-family:'DM Sans',sans-serif;color:#383838;resize:vertical;min-height:100px;outline:none;box-sizing:border-box"></textarea>
+
+        <!-- ADJUNTAR ARCHIVO -->
+        <div style="margin-top:12px">
+          <input type="file" id="emb-msg-file" style="display:none" onchange="embSeleccionarArchivo(this)">
+          <button class="emb-attach-btn" onclick="event.stopPropagation();document.getElementById('emb-msg-file').click()">
+            <i class="fas fa-paperclip"></i> Adjuntar archivo
+            <span id="emb-attach-limit" style="font-size:10px;opacity:.6;margin-left:4px">(máx. 16 MB)</span>
+          </button>
+          <div id="emb-attach-preview" style="display:none;margin-top:8px;display:none;align-items:center;gap:8px;background:#f5f0ff;border:1px solid rgba(153,97,255,0.2);border-radius:8px;padding:8px 12px">
+            <i class="fas fa-file" style="color:#9961FF;font-size:14px;flex-shrink:0"></i>
+            <span id="emb-attach-name" style="font-size:12px;font-weight:600;color:#383838;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+            <span id="emb-attach-size" style="font-size:11px;color:rgba(56,56,56,0.5);flex-shrink:0"></span>
+            <button onclick="event.stopPropagation();embQuitarArchivo()" style="background:none;border:none;cursor:pointer;color:rgba(56,56,56,0.4);font-size:13px;padding:0 2px"><i class="fas fa-times"></i></button>
+          </div>
+          <div id="emb-attach-error" style="display:none;font-size:11px;color:#dc2626;margin-top:6px;font-weight:600"></div>
+        </div>
+
+        <div id="emb-msg-feedback" style="font-size:12px;margin-top:10px;color:rgba(56,56,56,0.5)"></div>
+      </div>
+      <div class="emb-modal-foot" style="display:flex;gap:8px">
+        <button class="emb-btn-edit" style="flex:1" onclick="embCerrarMensaje()">Cancelar</button>
+        <button class="emb-btn-new" style="flex:2" onclick="embEnviarMensajeGrupal()"><i class="fas fa-paper-plane"></i> Enviar a todos</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA SELECCIÓN -->
+  <div class="emb-select-bar" id="emb-select-bar">
+    <div class="emb-select-info">
+      <span id="emb-select-count"></span>
+      <span class="emb-select-names" id="emb-select-names"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="emb-select-msg-btn" onclick="embEnviarASeleccionados()">
+        <i class="fas fa-paper-plane"></i> Enviar mensaje
+      </button>
+      <button class="emb-select-clear-btn" onclick="embLimpiarSeleccion()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL MOVER CONTACTO -->
+  <div class="emb-overlay" id="emb-overlay-move" onclick="if(event.target===this)embCerrarMove()">
+    <div class="emb-modal" style="max-width:360px">
+      <div class="emb-modal-head">
+        <span id="emb-move-title">Mover contacto</span>
+        <button class="emb-modal-close" onclick="embCerrarMove()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="emb-modal-body">
+        <p style="font-size:12px;color:rgba(56,56,56,0.5);margin-bottom:14px">Selecciona el embudo destino:</p>
+        <div id="emb-move-list"></div>
+      </div>
+    </div>
+  </div>
+
+</div>

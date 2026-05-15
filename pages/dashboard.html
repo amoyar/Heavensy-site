@@ -1,112 +1,295 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <title>Heavensy · Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<div class="dash-bg">
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="../assets/css/theme.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-</head>
-
-<body class="bg-gray-100">
-  <div id="navbar"></div>
-
-  <div class="flex">
-    <div id="sidebar"></div>
-
-    <main class="flex-1 p-8">
-      <h1 class="text-2xl font-semibold text-gray-800 mb-6">
-        Dashboard
-      </h1>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-          <p class="text-sm text-gray-500">Usuarios</p>
-          <p class="text-3xl font-bold text-blue-500">—</p>
-        </div>
-
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-          <p class="text-sm text-gray-500">Empresas</p>
-          <p class="text-3xl font-bold text-blue-500">—</p>
-        </div>
-
-        <div class="bg-white p-6 rounded-xl shadow-sm">
-          <p class="text-sm text-gray-500">Estado</p>
-          <p class="text-3xl font-bold text-green-500">OK</p>
-        </div>
-      </div>
-    </main>
+  <!-- HEADER -->
+  <div class="dash-head">
+    <div>
+      <div class="dash-greeting-title">Bienvenido 👋</div>
+      <div class="dash-greeting-sub">Aquí tienes el resumen de tu negocio</div>
+    </div>
+    <select class="dash-period-select" id="dash-period" onchange="dashCambiarPeriodo(this.value)">
+      <option value="mes">Este mes</option>
+      <option value="trimestre">Último trimestre</option>
+      <option value="anio">Este año</option>
+    </select>
   </div>
 
-  <script src="../layout/layout.js"></script>
-  <script src="../app.js"></script>
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:22px;align-items:stretch">
 
-  <!-- ============================= -->
-<!-- CONTEXT SELECTOR MODAL -->
-<!-- ============================= -->
-<div id="contextModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-  <div class="bg-white w-full max-w-md rounded-xl shadow-xl">
+  <!-- CARD RESUMEN SUPERIOR -->
+  <div class="dash-summary-card" style="margin-bottom:0">
+    <div class="dsc-left">
+      <div class="dsc-avatar" id="dsc-avatar"><i class="fas fa-user"></i></div>
+      <div class="dsc-name" id="dsc-name">—</div>
+      <div class="dsc-spec" id="dsc-spec"></div>
+      <div class="dsc-location" id="dsc-location"></div>
+      <div class="dsc-tags">
+        <span class="dsc-tag"><i class="fas fa-gift" style="font-size:.6rem;color:#9780FF"></i> <span id="dsc-vip">0</span> VIP</span>
+        <span class="dsc-tag"><i class="fas fa-handshake" style="font-size:.6rem;color:#4A9FD4"></i> <span id="dsc-aliados">0</span> aliados</span>
+      </div>
+    </div>
+    <div class="dsc-vdivider"></div>
+    <div class="dsc-right">
+      <div class="dsc-metrics">
+        <div class="dsc-metric">
+          <div class="dsc-metric-head">
+            <div class="dsc-metric-icon green"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><ellipse cx="14" cy="6" rx="5" ry="3" fill="currentColor" opacity="0.9"/><path d="M9 6v4c0 1.66 2.24 3 5 3s5-1.34 5-3V6" fill="currentColor" opacity="0.7"/><ellipse cx="10" cy="13" rx="5" ry="3" fill="currentColor"/><path d="M5 13v4c0 1.66 2.24 3 5 3s5-1.34 5-3v-4" fill="currentColor" opacity="0.8"/></svg></div>
+            <div class="dsc-metric-label">Comisiones</div>
+          </div>
+          <div class="dsc-metric-value" id="dsc-comisiones">—</div>
+        </div>
+        <div class="dsc-metric">
+          <div class="dsc-metric-head">
+            <div class="dsc-metric-icon rosa"><i class="fas fa-chart-bar"></i></div>
+            <div class="dsc-metric-label">Ganancias</div>
+          </div>
+          <div class="dsc-metric-value" id="dsc-ganancias">—</div>
+        </div>
+        <div class="dsc-metric">
+          <div class="dsc-metric-head">
+            <div class="dsc-metric-icon azul"><i class="fas fa-ban"></i></div>
+            <div class="dsc-metric-label">Cancelaciones</div>
+          </div>
+          <div class="dsc-metric-value" id="dsc-cancelaciones">—</div>
+        </div>
+      </div>
+      <div class="dsc-metrics-row2">
+        <div class="dsc-metric">
+          <div class="dsc-metric-head">
+            <div class="dsc-metric-icon purple"><i class="fas fa-calendar-check"></i></div>
+            <div class="dsc-metric-label">Ocupación agenda</div>
+          </div>
+          <div class="dsc-metric-value" id="dsc-ocupacion">—</div>
+        </div>
+        <div class="dsc-metric">
+          <div class="dsc-metric-head">
+            <div class="dsc-metric-icon teal2"><i class="fas fa-clock"></i></div>
+            <div class="dsc-metric-label">Hrs gestión ahorradas</div>
+          </div>
+          <div class="dsc-metric-value" id="dsc-hrs">—</div>
+        </div>
+      </div>
+      <div class="dsc-growth">
+        <div class="dsc-growth-label">Crecimiento total</div>
+        <div class="dsc-growth-value" id="dsc-crec">+0%</div>
+      </div>
+    </div>
+  </div>
 
-    <!-- Header -->
-    <div class="px-6 py-4 border-b">
-      <h2 class="text-lg font-semibold text-gray-800">
-        Seleccionar contexto
-      </h2>
-      <p class="text-sm text-gray-500 mt-1">
-        Elige la empresa y el rol con el que deseas trabajar
-      </p>
+  <!-- GRÁFICO CRECIMIENTO MENSUAL -->
+  <div class="dash-summary-card dash-chart-card" style="margin-bottom:0;padding:20px 22px;flex-direction:column;background:#fff;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#383838">Crecimiento total mensual</div>
+        <div style="font-size:11px;color:rgba(56,56,56,0.45);margin-top:2px">Evolución acumulada — <span id="dash-crec-anio"></span></div>
+      </div>
+      <div style="font-size:22px;font-weight:800;color:#4ade80" id="dash-crec-actual-label">—</div>
+    </div>
+    <div style="position:relative;flex:1;min-height:0">
+      <canvas id="dash-crec-chart"></canvas>
+    </div>
+  </div>
+
+  </div><!-- /grid resumen+grafico -->
+
+  <!-- SECCIÓN: INGRESOS -->
+  <!-- BOTÓN VER TODO -->
+  <div style="text-align:center;margin-bottom:18px">
+    <button id="dash-toggle-btn" onclick="dashToggleDetalle()" style="background:#fff;border:1px solid rgba(0,0,0,0.12);border-radius:20px;padding:8px 24px;color:#383838;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:inline-flex;align-items:center;gap:8px">
+      <i class="fas fa-chevron-down" id="dash-toggle-icon"></i> <span class="dash-toggle-label">Ver todo</span>
+    </button>
+  </div>
+
+  <!-- CONTENIDO COLAPSABLE -->
+  <div id="dash-detalle" style="display:none">
+
+  <div class="dash-section-label"><i class="fas fa-dollar-sign"></i>Ingresos</div>
+  <div class="dash-grid-4" style="margin-bottom:22px">
+
+    <!-- Ingresos actuales -->
+    <div class="dash-card dash-card-featured">
+      <div class="dash-kpi-icon"><i class="fas fa-coins" style="color:#D4AA3A;font-size:18px"></i></div>
+      <div class="dash-kpi-label">Ingresos actuales</div>
+      <div class="dash-kpi-value" id="dash-ing-actual">$0</div>
+      <div class="dash-kpi-sub">
+        vs mes anterior <span class="dash-up" id="dash-ing-crec"><i class="fas fa-arrow-up" style="font-size:9px"></i>0%</span>
+      </div>
     </div>
 
-    <!-- Body -->
-    <form id="contextForm" class="px-6 py-5 space-y-4">
+    <!-- Ingresos por servicios -->
+    <div class="dash-card">
+      <div class="dash-kpi-icon"><i class="fas fa-briefcase" style="color:#c4b5fd;font-size:18px"></i></div>
+      <div class="dash-kpi-label">Ingresos por servicios</div>
+      <div class="dash-kpi-value" id="dash-ing-servicios">$0</div>
+      <div class="dash-kpi-sub" id="dash-ing-svc-sub">—</div>
+    </div>
 
-      <div>
-        <label class="text-sm font-medium text-gray-600">Empresa</label>
-        <select id="contextCompany" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm">
-          <!-- Mock -->
-          <option value="HEAVENSY_001">Heavensy</option>
-          <option value="CLINICA_002">Clínica Demo</option>
-        </select>
-      </div>
+    <!-- Ingresos por derivaciones -->
+    <div class="dash-card">
+      <div class="dash-kpi-icon"><i class="fas fa-share-nodes" style="color:#2ECC71;font-size:18px"></i></div>
+      <div class="dash-kpi-label">Derivaciones (50%)</div>
+      <div class="dash-kpi-value" id="dash-ing-deriv">$0</div>
+      <div class="dash-kpi-sub" id="dash-deriv-sub">—</div>
+    </div>
 
-      <div>
-        <label class="text-sm font-medium text-gray-600">Rol</label>
-        <select id="contextRole" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm">
-          <!-- Se llena dinámicamente -->
-        </select>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <input id="contextDefault" type="checkbox" />
-        <span class="text-sm text-gray-700">
-          Usar este contexto por defecto
-        </span>
-      </div>
-
-    </form>
-
-    <!-- Footer -->
-    <div class="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
-      <button
-        type="button"
-        onclick="closeContextModal()"
-        class="px-4 py-2 rounded-lg text-sm border text-gray-600 hover:bg-gray-100"
-      >
-        Cancelar
-      </button>
-      <button
-        type="submit"
-        form="contextForm"
-        class="px-5 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white"
-      >
-        Continuar
-      </button>
+    <!-- Crecimiento vs inicial -->
+    <div class="dash-card">
+      <div class="dash-kpi-icon"><i class="fas fa-chart-line" style="color:#4A9FD4;font-size:18px"></i></div>
+      <div class="dash-kpi-label">Crecimiento total</div>
+      <div class="dash-kpi-value" id="dash-crec-total">0%</div>
+      <div class="dash-kpi-sub">Ingreso inicial: <span id="dash-ing-inicial" style="color:#383838;font-weight:600;margin-left:4px">$0</span></div>
     </div>
 
   </div>
+
+  <!-- SECCIÓN: ACTIVIDAD -->
+  <div class="dash-section-label"><i class="fas fa-chart-bar"></i>Actividad</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">
+
+    <!-- Conversaciones -->
+    <div class="dash-card">
+      <div class="dash-kpi-icon"><i class="fas fa-comments" style="color:#fb923c;font-size:18px"></i></div>
+      <div class="dash-kpi-label">Conversaciones</div>
+      <div class="dash-kpi-value" id="dash-conv">0</div>
+      <div class="dash-kpi-sub">Personas que ingresaron y hablaron</div>
+    </div>
+
+    <!-- Clientes VIP -->
+    <div class="dash-card">
+      <div class="dash-kpi-icon"><i class="fas fa-gift" style="color:#9780FF;font-size:18px"></i></div>
+      <div class="dash-kpi-label">Clientes VIP</div>
+      <div class="dash-kpi-value" id="dash-vip">0</div>
+      <div class="dash-kpi-sub" id="dash-vip-sub">—</div>
+    </div>
+
+    <!-- Aliados -->
+    <div class="dash-card">
+      <div class="dash-kpi-icon"><i class="fas fa-handshake" style="color:#4A9FD4;font-size:18px"></i></div>
+      <div class="dash-kpi-label">Aliados</div>
+      <div class="dash-kpi-value" id="dash-aliados">0</div>
+      <div class="dash-kpi-sub" id="dash-aliados-sub">—</div>
+    </div>
+
+    <!-- Tiempo de gestión -->
+    <div class="dash-card">
+      <div class="dash-kpi-icon"><i class="fas fa-clock" style="color:#2ECC71;font-size:18px"></i></div>
+      <div class="dash-kpi-label">Tiempo de gestión</div>
+      <div class="dash-kpi-value" id="dash-tiempo">0 min</div>
+      <div class="dash-kpi-sub">Promedio por cliente</div>
+    </div>
+
+    <!-- Ocupación agenda -->
+    <div class="dash-card">
+      <div class="dash-kpi-icon"><i class="fas fa-calendar-check" style="color:#b0b3ff;font-size:18px"></i></div>
+      <div class="dash-kpi-label">Ocupación agenda</div>
+      <div class="dash-kpi-value" id="dash-ocupacion-pct">0%</div>
+      <div class="dash-kpi-sub">
+        <span id="dash-cupos-tomados">0</span> tomados de <span id="dash-cupos-total" style="color:#383838;font-weight:600;margin:0 3px">0</span> cupos
+      </div>
+      <div class="dash-kpi-sub" style="margin-top:4px">
+        Cupos libres: <span id="dash-cupos-libres" style="color:#383838;font-weight:600;margin-left:3px">0</span>
+      </div>
+    </div>
+
+    <!-- Cancelaciones -->
+    <div class="dash-card">
+      <div class="dash-kpi-icon"><i class="fas fa-ban" style="color:#E07060;font-size:18px"></i></div>
+      <div class="dash-kpi-label">Cancelaciones</div>
+      <div class="dash-kpi-value" id="dash-cancelaciones-val">0</div>
+      <div class="dash-kpi-sub">
+        <span id="dash-cancelaciones-pct">0%</span> de cancelación
+      </div>
+      <div class="dash-kpi-sub" style="margin-top:4px">
+        Cupos iniciales: <span id="dash-cupos-iniciales" style="color:#383838;font-weight:600;margin-left:3px">0</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SECCIÓN: GRÁFICOS -->
+  <div class="dash-section-label"><i class="fas fa-chart-pie"></i>Análisis</div>
+  <div class="dash-grid-2" style="margin-bottom:22px">
+
+    <!-- Canales de entrada -->
+    <div class="dash-card">
+      <div class="dash-chart-title">Canales de entrada</div>
+      <div class="dash-chart-sub">De dónde llegan tus clientes</div>
+      <div class="dash-donut-wrap">
+        <canvas id="dash-donut" width="120" height="120" class="dash-donut-canvas"></canvas>
+        <div class="dash-donut-legend" id="dash-donut-legend"></div>
+      </div>
+    </div>
+
+    <!-- Evolución de ingresos -->
+    <div class="dash-card">
+      <div class="dash-chart-title">Evolución de ingresos</div>
+      <div class="dash-chart-sub">Últimos 6 meses</div>
+      <div class="dash-bars-wrap" id="dash-bars"></div>
+    </div>
+
+  </div>
+
+  <!-- SECCIÓN: MÉTRICAS MENSUALES -->
+  <div class="dash-section-label"><i class="fas fa-table"></i>Métricas mensuales</div>
+  <div class="dash-card" style="padding:0;overflow:hidden">
+
+    <!-- FRANJA AURORA UNIFICADA -->
+    <div style="position:relative;overflow:hidden;display:flex">
+      <div style="position:absolute;inset:-8px;background:url('../assets/img/aurorazul4.jpg.jpeg') 50% 38% / 300% no-repeat;pointer-events:none;z-index:0"></div>
+      <!-- Headers izquierda -->
+      <div style="flex:1.8;display:flex;position:relative;z-index:1">
+        <table class="dash-table" style="width:100%;table-layout:fixed">
+          <colgroup>
+            <col style="width:12%"><col style="width:17%"><col style="width:17%">
+            <col style="width:18%"><col style="width:18%"><col style="width:18%">
+          </colgroup>
+          <thead><tr>
+            <th>Mes</th><th>Conversaciones</th><th>Ing. servicios</th>
+            <th>Ing. derivaciones</th><th>Total ingresos</th><th>Variación</th>
+          </tr></thead>
+        </table>
+      </div>
+      <!-- Separador en header -->
+      <div style="width:1px;background:rgba(255,255,255,0.25);flex-shrink:0;position:relative;z-index:1"></div>
+      <!-- Headers derecha -->
+      <div style="flex:1;display:flex;position:relative;z-index:1">
+        <table class="dash-table" style="width:100%;table-layout:fixed">
+          <colgroup>
+            <col style="width:20%"><col style="width:20%"><col style="width:20%">
+            <col style="width:20%"><col style="width:20%">
+          </colgroup>
+          <thead><tr>
+            <th>VIP</th><th>Aliados</th><th>Ocupación</th>
+            <th>Cancelac.</th><th>T. gestión</th>
+          </tr></thead>
+        </table>
+      </div>
+    </div>
+
+    <!-- CUERPOS DE TABLAS -->
+    <div style="display:flex">
+      <div style="flex:1.8;overflow-x:auto">
+        <table class="dash-table" style="width:100%;table-layout:fixed">
+          <colgroup>
+            <col style="width:12%"><col style="width:17%"><col style="width:17%">
+            <col style="width:18%"><col style="width:18%"><col style="width:18%">
+          </colgroup>
+          <tbody id="dash-table-body-ingresos"></tbody>
+        </table>
+      </div>
+      <div style="width:1px;background:rgba(255,255,255,0.12);flex-shrink:0"></div>
+      <div style="flex:1;overflow-x:auto">
+        <table class="dash-table" style="width:100%;table-layout:fixed">
+          <colgroup>
+            <col style="width:20%"><col style="width:20%"><col style="width:20%">
+            <col style="width:20%"><col style="width:20%">
+          </colgroup>
+          <tbody id="dash-table-body-actividad"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /métricas -->
+
+  </div><!-- /dash-detalle -->
+
 </div>
-
-</body>
-</html>

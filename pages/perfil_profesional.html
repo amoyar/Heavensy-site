@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Heavensy — Perfil profesional</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="../assets/css/perfil_profesional.css"/>
+</head>
+<body>
+
+<div class="hero"></div>
+
+<div class="hero-banner">
+  <span></span>
+</div>
+
+<div class="profile-top-glass">
+  <div class="profile-top">
+    <img class="profile-photo" src="" alt=""/>
+    <div class="profile-info">
+      <div class="profile-name" id="profile-name">Nombre de tu negocio</div>
+      <div class="profile-specs"></div>
+      <div class="profile-desc"></div>
+      <div id="modos-row" class="modos-row"></div>
+      <div class="profile-addr" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <aside class="sidebar">
+    <div class="agenda-card">
+      <div class="agenda-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Agenda
+      </div>
+      <div class="cal-nav">
+        <button>«</button>
+        <span class="cal-month">Enero 2026</span>
+        <button>»</button>
+      </div>
+      <div class="cal-grid">
+        <div class="cal-day-name">L</div><div class="cal-day-name">M</div><div class="cal-day-name">M</div>
+        <div class="cal-day-name">J</div><div class="cal-day-name">V</div><div class="cal-day-name">S</div><div class="cal-day-name">D</div>
+        <div class="cal-day empty"></div><div class="cal-day empty"></div><div class="cal-day empty"></div>
+        <div class="cal-day">1</div><div class="cal-day has-slot" onclick="selDia(this)">2</div><div class="cal-day">3</div><div class="cal-day">4</div>
+        <div class="cal-day">5</div><div class="cal-day">6</div><div class="cal-day has-slot" onclick="selDia(this)">7</div>
+        <div class="cal-day has-slot" onclick="selDia(this)">8</div><div class="cal-day">9</div><div class="cal-day">10</div><div class="cal-day">11</div>
+        <div class="cal-day">12</div><div class="cal-day">13</div><div class="cal-day today" onclick="selDia(this)">14</div>
+        <div class="cal-day has-slot" onclick="selDia(this)">15</div><div class="cal-day">16</div><div class="cal-day">17</div><div class="cal-day">18</div>
+        <div class="cal-day">19</div><div class="cal-day has-slot" onclick="selDia(this)">20</div><div class="cal-day">21</div>
+        <div class="cal-day">22</div><div class="cal-day has-slot" onclick="selDia(this)">23</div><div class="cal-day">24</div><div class="cal-day">25</div>
+        <div class="cal-day">26</div><div class="cal-day">27</div><div class="cal-day">28</div>
+        <div class="cal-day has-slot" onclick="selDia(this)">29</div><div class="cal-day">30</div><div class="cal-day">31</div>
+      </div>
+
+      <div id="chips-wrap" style="display:none">
+        <div class="chips-label">Servicio</div>
+        <div class="booking-chips"></div>
+      </div>
+
+      <div id="horas-wrap" style="display:none">
+        <div class="chips-label">Horas disponibles</div>
+        <div class="horas-grid" id="horas-grid"></div>
+      </div>
+
+      <button class="btn-reservar" id="btn-agendar" style="display:none" onclick="alert('¡Hora agendada!')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Agendar
+      </button>
+    </div>
+
+    <div id="horario-block" class="agenda-card" style="font-size:.8rem;color:var(--text-lt);line-height:1.7;display:none">
+      <div class="agenda-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Horario de atención
+      </div>
+      <div id="hor-rango" style="font-weight:700;font-size:.92rem;color:var(--text-titulo);margin-bottom:.3rem"></div>
+      <div id="hor-almuerzo"></div>
+      <div id="hor-intervalo"></div>
+      <div id="hor-cancelacion"></div>
+    </div>
+
+    <div class="sidebar-hablemos"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Hablemos</div>
+  </aside>
+
+  <div class="content">
+    <div class="photos-row" id="photos-row"></div>
+
+    <!-- MODAL VIDEO -->
+    <div class="video-modal-overlay" id="video-modal" onclick="if(event.target===this)cerrarVideo()">
+      <div class="video-modal-box">
+        <button class="video-modal-close" onclick="cerrarVideo()">✕</button>
+        <video id="modal-video" controls></video>
+      </div>
+    </div>
+
+    <div class="section-title"><span>Servicios</span></div>
+    <div class="services-list"></div>
+
+    <div class="cursos-row"></div>
+
+    <div class="section-title" style="margin-top:1.5rem"><span>Equipo</span></div>
+    <div class="prof-carousel-wrap" id="prof-carousel-wrap" style="display:none">
+      <div class="prof-nav prev" onclick="scrollProf(-1)"><i class="fas fa-chevron-left"></i></div>
+      <div class="prof-carousel" id="prof-carousel"></div>
+      <div class="prof-nav next" onclick="scrollProf(1)"><i class="fas fa-chevron-right"></i></div>
+    </div>
+
+    <div class="comments-title">🤍 Comentarios</div>
+    <div id="comments-list"></div>
+
+  </div>
+</div>
+
+<script src="../assets/js/perfil_profesional.js"></script>
+</body>
+</html>

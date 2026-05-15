@@ -1,0 +1,231 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- CSS y JS separados: agendar_integracion.css / agendar_integracion.js -->
+<title>Agendar integración — Heavensy</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="../assets/css/agendar_integracion.css">
+<style>
+.hv-nav{position:sticky;top:0;z-index:9999;height:54px;background:rgba(70,90,180,0.96);backdrop-filter:blur(14px);border-bottom:1px solid rgba(150,175,255,0.16);display:flex;align-items:center;padding:0 24px;gap:16px;box-shadow:0 2px 20px rgba(10,20,70,0.4)}
+.hv-nav-brand{display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0}
+.hv-nav-links{display:flex;align-items:center;gap:6px}
+.hv-nav-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+</style>
+
+</head>
+<body>
+<!-- HEAVENSY NAV -->
+<nav class="hv-nav">
+  <a class="hv-nav-brand" href="portada.html">
+    <div class="hv-nav-logo"><img src="../assets/img/LOGOFINAL.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
+    <span class="hv-nav-name">Heavensy</span>
+  </a>
+  <div class="hv-nav-links">
+    <a class="hv-nav-link" id="nav-link-planes" href="planes_heavensy.html">Planes</a>
+    <a class="hv-nav-link" href="busqueda_heavensy.html">Buscar servicios</a>
+  </div>
+  <div style="flex:1"></div>
+  <div class="hv-nav-right">
+    <a id="nav-btn-login" href="login.html" style="font-size:13px;font-weight:600;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:6px 16px;border-radius:8px;text-decoration:none;display:none;">Iniciar sesión</a>
+  </div>
+</nav>
+
+
+<!-- TOPBAR -->
+
+<!-- PROGRESS -->
+<div class="progress-bar">
+  <div class="step done" onclick="window.location.href='perfil_personal.html'" style="cursor:pointer"><span class="step-num"><i class="fas fa-check" style="font-size:8px"></i></span>Perfil personal</div>
+  <i class="fas fa-chevron-right step-arrow"></i>
+  <div class="step active"><span class="step-num">2</span>Integración o Demo</div>
+  <i class="fas fa-chevron-right step-arrow"></i>
+  <div class="step"><span class="step-num">3</span>Pagar</div>
+</div>
+
+<div style="padding:28px 16px">
+  <div style="max-width:860px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:stretch" id="modo-selector">
+
+    <div class="crece-card" id="modo-integracion" onclick="elegirModo('integracion')">
+      <div class="modo-check" id="check-integracion" style="display:none"><i class="fas fa-check-circle"></i></div>
+      <div class="crece-card-icon"><i class="fas fa-plug"></i></div>
+      <h3>Agendar integración</h3>
+      <p>Un especialista te guía paso a paso para configurar Heavensy con tu flujo de trabajo actual — en una sola sesión.</p>
+      <div class="crece-badge"><span class="crece-badge-text">Ingresar a Heavensy</span></div>
+    </div>
+
+    <div class="crece-card" id="modo-demo" onclick="elegirModo('demo')">
+      <div class="modo-check" id="check-demo" style="display:none"><i class="fas fa-check-circle"></i></div>
+      <div class="crece-card-icon crece-card-icon--vip"><i class="fas fa-play-circle"></i></div>
+      <h3>Ir a mi Demo</h3>
+      <p>Mira cómo funciona Heavensy aplicado exactamente a tu rubro, con casos reales y flujos de tu negocio.</p>
+      <div class="crece-badge"><span class="crece-badge-text">Ver mi Demo</span></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="page">
+  <div class="card" id="main-card" style="display:none">
+
+    <!-- HEADER -->
+    <div class="card-head" id="card-head-content">
+      <div class="card-head-icon"><i class="fas fa-calendar-check"></i></div>
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><div class="card-head-title">Agenda tu sesión de integración</div><span id="plan-chip" style="display:none;background:rgba(153,97,255,0.3);border:1px solid rgba(153,97,255,0.55);border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;color:#c4a8ff;white-space:nowrap;"></span></div>
+        <div class="card-head-sub">Elige el día y hora que mejor te acomoden — un especialista te guiará en el proceso</div>
+      </div>
+      <div class="duration-badge"><i class="fas fa-clock"></i>20 minutos</div>
+    </div>
+
+    <!-- CALENDARIO + CUPOS -->
+    <div id="cal-layout-wrap"><div class="cal-layout">
+
+      <!-- IZQUIERDA: calendario -->
+      <div class="cal-left">
+        <div class="cal-nav">
+          <button class="cal-btn" onclick="cambiarMes(-1)"><i class="fas fa-chevron-left"></i></button>
+          <span class="cal-month" id="cal-month-title"></span>
+          <button class="cal-btn" onclick="cambiarMes(1)"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#f5f3ff;border:1.5px solid #c4b5fd"></div>Próximo cupo libre</div>
+          <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#9961FF,#5b8dee)"></div>Seleccionado</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#f3f4f6;border:1px solid #e5e7eb"></div>Disponible</div>
+        </div>
+      </div>
+
+      <!-- DERECHA: cupos y horarios -->
+      <div class="cal-right">
+        <div class="slots-title"><i class="fas fa-bolt"></i>Próximos 3 cupos libres</div>
+        <div id="slots-list"></div>
+
+        <div id="times-section" style="display:none">
+          <div class="times-title" id="times-label">Horarios disponibles</div>
+          <div class="times-grid" id="times-grid"></div>
+        </div>
+
+        <div id="agendar-btn-wrap" style="display:none;margin-top:16px">
+          <button class="btn-primary" style="width:100%;justify-content:center;padding:14px 20px;font-size:15px;background:linear-gradient(135deg,#8E84FA 20%,#5b8dee 55%,#89B9F8 100%);border:none;box-shadow:0 8px 20px rgba(10,20,80,0.4),0 3px 8px rgba(10,20,80,0.25),inset 0 1px 0 rgba(255,255,255,0.25)" onclick="confirmarDesdeBoton()">
+            <i class="fas fa-calendar-check" style="margin-right:8px"></i>Agendar
+          </button>
+        </div>
+      </div>
+    </div></div><!-- /cal-layout-wrap -->
+
+    <!-- PANEL CONFIRMACIÓN -->
+    <div class="confirm-panel" id="confirm-panel">
+      <div class="confirm-summary">
+        <div class="confirm-icon"><i class="fas fa-calendar-check"></i></div>
+        <div>
+          <div class="confirm-date" id="confirm-date-txt">—</div>
+          <div class="confirm-time" id="confirm-time-txt">—</div>
+        </div>
+        <div style="margin-left:auto;font-size:11px;color:#7D84C1;text-align:right">
+          <div><i class="fas fa-clock" style="margin-right:4px;color:#9961FF"></i>30 minutos</div>
+          <div style="margin-top:3px"><i class="fas fa-video" style="margin-right:4px;color:#9961FF"></i>Videollamada</div>
+        </div>
+      </div>
+      <div class="confirm-actions">
+        <button class="btn-secondary" onclick="cancelarSeleccion()"><i class="fas fa-times" style="margin-right:6px"></i>Cancelar</button>
+        <button class="btn-primary" onclick="confirmarCita()"><i class="fas fa-check" style="margin-right:6px"></i>Confirmar cita</button>
+      </div>
+    </div>
+
+    <!-- DEMO PANEL (oculto por defecto) -->
+    <div id="demo-panel" style="display:none">
+      <div class="demo-body">
+
+
+        <div style="display:flex;flex-direction:column;gap:18px">
+
+          <!-- P1 -->
+          <div class="form-group">
+            <div class="demo-label"><span class="demo-num">1</span>Rubro y profesión <span style="color:#ef4444">*</span></div>
+            <select id="demo-rubro" class="demo-select" style="margin-bottom:8px">
+              <option value="">Selecciona tu rubro…</option>
+              <option>Salud y bienestar</option>
+              <option>Educación</option>
+              <option>Asesoría</option>
+              <option>Finanzas</option>
+              <option>Belleza</option>
+              <option>Deporte</option>
+              <option>Espacios</option>
+              <option>Eventos</option>
+              <option>Servicios técnicos</option>
+              <option>Servicios digitales</option>
+              <option>Acompañamiento personal</option>
+              <option>Gastronomía</option>
+              <option>Turismo</option>
+              <option>Retail</option>
+              <option>Bienestar integral</option>
+              <option>Inmobiliario</option>
+              <option>Otro</option>
+            </select>
+            <div style="position:relative">
+              <input id="demo-profesion" class="demo-input" type="text" placeholder="Escribe o elige tu profesión…" autocomplete="off" oninput="filtrarProfesiones(this.value)" onblur="setTimeout(()=>cerrarSugerencias(),150)">
+              <div id="prof-sugerencias" style="display:none;position:absolute;top:100%;left:0;right:0;background:#f5f3ff;border:1.5px solid #e0e7ff;border-radius:10px;box-shadow:0 8px 24px rgba(153,97,255,0.12);z-index:99;max-height:180px;overflow-y:auto;margin-top:4px"></div>
+            </div>
+          </div>
+
+          <!-- P2 -->
+          <div class="form-group">
+            <div class="demo-label"><span class="demo-num">2</span>Dime 1 servicio que ofrezcas <span style="color:#ef4444">*</span></div>
+            <input id="demo-servicio" class="demo-input" type="text" placeholder="Ej: Consulta de nutrición de 45 minutos">
+          </div>
+
+          <!-- P3 -->
+          <div class="form-group">
+            <div class="demo-label"><span class="demo-num">3</span>¿Por qué canales te contactan? <span style="color:#ef4444">*</span></div>
+            <div style="display:grid;grid-template-columns:repeat(6,80px);gap:14px" id="demo-canales-opts">
+              <div class="demo-opt" onclick="selOpt('demo-canales-opts',this,'demo-canales')" data-val="whatsapp"><i class="fab fa-whatsapp" style="color:#25D366"></i>WhatsApp</div>
+              <div class="demo-opt" onclick="selOpt('demo-canales-opts',this,'demo-canales')" data-val="facebook"><i class="fab fa-facebook" style="color:#1877F2"></i>Facebook</div>
+              <div class="demo-opt" onclick="selOpt('demo-canales-opts',this,'demo-canales')" data-val="instagram"><i class="fab fa-instagram" style="color:#E1306C"></i>Instagram</div>
+              <div class="demo-opt" onclick="selOpt('demo-canales-opts',this,'demo-canales')" data-val="telefono"><i class="fas fa-phone" style="color:#A78BFA"></i>Teléfono</div>
+              <div class="demo-opt" onclick="selOpt('demo-canales-opts',this,'demo-canales')" data-val="web"><i class="fas fa-globe" style="color:#38BDF8"></i>Sitio web</div>
+              <div class="demo-opt" onclick="selOpt('demo-canales-opts',this,'demo-canales')" data-val="otro"><i class="fas fa-ellipsis-h" style="color:#fff"></i>Otro</div>
+            </div>
+            <input type="hidden" id="demo-canales">
+          </div>
+
+          <!-- P4 -->
+          <div class="form-group">
+            <div class="demo-label"><span class="demo-num">4</span>Lenguaje de tu asistente <span style="color:#ef4444">*</span></div>
+            <div style="display:grid;grid-template-columns:repeat(3,80px);gap:14px" id="demo-lenguaje-opts">
+              <div class="demo-opt" onclick="selOpt('demo-lenguaje-opts',this,'demo-lenguaje')" data-val="formal"><i class="fas fa-briefcase" style="color:#A78BFA"></i>Formal</div>
+              <div class="demo-opt" onclick="selOpt('demo-lenguaje-opts',this,'demo-lenguaje')" data-val="cercano"><i class="fas fa-heart" style="color:#F472B6"></i>Cercano</div>
+              <div class="demo-opt" onclick="selOpt('demo-lenguaje-opts',this,'demo-lenguaje')" data-val="tecnico"><i class="fas fa-gear" style="color:#38BDF8"></i>Técnico</div>
+            </div>
+            <input type="hidden" id="demo-lenguaje">
+          </div>
+
+          <!-- P5 -->
+          <div class="form-group">
+            <div class="demo-label"><span class="demo-num">5</span>Nombre de tu empresa o el tuyo <span style="color:#ef4444">*</span></div>
+            <input id="demo-nombre" class="demo-input" type="text" placeholder="Ej: Centro Nutricional Valeria o Valeria Soto">
+          </div>
+
+        </div>
+
+        <!-- ACCIÓN -->
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid #f0f2f8">
+          <button class="btn-secondary" onclick="elegirModo('integracion')"><i class="fas fa-arrow-left" style="margin-right:6px"></i>Mejor agendar integración</button>
+          <button class="btn-primary" onclick="enviarDemo(this)" style="padding:14px 20px;font-size:15px;background:linear-gradient(135deg,#8E84FA 20%,#5b8dee 55%,#89B9F8 100%);border:none;box-shadow:0 8px 20px rgba(10,20,80,0.4),0 3px 8px rgba(10,20,80,0.25),inset 0 1px 0 rgba(255,255,255,0.25)"><i class="fas fa-play" style="margin-right:6px"></i>Ver mi Demo</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
+
+
+<script src="../assets/js/agendar_integracion.js"></script>
+</body>
+</html>
+

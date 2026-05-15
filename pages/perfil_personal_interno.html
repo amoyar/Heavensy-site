@@ -1,0 +1,121 @@
+<div class="ppi-bg-wrap">
+<div class="ppi-page">
+
+  <!-- TOP: avatar izq + datos der -->
+  <div class="ppi-top">
+
+    <!-- IZQUIERDA: avatar + nombre + plan -->
+    <div class="ppi-profile-left">
+      <div class="ppi-avatar-wrap" onclick="document.getElementById('ppi-foto-input').click()" title="Cambiar foto">
+        <div class="ppi-avatar" id="ppi-avatar">
+          <img id="ppi-avatar-img" src="" alt="foto">
+          <span id="ppi-avatar-ini">U</span>
+        </div>
+        <div class="ppi-avatar-overlay"><i class="fas fa-camera"></i></div>
+      </div>
+      <input type="file" id="ppi-foto-input" class="ppi-avatar-input" accept="image/*" onchange="ppiCambiarFoto(this)">
+      <div class="ppi-name" id="ppi-nombre">Cargando…</div>
+      <div class="ppi-sub" id="ppi-plan-badge"></div>
+    </div>
+
+    <!-- DERECHA: datos personales -->
+    <div class="ppi-datos">
+      <div class="ppi-card-title">
+        <i class="fas fa-user" style="color:#fff;margin-right:8px"></i>Datos personales
+      </div>
+      <div class="ppi-fields-grid">
+
+        <div class="ppi-field">
+          <label>Nombre completo</label>
+          <div class="ppi-field-readonly" id="ppi-field-nombre">—</div>
+        </div>
+
+        <div class="ppi-field">
+          <label>RUT</label>
+          <div class="ppi-field-readonly" id="ppi-field-rut">—</div>
+        </div>
+
+        <div class="ppi-field">
+          <label>Teléfono</label>
+          <div class="ppi-field-readonly" id="ppi-telefono">—</div>
+        </div>
+
+        <div class="ppi-field">
+          <label>Email <span class="ppi-edit-badge">editable</span></label>
+          <input type="email" id="ppi-email" placeholder="tu@email.com" autocomplete="off"/>
+        </div>
+
+        <div class="ppi-field">
+          <label>Contraseña <span class="ppi-edit-badge">editable</span></label>
+          <div style="position:relative">
+            <input type="password" id="ppi-password" placeholder="Nueva contraseña (opcional)" autocomplete="new-password"/>
+            <button type="button" id="ppi-eye-btn" onclick="ppiToggleEye()"
+              style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#7D84C1;padding:4px;font-size:14px;">
+              <i class="fas fa-eye" id="ppi-eye-icon"></i>
+            </button>
+          </div>
+          <div style="font-size:10px;color:#9ca3af;margin-top:4px">Deja vacío si no quieres cambiarla</div>
+        </div>
+
+        <div class="ppi-field">
+          <label>Confirmar contraseña <span class="ppi-edit-badge">editable</span></label>
+          <div style="position:relative">
+            <input type="password" id="ppi-password-confirm" placeholder="Repite la contraseña" autocomplete="new-password"/>
+            <button type="button" onclick="ppiToggleEye2()"
+              style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#7D84C1;padding:4px;font-size:14px;">
+              <i class="fas fa-eye" id="ppi-eye-icon2"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+      <div class="ppi-card-footer">
+        <button class="ppi-btn-save" id="ppi-btn-guardar" onclick="ppiGuardar(this)">
+          <i class="fas fa-check" style="margin-right:6px"></i>Guardar cambios
+        </button>
+        <span class="ppi-saved-msg" id="ppi-saved-msg"></span>
+      </div>
+
+    </div><!-- fin ppi-datos -->
+
+    <!-- CARD HISTORIAL: separada, misma columna -->
+    <div class="ppi-historial-section">
+      <div class="ppi-card-title">
+        <i class="fas fa-calendar-check" style="color:rgba(255,255,255,0.7);margin-right:8px"></i>Historial de servicios
+      </div>
+      <div id="ppi-servicios-list"></div>
+      <div id="ppi-ver-mas-wrap" style="display:none;text-align:center;margin-top:14px">
+        <button class="ppi-btn-ver-mas" onclick="ppiVerMas()">
+          Ver más <i class="fas fa-chevron-down" style="margin-left:5px;font-size:11px"></i>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</div><!-- /ppi-bg-wrap -->
+
+<!-- MODAL OTP -->
+<div class="ppi-otp-overlay" id="ppi-otp-overlay">
+  <div class="ppi-otp-modal">
+    <button class="ppi-otp-close" onclick="ppiCerrarOtp()"><i class="fas fa-times"></i></button>
+    <div class="ppi-otp-icon"><i class="fas fa-envelope"></i></div>
+    <h3 class="ppi-otp-title">Revisa tu correo</h3>
+    <p class="ppi-otp-sub" id="ppi-otp-sub">Ingresa el código de 5 dígitos que enviamos a tu correo para confirmar el cambio.</p>
+    <div class="ppi-otp-boxes">
+      <input class="ppi-otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+      <input class="ppi-otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+      <input class="ppi-otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+      <input class="ppi-otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+      <input class="ppi-otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+    </div>
+    <p class="ppi-otp-error" id="ppi-otp-error">Código incorrecto. Intenta nuevamente.</p>
+    <button class="ppi-otp-btn" id="ppi-otp-btn-verify" onclick="ppiVerificarOtp()">
+      <i class="fas fa-check"></i>Confirmar cambios
+    </button>
+    <button class="ppi-otp-reenviar" onclick="ppiReenviarOtp()">
+      <i class="fas fa-redo" style="font-size:10px;margin-right:4px"></i>Reenviar código
+    </button>
+  </div>
+</div>

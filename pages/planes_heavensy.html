@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planes — Heavensy</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/planes.css">
+<style>
+.hv-nav{position:sticky;top:0;z-index:9999;height:54px;background:rgba(70,90,180,0.96);backdrop-filter:blur(14px);border-bottom:1px solid rgba(150,175,255,0.16);display:flex;align-items:center;padding:0 24px;gap:16px;box-shadow:0 2px 20px rgba(10,20,70,0.4)}
+.hv-nav-brand{display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0}
+.hv-nav-links{display:flex;align-items:center;gap:6px}
+.hv-nav-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- HEAVENSY NAV -->
+<nav class="hv-nav">
+  <a class="hv-nav-brand" href="portada.html">
+    <div class="hv-nav-logo"><img src="../assets/img/LOGOFINAL.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
+    <span class="hv-nav-name">Heavensy</span>
+  </a>
+  <div class="hv-nav-links">
+    <a class="hv-nav-link" id="nav-link-planes" href="planes_heavensy.html">Planes</a>
+    <a class="hv-nav-link" href="busqueda_heavensy.html">Buscar servicios</a>
+  </div>
+  <div style="flex:1"></div>
+  <div class="hv-nav-right">
+    <a id="nav-btn-login" href="login.html" style="font-size:13px;font-weight:600;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:6px 16px;border-radius:8px;text-decoration:none;">Iniciar sesión</a>
+    <div class="hv-nav-user-wrap" id="nav-user-wrap" style="display:none;">
+      <div class="hv-nav-user" onclick="toggleHvNav()">
+        <div class="hv-nav-avatar" id="nav-avatar">U</div>
+        <span class="hv-nav-user-name" id="nav-username">Usuario</span>
+        <svg class="hv-nav-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="hv-nav-dropdown" id="hv-user-dropdown">
+        <a href="../index.html">Mi empresa</a>
+        <div class="hv-nav-dropdown-sep"></div>
+        <a href="#" class="danger" onclick="localStorage.clear();sessionStorage.clear();window.location.href='login.html';return false;">Cerrar sesión</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- HEADER TEXT -->
+<div class="hero-text-wrap">
+  <h1>Elige el plan que<br><span>impulsa tu negocio</span></h1>
+  <p>Automatiza<span class="sep">·</span>Conecta tus redes<span class="sep">·</span>Crece con IA</p>
+</div>
+
+<!-- PROFESIONALES -->
+<div class="section-wrap">
+  <div class="section-label"><span>Para profesionales independientes</span></div>
+</div>
+
+<div class="plans-grid cols-3">
+
+  <!-- BÁSICO -->
+  <div class="card">
+    <div class="card-head" style="background:linear-gradient(135deg,#8B92C8 0%,#B0B6E0 100%);">
+      <div class="head-top">
+        <div class="plan-tag" style="background:rgba(255,255,255,.22);color:#fff;">Básico</div>
+      </div>
+      <div class="plan-name" style="color:#fff;">Tu presencia en Heavensy</div>
+      <div class="price-row">
+        <div class="price" style="color:#fff;">$0</div>
+        <div class="price-mo" style="color:rgba(255,255,255,.75);">para siempre</div>
+      </div>
+      <button class="btn" style="background:rgba(255,255,255,.95);color:#6870B0;" onclick="activarPlan('gratis')">Empezar gratis</button>
+    </div>
+    <div class="points">
+      <div class="sec-div"><span>Presencia</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#A0A8D8;">1</div><div class="pt-text"><div class="pt-name">Perfil y visibilidad</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="sec-div"><span>Comunicación</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#A0A8D8;">2</div><div class="pt-text"><div class="pt-name">Respuesta a mensajes</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt off"><div class="pt-left"><div class="num" style="background:#D0D4E8;">3</div><div class="pt-text"><div class="pt-name">Integración redes sociales</div></div></div><div class="ck ck-no">✕</div></div>
+      <div class="pt off"><div class="pt-left"><div class="num" style="background:#D0D4E8;">4</div><div class="pt-text"><div class="pt-name">Mensajes masivos</div></div></div><div class="ck ck-no">✕</div></div>
+      <div class="sec-div"><span>Fidelización</span><hr></div>
+      <div class="pt off"><div class="pt-left"><div class="num" style="background:#D0D4E8;">5</div><div class="pt-text"><div class="pt-name">Clientes VIP y aliados</div></div></div><div class="ck ck-no">✕</div></div>
+      <div class="sec-div"><span>Agenda</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#A0A8D8;">6</div><div class="pt-text"><div class="pt-name">Gestión de agenda</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="sec-div"><span>Seguimiento</span><hr></div>
+      <div class="pt off"><div class="pt-left"><div class="num" style="background:#D0D4E8;">7</div><div class="pt-text"><div class="pt-name">Ficha del cliente</div></div></div><div class="ck ck-no">✕</div></div>
+      <div class="pt off"><div class="pt-left"><div class="num" style="background:#D0D4E8;">8</div><div class="pt-text"><div class="pt-name">Línea de tiempo con IA</div></div></div><div class="ck ck-no">✕</div></div>
+      <div class="pt off"><div class="pt-left"><div class="num" style="background:#D0D4E8;">9</div><div class="pt-text"><div class="pt-name">Reagendamiento y avisos</div></div></div><div class="ck ck-no">✕</div></div>
+      <div class="pt off"><div class="pt-left"><div class="num" style="background:#D0D4E8;">10</div><div class="pt-text"><div class="pt-name">Envío programado</div></div></div><div class="ck ck-no">✕</div></div>
+      <div class="pt off"><div class="pt-left"><div class="num" style="background:#D0D4E8;">11</div><div class="pt-text"><div class="pt-name">Alianzas de derivación</div></div></div><div class="ck ck-no">✕</div></div>
+    </div>
+    <div class="card-foot">
+      <div class="comm"><div class="comm-icon" style="background:linear-gradient(135deg,#A0A8D8,#B0B6E0);">+</div><div><div class="comm-text">Comisiones y credencial</div><div class="comm-sub">50% + 15% por referir + QR</div></div></div>
+    </div>
+  </div>
+
+  <!-- AUTOMATE PRO -->
+  <div class="card">
+    <div class="card-head" style="background:linear-gradient(135deg,#7C6FF7 0%,#9D8FFA 100%);">
+      <div class="head-top">
+        <div class="plan-tag" style="background:rgba(255,255,255,.18);color:#fff;">Automate Pro</div>
+      </div>
+      <div class="plan-name" style="color:#fff;">La IA trabaja por ti</div>
+      <div class="price-row">
+        <div class="price" style="color:#fff;">$70.000</div>
+        <div class="price-mo" style="color:rgba(255,255,255,.7);">/ mes</div>
+      </div>
+      <div class="trial" style="background:rgba(255,255,255,.18);color:#fff;">10 días gratis</div>
+      <button class="btn" style="background:rgba(255,255,255,.95);color:#7C6FF7;" onclick="activarPlan('Automate Pro')">Activar plan</button>
+    </div>
+    <div class="points">
+      <div class="sec-div"><span>Presencia</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#7C6FF7;">1</div><div class="pt-text"><div class="pt-name">Perfil y visibilidad</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="sec-div"><span>Comunicación</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#7C6FF7;">2</div><div class="pt-text"><div class="pt-name">Respuesta a mensajes (IA 24/7)</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#7C6FF7;">3</div><div class="pt-text"><div class="pt-name">Integración redes sociales</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#7C6FF7;">4</div><div class="pt-text"><div class="pt-name">Mensajes masivos</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="sec-div"><span>Fidelización</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#7C6FF7;">5</div><div class="pt-text"><div class="pt-name">Clientes VIP y aliados</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="sec-div"><span>Agenda</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#7C6FF7;">6</div><div class="pt-text"><div class="pt-name">Gestión de agenda</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="sec-div"><span>Seguimiento</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#7C6FF7;">7</div><div class="pt-text"><div class="pt-name">Ficha del cliente</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt off"><div class="pt-left"><div class="num" style="background:#D0D4E8;">8</div><div class="pt-text"><div class="pt-name">Línea de tiempo con IA</div></div></div><div class="ck ck-no">✕</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#7C6FF7;">9</div><div class="pt-text"><div class="pt-name">Reagendamiento y avisos</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#7C6FF7;">10</div><div class="pt-text"><div class="pt-name">Envío programado</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#7C6FF7;">11</div><div class="pt-text"><div class="pt-name">Alianzas de derivación</div></div></div><div class="ck ck-yes">✓</div></div>
+    </div>
+    <div class="card-foot">
+      <div class="comm"><div class="comm-icon" style="background:linear-gradient(135deg,#7C6FF7,#9D8FFA);">+</div><div><div class="comm-text">Comisiones y credencial</div><div class="comm-sub">50% + 15% por referir + QR</div></div></div>
+    </div>
+  </div>
+
+  <!-- SECRETAR-IA PREMIUM -->
+  <div class="card featured">
+    <div class="card-head" style="background:linear-gradient(135deg,#7C6FF7 0%,#4A9FD4 100%);">
+      <div class="head-top">
+        <div class="plan-tag" style="background:rgba(255,255,255,.18);color:#fff;">Secretar-IA Premium</div>
+        <div class="pop-badge" style="background:rgba(255,255,255,.2);color:#fff;">⭐ Más popular</div>
+      </div>
+      <div class="plan-name" style="color:#fff;">Tu secretaria virtual</div>
+      <div class="price-row">
+        <div class="price" style="color:#fff;">$120.000</div>
+        <div class="price-mo" style="color:rgba(255,255,255,.7);">/ mes</div>
+      </div>
+      <div class="trial" style="background:rgba(255,255,255,.18);color:#fff;">10 días gratis</div>
+      <button class="btn" style="background:rgba(255,255,255,.95);color:#6683E7;" onclick="activarPlan('Secretar-IA Premium')">Activar plan</button>
+    </div>
+    <div class="points">
+      <div class="sec-div"><span>Presencia</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#7C6FF7,#4A9FD4);">1</div><div class="pt-text"><div class="pt-name">Perfil y visibilidad</div></div></div><div class="ck ck-star">✓</div></div>
+      <div class="sec-div"><span>Comunicación</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#7C6FF7,#4A9FD4);">2</div><div class="pt-text"><div class="pt-name">Secretaria con tus conocimientos</div></div></div><div class="ck ck-star">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#7C6FF7,#4A9FD4);">3</div><div class="pt-text"><div class="pt-name">Integración redes sociales</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#7C6FF7,#4A9FD4);">4</div><div class="pt-text"><div class="pt-name">Mensajes masivos</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="sec-div"><span>Fidelización</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#7C6FF7,#4A9FD4);">5</div><div class="pt-text"><div class="pt-name">Clientes VIP y aliados</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="sec-div"><span>Agenda</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#7C6FF7,#4A9FD4);">6</div><div class="pt-text"><div class="pt-name">Secretaria virtual + manual</div></div></div><div class="ck ck-star">✓</div></div>
+      <div class="sec-div"><span>Seguimiento</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#7C6FF7,#4A9FD4);">7</div><div class="pt-text"><div class="pt-name">Fichas editables personalizadas</div></div></div><div class="ck ck-star">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#7C6FF7,#4A9FD4);">8</div><div class="pt-text"><div class="pt-name">Línea de tiempo con IA</div></div></div><div class="ck ck-star">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#7C6FF7,#4A9FD4);">9</div><div class="pt-text"><div class="pt-name">Reagendamiento y avisos</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#7C6FF7,#4A9FD4);">10</div><div class="pt-text"><div class="pt-name">Envío programado</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#7C6FF7,#4A9FD4);">11</div><div class="pt-text"><div class="pt-name">Alianzas de derivación</div></div></div><div class="ck ck-yes">✓</div></div>
+    </div>
+    <div class="card-foot">
+      <div class="comm"><div class="comm-icon" style="background:linear-gradient(135deg,#7C6FF7,#4A9FD4);">+</div><div><div class="comm-text">Comisiones y credencial</div><div class="comm-sub">50% + 15% por referir + QR</div></div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- CALCULADORA -->
+<div style="max-width:1200px;margin:0 auto;padding:0 2rem 2.5rem;">
+  <button id="calc-toggle" onclick="toggleCalc()" style="width:100%;padding:16px 24px;border-radius:14px;background:linear-gradient(135deg,#7C6FF7 0%,#4A9FD4 100%);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(124,111,247,.3);transition:opacity .2s;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
+      </div>
+      <div style="text-align:left;">
+        <div style="font-size:15px;font-weight:700;color:#fff;animation:calcPulse 2s ease-in-out infinite;">Calcula aquí tus ganancias</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.8);margin-top:2px;">Ingresa tus datos y ve cuánto puede crecer tu negocio</div>
+      </div>
+    </div>
+    <div id="calc-chevron" style="color:#fff;font-size:20px;transition:transform .3s;">▾</div>
+  </button>
+  <div id="calc-body" style="background:#fff;border:1px solid #E4E6F0;border-top:none;border-radius:0 0 14px 14px;margin-top:-4px;">
+    <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 8px 24px rgba(10,20,80,0.3),inset 0 1px 0 rgba(255,255,255,0.12);">
+      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:14px;">👇 Tu hoy</div>
+      <div class="calc-sliders-grid" style="display:grid;gap:10px;margin-bottom:20px;">
+        <div style="background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px 16px;">
+          <div style="font-size:11px;font-weight:600;color:#6B7194;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">Valor hora</div>
+          <div style="font-size:11px;color:#9BA3C0;margin-bottom:10px;">Lo que cobras por 1 hr</div>
+          <div style="display:flex;align-items:center;gap:8px;"><input type="range" id="c-vh" min="10000" max="150000" value="45000" step="1000" style="flex:1;"><span id="c-vh-o" style="font-size:13px;font-weight:600;color:#1E2140;min-width:75px;text-align:right;">$45.000</span></div>
+        </div>
+        <div style="background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px 16px;">
+          <div style="font-size:11px;font-weight:600;color:#6B7194;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">Horas trabajadas / sem</div>
+          <div style="font-size:11px;color:#9BA3C0;margin-bottom:10px;">Sesiones reales que haces hoy</div>
+          <div style="display:flex;align-items:center;gap:8px;"><input type="range" id="c-hw" min="1" max="50" value="30" step="1" style="flex:1;"><span id="c-hw-o" style="font-size:13px;font-weight:600;color:#1E2140;min-width:55px;text-align:right;">30 hrs</span></div>
+        </div>
+        <div style="background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px 16px;">
+          <div style="font-size:11px;font-weight:600;color:#6B7194;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">Capacidad de jornada diaria</div>
+          <div style="font-size:11px;color:#9BA3C0;margin-bottom:10px;">¿Cuántas horas al día puedes dedicar?</div>
+          <div style="display:flex;align-items:center;gap:8px;"><input type="range" id="c-hd" min="1" max="12" value="6" step="1" style="flex:1;"><span id="c-hd-o" style="font-size:13px;font-weight:600;color:#1E2140;min-width:55px;text-align:right;">6 hrs</span></div>
+        </div>
+        <div style="background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px 16px;">
+          <div style="font-size:11px;font-weight:600;color:#6B7194;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">Horas en gestión / día</div>
+          <div style="font-size:11px;color:#9BA3C0;margin-bottom:10px;">Mensajes, agenda, publicidad</div>
+          <div style="display:flex;align-items:center;gap:8px;"><input type="range" id="c-hg" min="0" max="6" value="1" step="0.5" style="flex:1;"><span id="c-hg-o" style="font-size:13px;font-weight:600;color:#1E2140;min-width:65px;text-align:right;">1 hr/día</span></div>
+        </div>
+      </div>
+      <div style="height:1px;background:rgba(255,255,255,0.12);margin:0 0 16px;"></div>
+      <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.45);margin-bottom:14px;">Tu situación actual</div>
+      <div id="c-actual" class="calc-actual-grid" style="display:grid;gap:10px;margin-bottom:10px;"></div>
+      <div id="c-alert" style="margin-bottom:0;"></div>
+    </div>
+    <div style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);border-radius:16px;padding:20px;box-shadow:0 8px 24px rgba(10,20,80,0.3),inset 0 1px 0 rgba(255,255,255,0.12);">
+      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:14px;"><span style="font-size:22px;">✨</span> Con Heavensy — elige tu plan</div>
+      <div id="c-tabs" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;"></div>
+      <div id="c-compare" class="calc-compare-grid" style="display:grid;gap:12px;margin-bottom:14px;"></div>
+      <div id="c-delta" style="border-radius:14px;padding:16px 20px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:16px;"></div>
+      <div id="c-passive" style="display:none;"></div>
+      <div id="c-total-final" style="margin-bottom:0;border-radius:12px;overflow:hidden;"></div>
+      <div id="c-nota"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ENTERPRISE -->
+<div class="section-wrap">
+  <div class="section-label"><span>Para centros, clínicas y equipos</span></div>
+</div>
+
+<div class="plans-grid cols-2">
+
+  <!-- ENTERPRISE -->
+  <div class="card">
+    <div class="card-head" style="background:linear-gradient(135deg,#3A6CB5 0%,#5A90D4 100%);">
+      <div class="head-top">
+        <div class="plan-tag" style="background:rgba(255,255,255,.15);color:#fff;">Enterprise</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.7);">Hasta 10 integrantes</div>
+      </div>
+      <div class="plan-name" style="color:#fff;">Tu equipo automatizado</div>
+      <div class="price-row">
+        <div class="price" style="color:#fff;">$210.000</div>
+        <div class="price-mo" style="color:rgba(255,255,255,.65);">/ mes</div>
+      </div>
+      <div class="trial" style="background:rgba(255,255,255,.15);color:#fff;">10 días gratis</div>
+      <div class="note-pill" style="background:rgba(255,255,255,.10);color:rgba(255,255,255,.75);">Reunión con asesor para activar</div>
+      <button class="btn" style="background:rgba(255,255,255,.95);color:#3A6CB5;" onclick="activarPlan('Enterprise')">Activar plan</button>
+    </div>
+    <div class="points">
+      <div class="sec-div"><span>Presencia</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#3A6CB5;">1</div><div class="pt-text"><div class="pt-name">Perfil y visibilidad</div></div></div><div class="ck ck-navy">✓</div></div>
+      <div class="sec-div"><span>Comunicación</span><hr></div>
+      <div class="pt exclusive"><div class="pt-left"><div class="num" style="background:#2E5CA0;">2</div><div class="pt-text"><div class="pt-name">Secretaria por integrante <span class="excl-badge">Equipo</span></div></div></div><div class="ck ck-navy">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#3A6CB5;">3</div><div class="pt-text"><div class="pt-name">Integración redes sociales</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#3A6CB5;">4</div><div class="pt-text"><div class="pt-name">Mensajes masivos</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="sec-div"><span>Gestión de equipo</span><hr></div>
+      <div class="pt exclusive"><div class="pt-left"><div class="num" style="background:#2E5CA0;">5</div><div class="pt-text"><div class="pt-name">Panel de administración <span class="excl-badge">Equipo</span></div></div></div><div class="ck ck-navy">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#3A6CB5;">6</div><div class="pt-text"><div class="pt-name">Clientes VIP y aliados</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="sec-div"><span>Agenda</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#3A6CB5;">7</div><div class="pt-text"><div class="pt-name">Secretaria virtual por integrante</div></div></div><div class="ck ck-navy">✓</div></div>
+      <div class="sec-div"><span>Seguimiento</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#3A6CB5;">8</div><div class="pt-text"><div class="pt-name">Ficha del cliente</div></div></div><div class="ck ck-navy">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#3A6CB5;">9</div><div class="pt-text"><div class="pt-name">Reagendamiento y avisos</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#3A6CB5;">10</div><div class="pt-text"><div class="pt-name">Envío programado</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#3A6CB5;">11</div><div class="pt-text"><div class="pt-name">Alianzas de derivación</div></div></div><div class="ck ck-yes">✓</div></div>
+    </div>
+    <div class="card-foot">
+      <div class="comm" style="background:#F0F5FB;border-color:#D4E0EE;"><div class="comm-icon" style="background:linear-gradient(135deg,#3A6CB5,#5A90D4);">+</div><div><div class="comm-text">Comisiones, credencial y soporte</div><div class="comm-sub">50% + 15% por referir + QR · soporte chat/llamada</div></div></div>
+    </div>
+  </div>
+
+  <!-- ENTERPRISE FULL -->
+  <div class="card featured-dark">
+    <div class="card-head" style="background:linear-gradient(135deg,#1E3A5F 0%,#2A5298 100%);">
+      <div class="head-top">
+        <div class="plan-tag" style="background:rgba(255,255,255,.12);color:#A8C8F0;">Enterprise Full</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.6);">20+ integrantes</div>
+      </div>
+      <div class="plan-name" style="color:#fff;">Escala sin límites</div>
+      <div class="price-row">
+        <div class="price" style="color:#fff;">$310.000</div>
+        <div class="price-mo" style="color:rgba(255,255,255,.6);">/ mes · desde</div>
+      </div>
+      <div class="trial" style="background:rgba(255,255,255,.12);color:#A8C8F0;">10 días gratis</div>
+      <div class="note-pill" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.65);">Reunión con asesor para activar</div>
+      <button class="btn" style="background:linear-gradient(90deg,#2A5298,#5A90D4);color:#fff;" onclick="activarPlan('Enterprise Full')">Activar plan</button>
+    </div>
+    <div class="points">
+      <div class="sec-div"><span>Presencia</span><hr></div>
+      <div class="pt exclusive" style="border-color:#B8CCE8;background:#EBF2FA;"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#1E3A5F,#2A5298);">1</div><div class="pt-text"><div class="pt-name" style="color:#0D2137;">Perfil y visibilidad máxima <span class="excl-badge" style="background:#C8D8EE;color:#0D2137;">Full</span></div></div></div><div class="ck ck-dark">✓</div></div>
+      <div class="sec-div"><span>Comunicación</span><hr></div>
+      <div class="pt exclusive" style="border-color:#B8CCE8;background:#EBF2FA;"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#1E3A5F,#2A5298);">2</div><div class="pt-text"><div class="pt-name" style="color:#0D2137;">Secretaria por integrante <span class="excl-badge" style="background:#C8D8EE;color:#0D2137;">Full</span></div></div></div><div class="ck ck-dark">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#2A5298;">3</div><div class="pt-text"><div class="pt-name">Integración redes sociales</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#2A5298;">4</div><div class="pt-text"><div class="pt-name">Mensajes masivos</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="sec-div"><span>Gestión de equipo</span><hr></div>
+      <div class="pt exclusive" style="border-color:#B8CCE8;background:#EBF2FA;"><div class="pt-left"><div class="num" style="background:linear-gradient(135deg,#1E3A5F,#2A5298);">5</div><div class="pt-text"><div class="pt-name" style="color:#0D2137;">Panel de administración <span class="excl-badge" style="background:#C8D8EE;color:#0D2137;">Full</span></div></div></div><div class="ck ck-dark">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#2A5298;">6</div><div class="pt-text"><div class="pt-name">Clientes VIP y aliados</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="sec-div"><span>Agenda</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#2A5298;">7</div><div class="pt-text"><div class="pt-name">Secretaria virtual por integrante</div></div></div><div class="ck ck-dark">✓</div></div>
+      <div class="sec-div"><span>Seguimiento</span><hr></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#2A5298;">8</div><div class="pt-text"><div class="pt-name">Ficha del cliente</div></div></div><div class="ck ck-dark">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#2A5298;">9</div><div class="pt-text"><div class="pt-name">Reagendamiento y avisos</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#2A5298;">10</div><div class="pt-text"><div class="pt-name">Envío programado</div></div></div><div class="ck ck-yes">✓</div></div>
+      <div class="pt"><div class="pt-left"><div class="num" style="background:#2A5298;">11</div><div class="pt-text"><div class="pt-name">Alianzas de derivación</div></div></div><div class="ck ck-yes">✓</div></div>
+    </div>
+    <div class="card-foot">
+      <div class="comm" style="background:#E8F0FA;border-color:#C0D4EC;"><div class="comm-icon" style="background:linear-gradient(135deg,#1E3A5F,#2A5298);">+</div><div><div class="comm-text">Comisiones, credencial y soporte</div><div class="comm-sub">50% + 15% por referir + QR · soporte chat/llamada</div></div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FAQ -->
+<div class="faq-wrap">
+  <div class="faq">
+    <div>
+      <strong>¿No sabes qué plan elegir?</strong>
+      <p>Nuestra secretaria virtual puede ayudarte a decidir. Pincha el botón de <button onclick="toggleChat()" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.35);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;color:#fff;cursor:pointer;vertical-align:middle;font-family:inherit;">chat</button>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Chat bubble -->
+<button class="chat-bubble-btn" id="chatBubbleBtn" aria-label="Abrir chat">
+  <div class="chat-notif-dot"></div>
+  <svg class="icon-chat" width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="white"/></svg>
+  <svg class="icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>
+</button>
+
+<!-- Chat panel -->
+<div class="chat-panel" id="chatPanel" role="dialog" aria-label="Chat con Heavensy">
+  <div class="chat-header">
+    <div class="chat-header-avatar">H</div>
+    <div class="chat-header-info">
+      <span class="chat-header-name">Heavensy IA</span>
+      <span class="chat-header-status"><span class="chat-status-dot"></span>En línea</span>
+    </div>
+    <button class="chat-header-close" id="chatCloseBtn">✕</button>
+  </div>
+  <div class="chat-messages" id="chatMessages">
+    <div class="msg bot">
+      <div class="msg-avatar">H</div>
+      <div>
+        <div class="msg-bubble">¡Hola! 👋 Soy la asistente de Heavensy. ¿En qué plan estás pensando?</div>
+        <span class="msg-time">Ahora</span>
+      </div>
+    </div>
+  </div>
+  <div class="chat-quick-replies" id="quickReplies">
+    <button class="quick-reply-btn" onclick="sendQuickReply(this, '¿Cómo funciona?')">¿Cómo funciona?</button>
+    <button class="quick-reply-btn" onclick="sendQuickReply(this, 'Quiero unirme')">Quiero unirme</button>
+    <button class="quick-reply-btn" onclick="sendQuickReply(this, 'Ver planes')">Ver planes</button>
+  </div>
+  <div class="chat-input-area">
+    <input type="text" class="chat-input" id="chatInput" placeholder="Escribe tu mensaje...">
+    <button class="chat-send-btn" id="chatSendBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Copiar imágenes necesarias -->
+<script>
+  function activarPlan(plan) {
+    sessionStorage.setItem('selectedPlan', plan);
+    var token = localStorage.getItem('token');
+    if (token) {
+      // Ya está logueado → ir directo a agendar integración
+      var slug = encodeURIComponent(plan);
+      window.location.href = plan === 'gratis'
+        ? 'agendar_integracion.html'
+        : 'agendar_integracion.html?plan=' + slug;
+    } else {
+      // No está logueado → paso 1: crear perfil personal
+      window.location.href = plan === 'gratis'
+        ? 'perfil_personal.html'
+        : 'perfil_personal.html?plan=' + encodeURIComponent(plan);
+    }
+  }
+</script>
+
+<script src="../assets/js/planes.js"></script>
+</body>
+</html>

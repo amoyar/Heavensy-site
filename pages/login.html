@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heavensy — Acceso</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+<link rel="stylesheet" href="../assets/css/login-new.css">
+</head>
+<body>
+
+    <div class="panel-left">
+            <!-- Niebla unificada — solo activa en móvil -->
+            <div class="niebla-mobile" style="position:absolute;bottom:0;left:0;right:0;height:16%;z-index:3;
+              background: linear-gradient(to top,
+                white 0%,
+                white 25%,
+                rgba(255,255,255,0.8) 55%,
+                rgba(255,255,255,0.3) 80%,
+                transparent 100%);"></div>
+            <div style="position:absolute;top:12%;left:0;right:0;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;">
+              <img src="LOGOFINAL.png" alt="Heavensy" style="width:240px;max-width:70%;margin-bottom:0.1rem;filter:drop-shadow(0 4px 16px rgba(50,90,170,0.35));">
+              <p style="font-family:'Poppins',sans-serif;font-size:1.3rem;color:#ffffff;font-style:normal;letter-spacing:.01em;line-height:1.2;text-shadow:0 4px 14px rgba(50,90,170,0.45);margin:0;">Eleva tus ganancias, eleva tu vida</p>
+            </div>
+</div>
+
+    <div class="panel-right">
+        <div class="login-box">
+            <div class="login-header">
+                <h2>Inicia sesión</h2>
+                            </div>
+
+            <form id="loginForm" autocomplete="off">
+                <div class="form-group">
+                    <label class="form-label" for="username">Usuario</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="username" name="username" class="form-input"
+                            placeholder="Ingresa tu usuario" required autocomplete="username">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Contraseña</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" name="password" class="form-input"
+                            placeholder="••••••••" required autocomplete="current-password">
+                        <button type="button" class="input-action" onclick="togglePassword()">
+                            <i id="pwIcon" class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="error-msg" id="errorMsg">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="errorText"></span>
+                </div>
+
+                <button type="submit" id="loginBtn" class="btn-login">
+                    <span>Iniciar sesión</span>
+                </button>
+
+                <div style="text-align:center;margin-top:1rem;">
+                    <a href="#" onclick="openForgotModal()" style="font-size:.8rem;color:#668ED0;text-decoration:none;">
+                        ¿Olvidaste tu contraseña?
+                    </a>
+                </div>
+                <div style="text-align:center;margin-top:0.75rem;">
+                    <a href="planes_heavensy.html" style="font-size:.8rem;color:#b0b8d0;text-decoration:none;font-weight:400;">
+                        ¿Aún no tienes cuenta? <span style="color:#9497F4;text-decoration:underline;">Empezar</span>
+                    </a>
+                </div>
+            </form>
+
+
+        </div>
+    </div>
+
+    <!-- Modal Olvidé contraseña -->
+    <div id="forgotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:none;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:14px;padding:2rem;width:100%;max-width:380px;margin:1rem;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;">
+                <h3 style="font-size:1rem;font-weight:700;color:#111827;">Recuperar contraseña</h3>
+                <button onclick="closeForgotModal()" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:1rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <p style="font-size:.83rem;color:#6b7280;margin-bottom:1.2rem;line-height:1.5;">
+                Ingresa tu email y te enviaremos instrucciones por email y WhatsApp.
+            </p>
+            <div id="forgotError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;padding:9px 12px;border-radius:8px;font-size:.8rem;margin-bottom:1rem;align-items:center;gap:6px;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="forgotErrorText"></span>
+            </div>
+            <div id="forgotSuccess" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;padding:9px 12px;border-radius:8px;font-size:.8rem;margin-bottom:1rem;align-items:center;gap:6px;">
+                <i class="fas fa-check-circle"></i>
+                <span id="forgotSuccessText"></span>
+            </div>
+            <div style="position:relative;margin-bottom:1rem;">
+                <i class="fas fa-envelope" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:12px;color:#78ade5;pointer-events:none;"></i>
+                <input type="email" id="forgotEmail" placeholder="tu@email.com"
+                    style="width:100%;padding:10px 12px 10px 32px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:.875rem;outline:none;background:#f9fafb;box-sizing:border-box;">
+            </div>
+            <button id="forgotBtn" onclick="sendForgot()"
+                style="width:100%;padding:10px;background:#78ade5;color:#fff;border:none;border-radius:8px;font-size:.875rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <i class="fas fa-paper-plane"></i>
+                <span>Enviar instrucciones</span>
+            </button>
+        </div>
+    </div>
+
+    
+<!-- Back button -->
+
+<a href="#" class="btn-back" onclick="history.length>1?history.back():window.location.href='portada.html';return false;">
+  <i class="fas fa-arrow-left"></i>
+  Volver
+</a>
+
+<script src="../assets/js/login-new.js"></script>
+</body>
+</html>

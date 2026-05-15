@@ -1,0 +1,171 @@
+<div class="busq-page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <img class="hero-bg" src="assets/img/busqueda-hero.jpg" alt="" onerror="this.style.display='none'">
+    <div class="hero-inner">
+      <div>
+        <h1>Explora servicios dentro<br>de nuestra comunidad</h1>
+        <p>Emprendedores, profesionales y empresas, listos para atenderte</p>
+      </div>
+      <div class="search-wrap">
+        <div class="search-bar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7194" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="busqInput" placeholder="¿Qué necesitas hoy?"/>
+          <button class="btn-busca" onclick="buscar()">Buscar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- FILTROS -->
+    <aside class="filters">
+      <div class="f-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+        Filtros
+      </div>
+
+      <!-- Categoría -->
+      <div class="acc-item open">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#9961FF"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+          <span class="acc-label">Categoría</span>
+          <svg class="acc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="acc-body">
+          <div class="chips">
+            <div class="chip on" data-cat="todos">Todos</div>
+            <div class="chip" data-cat="salud">Salud</div>
+            <div class="chip" data-cat="bienestar">Bienestar</div>
+            <div class="chip" data-cat="educacion">Educación</div>
+            <div class="chip" data-cat="legal">Legal / Finanzas</div>
+            <div class="chip" data-cat="espacios">Espacios</div>
+            <div class="chip" data-cat="eventos">Eventos / Cursos</div>
+            <div class="chip" data-cat="otros">Otros</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modalidad -->
+      <div class="acc-item">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#9961FF"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
+          <span class="acc-label">Modalidad</span>
+          <svg class="acc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="acc-body">
+          <div class="opts">
+            <label class="opt"><input type="checkbox" name="mod" value="presencial" checked> Presencial</label>
+            <label class="opt"><input type="checkbox" name="mod" value="online" checked> Online</label>
+            <label class="opt"><input type="checkbox" name="mod" value="domicilio" checked> A domicilio</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ubicación -->
+      <div class="acc-item">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#9961FF"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>
+          <span class="acc-label">Ubicación</span>
+          <svg class="acc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="acc-body">
+          <div class="sel-wrap">
+            <select id="busqPais">
+              <option value="">🌎 País</option>
+              <option value="cl" selected>🇨🇱 Chile</option>
+              <option value="ar">🇦🇷 Argentina</option>
+              <option value="co">🇨🇴 Colombia</option>
+              <option value="mx">🇲🇽 México</option>
+              <option value="pe">🇵🇪 Perú</option>
+              <option value="es">🇪🇸 España</option>
+            </select>
+            <select id="busqCiudad">
+              <option value="">📍 Ciudad</option>
+              <option value="santiago">Santiago</option>
+              <option value="valparaiso">Valparaíso</option>
+              <option value="concepcion">Concepción</option>
+              <option value="antofagasta">Antofagasta</option>
+              <option value="temuco">Temuco</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Disponibilidad -->
+      <div class="acc-item">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#9961FF"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg></div>
+          <span class="acc-label">Disponibilidad</span>
+          <svg class="acc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="acc-body">
+          <div class="opts">
+            <label class="opt"><input type="radio" name="disp" value="cualquiera" checked> Cualquier momento</label>
+            <label class="opt"><input type="radio" name="disp" value="hoy"> Hoy</label>
+            <label class="opt"><input type="radio" name="disp" value="semana"> Esta semana</label>
+            <label class="opt"><input type="radio" name="disp" value="mes"> Este mes</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Precio -->
+      <div class="acc-item">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#9961FF"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/></svg></div>
+          <span class="acc-label">Precio</span>
+          <svg class="acc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="acc-body">
+          <div class="range-wrap">
+            <input type="range" id="busqPrecioRange" min="0" max="200000" step="5000" value="200000" oninput="updatePrecio(this.value)">
+            <div class="range-labels"><span>Gratis</span><span id="busqPrecioLabel">Sin límite</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Valoración -->
+      <div class="acc-item">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <div class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="#9961FF"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></div>
+          <span class="acc-label">Valoración</span>
+          <svg class="acc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="acc-body">
+          <div class="opts">
+            <label class="opt"><input type="radio" name="rating" value="0" checked> Cualquiera</label>
+            <label class="opt"><input type="radio" name="rating" value="3"> <span class="stars">★★★</span> 3+ estrellas</label>
+            <label class="opt"><input type="radio" name="rating" value="4"> <span class="stars">★★★★</span> 4+ estrellas</label>
+            <label class="opt"><input type="radio" name="rating" value="5"> <span class="stars">★★★★★</span> Solo 5 estrellas</label>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-clear" onclick="limpiarFiltros()">✕ &nbsp;Limpiar filtros</button>
+    </aside>
+
+    <!-- RESULTADOS -->
+    <section>
+      <div class="results-hdr">
+        <div class="res-count">Mostrando <strong id="busqCount">0</strong> profesionales</div>
+      </div>
+      <div class="cards" id="busqCards">
+        <!-- Las cards se cargarán desde el backend -->
+        <div style="padding:40px;text-align:center;color:#7D84C1;font-size:14px">
+          <i class="fas fa-search" style="font-size:32px;margin-bottom:12px;display:block;opacity:.4"></i>
+          Cargando profesionales...
+        </div>
+      </div>
+      <div class="pagination">
+        <button class="pag-btn on">1</button>
+        <button class="pag-btn">2</button>
+        <button class="pag-btn">3</button>
+        <button class="pag-btn">›</button>
+      </div>
+    </section>
+
+  </div>
+</div>

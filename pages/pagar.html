@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heavensy — Pagar</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="../assets/css/pagar.css">
+<style>
+.hv-nav{position:sticky;top:0;z-index:9999;height:54px;background:rgba(70,90,180,0.96);backdrop-filter:blur(14px);border-bottom:1px solid rgba(150,175,255,0.16);display:flex;align-items:center;padding:0 24px;gap:16px;box-shadow:0 2px 20px rgba(10,20,70,0.4)}
+.hv-nav-brand{display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0}
+.hv-nav-links{display:flex;align-items:center;gap:6px}
+.hv-nav-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- HEAVENSY NAV -->
+<nav class="hv-nav">
+  <a class="hv-nav-brand" href="portada.html">
+    <div class="hv-nav-logo"><img src="../assets/img/LOGOFINAL.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
+    <span class="hv-nav-name">Heavensy</span>
+  </a>
+  <div class="hv-nav-links">
+    <a class="hv-nav-link" id="nav-link-planes" href="planes_heavensy.html">Planes</a>
+    <a class="hv-nav-link" href="busqueda_heavensy.html">Buscar servicios</a>
+  </div>
+  <div style="flex:1"></div>
+  <div class="hv-nav-right">
+    <a id="nav-btn-login" href="login.html" style="font-size:13px;font-weight:600;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:6px 16px;border-radius:8px;text-decoration:none;display:none;">Iniciar sesión</a>
+  </div>
+</nav>
+
+<!-- PROGRESS -->
+<div class="progress-bar">
+  <div class="step done"><span class="step-num"><i class="fas fa-check" style="font-size:8px"></i></span>Perfil personal</div>
+  <i class="fas fa-chevron-right step-arrow"></i>
+  <div class="step done"><span class="step-num"><i class="fas fa-check" style="font-size:8px"></i></span>Integración o Demo</div>
+  <i class="fas fa-chevron-right step-arrow"></i>
+  <div class="step active"><span class="step-num">3</span>Pagar</div>
+</div>
+
+<div class="page">
+  <div class="card">
+
+    <!-- HEADER -->
+    <div class="card-head">
+      <div class="card-head-icon"><i class="fas fa-credit-card"></i></div>
+      <div>
+        <div class="card-head-title">Resumen y pago</div>
+        <div class="card-head-sub">Revisa tu selección y completa el pago para confirmar tu sesión</div>
+      </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="card-body">
+      <div class="pay-layout">
+
+        <!-- IZQUIERDA: formulario -->
+        <div>
+          <div class="pay-form-title"><i class="fas fa-lock"></i>Datos de pago</div>
+
+          <div class="pay-methods">
+            <div class="pay-method sel" onclick="selMetodo(this)"><i class="fas fa-credit-card"></i>Tarjeta</div>
+            <div class="pay-method" onclick="selMetodo(this)"><i class="fas fa-university"></i>Transferencia</div>
+            <div class="pay-method" onclick="selMetodo(this)"><i class="fab fa-paypal"></i>PayPal</div>
+          </div>
+
+          <div id="form-tarjeta">
+            <div class="form-group">
+              <div class="demo-label">Número de tarjeta</div>
+              <div class="input-wrap">
+                <i class="input-prefix fas fa-credit-card"></i>
+                <input class="demo-input" type="text" placeholder="1234 5678 9012 3456" maxlength="19" oninput="formatCard(this)">
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="demo-label">Nombre en la tarjeta</div>
+              <input class="demo-input" type="text" placeholder="Ej: JUANA MACHUCA">
+            </div>
+            <div class="input-row">
+              <div class="form-group">
+                <div class="demo-label">Vencimiento</div>
+                <input class="demo-input" type="text" placeholder="MM/AA" maxlength="5" oninput="formatExpiry(this)">
+              </div>
+              <div class="form-group">
+                <div class="demo-label">CVV</div>
+                <input class="demo-input" type="password" placeholder="•••" maxlength="4">
+              </div>
+            </div>
+          </div>
+
+          <div id="form-transferencia" style="display:none">
+            <div class="resumen-block" style="margin-top:4px">
+              <div class="resumen-row"><span class="resumen-label"><i class="fas fa-university"></i>Banco</span><span class="resumen-value">Banco Heavensy</span></div>
+              <div class="resumen-row"><span class="resumen-label"><i class="fas fa-hashtag"></i>Cuenta corriente</span><span class="resumen-value">00-123-45678-9</span></div>
+              <div class="resumen-row"><span class="resumen-label"><i class="fas fa-id-card"></i>RUT empresa</span><span class="resumen-value">76.543.210-K</span></div>
+              <div class="resumen-row"><span class="resumen-label"><i class="fas fa-envelope"></i>Email confirmación</span><span class="resumen-value">pagos@heavensy.cl</span></div>
+            </div>
+          </div>
+
+          <div class="secure-badge"><i class="fas fa-shield-alt"></i>Pago 100% seguro — encriptado con SSL</div>
+
+          <hr class="sep">
+
+          <div style="display:flex;gap:10px">
+            <button class="btn-secondary" onclick="window.location.href='agendar_integracion.html'"><i class="fas fa-arrow-left"></i>Volver</button>
+            <button class="btn-primary" onclick="procesarPago(this)" style="flex:1;padding:14px 20px;font-size:15px;background:linear-gradient(135deg,#8E84FA 20%,#5b8dee 55%,#89B9F8 100%);border:none;box-shadow:0 8px 20px rgba(10,20,80,0.4),0 3px 8px rgba(10,20,80,0.25),inset 0 1px 0 rgba(255,255,255,0.25)">
+              <i class="fas fa-lock"></i>Confirmar y pagar
+            </button>
+          </div>
+        </div>
+
+        <!-- DERECHA: resumen -->
+        <div>
+          <div class="pay-form-title"><i class="fas fa-receipt"></i>Tu resumen</div>
+
+          <div class="resumen-block" id="resumen-sesion">
+            <div class="resumen-title"><i class="fas fa-calendar-check"></i>Sesión agendada</div>
+            <div class="resumen-row">
+              <span class="resumen-label"><i class="fas fa-calendar"></i>Fecha</span>
+              <span class="resumen-value" id="res-fecha">—</span>
+            </div>
+            <div class="resumen-row">
+              <span class="resumen-label"><i class="fas fa-clock"></i>Hora</span>
+              <span class="resumen-value" id="res-hora">—</span>
+            </div>
+            <div class="resumen-row">
+              <span class="resumen-label"><i class="fas fa-hourglass-half"></i>Duración</span>
+              <span class="resumen-value">20 minutos</span>
+            </div>
+            <div class="resumen-row">
+              <span class="resumen-label"><i class="fas fa-video"></i>Modalidad</span>
+              <span class="resumen-value">Videollamada</span>
+            </div>
+          </div>
+
+          <div class="resumen-block" id="resumen-plan" style="margin-top:12px">
+            <div class="resumen-title"><i class="fas fa-crown"></i>Plan seleccionado</div>
+            <div class="resumen-row">
+              <span class="resumen-label"><i class="fas fa-gem"></i>Plan</span>
+              <span class="resumen-value" id="res-plan">Enterprise</span>
+            </div>
+            <div class="resumen-row">
+              <span class="resumen-label"><i class="fas fa-sync"></i>Facturación</span>
+              <span class="resumen-value">Mensual</span>
+            </div>
+            <div class="resumen-row">
+              <span class="resumen-label"><i class="fas fa-tag"></i>Valor del plan</span>
+              <span class="resumen-value" id="res-plan-precio">$99.990/mes</span>
+            </div>
+            <div class="resumen-row">
+              <span class="resumen-label"><i class="fas fa-handshake"></i>Sesión de integración</span>
+              <span class="resumen-value">$26.000</span>
+            </div>
+            <div class="resumen-row resumen-total">
+              <span class="resumen-label"><i class="fas fa-dollar-sign"></i>Pagas hoy</span>
+              <span class="resumen-value" style="font-size:18px">$26.000</span>
+            </div>
+          </div>
+
+          <div id="aviso-pago" style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);border-radius:10px;padding:12px 14px;margin-top:12px;display:flex;gap:10px;align-items:flex-start">
+            <i class="fas fa-info-circle" style="color:#4ade80;margin-top:1px;flex-shrink:0"></i>
+            <p style="font-size:11px;color:rgba(255,255,255,0.8);line-height:1.7">
+              <strong style="color:#fff">Hoy solo pagas la sesión de integración ($26.000).</strong><br>
+              Este valor se descuenta de tu primer pago mensual. Una vez completada la integración, se cobrará el plan por <strong style="color:#fff" id="res-aviso-precio">$99.990</strong> menos los $26.000 ya pagados.
+            </p>
+          </div>
+
+          <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:10px;line-height:1.6">
+            <i class="fas fa-shield-alt" style="margin-right:4px;color:#4ade80"></i>Puedes cancelar tu plan en cualquier momento desde tu cuenta.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
+
+<script src="../assets/js/pagar.js"></script>
+</body>
+</html>

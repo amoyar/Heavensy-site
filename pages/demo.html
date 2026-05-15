@@ -1,0 +1,146 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo — Heavensy</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="../assets/css/demo.css">
+<style>
+.hv-nav{position:sticky;top:0;z-index:9999;height:54px;background:rgba(70,90,180,0.96);backdrop-filter:blur(14px);border-bottom:1px solid rgba(150,175,255,0.16);display:flex;align-items:center;padding:0 24px;gap:16px;box-shadow:0 2px 20px rgba(10,20,70,0.4)}
+.hv-nav-brand{display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0}
+.hv-nav-links{display:flex;align-items:center;gap:6px}
+.hv-nav-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+</style>
+</head>
+<body>
+<nav class="hv-nav">
+  <a class="hv-nav-brand" href="portada.html">
+    <div class="hv-nav-logo"><img src="../assets/img/LOGOFINAL.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
+    <span class="hv-nav-name">Heavensy</span>
+  </a>
+  <div class="hv-nav-links">
+    <a class="hv-nav-link" id="nav-link-planes" href="planes_heavensy.html">Planes</a>
+    <a class="hv-nav-link" href="busqueda_heavensy.html">Buscar servicios</a>
+  </div>
+  <div style="flex:1"></div>
+  <div class="hv-nav-right">
+    <a id="nav-btn-login" href="login.html" style="font-size:13px;font-weight:600;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:6px 16px;border-radius:8px;text-decoration:none;display:none;">Iniciar sesion</a>
+  </div>
+</nav>
+<div class="demo-page">
+  <div class="demo-header">
+    <div class="demo-title" id="demo-title">Demo para tu empresa</div>
+    <div class="demo-sub" id="demo-sub"></div>
+  </div>
+  <div class="carousel-wrap">
+    <button class="carousel-arrow" id="btn-prev" onclick="moverSlide(-1)" disabled><i class="fas fa-chevron-left"></i></button>
+    <div class="carousel-clip"><div class="carousel-track">
+      <div class="carousel-slides" id="carousel-slides">
+        <div class="slide">
+          <div class="slide-label"><i class="fas fa-mobile-alt"></i> Vista del cliente</div>
+          <div class="phone-wrap">
+            <div class="phone-outer">
+              <div class="phone-btn-vol"></div><div class="phone-btn-vol2"></div><div class="phone-btn-pwr"></div>
+              <div class="phone-mockup"><div class="phone-screen">
+                <div class="phone-status">
+                  <span class="phone-status-left">9:41</span>
+                  <div class="phone-status-cam"></div>
+                  <div class="phone-status-right"><i class="fas fa-signal"></i><i class="fas fa-wifi"></i><i class="fas fa-battery-three-quarters"></i></div>
+                </div>
+                <div class="phone-header">
+                  <i class="fas fa-arrow-left phone-back"></i>
+                  <div class="phone-avatar" id="ph-avatar">H</div>
+                  <div class="phone-contact">
+                    <div class="phone-contact-name" id="ph-name">Tu empresa</div>
+                    <div class="phone-contact-status">en linea</div>
+                  </div>
+                  <div class="phone-actions"><i class="fas fa-video"></i><i class="fas fa-phone"></i><i class="fas fa-ellipsis-v"></i></div>
+                </div>
+                <div class="phone-body" id="phone-body"></div>
+                <div class="phone-input-bar">
+                  <div class="phone-input-inner">
+                    <i class="fas fa-smile phone-input-icon"></i>
+                    <input class="phone-input-field" id="chat-input" placeholder="Mensaje" onkeydown="if(event.key==='Enter')enviarMensaje()">
+                    <i class="fas fa-paperclip phone-input-icon"></i>
+                  </div>
+                  <button class="phone-send" onclick="enviarMensaje()"><i class="fas fa-paper-plane" id="chat-send-icon" style="transform:rotate(45deg);margin-left:2px"></i></button>
+                </div>
+              </div></div>
+            </div>
+            <div class="chat-info">
+              <div class="chat-info-title"><i class="fas fa-robot"></i> IA configurada como</div>
+              <div class="info-row"><div class="info-key">Empresa</div><div class="info-val" id="info-nombre">-</div></div>
+              <div class="info-row"><div class="info-key">Rubro</div><div class="info-val" id="info-rubro">-</div></div>
+              <div class="info-row"><div class="info-key">Servicio principal</div><div class="info-val" id="info-servicio">-</div></div>
+              <div class="info-row"><div class="info-key">Tono de respuesta</div><div class="info-badge" id="info-lenguaje"><i class="fas fa-comment"></i> -</div></div>
+              <div class="info-row"><div class="info-key">Canales activos</div><div class="info-val" id="info-canales">-</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="slide">
+          <div class="slide-label"><i class="fas fa-comments"></i> Plataforma interna</div>
+          <div class="platform-wrap">
+            <div class="platform-sidebar">
+              <div class="platform-sidebar-head">
+                <div class="platform-sidebar-title">Conversaciones</div>
+                <input class="platform-search" placeholder="Buscar...">
+              </div>
+              <div class="conv-list" id="conv-list"></div>
+            </div>
+            <div class="platform-main">
+              <div class="platform-chat-head">
+                <div class="platform-chat-avatar" style="background:linear-gradient(135deg,#f97316,#fb923c)">M</div>
+                <div><div class="platform-chat-name">Maria Gonzalez</div><div class="platform-chat-sub">WhatsApp - hace 2 min</div></div>
+                <div class="platform-actions"><i class="fas fa-user-tag"></i><i class="fas fa-tag"></i><i class="fas fa-ellipsis-v"></i></div>
+              </div>
+              <div class="platform-body" id="platform-body"></div>
+              <div class="platform-input">
+                <input class="platform-input-field" placeholder="Responder o dejar nota..." readonly>
+                <button class="platform-send-btn"><i class="fas fa-paper-plane"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="slide">
+          <div class="slide-label"><i class="fas fa-chart-line"></i> Panel de seguimiento</div>
+          <div class="tracking-wrap">
+            <div style="display:flex;flex-direction:column;gap:16px;flex:1">
+              <div class="tracking-card" style="flex:1">
+                <div class="tracking-card-title"><i class="fas fa-bolt"></i> Conversaciones hoy</div>
+                <div class="stat-big">24</div><div class="stat-label">+8 respecto a ayer</div>
+              </div>
+              <div class="tracking-card" style="flex:1">
+                <div class="tracking-card-title"><i class="fas fa-clock"></i> Tiempo de respuesta</div>
+                <div class="stat-big">12s</div><div class="stat-label">Promedio de la IA</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px;flex:1.4">
+              <div class="tracking-card"><div class="tracking-card-title"><i class="fas fa-chart-bar"></i> Consultas frecuentes</div><div id="tracking-topics"></div></div>
+              <div class="tracking-card"><div class="tracking-card-title"><i class="fas fa-history"></i> Actividad reciente</div><div id="tracking-timeline"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <button class="carousel-arrow" id="btn-next" onclick="moverSlide(1)"><i class="fas fa-chevron-right"></i></button>
+  </div>
+  <div class="carousel-dots">
+    <div class="dot active" onclick="irSlide(0)"></div>
+    <div class="dot" onclick="irSlide(1)"></div>
+    <div class="dot" onclick="irSlide(2)"></div>
+  </div>
+</div>
+<div id="fin-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#4a5ba8;align-items:center;justify-content:center;flex-direction:column;gap:20px;text-align:center">
+  <div id="fin-circle" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#8E84FA 20%,#5b8dee 55%,#89B9F8 100%);display:flex;align-items:center;justify-content:center;transform:scale(0);transition:transform .4s cubic-bezier(.34,1.56,.64,1)">
+    <i class="fas fa-check" style="color:#fff;font-size:32px"></i>
+  </div>
+  <div id="fin-texto" style="opacity:0;transition:opacity .4s ease .3s">
+    <div style="font-size:26px;font-weight:700;color:#fff;margin-bottom:6px">Tu demo ha finalizado</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.6)">Volviendo al menu...</div>
+  </div>
+</div>
+<script src="../assets/js/demo.js"></script>
+</body>
+</html>
