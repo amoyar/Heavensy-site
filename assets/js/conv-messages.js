@@ -68,18 +68,16 @@ async function cargarEmpresasYConversaciones() {
         const label = document.getElementById('companyDropdownLabel');
         if (label) label.textContent = companyName;
 
-        // Sincronizar select oculto y disparar change para activar listeners
+        // Sincronizar select oculto y disparar change — el listener en conversaciones.js
+        // setea currentCompanyId y llama cargarConversacionesPorEmpresa
         const select = document.getElementById('conversacionesCompanyFilter');
         if (select) {
             select.innerHTML = `<option value="${companyId}" selected>${companyName}</option>`;
             select.value = companyId;
-            select.dispatchEvent(new Event('change'));
+            select.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
         console.log(`✅ Empresa activa: ${companyName} (${companyId})`);
-
-        // Cargar conversaciones directamente
-        await cargarConversacionesPorEmpresa(companyId);
 
     } catch (error) {
         console.error('❌ Error cargando empresa:', error);
