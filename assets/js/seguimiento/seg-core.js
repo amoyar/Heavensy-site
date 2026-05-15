@@ -42,10 +42,6 @@ function segInit() {
     var companyName = payload.company_name || companyId;
     if (!companyId) return;
 
-    // Mostrar nombre en la etiqueta
-    var label = document.getElementById('segCompanyDropdownLabel');
-    if (label) label.textContent = companyName;
-
     // Sincronizar select oculto (compatibilidad con segSetCompany)
     var sel = document.getElementById('segCompanyFilter');
     if (sel) {
@@ -56,6 +52,7 @@ function segInit() {
     // Cargar datos de seguimiento directamente
     segSetCompany(companyId, companyName);
 
+    // Permitir cambio externo (desde sidebar)
     window.onCompanyChange = function(id, nom) {
       segSetCompany(id, nom);
     };

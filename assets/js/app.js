@@ -11,13 +11,13 @@ const API_BASE_URL = 'https://heavensy-api-backend-v2.onrender.com';
 function checkAuth() {
   const token = localStorage.getItem('token');
   const currentPage = window.location.pathname;
-  
+
   if (!token && !currentPage.includes('login.html')) {
     console.log('❌ No hay token, redirigiendo a login...');
-    window.location.replace('login.html');
+    window.location.replace('pages/login.html');
     return false;
   }
-  
+
   return true;
 }
 
@@ -84,7 +84,7 @@ async function apiCall(endpoint, options = {}) {
 
     if (res.status === 401) {
       localStorage.clear();
-      window.location.replace('login.html');
+      window.location.replace('pages/login.html');
       return { ok: false };
     }
 
@@ -214,5 +214,5 @@ function logout() {
   localStorage.clear();
   sessionStorage.clear();
   showToast('Sesión cerrada', 'info');
-  setTimeout(() => window.location.replace('login.html'), 300);
+  setTimeout(() => window.location.replace('pages/portada.html'), 300);
 }

@@ -13,11 +13,11 @@ async function loadPage(page) {
     appEl.innerHTML = html;
 
     // Ajustar main según página
-    const fullscreenPages = ['conversaciones', 'seguimiento'];
+    const fullscreenPages = ['conversaciones', 'seguimiento', 'calendario', 'configuracion', 'mipagina', 'embudos'];
     if (fullscreenPages.includes(page)) {
       appEl.style.padding        = '0';
       appEl.style.overflow       = 'hidden';
-      appEl.style.height         = 'calc(100dvh - 40px)';
+      appEl.style.height         = 'calc(100dvh - 54px)';
       appEl.style.display        = 'flex';
       appEl.style.flexDirection  = 'column';
     } else {

@@ -68,10 +68,12 @@ async function cargarEmpresasYConversaciones() {
         const label = document.getElementById('companyDropdownLabel');
         if (label) label.textContent = companyName;
 
-        // Sincronizar select oculto (compatibilidad con resto del código)
+        // Sincronizar select oculto y disparar change para activar listeners
         const select = document.getElementById('conversacionesCompanyFilter');
         if (select) {
             select.innerHTML = `<option value="${companyId}" selected>${companyName}</option>`;
+            select.value = companyId;
+            select.dispatchEvent(new Event('change'));
         }
 
         console.log(`✅ Empresa activa: ${companyName} (${companyId})`);

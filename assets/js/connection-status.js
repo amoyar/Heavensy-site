@@ -22,24 +22,34 @@ const STATUS = {
  * Actualiza el indicador visual en el navbar
  */
 function setConnectionStatus(status) {
-    const dot = document.getElementById("connectionDot");
+    const dot  = document.getElementById("connectionDot");
     const text = document.getElementById("connectionText");
     const container = document.getElementById("connectionStatus");
 
     if (!dot || !text) return;
 
-    // Limpiar clases anteriores
-    dot.className = "w-2 h-2 rounded-full " + status.dot;
-    text.className = "text-[10px] font-medium " + status.color;
-    text.textContent = status.text;
+    // Colores del checkmark SVG según estado
+    const colors = {
+        "Conectando...": { stroke:"#facc15", shadow:"rgba(250,204,21,0.7)" },
+        "Conectado":     { stroke:"#4ADE80", shadow:"rgba(74,222,128,0.7)" },
+        "Parcial":       { stroke:"#fb923c", shadow:"rgba(251,146,60,0.7)" },
+        "Desconectado":  { stroke:"#f87171", shadow:"rgba(248,113,113,0.7)" },
+    };
+    const c = colors[status.text] || colors["Conectando..."];
+    dot.setAttribute("stroke", c.stroke);
+    dot.style.filter = `drop-shadow(0 0 5px ${c.shadow})`;
 
-    // Tooltip
+    // El texto siempre dice "IA"
+    text.textContent = "IA";
+    text.style.color = "rgba(255,255,255,0.82)";
+
+    // Tooltip con estado real
     if (container) {
         const titles = {
             "Conectando...": "Verificando conexión con los servicios...",
-            "Conectado": "Backend y WhatsApp conectados correctamente",
-            "Parcial": "Backend conectado, WhatsApp webhook no responde",
-            "Desconectado": "No se pudo conectar con los servicios"
+            "Conectado":     "Backend y WhatsApp conectados correctamente",
+            "Parcial":       "Backend conectado, WhatsApp webhook no responde",
+            "Desconectado":  "No se pudo conectar con los servicios"
         };
         container.title = titles[status.text] || "";
     }
