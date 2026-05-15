@@ -14,26 +14,24 @@ async function loadLayout() {
     initSidebarToggle();
     initSidebarActive();
     if (typeof loadSidebarCompanyName === 'function') loadSidebarCompanyName();
+    _navUpdateEmpresaLink();
   } catch (e) {
     console.error('❌ Error cargando layout', e);
   }
 }
 
 function initUserMenu() {
-  const btn  = document.getElementById('userMenuBtn');
-  const menu = document.getElementById('userMenu');
-  if (!btn || !menu) return;
-  btn.addEventListener('click', e => { e.stopPropagation(); menu.classList.toggle('hidden'); });
-  document.addEventListener('click', e => {
-    if (!menu.contains(e.target) && !btn.contains(e.target)) menu.classList.add('hidden');
-  });
+  // Manejado por navbar.js (toggleUserMenu)
 }
 
 function loadTopbarUsername() {
   try {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    const el = document.getElementById('topbarUsername');
-    if (el) el.textContent = userData.username || userData.email || 'Usuario';
+    const name = userData.username || userData.email || 'Usuario';
+    const el = document.getElementById('nav-username');
+    if (el) el.textContent = name;
+    const av = document.getElementById('nav-avatar');
+    if (av) av.textContent = name.charAt(0).toUpperCase();
   } catch(e) {}
 }
 
@@ -50,13 +48,15 @@ function openProfileModal() {
       document.getElementById('profileUsername').value  = payload.username || '';
     } catch(e) {}
   }
-  document.getElementById('userMenu')?.classList.add('hidden');
+  document.getElementById('user-dropdown')?.classList.remove('open');
+  document.querySelector('.hv-nav-user')?.classList.remove('open');
 }
 
 function closeProfileModal()  { document.getElementById('profileModal')?.classList.add('hidden'); }
 function openSecurityModal()  {
   document.getElementById('securityModal')?.classList.remove('hidden');
-  document.getElementById('userMenu')?.classList.add('hidden');
+  document.getElementById('user-dropdown')?.classList.remove('open');
+  document.querySelector('.hv-nav-user')?.classList.remove('open');
 }
 function closeSecurityModal() { document.getElementById('securityModal')?.classList.add('hidden'); }
 
@@ -152,6 +152,28 @@ function initSidebarToggle() {
 }
 
 document.addEventListener('DOMContentLoaded', loadLayout);
+
+function _navUpdateEmpresaLink() {
+  const label = document.getElementById('nav-empresa-label');
+  if (!label) return;
+  const hasEmpresa = !!localStorage.getItem('company_id') ||
+                     !!localStorage.getItem('company_config') ||
+                     !!localStorage.getItem('empresa_publicada');
+  label.textContent = hasEmpresa ? 'Mi empresa' : 'Crear mi empresa';
+}
+
+function _navEmpresaClick() {
+  toggleUserMenu();
+  // Tiene empresa si tiene company_id, company_config o empresa_publicada
+  const hasEmpresa = !!localStorage.getItem('company_id') ||
+                     !!localStorage.getItem('company_config') ||
+                     !!localStorage.getItem('empresa_publicada');
+  if (hasEmpresa) {
+    loadPage('dashboard');
+  } else {
+    loadPage('configuracion');
+  }
+}
 
 // ================================
 // SIDEBAR ACTIVE STATE

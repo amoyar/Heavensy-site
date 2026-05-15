@@ -1,90 +1,74 @@
-<nav class="bg-[#b2c4fb] border-b px-4 py-1.5 flex justify-between items-center shadow-sm sticky top-0 z-50 h-10">
-  <div class="flex items-center space-x-2">
-    
-    <!-- Botón toggle sidebar -->
-    <button id="toggleSidebarBtn" class="text-white hover:text-white/80 focus:outline-none">
-      <i class="fas fa-bars text-lg"></i>
-    </button>
+<nav class="hv-nav">
 
-    <img src="assets/img/heavensy-logo.png" alt="Heavensy" class="h-6 w-auto" />
-    <span class="text-sm font-semibold text-[#193d6d]">Heavensy</span>
-  </div>
+  <!-- Hamburger + Brand -->
+  <button id="toggleSidebarBtn" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.8);display:flex;align-items:center;flex-shrink:0;padding:0 2px;">
+    <i class="fas fa-bars" style="font-size:1.1rem"></i>
+  </button>
 
-  <div class="flex items-center space-x-3">
-    <!-- Connection Status Indicator -->
-    <div id="connectionStatus" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/30 cursor-default" title="Estado de conexión">
-      <div id="connectionDot" class="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
-      <span id="connectionText" class="text-[10px] font-medium text-gray-600">Conectando...</span>
+  <a class="hv-nav-brand" href="pages/portada.html">
+    <div class="hv-nav-logo">
+      <img src="assets/img/heavensy-logo.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'">
+    </div>
+    <span class="hv-nav-name">Heavensy</span>
+  </a>
+
+  <a class="hv-nav-link" href="pages/busqueda_heavensy.html">Buscar servicios</a>
+
+  <!-- Espaciador -->
+  <div style="flex:1"></div>
+
+  <!-- Derecha -->
+  <div class="hv-nav-right">
+
+    <!-- IA / Estado de conexión -->
+    <div id="connectionStatus" class="hv-nav-status" style="cursor:default;gap:7px">
+      <svg id="connectionDot" width="16" height="16" viewBox="0 0 24 24" fill="none"
+           stroke="#4ADE80" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"
+           style="filter:drop-shadow(0 0 5px rgba(74,222,128,0.7));flex-shrink:0">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      <span id="connectionText" style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.82)">IA</span>
     </div>
 
-    <!-- Notifications -->
-    <button class="relative text-gray-500 hover:text-gray-700">
-      <i class="fas fa-bell text-lg"></i>
-    </button>
+    <div class="hv-nav-divider"></div>
 
-    <!-- User Menu -->
-    <div class="relative">
-      <button id="userMenuBtn" class="flex items-center space-x-1.5 focus:outline-none">
-        <div class="w-7 h-7 bg-[#92acde] rounded-full flex items-center justify-center text-white text-xs">
-          <i class="fas fa-user"></i>
-        </div>
-        <span id="topbarUsername" class="text-xs font-medium text-[#193d6d]">
-          Usuario
-        </span>
-        <i class="fas fa-chevron-down text-[10px] text-gray-500"></i>
-      </button>
+    <!-- Campanita -->
+    <div class="hv-nav-bell">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+    </div>
 
-      <div
-        id="userMenu"
-        class="hidden absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg border z-50"
-      >
-        <button onclick="openProfileModal()" class="block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100">
-          Mi perfil
-        </button>
-        <button onclick="openSecurityModal()" class="block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100">
-          Seguridad
-        </button>
-        <div class="border-t my-1"></div>
-        <button onclick="logout()" class="block w-full text-left px-3 py-1.5 text-xs text-red-600 hover:bg-gray-100">
-          Cerrar sesión
-        </button>
+    <div class="hv-nav-divider"></div>
+
+    <!-- Usuario -->
+    <div class="hv-nav-user-wrap">
+      <div class="hv-nav-user" onclick="toggleUserMenu()">
+        <div class="hv-nav-avatar" id="nav-avatar">U</div>
+        <span class="hv-nav-user-name" id="nav-username">Usuario</span>
+        <svg class="hv-nav-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+      <div class="hv-nav-dropdown" id="user-dropdown">
+        <a href="#perfil_personal_interno" onclick="toggleUserMenu()">
+          <i class="fas fa-user" style="width:14px;opacity:.7"></i> Mi perfil
+        </a>
+        <a href="#" id="nav-empresa-link" onclick="_navEmpresaClick();return false;">
+          <i class="fas fa-building" style="width:14px;opacity:.7"></i>
+          <span id="nav-empresa-label">Crear mi empresa</span>
+        </a>
+        <div class="hv-nav-dropdown-sep"></div>
+        <a href="#" class="danger" onclick="logout();return false;">
+          <i class="fas fa-sign-out-alt" style="width:14px"></i> Cerrar sesión
+        </a>
       </div>
     </div>
+
   </div>
 </nav>
-<!-- ── MODAL PERFIL ── -->
-<div id="profileModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-  <div class="bg-white w-full max-w-md rounded-xl shadow-xl mx-4">
-    <div class="flex justify-between items-center px-5 py-4 border-b">
-      <h2 class="text-sm font-bold text-gray-800"><i class="fas fa-user text-[#9961FF] mr-2"></i>Mi perfil</h2>
-      <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
-    </div>
-    <form id="profileForm2" class="px-5 py-4 space-y-3">
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Nombre</label>
-          <input id="profileFirstName" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]">
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-600 mb-1">Apellido</label>
-          <input id="profileLastName" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]">
-        </div>
-      </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Email</label>
-        <input id="profileEmail" type="email" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#9961FF]">
-      </div>
-      <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Usuario</label>
-        <input id="profileUsername" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-400" readonly>
-      </div>
-      <div class="flex justify-end gap-2 pt-2 border-t mt-3">
-        <button type="button" onclick="closeProfileModal()" class="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">Cancelar</button>
-        <button type="submit" class="px-4 py-2 text-sm bg-[#9961FF] text-white rounded-lg font-semibold hover:bg-[#8450f0]">Guardar</button>
-      </div>
-    </form>
-  </div>
-</div>
+
 
 <!-- ── MODAL SEGURIDAD ── -->
 <div id="securityModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
