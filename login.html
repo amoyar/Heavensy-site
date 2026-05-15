@@ -3,102 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="0;url=pages/login.html">
-    <script>window.location.replace('pages/login.html');</script>
     <title>Heavensy — Acceso</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="./assets/css/login.css">
-  
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+<link rel="stylesheet" href="assets/css/login.css">
 </head>
-    <!-- scripts CORRECTOS -->
-    <script src="./assets/js/app.js"></script>
-    <script src="./assets/js/login.js"></script>
 <body>
 
     <div class="panel-left">
-        <a href="#" class="btn-back" onclick="history.length>1?history.back():window.location.href='pages/portada.html';return false;">
-          <i class="fas fa-arrow-left"></i> Volver
-        </a>
-        <div class="brand">
-            <div class="brand-header">
-                <img src="assets/img/heavensy-logo.png" alt="" style="width:100px;height:100px;object-fit:contain;display:block;flex-shrink:0;">
-                <div>
-                    <h1>Heavensy</h1>
-                    <p class="brand-tagline">"Eleva tus ganancias, eleva tu vida"</p>
-                </div>
+            <!-- Niebla unificada — solo activa en móvil -->
+            <div class="niebla-mobile" style="position:absolute;bottom:0;left:0;right:0;height:16%;z-index:3;
+              background: linear-gradient(to top,
+                white 0%,
+                white 25%,
+                rgba(255,255,255,0.8) 55%,
+                rgba(255,255,255,0.3) 80%,
+                transparent 100%);"></div>
+            <div style="position:absolute;top:12%;left:0;right:0;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;">
+              <img src="LOGOFINAL.png" alt="Heavensy" style="width:240px;max-width:70%;margin-bottom:0.1rem;filter:drop-shadow(0 4px 16px rgba(50,90,170,0.35));">
+              <p style="font-family:'Poppins',sans-serif;font-size:1.3rem;color:#ffffff;font-style:normal;letter-spacing:.01em;line-height:1.2;text-shadow:0 4px 14px rgba(50,90,170,0.45);margin:0;">Eleva tus ganancias, eleva tu vida</p>
             </div>
-            <p class="brand-sub">CRM inteligente para WhatsApp Business con integración de IA</p>
-            <div class="brand-features">
-                <div class="brand-features-col">
-                    <div class="brand-feature">
-                        <div class="brand-feature-icon"><i class="fas fa-comments"></i></div>
-                        <div>
-                            <p class="brand-feature-title">CRM + WhatsApp Business</p>
-                            <p class="brand-feature-desc">Gestiona conversaciones multi-empresa</p>
-                        </div>
-                    </div>
-                    <div class="brand-feature">
-                        <div class="brand-feature-icon"><i class="fas fa-calendar-check"></i></div>
-                        <div>
-                            <p class="brand-feature-title">Agenda & Reservas</p>
-                            <p class="brand-feature-desc">Calendario con lista de espera</p>
-                        </div>
-                    </div>
-                    <div class="brand-feature">
-                        <div class="brand-feature-icon"><i class="fas fa-filter"></i></div>
-                        <div>
-                            <p class="brand-feature-title">Embudos & Seguimiento</p>
-                            <p class="brand-feature-desc">Convierte leads en clientes</p>
-                        </div>
-                    </div>
-                    <div class="brand-feature">
-                        <div class="brand-feature-icon"><i class="fas fa-robot"></i></div>
-                        <div>
-                            <p class="brand-feature-title">IA con Moderación</p>
-                            <p class="brand-feature-desc">Respuestas automáticas inteligentes</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="brand-features-col">
-                    <div class="brand-feature">
-                        <div class="brand-feature-icon"><i class="fas fa-tags"></i></div>
-                        <div>
-                            <p class="brand-feature-title">Tags & Notas</p>
-                            <p class="brand-feature-desc">Organiza y segmenta contactos</p>
-                        </div>
-                    </div>
-                    <div class="brand-feature">
-                        <div class="brand-feature-icon"><i class="fas fa-bolt"></i></div>
-                        <div>
-                            <p class="brand-feature-title">Notas Rápidas</p>
-                            <p class="brand-feature-desc">Respuestas preconfiguradas al instante</p>
-                        </div>
-                    </div>
-                    <div class="brand-feature">
-                        <div class="brand-feature-icon"><i class="fas fa-photo-video"></i></div>
-                        <div>
-                            <p class="brand-feature-title">Multimedia</p>
-                            <p class="brand-feature-desc">Audio, video, docs y mensajes de voz</p>
-                        </div>
-                    </div>
-                    <div class="brand-feature">
-                        <div class="brand-feature-icon"><i class="fas fa-chart-line"></i></div>
-                        <div>
-                            <p class="brand-feature-title">Monitor en tiempo real</p>
-                            <p class="brand-feature-desc">Estadísticas y actividad en vivo</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+</div>
 
     <div class="panel-right">
         <div class="login-box">
             <div class="login-header">
-                <h2>Bienvenido</h2>
-                <p>Ingresa tus credenciales para continuar</p>
-            </div>
+                <h2>Inicia sesión</h2>
+                            </div>
 
             <form id="loginForm" autocomplete="off">
                 <div class="form-group">
@@ -128,20 +60,22 @@
                 </div>
 
                 <button type="submit" id="loginBtn" class="btn-login">
-                    <i class="fas fa-arrow-right-to-bracket"></i>
                     <span>Iniciar sesión</span>
                 </button>
 
                 <div style="text-align:center;margin-top:1rem;">
-                    <a href="#" onclick="openForgotModal()" style="font-size:.8rem;color:#78ade5;text-decoration:none;">
+                    <a href="#" onclick="openForgotModal()" style="font-size:.8rem;color:#668ED0;text-decoration:none;">
                         ¿Olvidaste tu contraseña?
+                    </a>
+                </div>
+                <div style="text-align:center;margin-top:0.75rem;">
+                    <a href="planes_heavensy.html" style="font-size:.8rem;color:#b0b8d0;text-decoration:none;font-weight:400;">
+                        ¿Aún no tienes cuenta? <span style="color:#9497F4;text-decoration:underline;">Empezar</span>
                     </a>
                 </div>
             </form>
 
-            <div class="login-footer">
-                © 2026 Heavensy · Todos los derechos reservados
-            </div>
+
         </div>
     </div>
 
@@ -178,5 +112,15 @@
         </div>
     </div>
 
+    
+<!-- Back button -->
+
+<a href="#" class="btn-back" onclick="history.length>1?history.back():window.location.href='portada.html';return false;">
+  <i class="fas fa-arrow-left"></i>
+  Volver
+</a>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/login.js"></script>
 </body>
 </html>
