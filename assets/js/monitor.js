@@ -55,6 +55,15 @@ async function initMonitorPage() {
     // Cargar estado de rooms
     await loadRoomsStatus();
     
+    // Crear elemento de status si no existe
+    if (!document.getElementById('monitorConnectionStatus')) {
+        const statusWrap = document.createElement('div');
+        statusWrap.id = 'monitorConnectionStatus';
+        statusWrap.style.cssText = 'display:inline-flex;align-items:center;gap:6px;font-size:12px;margin-bottom:12px;';
+        const appEl = document.getElementById('app');
+        if (appEl && appEl.firstChild) appEl.insertBefore(statusWrap, appEl.firstChild);
+    }
+
     // Log inicial
     addLog('INFO', 'Monitor en tiempo real iniciado');
     addLog('INFO', `Company ID: ${currentCompanyId}`);
@@ -456,28 +465,18 @@ function addLog(type, message) {
 }
 
 function updateConnectionStatus(status) {
-    const statusEl = document.getElementById('connectionStatus');
-    
+    // Usar elemento propio del módulo monitor — no tocar el connectionStatus de la navbar
+    const statusEl = document.getElementById('monitorConnectionStatus');
+    if (!statusEl) return;
+
     const statusConfig = {
-        connected: {
-            color: 'bg-green-500',
-            text: 'Conectado',
-            pulse: true
-        },
-        disconnected: {
-            color: 'bg-red-500',
-            text: 'Desconectado',
-            pulse: false
-        },
-        error: {
-            color: 'bg-yellow-500',
-            text: 'Reconectando...',
-            pulse: true
-        }
+        connected:    { color: 'bg-green-500',  text: 'Conectado',       pulse: true  },
+        disconnected: { color: 'bg-red-500',     text: 'Desconectado',    pulse: false },
+        error:        { color: 'bg-yellow-500',  text: 'Reconectando...', pulse: true  }
     };
-    
+
     const config = statusConfig[status] || statusConfig.disconnected;
-    
+
     statusEl.innerHTML = `
         <span class="h-3 w-3 rounded-full ${config.color} ${config.pulse ? 'pulse-dot' : ''}"></span>
         <span class="text-sm ${status === 'connected' ? 'text-green-600' : 'text-gray-600'}">${config.text}</span>
