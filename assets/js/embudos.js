@@ -161,13 +161,14 @@ function _embLoad() {
       });
 
       var av = c.avatar;
+      var isRealAvatar = av && av.provider !== 'generated' && av.type !== 'initials';
       return {
         id:         c.user_id,
         nombre:     c.profile_name || c.user_id || '—',
         telefono:   c.user_id || '',
         canal:      'whatsapp',
         is_vip:     c.status === 'vip',
-        foto_url:   av ? (av.secure_url || av.url || null) : null,
+        foto_url:   isRealAvatar ? (av.secure_url || av.url || null) : null,
         unread:     c.unread_count || 0,
         last_msg:   c.last_message_at || null,
         funnel_ids: funnel_ids,

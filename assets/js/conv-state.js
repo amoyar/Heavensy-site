@@ -31,25 +31,39 @@ let isSending = false;
 function renderAvatar(containerEl, { avatar_url, name, roundedClass }) {
     if (!containerEl) return;
 
-    const defaultAvatar = "assets/img/Avatar.png";
-    const finalUrl = avatar_url && avatar_url.trim() !== "" ? avatar_url : defaultAvatar;
+    const hasPhoto = avatar_url && avatar_url.trim() !== "";
 
-    const currentUrl = containerEl.getAttribute("data-avatar-url") || "";
-    if (currentUrl === finalUrl && containerEl.querySelector("img")) {
-        return;
+    const currentUrl  = containerEl.getAttribute("data-avatar-url") || "";
+    const currentName = containerEl.getAttribute("data-avatar-name") || "";
+    // Si ya tiene el estado correcto Y el mismo nombre, no sobreescribir
+    if (hasPhoto && currentUrl === avatar_url) return;
+    if (!hasPhoto && currentUrl === "fallback" && currentName === (name || "")) return;
+
+    if (hasPhoto) {
+        containerEl.setAttribute("data-avatar-url", avatar_url);
+        containerEl.innerHTML = `
+            <img
+                src="${avatar_url}"
+                class="w-full h-full object-cover ${roundedClass || ''}"
+                alt="Avatar"
+                loading="lazy"
+                onerror="this.parentElement.setAttribute('data-avatar-url','fallback');this.remove();"
+            />
+        `;
+    } else {
+        containerEl.setAttribute("data-avatar-url", "fallback");
+        containerEl.setAttribute("data-avatar-name", name || "");
+        containerEl.style.background = "linear-gradient(135deg,#8e84fa,#91c0ff)";
+        containerEl.style.display    = "flex";
+        containerEl.style.alignItems = "center";
+        containerEl.style.justifyContent = "center";
+        const isPhone = /^\d+$/.test((name || '').replace(/[\s\+\-]/g, ''));
+        if (isPhone || !name) {
+            containerEl.innerHTML = '<i class="fas fa-user" style="font-size:13px;color:#fff;"></i>';
+        } else {
+            containerEl.innerHTML = '<span style="font-size:13px;font-weight:700;color:#fff;">' + getInitials(name) + '</span>';
+        }
     }
-
-    containerEl.setAttribute("data-avatar-url", finalUrl);
-
-    containerEl.innerHTML = `
-        <img 
-            src="${finalUrl}" 
-            class="w-full h-full object-cover ${roundedClass}" 
-            alt="Avatar"
-            loading="lazy"
-            onerror="this.src='${defaultAvatar}'"
-        />
-    `;
 }
 
 // ============================================

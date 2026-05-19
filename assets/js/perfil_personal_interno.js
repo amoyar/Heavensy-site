@@ -131,9 +131,180 @@ function ppiCambiarFoto(input) {
 }
 
 // ── EDITAR PLAN ──
+// ── MODAL PLANES ──
+var _ppiPlanSel    = null;
+var _ppiDiaSel     = null;
+var _ppiHoraSel    = null;
+var _ppiMetodoSel  = 'tarjeta';
+
+var _ppiPlanNombres = { basico: 'Básico', pro: 'Automate Pro', premium: 'Secretar-ía Premium' };
+var _ppiPlanPrecios = { basico: '$0 (gratis)', pro: '$70.000/mes', premium: '$120.000/mes' };
+
 function ppiEditarPlan() {
-  location.href = 'pages/planes_heavensy.html';
+  _ppiPlanSel = null; _ppiDiaSel = null; _ppiHoraSel = null;
+  document.querySelectorAll('.ppi-plan-card').forEach(function(c){ c.classList.remove('selected'); });
+  var btn = document.getElementById('ppi-s1-next');
+  if (btn) btn.disabled = true;
+  ppiPasoPlanes();
+  document.getElementById('ppi-planes-overlay').classList.add('open');
 }
+
+function ppiCerrarPlanes() {
+  document.getElementById('ppi-planes-overlay').classList.remove('open');
+}
+window.ppiCerrarPlanes = ppiCerrarPlanes;
+
+function ppiSelPlan(plan) {
+  _ppiPlanSel = plan;
+  document.querySelectorAll('.ppi-plan-card').forEach(function(c){ c.classList.remove('selected'); });
+  document.getElementById('ppi-pc-' + plan).classList.add('selected');
+  var btn = document.getElementById('ppi-s1-next');
+  if (btn) btn.disabled = false;
+}
+window.ppiSelPlan = ppiSelPlan;
+
+function ppiPasoPlanes() {
+  document.getElementById('ppi-planes-s1').style.display = '';
+  document.getElementById('ppi-planes-s2').style.display = 'none';
+  document.getElementById('ppi-planes-s3').style.display = 'none';
+  _ppiActualizarSteps(1);
+}
+window.ppiPasoPlanes = ppiPasoPlanes;
+
+function ppiPasoAgenda() {
+  document.getElementById('ppi-planes-s1').style.display = 'none';
+  document.getElementById('ppi-planes-s2').style.display = '';
+  document.getElementById('ppi-planes-s3').style.display = 'none';
+  _ppiActualizarSteps(2);
+  _ppiRenderCalendario();
+}
+window.ppiPasoAgenda = ppiPasoAgenda;
+
+function ppiPasoPago() {
+  if (!_ppiDiaSel || !_ppiHoraSel) return;
+  document.getElementById('ppi-planes-s1').style.display = 'none';
+  document.getElementById('ppi-planes-s2').style.display = 'none';
+  document.getElementById('ppi-planes-s3').style.display = '';
+  _ppiActualizarSteps(3);
+  _ppiRenderResumen();
+}
+window.ppiPasoPago = ppiPasoPago;
+
+function _ppiActualizarSteps(current) {
+  [1,2,3].forEach(function(i) {
+    var step = document.getElementById('ppi-step-' + i);
+    if (!step) return;
+    step.classList.remove('active','done');
+    if (i < current) step.classList.add('done');
+    if (i === current) step.classList.add('active');
+  });
+  [1,2].forEach(function(i) {
+    var line = document.getElementById('ppi-line-' + i);
+    if (line) line.classList.toggle('done', current > i);
+  });
+}
+
+function _ppiRenderCalendario() {
+  var grid     = document.getElementById('ppi-cal-grid');
+  var slotsEl  = document.getElementById('ppi-slots-wrap');
+  if (!grid) return;
+
+  var dias = ['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
+  var html = dias.map(function(d){ return '<div class="ppi-cal-header">' + d + '</div>'; }).join('');
+
+  var hoy   = new Date();
+  var dow   = hoy.getDay();
+  var lunes = new Date(hoy);
+  lunes.setDate(hoy.getDate() - (dow === 0 ? 6 : dow - 1));
+  var hoyStr = hoy.toDateString();
+
+  for (var i = 0; i < 14; i++) {
+    var d = new Date(lunes);
+    d.setDate(lunes.getDate() + i);
+    var isWeekend = d.getDay() === 0 || d.getDay() === 6;
+    var isPast    = d < new Date(new Date().setHours(0,0,0,0));
+    var isToday   = d.toDateString() === hoyStr;
+    var disabled  = isWeekend || isPast;
+    var dayStr    = d.toISOString().split('T')[0];
+    var cls = 'ppi-cal-day' + (disabled ? ' disabled' : '') + (isToday ? ' today' : '');
+    html += '<div class="' + cls + '" data-day="' + dayStr + '" onclick="ppiSelDia(this)">' + d.getDate() + '</div>';
+  }
+  grid.innerHTML = html;
+  slotsEl.innerHTML = '<span style="font-size:12px;color:rgba(56,56,56,0.4)">Selecciona una fecha para ver horarios</span>';
+  _ppiDiaSel = null; _ppiHoraSel = null;
+  var btn = document.getElementById('ppi-s2-next');
+  if (btn) btn.disabled = true;
+}
+
+function ppiSelDia(el) {
+  document.querySelectorAll('.ppi-cal-day').forEach(function(d){ d.classList.remove('selected'); });
+  el.classList.add('selected');
+  _ppiDiaSel  = el.dataset.day;
+  _ppiHoraSel = null;
+  var btn = document.getElementById('ppi-s2-next');
+  if (btn) btn.disabled = true;
+  var slots  = ['09:00','10:00','11:00','14:00','15:00','16:00','17:00'];
+  var taken  = ['10:00','15:00'];
+  var html   = slots.map(function(s) {
+    var isTaken = taken.indexOf(s) !== -1;
+    return '<div class="ppi-slot' + (isTaken ? ' taken' : '') + '" data-hora="' + s + '" onclick="ppiSelSlot(this)">' + s + '</div>';
+  }).join('');
+  document.getElementById('ppi-slots-wrap').innerHTML = html;
+}
+window.ppiSelDia = ppiSelDia;
+
+function ppiSelSlot(el) {
+  document.querySelectorAll('.ppi-slot').forEach(function(s){ s.classList.remove('selected'); });
+  el.classList.add('selected');
+  _ppiHoraSel = el.dataset.hora;
+  var btn = document.getElementById('ppi-s2-next');
+  if (btn) btn.disabled = false;
+}
+window.ppiSelSlot = ppiSelSlot;
+
+function _ppiRenderResumen() {
+  var el = document.getElementById('ppi-pago-resumen');
+  if (!el) return;
+  var planNombre = _ppiPlanNombres[_ppiPlanSel] || '—';
+  var planPrecio = _ppiPlanPrecios[_ppiPlanSel] || '—';
+  var fecha = _ppiDiaSel
+    ? new Date(_ppiDiaSel + 'T12:00:00').toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long' })
+    : '—';
+  el.innerHTML =
+    '<div class="ppi-pago-resumen-row"><span>Plan</span><span>' + planNombre + ' — ' + planPrecio + '</span></div>' +
+    '<div class="ppi-pago-resumen-row"><span>Sesión de integración</span><span>' + fecha + ' · ' + (_ppiHoraSel||'') + '</span></div>' +
+    '<div class="ppi-pago-resumen-row"><span>Duración</span><span>20-30 min · Videollamada</span></div>' +
+    '<div class="ppi-pago-resumen-row total"><span>Hoy pagas</span><span>$26.000</span></div>' +
+    '<div style="font-size:10px;color:rgba(56,56,56,0.4);margin-top:6px">Se descuenta de tu primer pago mensual</div>';
+}
+
+function ppiMetodo(metodo) {
+  _ppiMetodoSel = metodo;
+  ['tarjeta','transferencia','paypal'].forEach(function(m) {
+    var btn  = document.getElementById('ppi-m-' + m);
+    var form = document.getElementById('ppi-form-' + m);
+    if (btn)  btn.classList.toggle('active', m === metodo);
+    if (form) form.style.display = m === metodo ? '' : 'none';
+  });
+}
+window.ppiMetodo = ppiMetodo;
+
+function ppiFormatCard(input) {
+  var val = input.value.replace(/\D/g,'').slice(0,16);
+  input.value = val.replace(/(.{4})/g,'$1 ').trim();
+}
+window.ppiFormatCard = ppiFormatCard;
+
+function ppiConfirmarPago() {
+  var btn = event.currentTarget;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px"></i>Procesando…';
+  setTimeout(function() {
+    btn.innerHTML = '<i class="fas fa-check" style="margin-right:6px"></i>¡Plan activado!';
+    setTimeout(function() { ppiCerrarPlanes(); }, 1800);
+  }, 2000);
+}
+window.ppiConfirmarPago = ppiConfirmarPago;
 
 // ── OJO CONTRASEÑA ──
 function ppiToggleEye() {

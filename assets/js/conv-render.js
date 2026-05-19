@@ -120,14 +120,20 @@ function renderConversations(list = conversations) {
         item.innerHTML = `
             <div class="flex items-center gap-3">
                 <!-- Avatar -->
-                <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden" id="avatar-list-${conv.id}">
-                    ${conv.avatar_url
-                ? `<img src="${conv.avatar_url}" class="w-full h-full object-cover" />`
-                : `<span class="text-sm font-semibold text-gray-600">
-                                   ${(conv.name || conv.phone || '?').substring(0, 2).toUpperCase()}
-                               </span>`
-            }
-                </div>
+                ${(function(){
+                    var isReal = conv.avatar_url && !conv.avatar_url.includes('initials') && !conv.avatar_url.includes('generated');
+                    var nm  = conv.name || conv.phone || '?';
+                    var ini = nm.substring(0,2).toUpperCase();
+                    if (isReal) {
+                        return '<div class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0" id="avatar-list-' + conv.id + '" data-avatar-url="' + conv.avatar_url + '">'
+                             + '<img src="' + conv.avatar_url + '" class="w-full h-full object-cover" onerror="this.remove()" />'
+                             + '</div>';
+                    }
+                    var ini2 = (typeof getInitials === 'function') ? getInitials(nm) : ini;
+                    return '<div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0" id="avatar-list-' + conv.id + '" style="background:linear-gradient(135deg,#8e84fa,#91c0ff)" data-avatar-url="fallback">'
+                         + '<span style="font-size:13px;font-weight:700;color:#fff;">' + ini2 + '</span>'
+                         + '</div>';
+                })()}
 
                 <div class="flex-1 min-w-0">
                     <div class="flex justify-between items-center">
@@ -203,7 +209,8 @@ function renderConversations(list = conversations) {
         container.appendChild(item);
 
         // Actualizar avatar dinámico si existe helper
-        if (typeof updateConversationAvatar === 'function') {
+        if (typeof updateConversationAvatar === 'function' && conv.avatar_url
+            && !conv.avatar_url.includes('initials') && !conv.avatar_url.includes('generated')) {
             updateConversationAvatar(conv.id, conv.avatar_url);
         }
     });
@@ -530,11 +537,13 @@ function updateContactPanel() {
     }
 
     if (avatarEl) {
+        const rawUrl   = currentConversation.avatar_url || "";
+        const isReal   = rawUrl && !rawUrl.includes('initials') && !rawUrl.includes('generated');
+        const safeUrl  = isReal ? rawUrl : "";
         const currentUrl = avatarEl.getAttribute("data-avatar-url") || "";
-        const targetUrl = currentConversation.avatar_url || "";
-        if (currentUrl !== targetUrl || !avatarEl.querySelector("img")) {
+        if (currentUrl !== (safeUrl || "fallback") || !avatarEl.querySelector("img")) {
             renderAvatar(avatarEl, {
-                avatar_url: currentConversation.avatar_url,
+                avatar_url: safeUrl,
                 name: name,
                 roundedClass: "rounded-full"
             });
@@ -542,12 +551,14 @@ function updateContactPanel() {
     }
 }
 
-function updateConversationAvatar(waId, avatarUrl) {
+function updateConversationAvatar(waId, avatarUrl, name) {
+    // Solo actuar si hay foto real
+    if (!avatarUrl || avatarUrl.includes('initials') || avatarUrl.includes('generated')) return;
     const avatarContainer = document.getElementById(`avatar-list-${waId}`);
     if (avatarContainer) {
         renderAvatar(avatarContainer, {
             avatar_url: avatarUrl,
-            name: waId,
+            name: name || waId,
             roundedClass: "rounded-full"
         });
     }

@@ -6,14 +6,28 @@
 const CAL_HOUR_START = 8;
 const CAL_HOUR_END   = 19;
 const CAL_HOUR_H     = 72;
-let calZoom = false;
+let calZoom      = false; // zoom semana/día — controla altura de slots
+let calMonthZoom = false; // zoom mes — controla cuántas citas mostrar por celda
 
 function getHourH() { return calZoom ? CAL_HOUR_H * 4 : CAL_HOUR_H; }
+
 function toggleZoom() {
   calZoom = !calZoom;
   document.documentElement.style.setProperty('--hour-h', getHourH() + 'px');
   calRender();
 }
+
+function toggleMonthZoom() {
+  calMonthZoom = !calMonthZoom;
+  var btn = document.getElementById('month-zoom-btn');
+  if (btn) {
+    btn.title     = calMonthZoom ? 'Vista normal' : 'Ampliar';
+    btn.className = 'cal-zoom-btn' + (calMonthZoom ? ' zoomed' : '');
+    btn.innerHTML = '<i class="fas ' + (calMonthZoom ? 'fa-search-minus' : 'fa-search-plus') + '"></i>';
+  }
+  calRenderMonth();
+}
+window.toggleMonthZoom = toggleMonthZoom;
 
 const CAL_DAYS_ES   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const CAL_DAYS_FULL = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -940,6 +954,20 @@ function calRenderMonth() {
   if (!grid) return;
   grid.innerHTML = '';
 
+  // Fila cabecera — misma fila del grid, alineación garantizada
+  const DAYS_HDR = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  DAYS_HDR.forEach((name, i) => {
+    const hd = document.createElement('div');
+    hd.className = 'month-day-hd';
+    if (i === 0) {
+      hd.style.position = 'relative';
+      hd.innerHTML = `<button class="cal-zoom-btn" id="month-zoom-btn" onclick="toggleMonthZoom()" title="${calMonthZoom ? 'Vista normal' : 'Ampliar'}" style="position:absolute;left:5px;top:50%;transform:translateY(-50%)">${calMonthZoom ? '<i class="fas fa-search-minus"></i>' : '<i class="fas fa-search-plus"></i>'}</button>${name}`;
+    } else {
+      hd.textContent = name;
+    }
+    grid.appendChild(hd);
+  });
+
   for (let i=0; i<startDay; i++) {
     const prev = new Date(y, m, 1-startDay+i);
     const cell = document.createElement('div');
@@ -957,16 +985,23 @@ function calRenderMonth() {
     numDiv.textContent = d;
     cell.appendChild(numDiv);
     const dayAppts = calGetDayAppointments(dateStr);
-    dayAppts.slice(0,3).forEach(a => {
-      const sc = getApptColor(a);
-      const dot = document.createElement('span');
+    const visibleAppts = calMonthZoom ? dayAppts : dayAppts.slice(0, 3);
+    visibleAppts.forEach(a => {
+      const sc  = getApptColor(a);
+      const dot = document.createElement('div');
       dot.className = 'month-dot';
-      dot.style.cssText = `background:${sc.bg};color:${sc.text};`;
-      dot.textContent = `${calFmtContact(a.contact_id)} · ${CAL_STATUS_LABELS[a.status]||a.status}`;
+      dot.style.cssText = `background:${sc.bg};color:${sc.text};display:flex;align-items:center;justify-content:space-between;gap:4px;cursor:default;`;
+      dot.innerHTML =
+        `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${calFmtContact(a.contact_id)} · ${CAL_STATUS_LABELS[a.status]||a.status}</span>` +
+        `<button class="month-dot-eye" title="Ver detalle" style="background:none;border:none;cursor:pointer;padding:0 2px;color:inherit;opacity:.7;flex-shrink:0;font-size:10px;line-height:1;"><i class="fas fa-eye"></i></button>`;
+      dot.querySelector('.month-dot-eye').addEventListener('click', function(e) {
+        e.stopPropagation();
+        calShowApptDetail(a);
+      });
       cell.appendChild(dot);
     });
     const extra = dayAppts.length - 3;
-    if (extra > 0) { const more = document.createElement('span'); more.className='month-dot more'; more.textContent=`+${extra} más`; cell.appendChild(more); }
+    if (!calMonthZoom && extra > 0) { const more = document.createElement('span'); more.className='month-dot more'; more.textContent=`+${extra} más`; cell.appendChild(more); }
     grid.appendChild(cell);
   }
   const remaining = 7 - ((startDay + lastDay.getDate()) % 7 || 7);
@@ -1068,8 +1103,9 @@ async function calModalDpSelect(dateStr) {
   document.getElementById('appt-end').value   = '';
   calModalDpRender();
 
-  const resourceId = document.getElementById('appt-resource')?.value;
-  const serviceId  = document.getElementById('appt-service')?.value;
+  // En modo reagendar usar los IDs del appointment guardado como fallback
+  const resourceId = document.getElementById('appt-resource')?.value || (_calDetailAppt?.resource_id) || '';
+  const serviceId  = document.getElementById('appt-service')?.value  || (_calDetailAppt?.service_id)  || '';
   if (!resourceId || !serviceId) {
     calShowToast('Selecciona profesional y servicio primero', 'warning');
     return;
@@ -1126,16 +1162,38 @@ function calModalSelectSlot(start, end, btn) {
   btn.classList.add('active');
 }
 
-function closeModal() { document.getElementById('modal-appt')?.classList.remove('open'); _calEditingApptId = null; }
+function closeModal() {
+  document.getElementById('modal-appt')?.classList.remove('open');
+  _calEditingApptId = null;
+  // Ocultar resumen de cita
+  const infoEl = document.getElementById('appt-detail-info');
+  if (infoEl) infoEl.style.display = 'none';
+  _calDetailAppt = null;
+  // Restaurar campos ocultos
+  const clientGroup  = document.getElementById('appt-client')?.closest('.form-group');
+  const serviceGroup = document.getElementById('appt-service-chips')?.closest('.form-group');
+  const dateGroup    = document.getElementById('appt-date-group');
+  const toggleBtn    = document.getElementById('appt-reagendar-toggle');
+  if (clientGroup)  clientGroup.style.display  = '';
+  if (serviceGroup) serviceGroup.style.display = '';
+  if (dateGroup)    dateGroup.style.display    = '';
+  if (toggleBtn)    toggleBtn.style.display    = '';
+  // Restaurar título y botón para nueva cita
+  const titleEl = document.querySelector('#modal-appt .modal-title');
+  if (titleEl) titleEl.innerHTML = '<i class="fas fa-calendar-plus" style="color:#9961FF;margin-right:8px"></i>Nueva hora';
+  const saveBtn = document.querySelector('#modal-appt .btn-save');
+  if (saveBtn) { saveBtn.style.display = ''; saveBtn.innerHTML = '<i class="fas fa-check" style="margin-right:5px"></i>Guardar hora'; }
+}
 
 let _calEditingApptId = null;
 
 async function saveAppt() {
-  const resourceId = document.getElementById('appt-resource')?.value;
-  const serviceId  = document.getElementById('appt-service')?.value;
+  // En modo reagendar, los IDs vienen del appointment guardado si el select está vacío
+  const resourceId = document.getElementById('appt-resource')?.value || (_calDetailAppt?.resource_id) || '';
+  const serviceId  = document.getElementById('appt-service')?.value  || (_calDetailAppt?.service_id)  || '';
   const date       = document.getElementById('appt-date')?.value;
   const start      = document.getElementById('appt-start')?.value;
-  const contact    = document.getElementById('appt-client')?.value?.trim();
+  const contact    = document.getElementById('appt-client')?.value?.trim() || (_calDetailAppt ? calFmtContact(_calDetailAppt.contact_id) : '');
   const notes      = document.getElementById('appt-notes')?.value || '';
   const status     = document.getElementById('appt-status')?.value || '';
 
@@ -1195,13 +1253,40 @@ async function saveAppt() {
   if (ok) { closeModal(); calRender(); }
 }
 
+function _calFmtDateLong(dateStr) {
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const d = new Date(dateStr + 'T12:00:00');
+  return dias[d.getDay()] + ' ' + d.getDate() + ' de ' + CAL_MONTHS_ES[d.getMonth()].toLowerCase() + ' ' + d.getFullYear();
+}
+
 function calShowApptDetail(a) {
   _calEditingApptId = a._id || null;
-  const svcName = calServiceMap[a.service_id]?.name || '';
 
   // Cambiar título a "Detalle de cita"
   const titleEl = document.querySelector('#modal-appt .modal-title');
   if (titleEl) titleEl.innerHTML = '<i class="fas fa-calendar-check" style="color:#9961FF;margin-right:8px"></i>Detalle de cita';
+
+  // Poblar resumen de cita actual
+  const infoEl = document.getElementById('appt-detail-info');
+  if (infoEl) {
+    const resourceName = calResources.find(r => r._id === a.resource_id)?.name || '—';
+    const svcName      = calServiceMap[a.service_id]?.name || '—';
+    const fechaLarga   = a.date ? _calFmtDateLong(a.date) : '—';
+    const horaStr      = a.start ? (a.end ? a.start + ' — ' + a.end : a.start) : '—';
+    const clienteStr   = calFmtContact(a.contact_id) || '—';
+    document.getElementById('appt-info-resource').textContent = resourceName;
+    document.getElementById('appt-info-service').textContent  = svcName;
+    document.getElementById('appt-info-date').textContent     = fechaLarga;
+    document.getElementById('appt-info-time').textContent     = horaStr;
+    document.getElementById('appt-info-client').textContent   = clienteStr;
+    infoEl.style.display = '';
+  }
+
+  // Ocultar campos ya visibles en el resumen
+  const clientGroup  = document.getElementById('appt-client')?.closest('.form-group');
+  const serviceGroup = document.getElementById('appt-service-chips')?.closest('.form-group');
+  if (clientGroup)  clientGroup.style.display  = 'none';
+  if (serviceGroup) serviceGroup.style.display = 'none';
 
   // Pre-rellenar campos igual que el original
   const dateEl = document.getElementById('appt-date');
@@ -1226,7 +1311,6 @@ function calShowApptDetail(a) {
   const statusEl = document.getElementById('appt-status');
   if (statusEl) {
     const statusLabel = CAL_STATUS_LABELS[a.status] || a.status || '';
-    // Intentar seleccionar la opción, si no existe agregar una temporal
     const exists = [...statusEl.options].some(o => o.value === a.status || o.text === statusLabel);
     if (!exists) {
       const opt = document.createElement('option');
@@ -1237,8 +1321,61 @@ function calShowApptDetail(a) {
     }
   }
 
+  // Guardar datos de la cita para usarlos al expandir
+  _calDetailAppt = a;
+
+  // Ocultar calendario, slots y botón confirmar hasta que el usuario presione Reagendar
+  const dateGroup  = document.getElementById('appt-date-group');
+  const slotsGroup = document.getElementById('appt-slots-group');
+  const saveBtn    = document.querySelector('#modal-appt .btn-save');
+  if (dateGroup)  dateGroup.style.display  = 'none';
+  if (slotsGroup) slotsGroup.style.display = 'none';
+  if (saveBtn)    saveBtn.style.display    = 'none';
+
   document.getElementById('modal-appt')?.classList.add('open');
 }
+
+var _calDetailAppt = null;
+
+function calExpandReagendar() {
+  const a = _calDetailAppt;
+  if (!a) return;
+
+  // Mostrar calendario y botón confirmar
+  const dateGroup = document.getElementById('appt-date-group');
+  const saveBtn   = document.querySelector('#modal-appt .btn-save');
+  if (dateGroup) dateGroup.style.display = '';
+  if (saveBtn)   { saveBtn.style.display = ''; saveBtn.innerHTML = '<i class="fas fa-calendar-check" style="margin-right:5px"></i>Reagendar'; }
+
+  // Ocultar botón "Reagendar" del resumen
+  const toggleBtn = document.getElementById('appt-reagendar-toggle');
+  if (toggleBtn) toggleBtn.style.display = 'none';
+
+  // Inicializar calendario en el mes/día de la cita
+  if (a.date) {
+    const parts = a.date.split('-');
+    calModalDpYear       = parseInt(parts[0]);
+    calModalDpMonth      = parseInt(parts[1]) - 1;
+    calModalSelectedDate = a.date;
+    calModalSelectedSlot = a.start ? { start: a.start } : null;
+    calModalDpRender();
+
+    if (a.resource_id && a.service_id) {
+      calLoadAvailability(a.resource_id, a.service_id, a.date).then(() => {
+        if (a.start) {
+          document.querySelectorAll('.appt-slot-btn').forEach(function(btn) {
+            if (btn.textContent.trim() === a.start) btn.classList.add('active');
+          });
+          document.getElementById('appt-start').value = a.start;
+        }
+      });
+    }
+  }
+
+  // Scroll suave al calendario
+  dateGroup?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+window.calExpandReagendar = calExpandReagendar;
 
 function closeApptDetail() {
   document.getElementById('modal-appt')?.classList.remove('open');
