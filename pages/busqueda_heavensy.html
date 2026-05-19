@@ -4,7 +4,9 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Búsqueda de Servicios — Heavensy</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500&family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500&family=Libre+Baskerville:wght@400;700&display=optional" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--navy:#355BB6;--text:#1E2140;--text-lt:#6B7194;--border:#E4E6F0;--bg:#F7F8FC;--blue-4:#C9D9FF;--blue-5:#EFF6FF;--btn:linear-gradient(90deg,#9497F4 0%,#89B9F8 100%)}
@@ -124,7 +126,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text)}
 .hv-nav-logo { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg,#9961FF,#5b8dee); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #fff; flex-shrink: 0; }
 .hv-nav-name { font-size: 16px; font-weight: 400; color: #fff; font-family: 'Poppins',sans-serif; letter-spacing: .2px; }
 .hv-nav-links { display: flex; align-items: center; gap: 6px; }
-.hv-nav-link { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.78); text-decoration: none; padding: 4px 12px; border-radius: 6px; transition: background .2s,color .2s; white-space: nowrap; }
+#nav-link-planes { display:none !important; }
+#nav-link-planes.visible { display:inline !important; }
+.hv-nav-link { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.78); text-decoration: none; padding: 4px 12px; border-radius: 6px; transition: background .2s,color .2s; white-space: nowrap; font-family: 'Poppins', sans-serif; }
 .hv-nav-link:hover { background: rgba(255,255,255,0.10); color: #fff; }
 .hv-nav-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .hv-nav-bell { position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; color: rgba(255,255,255,0.75); flex-shrink: 0; }
@@ -151,12 +155,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text)}
 <body>
 <!-- HEAVENSY NAV -->
 <nav class="hv-nav">
-  <a class="hv-nav-brand" href="portada_heavensy_v2_parallax_backup_20260410_225332.html">
-    <div class="hv-nav-logo"><img src="LOGOFINAL.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
+  <a class="hv-nav-brand" href="portada.html">
+    <div class="hv-nav-logo"><img src="../assets/img/LOGOFINAL.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
     <span class="hv-nav-name">Heavensy</span>
   </a>
   <div class="hv-nav-links">
-    <a class="hv-nav-link" href="planes_heavensy_v6.html">Planes</a>
+    <a class="hv-nav-link" id="nav-link-planes" href="planes_heavensy_v6.html" style="display:none">Planes</a>
     <a class="hv-nav-link" href="busqueda_heavensy.html">Buscar servicios</a>
   </div>
   <div style="flex:1"></div>
@@ -206,15 +210,18 @@ document.addEventListener('click', function(e) {
   }
 });
 (function() {
-  var token    = localStorage.getItem('token');
-  var btnLogin = document.getElementById('nav-btn-login');
-  var userWrap = document.getElementById('nav-user-wrap');
+  var token      = localStorage.getItem('token');
+  var btnLogin   = document.getElementById('nav-btn-login');
+  var userWrap   = document.getElementById('nav-user-wrap');
+  var linkPlanes = document.getElementById('nav-link-planes');
   if (token) {
-    if (btnLogin) btnLogin.style.display = 'none';
-    if (userWrap) userWrap.style.display = 'flex';
+    if (btnLogin)   btnLogin.style.display = 'none';
+    if (userWrap)   userWrap.style.display = 'flex';
+    if (linkPlanes) linkPlanes.classList.remove('visible');
   } else {
-    if (btnLogin) btnLogin.style.display = '';
-    if (userWrap) userWrap.style.display = 'none';
+    if (btnLogin)   btnLogin.style.display = '';
+    if (userWrap)   userWrap.style.display = 'none';
+    if (linkPlanes) linkPlanes.classList.add('visible');
   }
 })();
 </script>

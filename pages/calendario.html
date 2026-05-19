@@ -41,12 +41,6 @@
 
     <!-- MONTH VIEW -->
     <div class="month-view" id="view-month">
-      <div class="month-header">
-        <div class="month-day-hd">Lun</div><div class="month-day-hd">Mar</div>
-        <div class="month-day-hd">Mié</div><div class="month-day-hd">Jue</div>
-        <div class="month-day-hd">Vie</div><div class="month-day-hd">Sáb</div>
-        <div class="month-day-hd">Dom</div>
-      </div>
       <div class="month-grid" id="month-grid"></div>
     </div>
 
@@ -74,6 +68,38 @@
     </div>
     <div class="modal-body">
 
+      <!-- RESUMEN CITA ACTUAL (solo al abrir desde el ojo) -->
+      <div id="appt-detail-info" style="display:none;background:rgba(153,97,255,0.06);border:1px solid rgba(153,97,255,0.15);border-radius:12px;padding:14px 16px;margin-bottom:18px">
+        <div style="font-size:10px;font-weight:700;color:rgba(56,56,56,0.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">Cita actual</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <div style="font-size:10px;color:rgba(56,56,56,0.42);margin-bottom:3px">Profesional</div>
+            <div id="appt-info-resource" style="font-size:13px;font-weight:600;color:#383838">—</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:rgba(56,56,56,0.42);margin-bottom:3px">Servicio</div>
+            <div id="appt-info-service" style="font-size:13px;font-weight:600;color:#383838">—</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:rgba(56,56,56,0.42);margin-bottom:3px">Fecha</div>
+            <div id="appt-info-date" style="font-size:13px;font-weight:600;color:#383838">—</div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:rgba(56,56,56,0.42);margin-bottom:3px">Hora</div>
+            <div id="appt-info-time" style="font-size:13px;font-weight:700;color:#9961FF">—</div>
+          </div>
+          <div style="grid-column:1/-1">
+            <div style="font-size:10px;color:rgba(56,56,56,0.42);margin-bottom:3px">Cliente</div>
+            <div id="appt-info-client" style="font-size:13px;font-weight:600;color:#383838">—</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(153,97,255,0.12)">
+          <button id="appt-reagendar-toggle" onclick="calExpandReagendar()" style="width:100%;padding:9px;border-radius:10px;background:linear-gradient(90deg,#9961FF,#5b8dee);border:none;color:#fff;font-size:13px;font-weight:600;font-family:'Poppins',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;">
+            <i class="fas fa-calendar-edit"></i> Reagendar
+          </button>
+        </div>
+      </div>
+
       <!-- Servicio -->
       <div class="form-group">
         <label>Servicio</label>
@@ -82,7 +108,7 @@
       </div>
 
       <!-- Mini calendario -->
-      <div class="form-group">
+      <div class="form-group" id="appt-date-group">
         <label>Fecha</label>
         <div class="appt-modal-cal">
           <div class="appt-modal-cal-header">

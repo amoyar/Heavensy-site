@@ -29,7 +29,9 @@
 <link rel="stylesheet" href="assets/css/seguimiento/seg-mobile.css"/>
 <link rel="stylesheet" href="assets/css/seguimiento/seg-plantillas.css"/>
 <link rel="stylesheet" href="assets/css/seguimiento/seg-derivaciones.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=optional" rel="stylesheet">
   <link rel="stylesheet" href="./assets/css/calendario.css">
   <link rel="stylesheet" href="./assets/css/busqueda.css">
   <link rel="stylesheet" href="./assets/css/configuracion.css">
@@ -37,6 +39,7 @@
   <link rel="stylesheet" href="./assets/css/perfil_personal_interno.css">
   <link rel="stylesheet" href="./assets/css/dashboard.css">
   <link rel="stylesheet" href="./assets/css/embudos.css">
+  <link rel="stylesheet" href="./assets/css/asistente.css">
   <link rel="stylesheet" href="./assets/css/conv-calendar.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -49,6 +52,40 @@
 
   <!-- Navbar fijo arriba -->
   <header id="navbar"></header>
+
+  <!-- ASISTENTE VIRTUAL INTERNO -->
+  <button class="hva-bubble" id="hva-bubble" title="Secretaria virtual">
+    <span class="hva-notif"></span>
+    <svg class="hva-ico-chat" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    <svg class="hva-ico-close" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+  <div class="hva-panel" id="hva-panel">
+    <div class="hva-header">
+      <div class="hva-header-avatar"><i class="fas fa-star" style="font-size:14px"></i></div>
+      <div class="hva-header-info">
+        <span class="hva-header-name">Secretaria Heavensy</span>
+        <span class="hva-header-status"><span class="hva-status-dot"></span>En línea ahora</span>
+      </div>
+      <button class="hva-header-close" id="hva-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="hva-messages" id="hva-messages"></div>
+    <div class="hva-quick" id="hva-quick">
+      <button class="hva-qr-btn" onclick="hvaSendQR(this,'¿Cómo uso los embudos?')">Embudos</button>
+      <button class="hva-qr-btn" onclick="hvaSendQR(this,'Ayuda con la agenda')">Agenda</button>
+      <button class="hva-qr-btn" onclick="hvaSendQR(this,'Configurar mi bot')">Bot IA</button>
+      <button class="hva-qr-btn" onclick="hvaSendQR(this,'Enviar mensajes masivos')">Mensajes</button>
+    </div>
+    <div class="hva-input-area">
+      <input class="hva-input" id="hva-input" type="text" placeholder="Escribe tu consulta…">
+      <button class="hva-send" id="hva-send">
+        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+  </div>
 
   <!-- Contenedor principal bajo el navbar -->
   <div class="flex overflow-hidden" style="height:calc(100dvh - 54px);">
@@ -135,5 +172,6 @@
     <script src="./assets/js/perfil_personal_interno.js"></script>
     <script src="./assets/js/dashboard.js"></script>
     <script src="./assets/js/embudos.js"></script>
+    <script src="./assets/js/asistente.js"></script>
 </body>
 </html>

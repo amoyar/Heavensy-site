@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Planes — Heavensy</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=optional" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'DM Sans', sans-serif; background: #4B5EA3; color: #1E2140; }
@@ -87,7 +89,7 @@ body { font-family: 'DM Sans', sans-serif; background: #4B5EA3; color: #1E2140; 
 /* SECTION */
 .section-wrap { max-width: 1200px; margin: 0 auto; padding: 2.5rem 2rem 0; }
 .section-label { display: flex; align-items: center; gap: 12px; margin-bottom: 1.2rem; }
-.section-label span { font-size: 11px; font-weight: 700; color: #2A5298; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; }
+.section-label span { font-size: 11px; font-weight: 700; color: #2A5298; text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; font-family: 'Poppins', sans-serif; }
 .section-label::after { content: ''; flex: 1; height: 1px; background: #C8D8EE; }
 
 /* GRID */
@@ -135,7 +137,7 @@ body { font-family: 'DM Sans', sans-serif; background: #4B5EA3; color: #1E2140; 
 .ck-dark { background: linear-gradient(135deg,#1E3A5F,#2A5298); color: #fff; }
 
 .sec-div { display: flex; align-items: center; gap: 6px; padding: 3px 0 1px; }
-.sec-div span { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: #C8CEDD; white-space: nowrap; }
+.sec-div span { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: #C8CEDD; white-space: nowrap; font-family: 'Poppins', sans-serif; }
 .sec-div hr { flex: 1; border: none; border-top: 1px dashed #EEF0F8; }
 
 /* CARD FOOT */
@@ -469,7 +471,7 @@ body { font-family: 'DM Sans', sans-serif; background: #4B5EA3; color: #1E2140; 
   /* Delta */
   #c-delta { padding: 14px !important; flex-wrap: wrap !important; gap: 10px !important; }
 #c-delta > div:first-child { min-width: 0; flex: 1 1 140px; }
-#c-delta > div:last-child { flex-shrink: 0; font-size: clamp(22px, 6vw, 38px) !important; white-space: nowrap; }
+#c-delta > div:last-child { flex-shrink: 0; font-size: clamp(22px, 6vw, 38px) !important; white-space: nowrap; font-family: 'Poppins', sans-serif; }
 
   /* Tabs — columna en mobile */
   #c-tabs { flex-wrap: wrap !important; gap: 6px !important; }
@@ -650,18 +652,18 @@ body { background: url("../assets/img/manosuperior1.jpg") center 54px / cover no
 .hv-nav-logo { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg,#9961FF,#5b8dee); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #fff; flex-shrink: 0; }
 .hv-nav-name { font-size: 16px; font-weight: 400; color: #fff; font-family: 'Poppins',sans-serif; letter-spacing: .2px; }
 .hv-nav-links { display: flex; align-items: center; gap: 6px; }
-.hv-nav-link { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.78); text-decoration: none; padding: 4px 12px; border-radius: 6px; transition: background .2s,color .2s; white-space: nowrap; }
+.hv-nav-link { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.78); text-decoration: none; padding: 4px 12px; border-radius: 6px; transition: background .2s,color .2s; white-space: nowrap; font-family: 'Poppins', sans-serif; }
 .hv-nav-link:hover { background: rgba(255,255,255,0.10); color: #fff; }
 .hv-nav-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .hv-nav-bell { position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; color: rgba(255,255,255,0.75); flex-shrink: 0; }
 .hv-nav-bell:hover { color: #fff; }
 .hv-nav-bell-dot { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; border-radius: 50%; background: #9961FF; border: 1.5px solid rgba(70,90,180,0.96); font-size: 9px; font-weight: 700; color: #fff; font-family: Arial,sans-serif; display: grid; place-items: center; line-height: 0; }
-.hv-nav-status { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.72); white-space: nowrap; }
+.hv-nav-status { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.72); white-space: nowrap; font-family: 'Poppins', sans-serif; }
 .hv-nav-divider { width: 1px; height: 22px; background: rgba(255,255,255,0.15); flex-shrink: 0; }
 .hv-nav-user { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 3px 0 3px 4px; border-radius: 22px; transition: background .2s; }
 .hv-nav-user:hover { background: rgba(255,255,255,0.09); }
 .hv-nav-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#9961FF,#5b8dee); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; overflow: hidden; border: 1.5px solid rgba(255,255,255,0.25); }
-.hv-nav-user-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.88); white-space: nowrap; }
+.hv-nav-user-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.88); white-space: nowrap; font-family: 'Poppins', sans-serif; }
 .hv-nav-chevron { color: rgba(255,255,255,0.45); flex-shrink: 0; transition: transform .2s; }
 .hv-nav-user.open .hv-nav-chevron { transform: rotate(180deg); }
 .hv-nav-user-wrap { position: relative; }
@@ -677,8 +679,8 @@ body { background: url("../assets/img/manosuperior1.jpg") center 54px / cover no
 <body>
 <!-- HEAVENSY NAV -->
 <nav class="hv-nav">
-  <a class="hv-nav-brand" href="portada_heavensy_v2_parallax_backup_20260410_225332.html">
-    <div class="hv-nav-logo"><img src="LOGOFINAL.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
+  <a class="hv-nav-brand" href="portada.html">
+    <div class="hv-nav-logo"><img src="../assets/img/LOGOFINAL.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
     <span class="hv-nav-name">Heavensy</span>
   </a>
   <div class="hv-nav-links">

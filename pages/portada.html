@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Heavensy — Eleva tus ganancias, eleva tu vida</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=optional" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <link rel="stylesheet" href="../assets/css/portada.css">
@@ -22,14 +24,13 @@
     <div class="hv-nav-logo"><img src="../assets/img/LOGOFINAL.png" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"></div>
     <span class="hv-nav-name">Heavensy</span>
   </a>
-  <div class="hv-nav-links">
-    <a class="hv-nav-link" id="nav-link-planes" href="planes_heavensy.html">Planes</a>
+  <div class="hv-nav-links" id="hv-nav-links">
     <a class="hv-nav-link" href="busqueda_heavensy.html">Buscar servicios</a>
   </div>
   <div style="flex:1"></div>
   <div class="hv-nav-right">
     <!-- Botón login — solo sin sesión -->
-    <a id="nav-btn-login" href="login.html" style="font-size:13px;font-weight:600;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:6px 16px;border-radius:8px;text-decoration:none;display:none;">Iniciar sesión</a>
+    <a id="nav-btn-login" href="../login.html" style="font-size:13px;font-weight:600;color:#fff;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);padding:6px 16px;border-radius:8px;text-decoration:none;display:none;">Iniciar sesión</a>
 
     <!-- Menú usuario — solo con sesión -->
     <div id="nav-user-wrap" style="display:flex;align-items:center;gap:12px;">
@@ -59,7 +60,30 @@
     </div>
   </div>
 </nav>
-
+<script>
+(function() {
+  var token    = localStorage.getItem('token');
+  var links    = document.getElementById('hv-nav-links');
+  var btnLogin = document.getElementById('nav-btn-login');
+  var userWrap = document.getElementById('nav-user-wrap');
+  if (token) {
+    // Logueado: no mostrar Planes, ocultar botón login, mostrar user menu
+    if (btnLogin) btnLogin.style.display = 'none';
+    if (userWrap) userWrap.style.display = 'flex';
+  } else {
+    // Sin sesión: insertar link Planes, mostrar botón login, ocultar user menu
+    if (links) {
+      var a = document.createElement('a');
+      a.className = 'hv-nav-link';
+      a.href = 'planes_heavensy_v6.html';
+      a.textContent = 'Planes';
+      links.insertBefore(a, links.firstChild);
+    }
+    if (btnLogin) btnLogin.style.display = '';
+    if (userWrap) userWrap.style.display = 'none';
+  }
+})();
+</script>
 
 <!-- SKY + CLOUDS -->
 <div id="sky-bg"></div>
@@ -112,7 +136,7 @@
 
   <!-- CTA EMPEZAR -->
   <div style="display:flex;justify-content:center;margin-top:-2rem;padding:0.5rem 1rem 3.5rem;background:rgba(72,90,156,0.58);">
-    <a href="planes_heavensy.html"><button class="btn-hero-primary btn-aurora" style="padding:16px 100px;font-size:1.15rem;letter-spacing:0.04em;">Empezar</button></a>
+    <a href="planes_heavensy_v6.html"><button class="btn-hero-primary btn-aurora" style="padding:16px 100px;font-size:1.15rem;letter-spacing:0.04em;">Empezar</button></a>
   </div>
 
 <!-- CÓMO FUNCIONA -->
@@ -581,7 +605,7 @@
   <h2>El siguiente nivel de tu negocio<br>y tu vida comienza aquí</h2>
   <p>Únete a nuestra red de emprendedores que ya han multiplicado sus ganancias y han hecho de su rubro su fuente de expansión.</p>
   <div class="cta-band-btns">
-    <a href="planes_heavensy.html"><button class="btn-hero-primary btn-aurora btn-aurora--bright" style="padding:16px 100px;font-size:1.15rem;letter-spacing:0.04em;">Empezar</button></a>
+    <a href="planes_heavensy_v6.html"><button class="btn-hero-primary btn-aurora btn-aurora--bright" style="padding:16px 100px;font-size:1.15rem;letter-spacing:0.04em;">Empezar</button></a>
   </div>
 </section>
 

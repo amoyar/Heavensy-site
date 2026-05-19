@@ -31,9 +31,23 @@ function initUserMenu() {
 
 function loadTopbarUsername() {
   try {
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    const el = document.getElementById('topbarUsername');
-    if (el) el.textContent = userData.username || userData.email || 'Usuario';
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const fullName = payload.full_name || payload.username || payload.email || 'Usuario';
+    const initials = fullName.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+
+    // Nombre en navbar
+    const nameEl = document.getElementById('nav-username');
+    if (nameEl) nameEl.textContent = fullName.split(' ')[0]; // Solo primer nombre
+
+    // Avatar con iniciales
+    const avatarEl = document.getElementById('nav-avatar');
+    if (avatarEl) avatarEl.textContent = initials;
+
+    // Compatibilidad con id anterior
+    const topbarEl = document.getElementById('topbarUsername');
+    if (topbarEl) topbarEl.textContent = fullName;
   } catch(e) {}
 }
 

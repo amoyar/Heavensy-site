@@ -96,6 +96,166 @@
 </div>
 </div><!-- /ppi-bg-wrap -->
 
+<!-- MODAL PLANES -->
+<div class="ppi-planes-overlay" id="ppi-planes-overlay" onclick="if(event.target===this)ppiCerrarPlanes()">
+  <div class="ppi-planes-modal">
+    <button class="ppi-planes-close" onclick="ppiCerrarPlanes()"><i class="fas fa-times"></i></button>
+
+    <!-- STEPS -->
+    <div class="ppi-steps">
+      <div class="ppi-step active" id="ppi-step-1">
+        <div class="ppi-step-dot">1</div>
+        <div class="ppi-step-label">Plan</div>
+      </div>
+      <div class="ppi-step-line" id="ppi-line-1"></div>
+      <div class="ppi-step" id="ppi-step-2">
+        <div class="ppi-step-dot">2</div>
+        <div class="ppi-step-label">Integración</div>
+      </div>
+      <div class="ppi-step-line" id="ppi-line-2"></div>
+      <div class="ppi-step" id="ppi-step-3">
+        <div class="ppi-step-dot">3</div>
+        <div class="ppi-step-label">Pago</div>
+      </div>
+    </div>
+
+    <!-- PASO 1: PLANES -->
+    <div id="ppi-planes-s1">
+      <div class="ppi-planes-title">Elige tu plan</div>
+      <div class="ppi-planes-sub">Todos los planes de pago requieren integración que se paga hoy pero se descuenta del primer pago de tu plan</div>
+      <div class="ppi-plan-cards">
+        <div class="ppi-plan-card" id="ppi-pc-basico" onclick="ppiSelPlan('basico')">
+          <div class="ppi-plan-name">Básico</div>
+          <div class="ppi-plan-price">$0 <span>/ gratis para siempre</span></div>
+          <ul class="ppi-plan-features">
+            <li><i class="fas fa-check"></i>Perfil y visibilidad</li>
+            <li><i class="fas fa-check"></i>Respuesta a mensajes</li>
+            <li><i class="fas fa-check"></i>Gestión de agenda</li>
+            <li class="off"><i class="fas fa-times"></i>Integración redes</li>
+            <li class="off"><i class="fas fa-times"></i>Mensajes masivos</li>
+            <li class="off"><i class="fas fa-times"></i>IA 24/7</li>
+          </ul>
+          <button class="ppi-plan-btn">Seleccionar</button>
+        </div>
+        <div class="ppi-plan-card" id="ppi-pc-pro" onclick="ppiSelPlan('pro')">
+          <div class="ppi-plan-name">Automate Pro</div>
+          <div class="ppi-plan-price">$70.000 <span>/ mes</span></div>
+          <ul class="ppi-plan-features">
+            <li><i class="fas fa-check"></i>IA 24/7</li>
+            <li><i class="fas fa-check"></i>Integración redes</li>
+            <li><i class="fas fa-check"></i>Mensajes masivos</li>
+            <li><i class="fas fa-check"></i>Clientes VIP</li>
+            <li><i class="fas fa-check"></i>Ficha del cliente</li>
+            <li><i class="fas fa-check"></i>Reagendamiento</li>
+          </ul>
+          <button class="ppi-plan-btn">Seleccionar</button>
+        </div>
+        <div class="ppi-plan-card" id="ppi-pc-premium" onclick="ppiSelPlan('premium')">
+          <div class="ppi-plan-popular">⭐ Más popular</div>
+          <div class="ppi-plan-name" style="margin-top:8px">Secretar-ía Premium</div>
+          <div class="ppi-plan-price">$120.000 <span>/ mes</span></div>
+          <ul class="ppi-plan-features">
+            <li><i class="fas fa-check"></i>Todo Automate Pro</li>
+            <li><i class="fas fa-check"></i>Línea de tiempo IA</li>
+            <li><i class="fas fa-check"></i>Fichas personalizadas</li>
+            <li><i class="fas fa-check"></i>Secretaria virtual</li>
+            <li><i class="fas fa-check"></i>50% comisiones</li>
+            <li><i class="fas fa-check"></i>Soporte prioritario</li>
+          </ul>
+          <button class="ppi-plan-btn">Seleccionar</button>
+        </div>
+      </div>
+      <div class="ppi-modal-footer">
+        <button class="ppi-modal-next" id="ppi-s1-next" onclick="ppiPasoAgenda()" disabled>
+          Siguiente <i class="fas fa-arrow-right" style="margin-left:6px"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- PASO 2: AGENDAR -->
+    <div id="ppi-planes-s2" style="display:none">
+      <div class="ppi-planes-title">Agenda tu integración</div>
+      <div class="ppi-planes-sub">Sesión de 20-30 min con un especialista por videollamada</div>
+      <div class="ppi-agenda-title-sm">Selecciona una fecha</div>
+      <div class="ppi-calendar-grid" id="ppi-cal-grid"></div>
+      <div class="ppi-agenda-title-sm" style="margin-top:14px">Horarios disponibles</div>
+      <div class="ppi-slots" id="ppi-slots-wrap">
+        <span style="font-size:12px;color:rgba(56,56,56,0.4)">Selecciona una fecha para ver horarios</span>
+      </div>
+      <div class="ppi-modal-footer">
+        <button class="ppi-modal-back" onclick="ppiPasoPlanes()">
+          <i class="fas fa-arrow-left" style="margin-right:6px"></i>Volver
+        </button>
+        <button class="ppi-modal-next" id="ppi-s2-next" onclick="ppiPasoPago()" disabled>
+          Siguiente <i class="fas fa-arrow-right" style="margin-left:6px"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- PASO 3: PAGO -->
+    <div id="ppi-planes-s3" style="display:none">
+      <div class="ppi-planes-title">Confirmar pago</div>
+      <div class="ppi-planes-sub">Sesión de integración + activación del plan</div>
+      <div class="ppi-pago-resumen" id="ppi-pago-resumen"></div>
+      <div class="ppi-metodos">
+        <button class="ppi-metodo-btn active" id="ppi-m-tarjeta" onclick="ppiMetodo('tarjeta')">
+          <i class="fas fa-credit-card"></i> Tarjeta
+        </button>
+        <button class="ppi-metodo-btn" id="ppi-m-transferencia" onclick="ppiMetodo('transferencia')">
+          <i class="fas fa-university"></i> Transferencia
+        </button>
+        <button class="ppi-metodo-btn" id="ppi-m-paypal" onclick="ppiMetodo('paypal')">
+          <i class="fab fa-paypal"></i> PayPal
+        </button>
+      </div>
+      <div id="ppi-form-tarjeta">
+        <div class="ppi-card-fields">
+          <div class="ppi-field" style="grid-column:1/-1">
+            <label>Número de tarjeta</label>
+            <input type="text" id="ppi-card-num" placeholder="0000 0000 0000 0000" maxlength="19" oninput="ppiFormatCard(this)">
+          </div>
+          <div class="ppi-field">
+            <label>Nombre en la tarjeta</label>
+            <input type="text" id="ppi-card-name" placeholder="Nombre Apellido">
+          </div>
+          <div class="ppi-field">
+            <label>Vencimiento</label>
+            <input type="text" id="ppi-card-exp" placeholder="MM/AA" maxlength="5">
+          </div>
+          <div class="ppi-field">
+            <label>CVV</label>
+            <input type="text" id="ppi-card-cvv" placeholder="123" maxlength="4">
+          </div>
+        </div>
+      </div>
+      <div id="ppi-form-transferencia" style="display:none">
+        <div class="ppi-transfer-info">
+          <p><strong>Banco Heavensy</strong></p>
+          <p>Cuenta corriente: <strong>00-123-45678-9</strong></p>
+          <p>RUT empresa: <strong>76.543.210-K</strong></p>
+          <p>Email: <strong>pagos@heavensy.cl</strong></p>
+          <p style="margin-top:10px;font-size:11px;color:rgba(56,56,56,0.5)">Envía el comprobante a pagos@heavensy.cl para activar tu plan.</p>
+        </div>
+      </div>
+      <div id="ppi-form-paypal" style="display:none">
+        <div class="ppi-transfer-info" style="text-align:center;padding:24px">
+          <i class="fab fa-paypal" style="font-size:32px;color:#003087;margin-bottom:10px;display:block"></i>
+          <p>Serás redirigido a PayPal para completar el pago de forma segura.</p>
+        </div>
+      </div>
+      <div class="ppi-modal-footer">
+        <button class="ppi-modal-back" onclick="ppiPasoAgenda()">
+          <i class="fas fa-arrow-left" style="margin-right:6px"></i>Volver
+        </button>
+        <button class="ppi-modal-next" onclick="ppiConfirmarPago()">
+          <i class="fas fa-lock" style="margin-right:6px"></i>Confirmar pago
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- MODAL OTP -->
 <div class="ppi-otp-overlay" id="ppi-otp-overlay">
   <div class="ppi-otp-modal">
