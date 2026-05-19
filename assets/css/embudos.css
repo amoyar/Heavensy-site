@@ -230,7 +230,7 @@
 
 .emb-avatar {
   width: 36px; height: 36px; border-radius: 50%;
-  background: linear-gradient(135deg,#c4b5fd,#93c5fd);
+  background: linear-gradient(135deg,#8e84fa 0%,#91c0ff 55%) !important;
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 700; color: #fff;
   flex-shrink: 0; position: relative;

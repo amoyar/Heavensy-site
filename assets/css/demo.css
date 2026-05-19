@@ -8,7 +8,7 @@ body{font-family:'DM Sans',sans-serif;background:#4a5ba8;min-height:100vh;displa
 .hv-nav-logo{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#9961FF,#5b8dee);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden}
 .hv-nav-name{font-size:16px;font-weight:400;color:#fff;font-family:'Poppins',sans-serif;letter-spacing:.2px}
 .hv-nav-links{display:flex;align-items:center;gap:6px}
-.hv-nav-link{font-size:13px;font-weight:500;color:rgba(255,255,255,0.78);text-decoration:none;padding:4px 12px;border-radius:6px;transition:background .2s,color .2s;white-space:nowrap}
+.hv-nav-link{font-size:13px;font-weight:500;color:rgba(255,255,255,0.78);text-decoration:none;padding:4px 12px;border-radius:6px;transition:background .2s,color .2s;white-space:nowrap;font-family:'Poppins',sans-serif}
 .hv-nav-link:hover{background:rgba(255,255,255,0.10);color:#fff}
 .hv-nav-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
 

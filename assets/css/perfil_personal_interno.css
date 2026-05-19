@@ -121,3 +121,145 @@
   .ppi-field-full { grid-column: span 1; }
 }
 @media (max-width: 480px) { .ppi-page { padding: 16px 12px 48px; } }
+
+/* ── MODAL PLANES ── */
+.ppi-planes-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(30,30,60,0.55); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.ppi-planes-overlay.open { opacity: 1; pointer-events: all; }
+.ppi-planes-modal {
+  background: #fff; border-radius: 20px; width: 92%; max-width: 720px;
+  max-height: 90vh; overflow-y: auto; padding: 32px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18); position: relative;
+}
+.ppi-planes-close {
+  position: absolute; top: 16px; right: 16px; background: none; border: none;
+  cursor: pointer; font-size: 18px; color: rgba(56,56,56,0.4);
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; transition: background .15s,color .15s;
+}
+.ppi-planes-close:hover { background: rgba(0,0,0,0.06); color: #383838; }
+.ppi-steps { display: flex; align-items: center; justify-content: center; margin-bottom: 28px; }
+.ppi-step  { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.ppi-step-dot {
+  width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(153,97,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: rgba(153,97,255,0.4);
+  background: #fff; font-family: 'Poppins',sans-serif; transition: all .2s;
+}
+.ppi-step.active .ppi-step-dot, .ppi-step.done .ppi-step-dot {
+  background: #9961FF; border-color: #9961FF; color: #fff; box-shadow: 0 2px 8px rgba(153,97,255,0.35);
+}
+.ppi-step-label {
+  font-size: 10px; font-weight: 600; color: rgba(56,56,56,0.35);
+  text-transform: uppercase; letter-spacing: .06em; font-family: 'Poppins',sans-serif;
+}
+.ppi-step.active .ppi-step-label, .ppi-step.done .ppi-step-label { color: #9961FF; }
+.ppi-step-line { width: 56px; height: 2px; background: rgba(153,97,255,0.15); margin: 0 6px 18px 6px; transition: background .3s; }
+.ppi-step-line.done { background: #9961FF; }
+.ppi-planes-title { font-size: 18px; font-weight: 700; color: #383838; margin-bottom: 4px; font-family: 'Poppins',sans-serif; }
+.ppi-planes-sub   { font-size: 12px; color: rgba(56,56,56,0.5); margin-bottom: 24px; font-family: 'Poppins',sans-serif; }
+.ppi-plan-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 24px; }
+.ppi-plan-card {
+  border: 1.5px solid rgba(0,0,0,0.09); border-radius: 16px; padding: 20px 16px;
+  cursor: pointer; transition: all .18s; position: relative; background: #fff;
+}
+.ppi-plan-card:hover { border-color: #9961FF; box-shadow: 0 4px 16px rgba(153,97,255,0.12); }
+.ppi-plan-card.selected {
+  border-color: #9961FF; border-width: 2px;
+  background: rgba(153,97,255,0.04); box-shadow: 0 4px 16px rgba(153,97,255,0.15);
+}
+.ppi-plan-popular {
+  position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+  background: linear-gradient(90deg,#9961FF,#5b8dee); color: #fff;
+  font-size: 9px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+  white-space: nowrap; letter-spacing: .05em; font-family: 'Poppins',sans-serif;
+}
+.ppi-plan-name  { font-size: 13px; font-weight: 700; color: #383838; margin-bottom: 4px; font-family: 'Poppins',sans-serif; }
+.ppi-plan-price { font-size: 17px; font-weight: 800; color: #9961FF; margin-bottom: 14px; font-family: 'Poppins',sans-serif; }
+.ppi-plan-price span { font-size: 11px; font-weight: 400; color: rgba(56,56,56,0.5); }
+.ppi-plan-features { list-style: none; padding: 0; margin: 0 0 16px 0; display: flex; flex-direction: column; gap: 6px; }
+.ppi-plan-features li { font-size: 11px; color: rgba(56,56,56,0.7); display: flex; align-items: flex-start; gap: 6px; font-family: 'Poppins',sans-serif; }
+.ppi-plan-features li i { color: #9961FF; font-size: 10px; margin-top: 2px; flex-shrink: 0; }
+.ppi-plan-features li.off { color: rgba(56,56,56,0.3); }
+.ppi-plan-features li.off i { color: rgba(0,0,0,0.18); }
+.ppi-plan-btn {
+  width: 100%; padding: 8px 0; border-radius: 10px; border: 1.5px solid rgba(153,97,255,0.3);
+  background: none; font-size: 12px; font-weight: 600; color: #9961FF;
+  cursor: pointer; font-family: 'Poppins',sans-serif; transition: all .15s;
+}
+.ppi-plan-btn:hover, .ppi-plan-card.selected .ppi-plan-btn { background: #9961FF; color: #fff; border-color: #9961FF; }
+.ppi-agenda-title-sm {
+  font-size: 11px; font-weight: 700; color: rgba(56,56,56,0.4); text-transform: uppercase;
+  letter-spacing: .06em; margin-bottom: 10px; font-family: 'Poppins',sans-serif;
+}
+.ppi-calendar-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 5px; margin-bottom: 16px; }
+.ppi-cal-header { text-align: center; font-size: 10px; font-weight: 600; color: rgba(56,56,56,0.38); padding: 4px 0; font-family: 'Poppins',sans-serif; }
+.ppi-cal-day {
+  text-align: center; padding: 7px 4px; border-radius: 8px; font-size: 12px;
+  cursor: pointer; transition: all .15s; color: #383838;
+  border: 1.5px solid transparent; font-family: 'Poppins',sans-serif;
+}
+.ppi-cal-day:hover { background: rgba(153,97,255,0.08); border-color: rgba(153,97,255,0.2); }
+.ppi-cal-day.selected { background: #9961FF; color: #fff; border-color: #9961FF; }
+.ppi-cal-day.disabled { color: rgba(0,0,0,0.18); cursor: default; pointer-events: none; }
+.ppi-cal-day.today { font-weight: 700; border-color: rgba(153,97,255,0.3); }
+.ppi-slots { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.ppi-slot {
+  padding: 6px 14px; border-radius: 8px; border: 1.5px solid rgba(0,0,0,0.1);
+  font-size: 12px; font-weight: 500; cursor: pointer; transition: all .15s;
+  background: #fff; color: #383838; font-family: 'Poppins',sans-serif;
+}
+.ppi-slot:hover { border-color: #9961FF; color: #9961FF; background: rgba(153,97,255,0.05); }
+.ppi-slot.selected { background: #9961FF; color: #fff; border-color: #9961FF; }
+.ppi-slot.taken { color: rgba(0,0,0,0.22); border-color: rgba(0,0,0,0.07); cursor: default; text-decoration: line-through; pointer-events: none; }
+.ppi-pago-resumen {
+  background: rgba(153,97,255,0.06); border: 1px solid rgba(153,97,255,0.15);
+  border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;
+}
+.ppi-pago-resumen-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; color: rgba(56,56,56,0.7); padding: 3px 0; font-family: 'Poppins',sans-serif;
+}
+.ppi-pago-resumen-row.total {
+  font-weight: 700; color: #383838; font-size: 14px;
+  border-top: 1px solid rgba(153,97,255,0.15); margin-top: 8px; padding-top: 10px;
+}
+.ppi-metodos { display: flex; gap: 8px; margin-bottom: 18px; }
+.ppi-metodo-btn {
+  flex: 1; padding: 9px; border-radius: 10px; border: 1.5px solid rgba(0,0,0,0.1);
+  background: #fff; cursor: pointer; font-size: 12px; font-weight: 500;
+  font-family: 'Poppins',sans-serif; color: rgba(56,56,56,0.6); transition: all .15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.ppi-metodo-btn.active { border-color: #9961FF; color: #9961FF; background: rgba(153,97,255,0.05); }
+.ppi-card-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ppi-transfer-info {
+  background: #f8f8fa; border-radius: 10px; padding: 14px 16px;
+  font-size: 12px; color: rgba(56,56,56,0.7); font-family: 'Poppins',sans-serif;
+}
+.ppi-transfer-info p { margin: 4px 0; }
+.ppi-transfer-info strong { color: #383838; }
+.ppi-modal-footer { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
+.ppi-modal-back {
+  padding: 10px 22px; border-radius: 10px; border: 1.5px solid rgba(0,0,0,0.1);
+  background: #fff; font-size: 13px; font-weight: 600; font-family: 'Poppins',sans-serif;
+  color: rgba(56,56,56,0.6); cursor: pointer; transition: all .15s;
+}
+.ppi-modal-back:hover { border-color: #9961FF; color: #9961FF; }
+.ppi-modal-next {
+  padding: 10px 28px; border-radius: 10px;
+  background: linear-gradient(90deg,#9961FF,#5b8dee); border: none;
+  font-size: 13px; font-weight: 600; font-family: 'Poppins',sans-serif;
+  color: #fff; cursor: pointer; box-shadow: 0 4px 14px rgba(153,97,255,0.3); transition: opacity .15s;
+}
+.ppi-modal-next:hover { opacity: .88; }
+.ppi-modal-next:disabled { opacity: .38; cursor: default; box-shadow: none; }
+@media (max-width: 600px) {
+  .ppi-plan-cards { grid-template-columns: 1fr; }
+  .ppi-planes-modal { padding: 24px 18px; }
+  .ppi-card-fields { grid-template-columns: 1fr; }
+}

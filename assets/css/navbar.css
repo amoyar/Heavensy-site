@@ -2,7 +2,7 @@
 .hv-nav {
   position: sticky; top: 0; z-index: 1000;
   height: 54px;
-  background: rgba(70, 90, 180, 0.96);
+  background: #5a79d4;
   backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(150, 175, 255, 0.16);
   display: flex; align-items: center;
