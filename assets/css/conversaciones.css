@@ -1,0 +1,159 @@
+/* ============================================
+   conversaciones.css
+   Estilos del módulo de Conversaciones
+   Extraído de conversaciones.html
+============================================ */
+
+/* ── Panel toggle tabs ── */
+.panel-tab {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 48px;
+  background: #C9D9FF;
+  border: 1px solid #b2c4fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  transition: background .15s;
+  font-size: 9px;
+  color: #7D84C1;
+}
+.panel-tab:hover { background: #b2c4fb; }
+.panel-tab-left {
+  right: -18px;
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+}
+.panel-tab-right {
+  left: -18px;
+  border-radius: 6px 0 0 6px;
+  border-right: none;
+}
+#convLeftPanel.collapsed {
+  width: 0 !important;
+  overflow: hidden;
+  border: none;
+}
+#contactPanel.panel-collapsed {
+  width: 0 !important;
+  overflow: hidden;
+  border: none;
+}
+@media (max-width: 900px) {
+  #btnCloseContactPanel { display: block !important; }
+}
+
+#convLeftPanel  { transition: width .25s ease; overflow: hidden !important; flex-shrink: 0; }
+#convLeftPanel.panel-hidden { width: 0 !important; min-width: 0 !important; border: none !important; }
+#contactPanel.panel-hidden  { width: 0 !important; min-width: 0 !important; border: none !important; overflow: hidden !important; }
+
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::before {
+  content: attr(data-tooltip);
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  color: #374151;
+  border: 0.5px solid #e0e7ff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+}
+[data-tooltip]::after {
+  content: '';
+  display: none;
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-bottom-color: white;
+  pointer-events: none;
+  z-index: 100;
+}
+[data-tooltip]:hover::before,
+[data-tooltip]:hover::after { display: block; }
+
+/* ── Filter chips — estilo tag violeta Heavensy ── */
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  height: 20px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1.5px solid #e0e7ff;
+  background: #f5f3ff;
+  color: #7D84C1;
+  transition: background .15s, border-color .15s, color .15s;
+  flex-shrink: 0;
+  outline: none;
+}
+.filter-chip:hover { background: #ede9fe; border-color: #ede9fe; color: #6D28D9; }
+.filter-chip.active { background: #ede9fe; border-color: #ede9fe; color: #6D28D9; }
+.filter-chip .filter-count {
+  font-size: 9px; font-weight: 700;
+  border-radius: 999px; padding: 0 5px; line-height: 1.6;
+  background: #ede9fe; color: #7D84C1;
+}
+.filter-chip.active .filter-count { background: rgba(109,40,217,0.15); color: #6D28D9; }
+
+/* ── Botón refresh panel derecho ── */
+.rp-refresh-btn {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 1px solid #d0dcf5;
+  background: #eff4fe;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, transform .4s ease;
+  flex-shrink: 0;
+  outline: none;
+  position: relative;
+  box-shadow: 0 1px 4px rgba(125,132,193,0.10);
+}
+.rp-refresh-btn:hover { background: #e5edfb; border-color: #c0cef0; }
+.rp-refresh-btn.spinning svg { animation: rp-spin .4s ease forwards; }
+@keyframes rp-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* Botón filtros avanzados hover */
+#advancedFiltersToggle:hover { background: #e5edfb !important; border-color: #c0cef0 !important; }
+
+#filterChipsContainer::-webkit-scrollbar { display: none; }
+
+@media (max-height: 500px) and (orientation: landscape) {
+  #convLeftPanel {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    display: block !important;
+  }
+  #conversationsList {
+    overflow-y: visible !important;
+    height: auto !important;
+    flex: none !important;
+  }
+  #convLeftPanel > div:first-child {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}

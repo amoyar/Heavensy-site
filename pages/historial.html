@@ -1,0 +1,295 @@
+<!-- HISTORIAL PAGE - DISEÑO MEJORADO -->
+<div class="h-full flex flex-col bg-gray-50">
+  
+  <!-- Header con título y acciones -->
+  <div class="bg-white border-b border-gray-200 px-6 py-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+          <i class="fas fa-history text-purple-600"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-semibold text-gray-900">Historial de Mensajes</h1>
+          <p class="text-sm text-gray-500">Revisa y gestiona todas las conversaciones</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <button 
+          onclick="toggleFiltrosHistorial()" 
+          class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium text-gray-700"
+        >
+          <i class="fas fa-filter"></i>
+          <span>Filtros</span>
+        </button>
+        <button 
+          onclick="buscarHistorial()" 
+          class="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium"
+        >
+          <i class="fas fa-sync-alt"></i>
+          <span>Actualizar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel de filtros colapsable -->
+  <div id="historialFiltrosPanel" class="hidden bg-white border-b border-gray-200 px-6 py-4 animate-fade-in">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      
+      <!-- Empresa -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          <i class="fas fa-building text-gray-400"></i> Empresa
+        </label>
+        <select 
+          id="historialCompanyFilter"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+        >
+          <option value="">Cargando...</option>
+        </select>
+      </div>
+
+      <!-- Usuario -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          <i class="fas fa-user text-gray-400"></i> Usuario
+        </label>
+        <select 
+          id="historialUserFilter"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+        >
+          <option value="">Todos los usuarios</option>
+        </select>
+      </div>
+
+      <!-- Tipo de mensaje -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          <i class="fas fa-comment text-gray-400"></i> Tipo
+        </label>
+        <select 
+          id="historialTypeFilter"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+        >
+          <option value="">Todos</option>
+          <option value="user">Usuario</option>
+          <option value="assistant">Asistente</option>
+        </select>
+      </div>
+
+      <!-- Límite -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          <i class="fas fa-list-ol text-gray-400"></i> Cantidad
+        </label>
+        <select 
+          id="historialLimitFilter"
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+        >
+          <option value="50">50 mensajes</option>
+          <option value="100" selected>100 mensajes</option>
+          <option value="200">200 mensajes</option>
+          <option value="500">500 mensajes</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="mt-4 flex items-center gap-2">
+      <button 
+        onclick="buscarHistorial()"
+        class="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium"
+      >
+        <i class="fas fa-search"></i>
+        <span>Buscar</span>
+      </button>
+      <button 
+        onclick="limpiarFiltrosHistorial()"
+        class="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+      >
+        <i class="fas fa-times"></i>
+        <span>Limpiar</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="px-6 py-4 bg-gray-50">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      
+      <!-- Total Mensajes -->
+      <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Total Mensajes</p>
+            <p class="text-2xl font-bold text-gray-900" id="historialTotalMessages">0</p>
+          </div>
+          <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+            <i class="fas fa-envelope text-blue-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- De Usuarios -->
+      <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">De Usuarios</p>
+            <p class="text-2xl font-bold text-gray-900" id="historialUserMessages">0</p>
+          </div>
+          <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+            <i class="fas fa-user text-green-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Del Asistente -->
+      <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Del Asistente</p>
+            <p class="text-2xl font-bold text-gray-900" id="historialAssistantMessages">0</p>
+          </div>
+          <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+            <i class="fas fa-robot text-purple-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conversaciones -->
+      <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Conversaciones</p>
+            <p class="text-2xl font-bold text-gray-900" id="historialTotalConversations">0</p>
+          </div>
+          <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+            <i class="fas fa-comments text-orange-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Área principal de mensajes -->
+  <div class="flex-1 px-6 pb-6 overflow-hidden">
+    <div class="h-full bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
+      
+      <!-- Header del panel de mensajes -->
+      <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50 rounded-t-xl">
+        <div class="flex items-center gap-3">
+          <i class="fas fa-comments text-purple-600 text-xl"></i>
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900">Mensajes</h2>
+            <p class="text-xs text-gray-500" id="historialMessageCount">(0 cargados)</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenedor de mensajes con scroll -->
+      <div id="historialMessagesContainer" class="flex-1 overflow-y-auto p-6">
+        <!-- Estado inicial -->
+        <div class="h-full flex flex-col items-center justify-center text-center">
+          <div class="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center mb-4">
+            <i class="fas fa-search text-purple-600 text-3xl"></i>
+          </div>
+          <p class="text-lg font-semibold text-gray-900 mb-2">Busca mensajes para comenzar</p>
+          <p class="text-sm text-gray-500 max-w-md">
+            Selecciona una empresa en los filtros y presiona "Buscar" para ver el historial de conversaciones
+          </p>
+        </div>
+      </div>
+
+      <!-- Paginación -->
+      <div id="historialPaginationControls" class="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl"></div>
+      
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Responder -->
+<div id="modalResponder" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-white rounded-xl w-full max-w-lg shadow-2xl animate-fade-in">
+    
+    <!-- Header del modal -->
+    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+          <i class="fas fa-reply text-green-600"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900">Responder por WhatsApp</h3>
+      </div>
+      <button onclick="cerrarModalResponder()" class="text-gray-400 hover:text-gray-600 transition-colors">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Contenido del modal -->
+    <div class="px-6 py-4">
+      <div class="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+        <p class="text-xs font-medium text-gray-500 mb-1">Mensaje original:</p>
+        <p class="text-sm text-gray-700 italic" id="modalResponderOriginal">(cargando...)</p>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Tu respuesta</label>
+        <textarea 
+          id="modalResponderTexto" 
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none text-sm"
+          rows="4"
+          placeholder="Escribe tu respuesta aquí..."
+        ></textarea>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          <i class="fas fa-paperclip text-gray-400"></i> Adjuntar archivo (opcional)
+        </label>
+        <input 
+          id="modalResponderArchivo" 
+          type="file" 
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+        />
+      </div>
+    </div>
+
+    <!-- Footer del modal -->
+    <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl flex justify-end gap-3">
+      <button 
+        onclick="cerrarModalResponder()" 
+        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors text-sm font-medium"
+      >
+        Cancelar
+      </button>
+      <button 
+        onclick="enviarRespuestaModal()" 
+        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium flex items-center gap-2"
+      >
+        <i class="fas fa-paper-plane"></i>
+        Enviar
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal de archivo (para previsualizaciones) -->
+<div id="fileModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50">
+  <div class="bg-white rounded-xl w-full max-w-5xl h-5/6 shadow-2xl flex flex-col animate-fade-in">
+    
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50 rounded-t-xl">
+      <h3 class="text-lg font-semibold text-gray-900" id="modalFileTitle">Vista previa</h3>
+      <button onclick="cerrarModalArchivo()" class="text-gray-400 hover:text-gray-600 transition-colors">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Contenido -->
+    <div id="modalFileContent" class="flex-1 overflow-auto"></div>
+
+  </div>
+</div>

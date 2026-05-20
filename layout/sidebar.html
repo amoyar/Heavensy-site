@@ -1,0 +1,88 @@
+<aside id="appSidebar" class="w-44 bg-white border-r min-h-screen transition-all duration-300 relative">
+<div id="sidebarTitle" class="px-4 py-3" style="position:relative;">
+  <div id="sidebarTitleSkeleton" class="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+
+  <!-- Empresa activa (1 empresa) -->
+  <div id="sidebarCompanyLabel"
+    class="hidden text-sm font-bold text-[#193d6d] uppercase sidebar-text"
+    style="cursor:default;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+
+  <!-- Selector de empresa (múltiples empresas) -->
+  <button id="sidebarCompanyBtn"
+    class="hidden sidebar-text"
+    style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:4px;background:none;border:none;padding:0;cursor:pointer;text-align:left;">
+    <span id="sidebarCompanyBtnLabel"
+      style="font-size:.8rem;font-weight:700;color:#193d6d;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;"></span>
+    <i class="fas fa-chevron-down" id="sidebarCompanyChevron"
+      style="font-size:9px;color:#7D84C1;transition:transform .2s;flex-shrink:0;"></i>
+  </button>
+
+  <!-- Dropdown empresas -->
+  <div id="sidebarCompanyDropdown"
+    style="display:none;position:absolute;left:8px;right:8px;top:100%;z-index:100;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.1);overflow:hidden;">
+    <div id="sidebarCompanyList"></div>
+  </div>
+</div>
+  <nav class="px-3 space-y-1">
+    <a href="#dashboard" title="Dashboard" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-chart-pie w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Dashboard</span>
+    </a>
+    <a href="#users" title="Usuarios" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-users w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Usuarios</span>
+    </a>
+    <a href="#companies" title="Empresas" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-building w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Empresas</span>
+    </a>
+    <a href="#roles" title="Roles" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-shield-alt w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Roles</span>
+    </a>
+    <a href="#conversaciones" title="Conversaciones" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-message w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Conversaciones</span>
+    </a>
+    <a href="#seguimiento" title="Seguimiento" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-notes-medical w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Seguimiento</span>
+    </a>
+    <a href="#calendario" title="Calendario" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-calendar-alt w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Calendario</span>
+    </a>
+    <a href="#monitor" title="Monitor" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-chart-line w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Monitor</span>
+    </a>
+    <a href="#mensajes" title="Mensajes" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-paper-plane w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Mensajes</span>
+    </a>
+    <a href="#busqueda_heavensy" title="Búsqueda" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-search w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Búsqueda</span>
+    </a>
+    <a href="#logs" title="Logs" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-file-alt w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Logs</span>
+    </a>
+    <a href="#configuracion" title="Configuración" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-cog w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Configuración</span>
+    </a>
+    <a href="#mipagina" title="Mi página" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-globe w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Mi página</span>
+    </a>
+    <a href="#embudos" title="Embudos" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-filter w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Embudos</span>
+    </a>
+    <a href="#perfil_personal_interno" title="Mi Perfil" class="sidebar-link flex items-center px-3 py-2 rounded-lg transition-colors">
+      <i class="fas fa-user-circle w-5"></i>
+      <span class="ml-3 sidebar-text text-sm">Mi Perfil</span>
+    </a>
+  </nav>
+</aside>

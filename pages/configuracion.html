@@ -1,0 +1,1196 @@
+<div id="cfg-toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#ef4444;color:#fff;padding:10px 20px;border-radius:10px;font-size:12.5px;font-weight:600;z-index:9999;opacity:0;transition:all .3s;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px"><i class="fas fa-exclamation-circle"></i><span id="cfg-toast-msg"></span></div>
+<div id="main-layout">
+<div id="left-pane">
+
+<!-- STEPS BAR -->
+<div class="steps-bar">
+  <div style="display:flex;justify-content:flex-end;padding:12px 16px 22px;border-bottom:none">
+    <button class="btn-primary btn-sm" onclick="actualizarPublicacion(this)" style="background:linear-gradient(90deg,#9961FF,#5b8dee);font-size:12px"><i class="fas fa-cloud-upload-alt" style="margin-right:6px"></i>Actualizar publicación</button>
+  </div>
+  <div class="steps">
+    <div class="step active" id="step-0" onclick="goStep(0)"><div class="step-circle" id="sc-0">1</div><span class="step-label">Mi empresa</span></div>
+    <div class="step-line" id="sl-0"></div>
+    <div class="step" id="step-1" onclick="goStep(1)"><div class="step-circle" id="sc-1">2</div><span class="step-label">Disponibilidad</span></div>
+    <div class="step-line" id="sl-1"></div>
+    <div class="step" id="step-2" onclick="goStep(2)"><div class="step-circle" id="sc-2">3</div><span class="step-label">Especialidad</span></div>
+    <div class="step-line" id="sl-2"></div>
+    <div class="step" id="step-3" onclick="goStep(3)"><div class="step-circle" id="sc-3">4</div><span class="step-label">Servicios</span></div>
+    <div class="step-line" id="sl-3"></div>
+    <div class="step" id="step-4" onclick="goStep(4)"><div class="step-circle" id="sc-4">5</div><span class="step-label">Media</span></div>
+  </div>
+</div>
+
+<!-- ══ STEP 1 — MI EMPRESA ══ -->
+<div class="step-panel active" id="panel-0">
+<div class="content">
+
+  <div class="form-group" style="margin-bottom:18px">
+    <label style="font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Nombre de tu empresa</label>
+    <input type="text" id="empresa-nombre" placeholder="Nombre de tu negocio" maxlength="60" style="max-width:360px" oninput="pmSend({type:'nombre_empresa',value:this.value});ppSaveConfig()"/>
+  </div>
+
+  <div style="margin-bottom:14px">
+    <button class="btn-primary" onclick="toggleAddMember()"><i class="fas fa-user-plus" style="margin-right:7px"></i>Agregar miembro al equipo</button>
+  </div>
+
+  <!-- ── Panel agregar miembro ── -->
+  <div id="add-member-panel" class="edit-panel" style="display:none;margin-bottom:16px">
+    <div class="edit-header">
+      <span class="edit-header-title"><i class="fas fa-user-plus" style="margin-right:8px"></i>Nuevo miembro</span>
+      <button class="edit-close" onclick="toggleAddMember()"><i class="fas fa-times"></i> Cerrar</button>
+    </div>
+    <div class="edit-body">
+      <div class="form-grid-2">
+        <div class="form-group" style="position:relative">
+          <label>Buscar profesional</label>
+          <input id="add-q" type="text" placeholder="Nombre o email..." autocomplete="off" oninput="buscarProfesional(this.value)"/>
+          <div id="db-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #C9D9FF;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;margin-top:4px;overflow:hidden;max-height:240px;overflow-y:auto"></div>
+        </div>
+        <div class="form-group">
+          <label>Rol en el equipo</label>
+          <select id="add-rol">
+            <option value="terapeuta">Terapeuta</option>
+            <option value="admin">Admin</option>
+            <option value="secretaria">Secretaria</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn-primary" id="btn-agregar-equipo" onclick="agregarAlEquipo()" disabled style="opacity:.5;cursor:not-allowed"><i class="fas fa-user-plus" style="margin-right:6px"></i>Agregar al equipo</button>
+        <button class="btn-secondary" onclick="toggleAddMember()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Barra de filtros ── -->
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:8px 12px;background:#f5f3ff;border-radius:10px;border:1px solid #ede9ff">
+    <div style="position:relative;flex:1;min-width:160px">
+      <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#c4b5fd;font-size:11px;pointer-events:none"></i>
+      <input id="f-q" type="text" placeholder="Buscar en lista..." style="padding-left:30px;height:32px;font-size:12px;width:100%;border:1px solid #ddd6fe;border-radius:8px;background:#fff;color:#3b4a6b;box-sizing:border-box" oninput="filterUsers()"/>
+    </div>
+    <select id="f-rol" onchange="filterUsers()" style="height:32px;font-size:12px;border:1px solid #ddd6fe;border-radius:8px;padding:0 10px;background:#fff;color:#3b4a6b;min-width:120px">
+      <option value="">Todos los roles</option>
+      <option value="terapeuta">Terapeuta</option>
+      <option value="admin">Admin</option>
+      <option value="secretaria">Secretaria</option>
+    </select>
+    <select id="f-estado" onchange="filterUsers()" style="height:32px;font-size:12px;border:1px solid #ddd6fe;border-radius:8px;padding:0 10px;background:#fff;color:#3b4a6b;min-width:100px">
+      <option value="">Estado</option>
+      <option value="activo">Activo</option>
+      <option value="inactivo">Inactivo</option>
+    </select>
+    <select id="f-recurso" onchange="filterUsers()" style="height:32px;font-size:12px;border:1px solid #ddd6fe;border-radius:8px;padding:0 10px;background:#fff;color:#3b4a6b;min-width:110px">
+      <option value="">Es recurso</option>
+      <option value="si">Sí</option>
+      <option value="no">No</option>
+    </select>
+    <button onclick="clearFilters()" style="height:32px;font-size:11px;font-weight:600;color:#9ca3af;background:none;border:none;cursor:pointer;padding:0 6px;white-space:nowrap;transition:color .15s" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#9ca3af'">
+      <i class="fas fa-times" style="margin-right:4px"></i>Limpiar
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Lista de usuarios <span id="user-count" style="color:#9961FF;font-weight:700;margin-left:6px">1</span></span>
+    </div>
+    <div class="table-scroll-wrap">
+    <table>
+      <thead><tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Recurso</th><th>Empresa</th><th>Activo</th><th>Acciones</th></tr></thead>
+      <tbody id="users-tbody">
+        <tr data-name="juana machuca" data-email="jmachuca@heavensy.cl" data-rol="terapeuta" data-estado="activo" data-recurso="si">
+          <td><div class="user-cell"><div class="avatar">JM</div><div><div style="font-weight:600;font-size:12px">Juana Machuca</div><div style="font-size:10px;color:#7D84C1">juana.machuca</div></div></div></td>
+          <td>jmachuca@heavensy.cl</td>
+          <td><span class="badge b-resource">Terapeuta</span></td>
+          <td><span class="badge b-active">Sí</span></td>
+          <td>Heavensy</td>
+          <td><label class="switch"><input type="checkbox" checked onchange="recalcStats()"><span class="slider"></span></label></td>
+          <td style="white-space:nowrap"><button class="btn-icon" title="Editar" style="color:#5b8dee" onclick="toggleEdit('jm')"><i class="fas fa-pen"></i></button><button class="btn-icon" title="Eliminar" style="color:#9ca3af" onclick="cfgDeleteUser('jmachuca',this.closest('tr'))"><i class="fas fa-trash"></i></button></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══ STEP 2 — DISPONIBILIDAD ══ -->
+<div class="step-panel" id="panel-1">
+<div class="content">
+  <div class="breadcrumb">
+    <button class="btn-secondary btn-sm" onclick="goStep(0)"><i class="fas fa-arrow-left" style="margin-right:5px"></i>Volver</button>
+    <i class="fas fa-chevron-right" style="font-size:10px"></i>
+    <span>Disponibilidad de <strong id="detail-name-1">—</strong></span>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.06em">
+    <i class="fas fa-eye" style="color:#9961FF;font-size:12px"></i> Resumen
+  </div>
+  <div class="summary-card">
+    <div class="summary-grid">
+      <div>
+        <div class="summary-section-title">Horario de atención</div>
+        <div style="font-size:14px;font-weight:700;color:#3b4a6b">09:00 a 18:00 hrs</div>
+        <div style="font-size:11px;color:#7D84C1;margin-top:3px">Almuerzo: 13:00 – 14:00</div>
+        <div style="font-size:11px;color:#7D84C1">Intervalo: 15 min · Anticip.: 2 hrs</div>
+        <div style="font-size:11px;color:#7D84C1">Cancelación: 48 hrs · 40% tardía</div>
+      </div>
+      <div>
+        <div class="summary-section-title">Días disponibles</div>
+        <div class="chips">
+          <span class="chip chip-on">L</span><span class="chip chip-on">M</span>
+          <span class="chip chip-on">X</span><span class="chip chip-on">J</span>
+          <span class="chip chip-on">V</span><span class="chip chip-off">S</span>
+          <span class="chip chip-off">D</span>
+        </div>
+        <div style="font-size:11px;color:#7D84C1;margin-top:6px">GMT-3 America/Santiago</div>
+      </div>
+      <div>
+        <div class="summary-section-title">Modos de atención</div>
+        <div style="font-size:12px;color:#10b981;margin-top:2px"><i class="fas fa-check" style="margin-right:4px"></i>Presencial</div>
+        <div style="font-size:12px;color:#10b981"><i class="fas fa-check" style="margin-right:4px"></i>Online</div>
+        <div style="font-size:12px;color:#9ca3af"><i class="fas fa-times" style="margin-right:4px"></i>A domicilio</div>
+      </div>
+    </div>
+    <button class="btn-primary btn-sm" onclick="toggleEditPanel('disp')"><i class="fas fa-pen" style="margin-right:5px"></i>Editar</button>
+  </div>
+  <div class="edit-panel" id="editp-disp">
+    <div class="edit-header">
+      <span class="edit-header-title"><i class="fas fa-clock" style="margin-right:8px"></i>Editar disponibilidad</span>
+      <button class="edit-close" onclick="toggleEditPanel('disp')"><i class="fas fa-times"></i> Cerrar</button>
+    </div>
+    <div class="edit-body">
+      <div class="form-grid-2">
+        <div class="form-group"><label>Hora inicio jornada</label><input id="disp-inicio" type="time" value="09:00"/></div>
+        <div class="form-group"><label>Hora término jornada</label><input id="disp-fin" type="time" value="18:00"/></div>
+        <div class="form-group"><label>Almuerzo desde</label><input id="disp-alm-desde" type="time" value="13:00"/></div>
+        <div class="form-group"><label>Almuerzo hasta</label><input id="disp-alm-hasta" type="time" value="14:00"/></div>
+        <div class="form-group"><label>Intervalo entre atenciones (min)</label><input id="disp-intervalo" type="number" value="15" min="0" max="120"/></div>
+        <div class="form-group"><label>Anticipación mínima (hrs)</label><input id="disp-anticip" type="number" value="2" min="0"/></div>
+        <div class="form-group"><label>Cancelación sin costo (hrs antes)</label><input id="disp-cancel-hrs" type="number" value="48" min="0"/></div>
+        <div class="form-group"><label>Cobro cancelación tardía (%)</label><input id="disp-cancel-pct" type="number" value="40" min="0" max="100"/></div>
+        <div class="form-group form-full"><label>Días disponibles</label>
+          <div class="toggle-group">
+            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Lun</span>
+            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Mar</span>
+            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Mié</span>
+            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Jue</span>
+            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Vie</span>
+            <span class="toggle-btn" onclick="this.classList.toggle('on')">Sáb</span>
+            <span class="toggle-btn" onclick="this.classList.toggle('on')">Dom</span>
+          </div>
+        </div>
+        <div class="form-group form-full"><label>Modos de atención</label>
+          <div class="toggle-group">
+            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Presencial</span>
+            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Online</span>
+            <span class="toggle-btn" onclick="this.classList.toggle('on')">A domicilio</span>
+          </div>
+        </div>
+        <div class="form-group"><label>Dirección</label><input value="Av. Providencia 1234"/></div>
+        <div class="form-group"><label>Oficina / Piso</label><input value="Oficina 3, piso 2"/></div>
+        <div class="form-group form-full"><label>Zona horaria</label>
+          <select><option>America/Santiago – GMT-3</option><option>America/New_York – GMT-5</option></select>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="btn-primary" id="btn-guardar-disp" onclick="guardarDisponibilidad(this)"><i class="fas fa-check" style="margin-right:6px"></i>Guardar</button>
+        <button class="btn-secondary" onclick="toggleEditPanel('disp')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;margin-top:16px">
+    <button class="btn-primary" onclick="syncHorario();goStep(2)">Continuar <i class="fas fa-arrow-right" style="margin-left:6px"></i></button>
+  </div>
+</div>
+</div>
+
+<!-- ══ STEP 3 — ESPECIALIDAD ══ -->
+<div class="step-panel" id="panel-2">
+<div class="content">
+  <div class="breadcrumb">
+    <button class="btn-secondary btn-sm" onclick="goStep(1)"><i class="fas fa-arrow-left" style="margin-right:5px"></i>Volver</button>
+    <i class="fas fa-chevron-right" style="font-size:10px"></i>
+    <span>Especialidades de <strong id="detail-name-2">—</strong></span>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.06em">
+    <i class="fas fa-eye" style="color:#9961FF;font-size:12px"></i> Resumen
+  </div>
+  <div class="summary-card">
+    <div class="summary-grid" style="grid-template-columns:1fr 1fr">
+      <div>
+        <div class="summary-section-title">Especialidades</div>
+        <div id="sum-esp-chips" style="margin-top:4px">
+        </div>
+        <div id="sum-exp" style="font-size:11px;color:#7D84C1;margin-top:8px"><i class="fas fa-star" style="margin-right:4px;color:#f59e0b"></i>8 años de experiencia</div>
+      </div>
+      <div>
+        <div class="summary-section-title">Modos de trabajo</div>
+        <div id="sum-modos-trabajo" style="margin-top:4px"></div>
+      </div>
+    </div>
+    <button class="btn-primary btn-sm" onclick="toggleEditPanel('esp')"><i class="fas fa-pen" style="margin-right:5px"></i>Editar</button>
+  </div>
+  <div class="edit-panel" id="editp-esp">
+    <div class="edit-header">
+      <span class="edit-header-title"><i class="fas fa-star" style="margin-right:8px"></i>Editar especialidades</span>
+      <button class="edit-close" onclick="toggleEditPanel('esp')"><i class="fas fa-times"></i> Cerrar</button>
+    </div>
+    <div class="edit-body">
+      <div class="form-group" style="margin-bottom:14px"><label>Buscar especialidad</label><input placeholder="Ej: Psicólogo, Nutricionista, Coach..."/></div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:8px">Tus especialidades</label>
+        <div id="spec-tags-container" style="display:inline"></div>
+        <button class="btn-secondary btn-sm" style="margin-left:6px;margin-top:4px" onclick="addSpec()"><i class="fas fa-plus" style="margin-right:4px"></i>Agregar</button>
+      </div>
+      <div class="form-group" style="margin-bottom:14px"><label>Modos de trabajo</label>
+        <div class="toggle-group">
+          <span class="toggle-btn on" onclick="this.classList.toggle('on')">Presencial</span>
+          <span class="toggle-btn on" onclick="this.classList.toggle('on')">Online</span>
+          <span class="toggle-btn" onclick="this.classList.toggle('on')">A domicilio</span>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px"><label>Años de experiencia</label><input id="esp-exp" type="number" value="8" min="0" max="60" style="max-width:120px"/></div>
+      <div style="background:#EFF6FF;border:0.5px solid #C9D9FF;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:11px;color:#7D84C1">
+        <i class="fas fa-info-circle" style="margin-right:5px"></i>Las especialidades permiten que los clientes encuentren al profesional al buscar un servicio.
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-primary" onclick="guardarEspecialidades(this)"><i class="fas fa-check" style="margin-right:6px"></i>Guardar</button>
+        <button class="btn-secondary" onclick="toggleEditPanel('esp')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;margin-top:16px">
+    <button class="btn-primary" onclick="goStep(3)">Continuar <i class="fas fa-arrow-right" style="margin-left:6px"></i></button>
+  </div>
+</div>
+</div>
+
+<!-- ══ STEP 4 — SERVICIOS ══ -->
+<div class="step-panel" id="panel-3">
+<div class="content">
+  <div class="breadcrumb">
+    <button class="btn-secondary btn-sm" onclick="goStep(2)"><i class="fas fa-arrow-left" style="margin-right:5px"></i>Volver</button>
+    <i class="fas fa-chevron-right" style="font-size:10px"></i>
+    <span>Servicios de <strong id="detail-name-3">—</strong></span>
+  </div>
+  <!-- SERVICIOS -->
+  <div class="card" style="margin-bottom:10px">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-clock" style="color:#9961FF;margin-right:6px"></i>Servicios</span>
+      <button class="btn-primary btn-sm" onclick="toggleForm('form-sesion')"><i class="fas fa-plus" style="margin-right:5px"></i>Agregar servicio</button>
+    </div>
+    <div id="svc-list"></div>
+    <div class="edit-panel" id="form-sesion">
+      <div class="edit-header">
+        <span class="edit-header-title" id="form-sesion-title"><i class="fas fa-clock" style="margin-right:6px"></i>Crea tu servicio</span>
+        <button class="edit-close" onclick="cancelarSesion()">✕ Cerrar</button>
+      </div>
+      <div class="edit-body">
+        <div class="form-grid-2">
+          <div class="form-group form-full"><label>Nombre del servicio</label><input type="text" id="ses-nombre" placeholder="Nombre del servicio"></div>
+          <div class="form-group"><label>Duración (minutos)</label><input type="number" id="ses-duracion" placeholder="50" min="5" step="5"></div>
+          <div class="form-group"><label>Precio</label><input type="text" id="ses-precio" placeholder="Precio"></div>
+          <div class="form-group form-full"><label>Modalidad</label>
+            <div class="toggle-group">
+              <button class="toggle-btn" onclick="toggleMod(this,'ses-mod')">Presencial</button>
+              <button class="toggle-btn" onclick="toggleMod(this,'ses-mod')">Online</button>
+              <button class="toggle-btn" onclick="toggleMod(this,'ses-mod')">A domicilio</button>
+            </div>
+            <input type="hidden" id="ses-mod" value="">
+          </div>
+          <div class="form-group form-full">
+            <label>Política de cancelación <span style="color:#ef4444;font-weight:500">*</span></label>
+            <div id="ses-cancel-wrap" style="margin-top:6px;border:1.5px solid #e0e7ff;border-radius:10px;padding:10px 14px;background:#fafbff;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                <button type="button" class="toggle-btn" id="ses-cancel-total-btn" onclick="toggleCancelOption('ses','total')" style="width:100%;justify-content:center"><i class="fas fa-rotate-left" style="margin-right:5px"></i>Reembolso total</button>
+                <div id="ses-cancel-total-detail" style="display:none;flex-direction:column;gap:5px;width:100%">
+                  <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+                    <span style="font-size:12px;color:#6b7194">con</span>
+                    <input type="number" id="ses-cancel-total-tiempo" min="0" placeholder="48" style="width:52px;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;outline:none">
+                    <select id="ses-cancel-total-unidad" style="flex:1;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;background:#fff;outline:none;cursor:pointer"><option value="hrs">hrs antes</option><option value="dias">días antes</option></select>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                <button type="button" class="toggle-btn" id="ses-cancel-parcial-btn" onclick="toggleCancelOption('ses','parcial')" style="width:100%;justify-content:center"><i class="fas fa-percent" style="margin-right:5px"></i>Reembolso parcial</button>
+                <div id="ses-cancel-parcial-detail" style="display:none;flex-direction:column;gap:5px;width:100%">
+                  <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+                    <span style="font-size:12px;color:#6b7194">con</span>
+                    <input type="number" id="ses-cancel-parcial-tiempo" min="0" placeholder="0" style="width:52px;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;outline:none">
+                    <select id="ses-cancel-parcial-unidad" style="flex:1;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;background:#fff;outline:none;cursor:pointer"><option value="hrs">hrs antes</option><option value="dias">días antes</option><option value="mismo_dia">mismo día</option></select>
+                    <input type="number" id="ses-cancel-parcial-valor" min="1" max="100" placeholder="50" style="width:48px;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;outline:none"><span style="font-size:12px;color:#6b7194">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group form-full"><label>Descripción <span style="color:#9ca3af;font-weight:400">(opcional)</span></label><input type="text" id="ses-desc" placeholder="Breve descripción"></div>
+          <div class="form-group"><label>Color identificador</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="color" id="ses-color" value="#9961FF" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="previewSesColor(this.value)">
+              <span style="font-size:11px;color:#7D84C1">Color del servicio</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px">
+          <button class="btn-secondary btn-sm" onclick="cancelarSesion()">Cancelar</button>
+          <button class="btn-primary btn-sm" id="btn-guardar-sesion" onclick="guardarSesion()" style="background:linear-gradient(90deg,#9961FF,#5b8dee);border:none"><i class="fas fa-check" style="margin-right:5px"></i>Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- PROGRAMAS -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-layer-group" style="color:#9961FF;margin-right:6px"></i>Programas</span>
+      <button class="btn-primary btn-sm" onclick="toggleForm('form-programa')"><i class="fas fa-plus" style="margin-right:5px"></i>Agregar programa</button>
+    </div>
+    <div id="prog-list"></div>
+    <div class="edit-panel" id="form-programa">
+      <div class="edit-header">
+        <span class="edit-header-title" id="form-programa-title"><i class="fas fa-layer-group" style="margin-right:6px"></i>Nuevo programa</span>
+        <button class="edit-close" onclick="cancelarPrograma()">✕ Cerrar</button>
+      </div>
+      <div class="edit-body">
+        <div class="form-group form-full" style="margin-bottom:16px">
+          <label style="font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:8px">¿Qué tipo de actividad es?</label>
+          <div class="tipo-chips" id="prog-tipo-chips">
+            <div class="tipo-chip" data-val="Curso" onclick="setProgTipo('prog','Curso')">Curso</div>
+            <div class="tipo-chip" data-val="Taller" onclick="setProgTipo('prog','Taller')">Taller</div>
+            <div class="tipo-chip" data-val="Diplomado" onclick="setProgTipo('prog','Diplomado')">Diplomado</div>
+            <div class="tipo-chip" data-val="Masterclass" onclick="setProgTipo('prog','Masterclass')">Masterclass</div>
+            <div class="tipo-chip" data-val="Retiro" onclick="setProgTipo('prog','Retiro')">Retiro</div>
+            <div class="tipo-chip" data-val="Evento" onclick="setProgTipo('prog','Evento')">Evento</div>
+            <div class="tipo-chip" data-val="Charla" onclick="setProgTipo('prog','Charla')">Charla</div>
+            <div class="tipo-chip" data-val="Webinar" onclick="setProgTipo('prog','Webinar')">Webinar</div>
+            <div class="tipo-chip" data-val="Fiesta" onclick="setProgTipo('prog','Fiesta')">Fiesta</div>
+            <div class="tipo-chip" data-val="Formación" onclick="setProgTipo('prog','Formación')">Formación</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <input type="text" id="prog-tipo-custom" placeholder="Otro tipo…" maxlength="30" style="flex:1;border:0.5px solid #C9D9FF;border-radius:8px;padding:7px 10px;font-size:12px;color:#374151;outline:none">
+            <button type="button" class="btn-secondary btn-sm" onclick="addCustomTipo('prog')"><i class="fas fa-plus" style="margin-right:4px"></i>Agregar</button>
+          </div>
+          <input type="hidden" id="prog-tipo" value="">
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group form-full"><label id="prog-lbl-nombre">Nombre del programa</label><input type="text" id="prog-nombre" placeholder="Nombre del programa" oninput="if(this.value.trim())this.style.borderColor=''"></div>
+          <div class="form-full form-grid-3">
+            <div class="form-group"><label>N° de encuentros totales</label><input type="number" id="prog-encuentros" placeholder="4" min="1" oninput="if(this.value.trim())this.style.borderColor=''"></div>
+            <div class="form-group"><label>Duración por encuentro</label>
+              <div id="prog-duracion-wrap" style="display:flex;align-items:center;border:1px solid #e0e7ff;border-radius:8px;overflow:hidden;background:#f5f3ff;">
+                <input type="number" id="prog-duracion" placeholder="90" min="1" style="flex:0 0 70px;border:none;background:transparent;padding:8px 10px;font-size:13px;outline:none;color:#374151;" oninput="if(this.value.trim())document.getElementById('prog-duracion-wrap').style.borderColor=''">
+                <div style="width:1px;height:20px;background:#e0e7ff;flex-shrink:0;"></div>
+                <select id="prog-duracion-unidad" style="flex:1;border:none;background:transparent;padding:8px 8px;font-size:13px;outline:none;color:#374151;cursor:pointer;">
+                  <option value="min">Minutos</option>
+                  <option value="hr">Horas</option>
+                  <option value="dia">Días</option>
+                  <option value="sem">Semanas</option>
+                  <option value="mes">Meses</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group"><label>Frecuencia de los encuentros</label>
+              <select id="prog-frecuencia">
+                <option value="">Seleccionar…</option>
+                <option value="diaria">Diaria</option>
+                <option value="lunes_viernes">Lunes a viernes</option>
+                <option value="fines_semana">Fines de semana</option>
+                <option value="1_semana">1 vez por semana</option>
+                <option value="2_semana">2 veces por semana</option>
+                <option value="3_semana">3 veces por semana</option>
+                <option value="quincenal">Quincenal</option>
+                <option value="mensual">Mensual</option>
+              </select>
+              <span id="prog-frecuencia-aviso" style="display:none;font-size:11px;color:#ef4444;margin-top:4px;display:none;">Duración demasiado larga para repetirse</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Precio</label>
+            <input type="text" id="prog-precio" placeholder="Ej: 150.000" oninput="if(this.value.trim())this.style.borderColor=''">
+            <div class="toggle-group" style="margin-top:6px">
+              <button type="button" class="toggle-btn on" id="prog-precio-tipo-total" onclick="setPrecioTipo('prog','total')">Pago único</button>
+              <button type="button" class="toggle-btn" id="prog-precio-tipo-mensual" onclick="setPrecioTipo('prog','mensual')">Mensual</button>
+            </div>
+          </div>
+          <div class="form-group"><label>Modalidad</label>
+            <div class="toggle-group">
+              <button class="toggle-btn" onclick="toggleMod(this,'prog-mod')">Presencial</button>
+              <button class="toggle-btn" onclick="toggleMod(this,'prog-mod')">Online</button>
+            </div>
+            <input type="hidden" id="prog-mod" value="">
+          </div>
+          <div class="form-group"><label>Cupos <span style="color:#9ca3af;font-weight:400">(1–1.000)</span></label><input type="number" id="prog-cupos" placeholder="Ej: 10" min="1" max="1000" oninput="if(this.value.trim())this.style.borderColor=''"></div>
+          <div class="form-group">
+            <label>Visibilidad cupos</label>
+            <input type="checkbox" id="prog-mostrar-cupos" style="display:none">
+            <button type="button" class="cupos-toggle-btn" id="prog-mostrar-cupos-btn" onclick="toggleCuposBtn('prog-mostrar-cupos','prog-mostrar-cupos-btn')">
+              <span class="cupos-toggle-dot"></span><span class="cupos-toggle-label">Mostrar en página pública</span>
+            </button>
+          </div>
+          <div class="form-group form-full">
+            <label>Política de cancelación <span style="color:#ef4444;font-weight:500">*</span></label>
+            <div id="prog-cancel-wrap" style="margin-top:6px;border:1.5px solid #e0e7ff;border-radius:10px;padding:10px 14px;background:#fafbff;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                <button type="button" class="toggle-btn" id="prog-cancel-total-btn" onclick="toggleCancelOption('prog','total')" style="width:100%;justify-content:center"><i class="fas fa-rotate-left" style="margin-right:5px"></i>Reembolso total</button>
+                <div id="prog-cancel-total-detail" style="display:none;flex-direction:column;gap:5px;width:100%">
+                  <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+                    <span style="font-size:12px;color:#6b7194">con</span>
+                    <input type="number" id="prog-cancel-total-tiempo" min="0" placeholder="48" style="width:52px;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;outline:none">
+                    <select id="prog-cancel-total-unidad" style="flex:1;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;background:#fff;outline:none;cursor:pointer"><option value="hrs">hrs antes</option><option value="dias">días antes</option></select>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                <button type="button" class="toggle-btn" id="prog-cancel-parcial-btn" onclick="toggleCancelOption('prog','parcial')" style="width:100%;justify-content:center"><i class="fas fa-percent" style="margin-right:5px"></i>Reembolso parcial</button>
+                <div id="prog-cancel-parcial-detail" style="display:none;flex-direction:column;gap:5px;width:100%">
+                  <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+                    <span style="font-size:12px;color:#6b7194">con</span>
+                    <input type="number" id="prog-cancel-parcial-tiempo" min="0" placeholder="0" style="width:52px;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;outline:none">
+                    <select id="prog-cancel-parcial-unidad" style="flex:1;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;background:#fff;outline:none;cursor:pointer"><option value="hrs">hrs antes</option><option value="dias">días antes</option><option value="mismo_dia">mismo día</option></select>
+                    <input type="number" id="prog-cancel-parcial-valor" min="1" max="100" placeholder="50" style="width:48px;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;outline:none"><span style="font-size:12px;color:#6b7194">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group form-full"><label>Descripción <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
+            <textarea id="prog-desc" rows="4" placeholder="Describe el programa…" style="resize:vertical;font-family:inherit;font-size:12px;border:0.5px solid #C9D9FF;border-radius:8px;padding:8px 11px;width:100%;color:#374151" oninput="sendDescPreview('prog',this.value)"></textarea>
+          </div>
+          <div class="form-group form-full">
+            <label id="prog-lbl-modulos">Módulos del programa <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
+            <div id="prog-modulos-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
+            <button type="button" class="btn-secondary btn-sm" onclick="addModulo('prog')"><i class="fas fa-plus" style="margin-right:5px"></i>Agregar módulo</button>
+          </div>
+          <div class="form-group form-full">
+            <label>Qué incluye <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
+            <div class="includes-chips" id="prog-includes-chips">
+              <div class="include-chip" data-icono="fa-certificate" data-texto="Certificado de finalización" onclick="toggleIncludeChip(this)"><i class="fas fa-certificate"></i> Certificado</div>
+              <div class="include-chip" data-icono="fa-book" data-texto="Materiales del curso" onclick="toggleIncludeChip(this)"><i class="fas fa-book"></i> Materiales</div>
+              <div class="include-chip" data-icono="fa-video" data-texto="Grabaciones de sesiones" onclick="toggleIncludeChip(this)"><i class="fas fa-video"></i> Grabaciones</div>
+              <div class="include-chip" data-icono="fa-comments" data-texto="Seguimiento personalizado" onclick="toggleIncludeChip(this)"><i class="fas fa-comments"></i> Seguimiento</div>
+              <div class="include-chip" data-icono="fa-infinity" data-texto="Acceso de por vida" onclick="toggleIncludeChip(this)"><i class="fas fa-infinity"></i> Acceso de por vida</div>
+              <div class="include-chip" data-icono="fa-users" data-texto="Comunidad privada" onclick="toggleIncludeChip(this)"><i class="fas fa-users"></i> Comunidad privada</div>
+              <div class="include-chip" data-icono="fa-user-check" data-texto="Acompañamiento personalizado" onclick="toggleIncludeChip(this)"><i class="fas fa-user-check"></i> Acompañamiento</div>
+              <div class="include-chip" data-icono="fa-gift" data-texto="Bonus extra" onclick="toggleIncludeChip(this)"><i class="fas fa-gift"></i> Bonus</div>
+            </div>
+            <div id="prog-includes-custom" style="margin-top:6px"></div>
+            <button type="button" class="btn-secondary btn-sm" style="margin-top:4px" onclick="addCustomInclude('prog')"><i class="fas fa-plus" style="margin-right:5px"></i>Personalizado</button>
+          </div>
+          <div class="form-group form-full">
+            <label>Requisitos <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
+            <div id="prog-requisitos-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+            <button type="button" class="btn-secondary btn-sm" onclick="addRequisito('prog')"><i class="fas fa-plus" style="margin-right:5px"></i>Agregar requisito</button>
+          </div>
+          <div class="form-group form-full"><label id="prog-lbl-imagen">Imagen del programa <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
+            <label for="prog-img-input" id="prog-img-label" style="display:flex;align-items:center;gap:8px;background:#f0f4ff;border:1.5px dashed #aac0e8;border-radius:10px;padding:10px 14px;cursor:pointer;font-size:12px;color:#7D84C1">
+              <i class="fas fa-image"></i><span id="prog-img-name">Seleccionar imagen…</span>
+            </label>
+            <input type="file" id="prog-img-input" accept="image/*" style="display:none" onchange="prevProgImg(this)">
+            <div id="prog-img-preview" style="display:none;margin-top:8px;position:relative;width:100%;height:120px;border-radius:10px;overflow:hidden">
+              <img id="prog-img-thumb" style="width:100%;height:100%;object-fit:cover">
+              <button onclick="clearProgImg()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">✕</button>
+            </div>
+          </div>
+          <div class="form-group form-full"><label>Media promocional <span style="color:#9ca3af;font-weight:400">(imagen o video — opcional)</span></label>
+            <div style="display:flex;gap:6px;margin-bottom:8px">
+              <button type="button" class="toggle-btn on" id="prog-media-tab-img" onclick="progMediaTab('img')"><i class="fas fa-image" style="margin-right:5px"></i>Imagen</button>
+              <button type="button" class="toggle-btn" id="prog-media-tab-vid" onclick="progMediaTab('vid')"><i class="fas fa-film" style="margin-right:5px"></i>Video</button>
+            </div>
+            <div id="prog-media-img-wrap">
+              <label for="prog-media-img-input" style="display:flex;align-items:center;gap:8px;background:#f0f4ff;border:1.5px dashed #aac0e8;border-radius:10px;padding:10px 14px;cursor:pointer;font-size:12px;color:#7D84C1">
+                <i class="fas fa-image"></i><span id="prog-media-img-name">Seleccionar imagen promocional…</span>
+              </label>
+              <input type="file" id="prog-media-img-input" accept="image/*" style="display:none" onchange="prevProgMediaImg(this)">
+              <div id="prog-media-img-preview" style="display:none;margin-top:8px;position:relative;width:100%;height:160px;border-radius:10px;overflow:hidden">
+                <img id="prog-media-img-thumb" style="width:100%;height:100%;object-fit:cover">
+                <button onclick="clearProgMedia()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">✕</button>
+              </div>
+            </div>
+            <div id="prog-media-vid-wrap" style="display:none">
+              <label for="prog-video-input" style="display:flex;align-items:center;gap:8px;background:#f0f4ff;border:1.5px dashed #aac0e8;border-radius:10px;padding:10px 14px;cursor:pointer;font-size:12px;color:#7D84C1">
+                <i class="fas fa-film"></i><span id="prog-video-name">Seleccionar video… (máx. 30MB)</span>
+              </label>
+              <input type="file" id="prog-video-input" accept="video/*" style="display:none" onchange="prevProgVideo(this,'prog')">
+              <p id="prog-video-error" style="display:none;font-size:11px;color:#ef4444;margin-top:4px"><i class="fas fa-exclamation-circle" style="margin-right:3px"></i>El video supera los 30MB</p>
+              <div id="prog-video-preview" style="display:none;margin-top:8px">
+                <video id="prog-video-thumb" style="width:100%;border-radius:10px;max-height:160px" controls muted playsinline></video>
+                <button type="button" onclick="clearProgVideo('prog')" style="margin-top:4px;font-size:11px;color:#ef4444;background:none;border:none;cursor:pointer"><i class="fas fa-times"></i> Quitar video</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-group form-full">
+            <label id="prog-lbl-galeria">Galería de imágenes <span style="color:#9ca3af;font-weight:400">(opcional, máx. 5)</span></label>
+            <div id="prog-galeria-thumbs" class="galeria-thumbs"></div>
+            <label for="prog-galeria-input" class="galeria-add-btn" id="prog-galeria-label">
+              <i class="fas fa-plus"></i> Agregar imágenes aquí
+            </label>
+            <input type="file" id="prog-galeria-input" accept="image/*" multiple style="display:none" onchange="addGaleriaImgs('prog', this)">
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+              <span style="font-size:11px;color:#7D84C1;font-weight:600">Orientación:</span>
+              <button type="button" class="toggle-btn on" id="prog-galeria-ori-h" onclick="setGaleriaOri('prog','h')"><i class="fas fa-expand-alt" style="margin-right:4px"></i>Horizontal</button>
+              <button type="button" class="toggle-btn" id="prog-galeria-ori-v" onclick="setGaleriaOri('prog','v')"><i class="fas fa-mobile-alt" style="margin-right:4px"></i>Vertical</button>
+            </div>
+          </div>
+          <div class="form-group"><label id="prog-lbl-color">Color identificador</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="color" id="prog-color" value="#10b981" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="previewProgColor(this.value)">
+              <span id="prog-color-label" style="font-size:11px;color:#7D84C1">Color del programa</span>
+            </div>
+          </div>
+          <div class="form-group"><label id="prog-lbl-fondo">Color de fondo de página</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="color" id="prog-bg-color" value="#F7F8FC" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="sendColorPreview('prog')">
+              <span style="font-size:11px;color:#7D84C1">Fondo</span>
+            </div>
+          </div>
+          <div class="form-group"><label>Color de títulos de sección</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="color" id="prog-color-navy" value="#7E9DD6" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="sendColorPreview('prog')">
+              <span style="font-size:11px;color:#7D84C1">Temario, Descripción…</span>
+            </div>
+          </div>
+          <div class="form-group"><label>Color de textos en negrita</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="color" id="prog-color-text" value="#333333" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="sendColorPreview('prog')">
+              <span style="font-size:11px;color:#7D84C1">Módulos, valores…</span>
+            </div>
+          </div>
+          <div class="form-group"><label>Color de textos secundarios</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="color" id="prog-color-text-lt" value="#6B7194" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="sendColorPreview('prog')">
+              <span style="font-size:11px;color:#7D84C1">Labels, fechas…</span>
+            </div>
+          </div>
+          <div class="form-group"><label>Color de botones</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="display:flex;border-radius:8px;overflow:hidden;border:1px solid #e0e7ff;flex-shrink:0">
+                <input type="color" id="prog-color-btn-start" value="#9497F4" title="Color inicio" style="width:44px;height:38px;border:none;cursor:pointer" oninput="sendColorPreview('prog')">
+                <div style="width:2px;background:#e0e7ff;flex-shrink:0"></div>
+                <input type="color" id="prog-color-btn-end" value="#89B9F8" title="Color fin" style="width:44px;height:38px;border:none;cursor:pointer" oninput="sendColorPreview('prog')">
+              </div>
+              <span style="font-size:11px;color:#7D84C1">Gradiente botones</span>
+            </div>
+          </div>
+          <div class="form-group form-full">
+            <label style="display:flex;justify-content:space-between;align-items:center">Opacidad de cards <span id="prog-card-opacity-val" style="font-weight:400;color:#b0b8cc">72%</span></label>
+            <input type="range" id="prog-card-opacity" min="10" max="100" value="72" style="width:100%;accent-color:#9961FF;margin-top:4px" oninput="document.getElementById('prog-card-opacity-val').textContent=this.value+'%';sendColorPreview('prog')">
+          </div>
+          <div class="form-group">
+            <label>Tipografía del título</label>
+            <select id="prog-titulo-font" style="width:100%;padding:8px 10px;border:1.5px solid #e0e7ff;border-radius:8px;font-size:13px;color:#374151;background:#fff;cursor:pointer" onchange="sendColorPreview('prog')">
+              <option value="DM Sans">DM Sans</option>
+              <option value="Poppins">Poppins</option>
+              <option value="Playfair Display">Playfair Display</option>
+              <option value="Montserrat">Montserrat</option>
+              <option value="Raleway">Raleway</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label style="display:flex;justify-content:space-between;align-items:center">Tamaño del título <span id="prog-titulo-size-val" style="font-weight:400;color:#b0b8cc">36px</span></label>
+            <input type="range" id="prog-titulo-size" min="18" max="60" value="36" style="width:100%;accent-color:#9961FF;margin-top:4px" oninput="document.getElementById('prog-titulo-size-val').textContent=this.value+'px';sendColorPreview('prog')">
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px">
+          <button class="btn-secondary btn-sm" onclick="cancelarPrograma()">Cancelar</button>
+          <button class="btn-primary btn-sm" id="btn-guardar-programa" onclick="guardarPrograma()"><i class="fas fa-check" style="margin-right:5px"></i>Guardar programa</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;margin-top:6px">
+    <button class="btn-primary" onclick="syncServicios();goStep(4)">Continuar <i class="fas fa-arrow-right" style="margin-left:6px"></i></button>
+  </div>
+</div>
+</div>
+
+<!-- ══ STEP 5 — MEDIA ══ -->
+<div class="step-panel" id="panel-4">
+<div class="content">
+  <div class="breadcrumb">
+    <button class="btn-secondary btn-sm" onclick="goStep(3)"><i class="fas fa-arrow-left" style="margin-right:5px"></i>Volver</button>
+    <i class="fas fa-chevron-right" style="font-size:10px"></i>
+    <span>Media de <strong id="detail-name-4">—</strong></span>
+  </div>
+  <div class="card">
+    <div class="card-header" style="justify-content:space-between">
+      <span class="card-title"><i class="fas fa-sliders-h" style="margin-right:8px;color:#9961FF"></i>Edición del perfil</span>
+      <span style="font-size:11px;color:#7D84C1">Los cambios se reflejan en la página de perfil</span>
+    </div>
+    <!-- FOTOS -->
+    <div class="edit-section">
+      <div class="edit-section-title"><i class="fas fa-images"></i> Fotos</div>
+      <div class="edit-row">
+        <label>Foto portada (hero)</label>
+        <label class="edit-file-label" for="ep-portada"><i class="fas fa-mountain"></i><span id="ep-portada-name">Seleccionar imagen…</span></label>
+        <input type="file" id="ep-portada" accept="image/*" style="display:none" onchange="epPortada(this)">
+      </div>
+      <div class="edit-row">
+        <label>Foto de perfil</label>
+        <label class="edit-file-label" for="ep-foto"><i class="fas fa-user-circle"></i><span id="ep-foto-name">Seleccionar imagen…</span></label>
+        <input type="file" id="ep-foto" accept="image/*" style="display:none" onchange="epFotoPerfil(this)">
+      </div>
+      <div class="edit-row">
+        <label>Foto fondo de página</label>
+        <label class="edit-file-label" for="ep-fondo"><i class="fas fa-image"></i><span id="ep-fondo-name">Seleccionar imagen…</span></label>
+        <input type="file" id="ep-fondo" accept="image/*" style="display:none" onchange="epFondo(this)">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-top:.4rem">
+          <input type="color" id="ep-fondo-color" value="#FCFBFA" oninput="epFondoColor(this.value)" style="width:34px;height:26px;border:none;border-radius:6px;cursor:pointer;padding:1px">
+          <span style="font-size:.72rem;color:#777">O elige color sólido de fondo</span>
+        </div>
+      </div>
+    </div>
+    <!-- COLORES -->
+    <div class="edit-section">
+      <div class="edit-section-title"><i class="fas fa-palette"></i> Edición de colores</div>
+      <div class="edit-colors-grid">
+        <div class="edit-color-row"><label>Texto títulos</label><div class="color-pick"><input type="color" value="#333333" oninput="epColor('--text-titulo',this.value,this)"><span id="ec-ttitulo">#333333</span></div></div>
+        <div class="edit-color-row"><label>Fondo franjas</label><div class="color-pick"><input type="color" value="#5362c7" oninput="epColor('--titulo-bg',this.value,this)"><span id="ec-titulo">#5362c7</span></div></div>
+        <div class="edit-color-row"><label>Texto bajada</label><div class="color-pick"><input type="color" value="#ffffff" oninput="epColor('--text-lt',this.value,this)"><span id="ec-texto">#ffffff</span></div></div>
+        <div class="edit-color-row"><label>Texto franjas</label><div class="color-pick"><input type="color" value="#ffffff" oninput="epColor('--text-franja',this.value,this)"><span id="ec-franja">#ffffff</span></div></div>
+        <div class="edit-color-row" style="grid-column:1/-1"><label>Botones / navy</label><div class="color-pick"><input type="color" value="#172838" oninput="epColor('--navy',this.value,this)"><span id="ec-navy">#172838</span></div></div>
+        <div class="edit-color-row" style="grid-column:1/-1">
+          <label>Opacidad cards &nbsp;<span id="ec-opacidad">45%</span></label>
+          <input type="range" min="5" max="95" value="45" oninput="epOpacidad(this.value)" style="width:100%;accent-color:#9961FF;margin-top:2px">
+        </div>
+      </div>
+    </div>
+    <!-- TEXTOS -->
+    <div class="edit-section">
+      <div class="edit-section-title"><i class="fas fa-pen"></i> Textos del perfil</div>
+      <div class="edit-row">
+        <label style="display:flex;justify-content:space-between;align-items:center">Slogan <span id="cnt-slogan" style="font-weight:400;color:#b0b8cc">0/75</span></label>
+        <input type="text" id="ep-slogan" maxlength="75" placeholder="Aquí va tu slogan" oninput="epTexto('slogan',this.value);document.getElementById('cnt-slogan').textContent=this.value.length+'/75'">
+      </div>
+      <div class="edit-row">
+        <label style="display:flex;justify-content:space-between;align-items:center">Frase / descripción <span id="cnt-frase" style="font-weight:400;color:#b0b8cc">0/240</span></label>
+        <textarea id="ep-frase" maxlength="240" placeholder="Escribe una descripción del perfil" oninput="epTexto('frase',this.value);document.getElementById('cnt-frase').textContent=this.value.length+'/240'"></textarea>
+      </div>
+      <div class="edit-row">
+        <label style="display:flex;justify-content:space-between;align-items:center">Dirección <span id="cnt-dir" style="font-weight:400;color:#b0b8cc">0/40</span></label>
+        <input type="text" id="ep-direccion" maxlength="40" placeholder="Escribe la dirección" oninput="epTexto('direccion',this.value);document.getElementById('cnt-dir').textContent=this.value.length+'/40'">
+      </div>
+    </div>
+  </div>
+  <!-- GALERÍA -->
+  <div class="card" style="margin-top:14px">
+    <div class="card-header" style="justify-content:space-between">
+      <span class="card-title">Galería</span>
+      <span style="font-size:11px;color:#7D84C1">Visibles para los clientes al consultar este recurso</span>
+    </div>
+    <div style="padding:12px 16px 0">
+      <div style="font-size:11px;font-weight:700;color:#9961FF;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        <span><i class="fas fa-briefcase" style="font-size:11px;margin-right:6px"></i>Informativa del oficio</span>
+        <span id="inf-count" style="font-size:10px;font-weight:600;color:#b0bbc8">0 / 3</span>
+      </div>
+      <div class="drop-zone" onclick="document.getElementById('inp-inf').click()" id="inf-dropzone">
+        <input type="file" id="inp-inf" accept="image/*,video/*" multiple style="display:none" onchange="onInfOficio(this)">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <p>Fotos o videos · hasta 3</p>
+        <small>JPG, PNG, WEBP, MP4 · Máx. 50MB</small>
+      </div>
+      <div class="media-grid" id="inf-grid" style="margin-top:10px"></div>
+    </div>
+    <div style="border-top:1px solid #f0f2f8;padding:12px 16px;margin-top:8px">
+      <div style="font-size:11px;font-weight:700;color:#9961FF;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        <span><i class="fas fa-search" style="font-size:11px;margin-right:6px"></i>Para card de búsqueda</span>
+        <span id="card-count" style="font-size:10px;font-weight:600;color:#b0bbc8">0 / 1</span>
+      </div>
+      <div class="drop-zone" onclick="document.getElementById('inp-card').click()" id="card-dropzone">
+        <input type="file" id="inp-card" accept="image/*,video/*" style="display:none" onchange="onCardBusqueda(this)">
+        <i class="fas fa-image"></i>
+        <p>1 foto o video para la card</p>
+        <small>JPG, PNG, WEBP, MP4 · Recomendado 800×500px</small>
+      </div>
+      <div class="media-grid" id="card-grid" style="margin-top:10px"></div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;margin-top:6px">
+    <button class="btn-primary" onclick="cfgFinalizarConfiguracion()"><i class="fas fa-check" style="margin-right:6px"></i>Finalizar configuración</button>
+  </div>
+</div>
+</div>
+
+<!-- ── MODAL EMPRESA CREADA ── -->
+<div id="cfg-empresa-modal" style="display:none;position:fixed;inset:0;background:rgba(10,20,70,0.65);backdrop-filter:blur(6px);z-index:99999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:20px;padding:40px 32px;max-width:380px;width:92%;text-align:center;box-shadow:0 24px 60px rgba(10,20,80,.35);position:relative">
+    <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#9961FF,#5b8dee);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:28px;color:#fff">
+      <i class="fas fa-building"></i>
+    </div>
+    <h2 style="font-size:1.2rem;font-weight:700;color:#1e2a5e;margin-bottom:10px">¡Tu empresa ha sido creada!</h2>
+    <p style="font-size:13px;color:#6b7194;line-height:1.6;margin-bottom:28px">Ya tenés tu perfil público listo. Podés seguir editándolo cuando quieras desde configuración.</p>
+    <button onclick="cfgIrAlPerfil()" style="width:100%;background:linear-gradient(90deg,#9961FF,#5b8dee);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif">
+      <i class="fas fa-globe" style="margin-right:8px"></i>Ver mi perfil público
+    </button>
+  </div>
+</div>
+
+</div><!-- /left-pane -->
+
+<!-- PANEL PREVIEW -->
+<div id="preview-backdrop" onclick="togglePreview()"></div>
+<button id="preview-toggle-btn" onclick="togglePreview()" title="Mostrar / Ocultar vista previa">
+  <i class="fas fa-chevron-right" id="preview-toggle-icon"></i>
+</button>
+<div id="preview-panel">
+  <div class="preview-topbar">
+    <span><i class="fas fa-eye"></i> Vista previa — Perfil</span>
+    <span style="font-size:10px;color:#9ca3af;display:flex;align-items:center;gap:4px"><i class="fas fa-search-plus" style="font-size:9px"></i> Mantén presionado para zoom</span>
+  </div>
+  <div class="preview-scale-wrap" style="position:relative">
+    <iframe id="perfil-iframe" src="./pages/perfil_profesional.html?cfg=1"></iframe>
+    <div id="lupa-trigger" style="position:absolute;left:0;right:0;bottom:0;top:0;z-index:10;cursor:zoom-in;touch-action:none;-webkit-user-select:none;user-select:none"></div>
+  </div>
+</div>
+
+</div><!-- /main-layout -->
+
+<!-- LUPA CIRCLE -->
+<div id="lupa-glass" style="display:none;position:fixed;width:200px;height:200px;border-radius:50%;overflow:hidden;background:#fff;border:3px solid rgba(153,97,255,.85);box-shadow:0 6px 28px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.2);pointer-events:none;z-index:9997">
+  <iframe id="lupa-zoom-frame" src="./pages/perfil_profesional.html?cfg=1" style="position:absolute;top:0;left:0;border:none;transform-origin:0 0;width:1200px;height:3000px;pointer-events:none;background:#fff"></iframe>
+</div>
+
+<!-- MODAL CONFIRMAR ELIMINAR USUARIO -->
+<div class="cfg-confirm-overlay" id="cfg-confirm-overlay" onclick="if(event.target===this)cfgConfirmReject()">
+  <div class="cfg-confirm-modal">
+    <div class="cfg-confirm-icon"><i class="fas fa-trash"></i></div>
+    <div class="cfg-confirm-title" id="cfg-confirm-title">¿Eliminar miembro?</div>
+    <div class="cfg-confirm-msg" id="cfg-confirm-msg">Esta acción no se puede deshacer.</div>
+    <div class="cfg-confirm-btns">
+      <button class="btn-secondary" onclick="cfgConfirmReject()">Cancelar</button>
+      <button class="cfg-confirm-del" onclick="cfgConfirmAccept()"><i class="fas fa-trash" style="margin-right:6px"></i>Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDICIÓN USUARIO -->
+<div class="user-edit-overlay" id="user-edit-overlay" onclick="if(event.target===this)toggleEdit('jm')">
+  <div class="user-edit-modal">
+    <div class="ue-tabs">
+      <button class="ue-tab active" onclick="jmTab(0,this)"><i class="fas fa-user" style="margin-right:5px"></i>Información</button>
+      <button class="ue-tab" onclick="jmTab(1,this)"><i class="fas fa-clock" style="margin-right:5px"></i>Disponibilidad</button>
+      <button class="ue-tab" onclick="jmTab(2,this)"><i class="fas fa-star" style="margin-right:5px"></i>Especialidad</button>
+      <button class="ue-tab" onclick="jmTab(3,this)"><i class="fas fa-layer-group" style="margin-right:5px"></i>Servicios</button>
+      <button class="ue-tab" onclick="jmTab(4,this)"><i class="fas fa-camera" style="margin-right:5px"></i>Presentación</button>
+      <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;padding-right:12px">
+        <button class="btn-primary btn-sm" onclick="jmGuardarProfesional(this)" style="background:linear-gradient(90deg,#9961FF,#5b8dee)"><i class="fas fa-save" style="margin-right:6px"></i>Guardar cambios</button>
+        <button class="btn-secondary btn-sm" onclick="toggleEdit('jm')"><i class="fas fa-times" style="margin-right:5px"></i>Cerrar</button>
+      </div>
+    </div>
+    <div style="padding:18px">
+      <!-- TAB 1: INFO -->
+      <div class="ue-panel active" id="jm-panel-0">
+        <div class="form-grid-3">
+          <div class="form-group"><label>Nombre</label><input id="jm-nombre" value="Juana"/></div>
+          <div class="form-group"><label>Apellido</label><input id="jm-apellido" value="Machuca"/></div>
+          <div class="form-group"><label>Email</label><input value="jmachuca@heavensy.cl"/></div>
+          <div class="form-group"><label>Teléfono</label><input value="+56912345678"/></div>
+          <div class="form-group"><label>Rol</label><select><option selected>Terapeuta</option><option>Admin</option><option>Secretaria</option></select></div>
+          <div class="form-group"><label>RUT</label><input value="12.345.678-9"/></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn-primary btn-sm" onclick="jmGuardarInfo(this)"><i class="fas fa-check" style="margin-right:5px"></i>Guardar</button>
+        </div>
+      </div>
+      <!-- TAB 2: DISPONIBILIDAD -->
+      <div class="ue-panel" id="jm-panel-1">
+        <div class="form-grid-2">
+          <div class="form-group"><label>Hora inicio jornada</label><input id="jm-disp-inicio" type="time" value="09:00"/></div>
+          <div class="form-group"><label>Hora término jornada</label><input id="jm-disp-fin" type="time" value="18:00"/></div>
+          <div class="form-group"><label>Almuerzo desde</label><input id="jm-disp-alm-desde" type="time" value="13:00"/></div>
+          <div class="form-group"><label>Almuerzo hasta</label><input id="jm-disp-alm-hasta" type="time" value="14:00"/></div>
+          <div class="form-group"><label>Intervalo entre atenciones (min)</label><input id="jm-disp-intervalo" type="number" value="15" min="0" max="120"/></div>
+          <div class="form-group"><label>Anticipación mínima (hrs)</label><input id="jm-disp-anticip" type="number" value="2" min="0"/></div>
+          <div class="form-group"><label>Cancelación sin costo (hrs antes)</label><input id="jm-disp-cancel-hrs" type="number" value="48" min="0"/></div>
+          <div class="form-group"><label>Cobro cancelación tardía (%)</label><input id="jm-disp-cancel-pct" type="number" value="40" min="0" max="100"/></div>
+          <div class="form-group form-full"><label>Días disponibles</label>
+            <div class="toggle-group">
+              <span class="toggle-btn on" onclick="this.classList.toggle('on')">Lun</span>
+              <span class="toggle-btn on" onclick="this.classList.toggle('on')">Mar</span>
+              <span class="toggle-btn on" onclick="this.classList.toggle('on')">Mié</span>
+              <span class="toggle-btn on" onclick="this.classList.toggle('on')">Jue</span>
+              <span class="toggle-btn on" onclick="this.classList.toggle('on')">Vie</span>
+              <span class="toggle-btn" onclick="this.classList.toggle('on')">Sáb</span>
+              <span class="toggle-btn" onclick="this.classList.toggle('on')">Dom</span>
+            </div>
+          </div>
+          <div class="form-group"><label>Dirección</label><input id="jm-direccion" value="Av. Providencia 1234"/></div>
+          <div class="form-group"><label>Oficina / Piso</label><input value="Oficina 3, piso 2"/></div>
+          <div class="form-group form-full"><label>Zona horaria</label>
+            <select><option>America/Santiago – GMT-3</option><option>America/New_York – GMT-5</option></select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button class="btn-primary btn-sm" onclick="jmGuardarDisponibilidad(this)"><i class="fas fa-check" style="margin-right:5px"></i>Guardar</button>
+        </div>
+      </div>
+      <!-- TAB 3: ESPECIALIDAD -->
+      <div class="ue-panel" id="jm-panel-2">
+        <div class="form-group" style="margin-bottom:14px"><label>Buscar especialidad</label><input id="jm-esp-input" placeholder="Ej: Psicólogo, Nutricionista, Coach…"/></div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:8px">Tus especialidades</label>
+          <div id="jm-spec-tags-container" style="display:inline"></div>
+          <button class="btn-secondary btn-sm" style="margin-left:6px;margin-top:4px" onclick="jmAddSpec()"><i class="fas fa-plus" style="margin-right:4px"></i>Agregar</button>
+        </div>
+        <div class="form-group" style="margin-bottom:14px"><label>Modos de trabajo</label>
+          <div class="toggle-group">
+            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Presencial</span>
+            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Online</span>
+            <span class="toggle-btn" onclick="this.classList.toggle('on')">A domicilio</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:16px"><label>Años de experiencia</label><input id="jm-esp-exp" type="number" value="8" min="0" max="60" style="max-width:120px"/></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-primary btn-sm" onclick="jmGuardarEspecialidades(this)"><i class="fas fa-check" style="margin-right:5px"></i>Guardar</button>
+        </div>
+      </div>
+      <!-- TAB 4: SERVICIOS -->
+      <div class="ue-panel" id="jm-panel-3">
+        <div class="card" style="margin-bottom:10px">
+          <div class="card-header">
+            <span class="card-title"><i class="fas fa-clock" style="color:#9961FF;margin-right:6px"></i>Servicios</span>
+            <button class="btn-primary btn-sm" onclick="jmToggleForm('jm-form-sesion')"><i class="fas fa-plus" style="margin-right:5px"></i>Agregar servicio</button>
+          </div>
+          <div id="jm-svc-list"></div>
+          <div class="edit-panel" id="jm-form-sesion">
+            <div class="edit-header">
+              <span class="edit-header-title" id="jm-form-sesion-title"><i class="fas fa-clock" style="margin-right:6px"></i>Crea tu servicio</span>
+              <button class="edit-close" onclick="jmCancelarSesion()">✕ Cerrar</button>
+            </div>
+            <div class="edit-body">
+              <div class="form-grid-2">
+                <div class="form-group form-full"><label>Nombre del servicio</label><input type="text" id="jm-ses-nombre" placeholder="Nombre del servicio"></div>
+                <div class="form-group"><label>Duración (minutos)</label><input type="number" id="jm-ses-duracion" placeholder="50" min="5" step="5"></div>
+                <div class="form-group"><label>Precio</label><input type="text" id="jm-ses-precio" placeholder="Precio"></div>
+                <div class="form-group form-full"><label>Modalidad</label>
+                  <div class="toggle-group">
+                    <button class="toggle-btn" onclick="toggleMod(this,'jm-ses-mod')">Presencial</button>
+                    <button class="toggle-btn" onclick="toggleMod(this,'jm-ses-mod')">Online</button>
+                    <button class="toggle-btn" onclick="toggleMod(this,'jm-ses-mod')">A domicilio</button>
+                  </div>
+                  <input type="hidden" id="jm-ses-mod" value="">
+                </div>
+                <div class="form-group form-full">
+                  <label>Política de cancelación <span style="color:#ef4444;font-weight:500">*</span></label>
+                  <div id="jm-ses-cancel-wrap" style="margin-top:6px;border:1.5px solid #e0e7ff;border-radius:10px;padding:10px 14px;background:#fafbff;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                      <button type="button" class="toggle-btn" id="jm-ses-cancel-total-btn" onclick="toggleCancelOption('jm-ses','total')" style="width:100%;justify-content:center"><i class="fas fa-rotate-left" style="margin-right:5px"></i>Reembolso total</button>
+                      <div id="jm-ses-cancel-total-detail" style="display:none;flex-direction:column;gap:5px;width:100%">
+                        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+                          <span style="font-size:12px;color:#6b7194">con</span>
+                          <input type="number" id="jm-ses-cancel-total-tiempo" min="0" placeholder="48" style="width:52px;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;outline:none">
+                          <select id="jm-ses-cancel-total-unidad" style="flex:1;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;background:#fff;outline:none;cursor:pointer"><option value="hrs">hrs antes</option><option value="dias">días antes</option></select>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                      <button type="button" class="toggle-btn" id="jm-ses-cancel-parcial-btn" onclick="toggleCancelOption('jm-ses','parcial')" style="width:100%;justify-content:center"><i class="fas fa-percent" style="margin-right:5px"></i>Reembolso parcial</button>
+                      <div id="jm-ses-cancel-parcial-detail" style="display:none;flex-direction:column;gap:5px;width:100%">
+                        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+                          <span style="font-size:12px;color:#6b7194">con</span>
+                          <input type="number" id="jm-ses-cancel-parcial-tiempo" min="0" placeholder="0" style="width:52px;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;outline:none">
+                          <select id="jm-ses-cancel-parcial-unidad" style="flex:1;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;background:#fff;outline:none;cursor:pointer"><option value="hrs">hrs antes</option><option value="dias">días antes</option><option value="mismo_dia">mismo día</option></select>
+                          <input type="number" id="jm-ses-cancel-parcial-valor" min="1" max="100" placeholder="50" style="width:48px;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;outline:none"><span style="font-size:12px;color:#6b7194">%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group form-full"><label>Descripción <span style="color:#9ca3af;font-weight:400">(opcional)</span></label><input type="text" id="jm-ses-desc" placeholder="Breve descripción"></div>
+                <div class="form-group"><label>Color identificador</label>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <input type="color" id="jm-ses-color" value="#9961FF" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="jmPreviewSesColor(this.value)">
+                    <span style="font-size:11px;color:#7D84C1">Color del servicio</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px">
+                <button class="btn-secondary btn-sm" onclick="jmCancelarSesion()">Cancelar</button>
+                <button class="btn-primary btn-sm" id="jm-btn-guardar-sesion" onclick="jmGuardarSesion()" style="background:linear-gradient(90deg,#9961FF,#5b8dee);border:none"><i class="fas fa-check" style="margin-right:5px"></i>Guardar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title"><i class="fas fa-layer-group" style="color:#9961FF;margin-right:6px"></i>Programas</span>
+            <button class="btn-primary btn-sm" onclick="jmToggleForm('jm-form-programa')"><i class="fas fa-plus" style="margin-right:5px"></i>Agregar programa</button>
+          </div>
+          <div id="jm-prog-list"></div>
+          <div class="edit-panel" id="jm-form-programa">
+            <div class="edit-header">
+              <span class="edit-header-title" id="jm-form-programa-title"><i class="fas fa-layer-group" style="margin-right:6px"></i>Nuevo programa</span>
+              <button class="edit-close" onclick="jmCancelarPrograma()">✕ Cerrar</button>
+            </div>
+            <div class="edit-body">
+              <div class="form-group form-full" style="margin-bottom:16px">
+                <label style="font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:8px">¿Qué tipo de actividad es?</label>
+                <div class="tipo-chips" id="jm-prog-tipo-chips">
+                  <div class="tipo-chip" data-val="Curso" onclick="setProgTipo('jm-prog','Curso')">Curso</div>
+                  <div class="tipo-chip" data-val="Taller" onclick="setProgTipo('jm-prog','Taller')">Taller</div>
+                  <div class="tipo-chip" data-val="Diplomado" onclick="setProgTipo('jm-prog','Diplomado')">Diplomado</div>
+                  <div class="tipo-chip" data-val="Masterclass" onclick="setProgTipo('jm-prog','Masterclass')">Masterclass</div>
+                  <div class="tipo-chip" data-val="Retiro" onclick="setProgTipo('jm-prog','Retiro')">Retiro</div>
+                  <div class="tipo-chip" data-val="Evento" onclick="setProgTipo('jm-prog','Evento')">Evento</div>
+                  <div class="tipo-chip" data-val="Charla" onclick="setProgTipo('jm-prog','Charla')">Charla</div>
+                  <div class="tipo-chip" data-val="Webinar" onclick="setProgTipo('jm-prog','Webinar')">Webinar</div>
+                  <div class="tipo-chip" data-val="Fiesta" onclick="setProgTipo('jm-prog','Fiesta')">Fiesta</div>
+                  <div class="tipo-chip" data-val="Formación" onclick="setProgTipo('jm-prog','Formación')">Formación</div>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+                  <input type="text" id="jm-prog-tipo-custom" placeholder="Otro tipo…" maxlength="30" style="flex:1;border:0.5px solid #C9D9FF;border-radius:8px;padding:7px 10px;font-size:12px;color:#374151;outline:none">
+                  <button type="button" class="btn-secondary btn-sm" onclick="addCustomTipo('jm-prog')"><i class="fas fa-plus" style="margin-right:4px"></i>Agregar</button>
+                </div>
+                <input type="hidden" id="jm-prog-tipo" value="">
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group form-full"><label id="jm-prog-lbl-nombre">Nombre del programa</label><input type="text" id="jm-prog-nombre" placeholder="Nombre del programa" oninput="if(this.value.trim())this.style.borderColor=''"></div>
+                <div class="form-full form-grid-3">
+                  <div class="form-group"><label>N° de encuentros totales</label><input type="number" id="jm-prog-encuentros" placeholder="4" min="1" oninput="if(this.value.trim())this.style.borderColor=''"></div>
+                  <div class="form-group"><label>Duración por encuentro</label>
+                    <div id="jm-prog-duracion-wrap" style="display:flex;align-items:center;border:1px solid #e0e7ff;border-radius:8px;overflow:hidden;background:#f5f3ff;">
+                      <input type="number" id="jm-prog-duracion" placeholder="90" min="1" style="flex:0 0 70px;border:none;background:transparent;padding:8px 10px;font-size:13px;outline:none;color:#374151;" oninput="if(this.value.trim())document.getElementById('jm-prog-duracion-wrap').style.borderColor=''">
+                      <div style="width:1px;height:20px;background:#e0e7ff;flex-shrink:0;"></div>
+                      <select id="jm-prog-duracion-unidad" style="flex:1;border:none;background:transparent;padding:8px 8px;font-size:13px;outline:none;color:#374151;cursor:pointer;">
+                        <option value="min">Minutos</option>
+                        <option value="hr">Horas</option>
+                        <option value="dia">Días</option>
+                        <option value="sem">Semanas</option>
+                        <option value="mes">Meses</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-group"><label>Frecuencia de los encuentros</label>
+                    <select id="jm-prog-frecuencia">
+                      <option value="">Seleccionar…</option>
+                      <option value="diaria">Diaria</option>
+                      <option value="lunes_viernes">Lunes a viernes</option>
+                      <option value="fines_semana">Fines de semana</option>
+                      <option value="1_semana">1 vez por semana</option>
+                      <option value="2_semana">2 veces por semana</option>
+                      <option value="3_semana">3 veces por semana</option>
+                      <option value="quincenal">Quincenal</option>
+                      <option value="mensual">Mensual</option>
+                    </select>
+                    <span id="jm-prog-frecuencia-aviso" style="display:none;font-size:11px;color:#ef4444;margin-top:4px;">Duración demasiado larga para repetirse</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Precio</label>
+                  <input type="text" id="jm-prog-precio" placeholder="Ej: 150.000" oninput="if(this.value.trim())this.style.borderColor=''">
+                  <div class="toggle-group" style="margin-top:6px">
+                    <button type="button" class="toggle-btn on" id="jm-prog-precio-tipo-total" onclick="setPrecioTipo('jm-prog','total')">Pago único</button>
+                    <button type="button" class="toggle-btn" id="jm-prog-precio-tipo-mensual" onclick="setPrecioTipo('jm-prog','mensual')">Mensual</button>
+                  </div>
+                </div>
+                <div class="form-group"><label>Modalidad</label>
+                  <div class="toggle-group">
+                    <button class="toggle-btn" onclick="toggleMod(this,'jm-prog-mod')">Presencial</button>
+                    <button class="toggle-btn" onclick="toggleMod(this,'jm-prog-mod')">Online</button>
+                  </div>
+                  <input type="hidden" id="jm-prog-mod" value="">
+                </div>
+                <div class="form-group"><label>Cupos <span style="color:#9ca3af;font-weight:400">(1–1.000)</span></label><input type="number" id="jm-prog-cupos" placeholder="Ej: 10" min="1" max="1000" oninput="if(this.value.trim())this.style.borderColor=''"></div>
+                <div class="form-group">
+                  <label>Visibilidad cupos</label>
+                  <input type="checkbox" id="jm-prog-mostrar-cupos" style="display:none">
+                  <button type="button" class="cupos-toggle-btn" id="jm-prog-mostrar-cupos-btn" onclick="toggleCuposBtn('jm-prog-mostrar-cupos','jm-prog-mostrar-cupos-btn')">
+                    <span class="cupos-toggle-dot"></span><span class="cupos-toggle-label">Mostrar en página pública</span>
+                  </button>
+                </div>
+                <div class="form-group form-full">
+                  <label>Política de cancelación <span style="color:#ef4444;font-weight:500">*</span></label>
+                  <div id="jm-prog-cancel-wrap" style="margin-top:6px;border:1.5px solid #e0e7ff;border-radius:10px;padding:10px 14px;background:#fafbff;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                      <button type="button" class="toggle-btn" id="jm-prog-cancel-total-btn" onclick="toggleCancelOption('jm-prog','total')" style="width:100%;justify-content:center"><i class="fas fa-rotate-left" style="margin-right:5px"></i>Reembolso total</button>
+                      <div id="jm-prog-cancel-total-detail" style="display:none;flex-direction:column;gap:5px;width:100%">
+                        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+                          <span style="font-size:12px;color:#6b7194">con</span>
+                          <input type="number" id="jm-prog-cancel-total-tiempo" min="0" placeholder="48" style="width:52px;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;outline:none">
+                          <select id="jm-prog-cancel-total-unidad" style="flex:1;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;background:#fff;outline:none;cursor:pointer"><option value="hrs">hrs antes</option><option value="dias">días antes</option></select>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                      <button type="button" class="toggle-btn" id="jm-prog-cancel-parcial-btn" onclick="toggleCancelOption('jm-prog','parcial')" style="width:100%;justify-content:center"><i class="fas fa-percent" style="margin-right:5px"></i>Reembolso parcial</button>
+                      <div id="jm-prog-cancel-parcial-detail" style="display:none;flex-direction:column;gap:5px;width:100%">
+                        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+                          <span style="font-size:12px;color:#6b7194">con</span>
+                          <input type="number" id="jm-prog-cancel-parcial-tiempo" min="0" placeholder="0" style="width:52px;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;outline:none">
+                          <select id="jm-prog-cancel-parcial-unidad" style="flex:1;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;background:#fff;outline:none;cursor:pointer"><option value="hrs">hrs antes</option><option value="dias">días antes</option><option value="mismo_dia">mismo día</option></select>
+                          <input type="number" id="jm-prog-cancel-parcial-valor" min="1" max="100" placeholder="50" style="width:48px;border:1.5px solid #e0e7ff;border-radius:6px;padding:5px 7px;font-size:12px;color:#374151;outline:none"><span style="font-size:12px;color:#6b7194">%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group form-full"><label>Descripción <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
+                  <textarea id="jm-prog-desc" rows="3" placeholder="Describe el programa…" style="resize:vertical;font-family:inherit;font-size:12px;border:0.5px solid #C9D9FF;border-radius:8px;padding:8px 11px;width:100%;color:#374151" oninput="sendDescPreview('jm-prog',this.value)"></textarea>
+                </div>
+                <div class="form-group form-full">
+                  <label id="jm-prog-lbl-modulos">Módulos del programa <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
+                  <div id="jm-prog-modulos-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
+                  <button type="button" class="btn-secondary btn-sm" onclick="addModulo('jm-prog')"><i class="fas fa-plus" style="margin-right:5px"></i>Agregar módulo</button>
+                </div>
+                <div class="form-group form-full">
+                  <label>Qué incluye <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
+                  <div class="includes-chips" id="jm-prog-includes-chips">
+                    <div class="include-chip" data-icono="fa-certificate" data-texto="Certificado de finalización" onclick="toggleIncludeChip(this)"><i class="fas fa-certificate"></i> Certificado</div>
+                    <div class="include-chip" data-icono="fa-book" data-texto="Materiales del curso" onclick="toggleIncludeChip(this)"><i class="fas fa-book"></i> Materiales</div>
+                    <div class="include-chip" data-icono="fa-video" data-texto="Grabaciones de sesiones" onclick="toggleIncludeChip(this)"><i class="fas fa-video"></i> Grabaciones</div>
+                    <div class="include-chip" data-icono="fa-comments" data-texto="Seguimiento personalizado" onclick="toggleIncludeChip(this)"><i class="fas fa-comments"></i> Seguimiento</div>
+                    <div class="include-chip" data-icono="fa-infinity" data-texto="Acceso de por vida" onclick="toggleIncludeChip(this)"><i class="fas fa-infinity"></i> Acceso de por vida</div>
+                    <div class="include-chip" data-icono="fa-users" data-texto="Comunidad privada" onclick="toggleIncludeChip(this)"><i class="fas fa-users"></i> Comunidad privada</div>
+                    <div class="include-chip" data-icono="fa-user-check" data-texto="Acompañamiento personalizado" onclick="toggleIncludeChip(this)"><i class="fas fa-user-check"></i> Acompañamiento</div>
+                    <div class="include-chip" data-icono="fa-gift" data-texto="Bonus extra" onclick="toggleIncludeChip(this)"><i class="fas fa-gift"></i> Bonus</div>
+                  </div>
+                  <div id="jm-prog-includes-custom" style="margin-top:6px"></div>
+                  <button type="button" class="btn-secondary btn-sm" style="margin-top:4px" onclick="addCustomInclude('jm-prog')"><i class="fas fa-plus" style="margin-right:5px"></i>Personalizado</button>
+                </div>
+                <div class="form-group form-full">
+                  <label>Requisitos <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
+                  <div id="jm-prog-requisitos-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+                  <button type="button" class="btn-secondary btn-sm" onclick="addRequisito('jm-prog')"><i class="fas fa-plus" style="margin-right:5px"></i>Agregar requisito</button>
+                </div>
+                <div class="form-group form-full"><label id="jm-prog-lbl-imagen">Imagen <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
+                  <label for="jm-prog-img-input" id="jm-prog-img-label" style="display:flex;align-items:center;gap:8px;background:#f0f4ff;border:1.5px dashed #aac0e8;border-radius:10px;padding:10px 14px;cursor:pointer;font-size:12px;color:#7D84C1">
+                    <i class="fas fa-image"></i><span id="jm-prog-img-name">Seleccionar imagen…</span>
+                  </label>
+                  <input type="file" id="jm-prog-img-input" accept="image/*" style="display:none" onchange="jmPrevProgImg(this)">
+                  <div id="jm-prog-img-preview" style="display:none;margin-top:8px;position:relative;width:100%;height:120px;border-radius:10px;overflow:hidden">
+                    <img id="jm-prog-img-thumb" style="width:100%;height:100%;object-fit:cover">
+                    <button onclick="jmClearProgImg()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:12px">✕</button>
+                  </div>
+                </div>
+                <div class="form-group form-full"><label>Media promocional <span style="color:#9ca3af;font-weight:400">(imagen o video — opcional)</span></label>
+                  <div style="display:flex;gap:6px;margin-bottom:8px">
+                    <button type="button" class="toggle-btn on" id="jm-prog-media-tab-img" onclick="jmProgMediaTab('img')"><i class="fas fa-image" style="margin-right:5px"></i>Imagen</button>
+                    <button type="button" class="toggle-btn" id="jm-prog-media-tab-vid" onclick="jmProgMediaTab('vid')"><i class="fas fa-film" style="margin-right:5px"></i>Video</button>
+                  </div>
+                  <div id="jm-prog-media-img-wrap">
+                    <label for="jm-prog-media-img-input" style="display:flex;align-items:center;gap:8px;background:#f0f4ff;border:1.5px dashed #aac0e8;border-radius:10px;padding:10px 14px;cursor:pointer;font-size:12px;color:#7D84C1">
+                      <i class="fas fa-image"></i><span id="jm-prog-media-img-name">Seleccionar imagen promocional…</span>
+                    </label>
+                    <input type="file" id="jm-prog-media-img-input" accept="image/*" style="display:none" onchange="jmPrevProgMediaImg(this)">
+                    <div id="jm-prog-media-img-preview" style="display:none;margin-top:8px;position:relative;width:100%;height:160px;border-radius:10px;overflow:hidden">
+                      <img id="jm-prog-media-img-thumb" style="width:100%;height:100%;object-fit:cover">
+                      <button onclick="jmClearProgMedia()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">✕</button>
+                    </div>
+                  </div>
+                  <div id="jm-prog-media-vid-wrap" style="display:none">
+                    <label for="jm-prog-video-input" style="display:flex;align-items:center;gap:8px;background:#f0f4ff;border:1.5px dashed #aac0e8;border-radius:10px;padding:10px 14px;cursor:pointer;font-size:12px;color:#7D84C1">
+                      <i class="fas fa-film"></i><span id="jm-prog-video-name">Seleccionar video… (máx. 30MB)</span>
+                    </label>
+                    <input type="file" id="jm-prog-video-input" accept="video/*" style="display:none" onchange="prevProgVideo(this,'jm-prog')">
+                    <p id="jm-prog-video-error" style="display:none;font-size:11px;color:#ef4444;margin-top:4px"><i class="fas fa-exclamation-circle" style="margin-right:3px"></i>El video supera los 30MB</p>
+                    <div id="jm-prog-video-preview" style="display:none;margin-top:8px">
+                      <video id="jm-prog-video-thumb" style="width:100%;border-radius:10px;max-height:160px" controls muted playsinline></video>
+                      <button type="button" onclick="clearProgVideo('jm-prog')" style="margin-top:4px;font-size:11px;color:#ef4444;background:none;border:none;cursor:pointer"><i class="fas fa-times"></i> Quitar video</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group form-full">
+                  <label id="jm-prog-lbl-galeria">Galería de imágenes <span style="color:#9ca3af;font-weight:400">(opcional, máx. 5)</span></label>
+                  <div id="jm-prog-galeria-thumbs" class="galeria-thumbs"></div>
+                  <label for="jm-prog-galeria-input" class="galeria-add-btn" id="jm-prog-galeria-label">
+                    <i class="fas fa-plus"></i> Agregar imágenes aquí
+                  </label>
+                  <input type="file" id="jm-prog-galeria-input" accept="image/*" multiple style="display:none" onchange="addGaleriaImgs('jm-prog', this)">
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+                    <span style="font-size:11px;color:#7D84C1;font-weight:600">Orientación:</span>
+                    <button type="button" class="toggle-btn on" id="jm-prog-galeria-ori-h" onclick="setGaleriaOri('jm-prog','h')"><i class="fas fa-expand-alt" style="margin-right:4px"></i>Horizontal</button>
+                    <button type="button" class="toggle-btn" id="jm-prog-galeria-ori-v" onclick="setGaleriaOri('jm-prog','v')"><i class="fas fa-mobile-alt" style="margin-right:4px"></i>Vertical</button>
+                  </div>
+                </div>
+                <div class="form-group"><label id="jm-prog-lbl-color">Color identificador</label>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <input type="color" id="jm-prog-color" value="#10b981" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="jmPreviewProgColor(this.value)">
+                    <span id="jm-prog-color-label" style="font-size:11px;color:#7D84C1">Color del programa</span>
+                  </div>
+                </div>
+                <div class="form-group form-full">
+                  <label style="display:flex;justify-content:space-between;align-items:center">Opacidad de cards <span id="jm-prog-card-opacity-val" style="font-weight:400;color:#b0b8cc">72%</span></label>
+                  <input type="range" id="jm-prog-card-opacity" min="10" max="100" value="72" style="width:100%;accent-color:#9961FF;margin-top:4px" oninput="document.getElementById('jm-prog-card-opacity-val').textContent=this.value+'%';sendColorPreview('jm-prog')">
+                </div>
+                <div class="form-group">
+                  <label>Tipografía del título</label>
+                  <select id="jm-prog-titulo-font" style="width:100%;padding:8px 10px;border:1.5px solid #e0e7ff;border-radius:8px;font-size:13px;color:#374151;background:#fff;cursor:pointer" onchange="sendColorPreview('jm-prog')">
+                    <option value="DM Sans">DM Sans</option>
+                    <option value="Poppins">Poppins</option>
+                    <option value="Playfair Display">Playfair Display</option>
+                    <option value="Montserrat">Montserrat</option>
+                    <option value="Raleway">Raleway</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label style="display:flex;justify-content:space-between;align-items:center">Tamaño del título <span id="jm-prog-titulo-size-val" style="font-weight:400;color:#b0b8cc">36px</span></label>
+                  <input type="range" id="jm-prog-titulo-size" min="18" max="60" value="36" style="width:100%;accent-color:#9961FF;margin-top:4px" oninput="document.getElementById('jm-prog-titulo-size-val').textContent=this.value+'px';sendColorPreview('jm-prog')">
+                </div>
+                <div class="form-group"><label id="jm-prog-lbl-fondo">Color de fondo de página</label>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <input type="color" id="jm-prog-bg-color" value="#F7F8FC" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="sendColorPreview('jm-prog')">
+                    <span style="font-size:11px;color:#7D84C1">Fondo</span>
+                  </div>
+                </div>
+                <div class="form-group"><label>Color de títulos de sección</label>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <input type="color" id="jm-prog-color-navy" value="#7E9DD6" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="sendColorPreview('jm-prog')">
+                    <span style="font-size:11px;color:#7D84C1">Temario, Descripción…</span>
+                  </div>
+                </div>
+                <div class="form-group"><label>Color de textos en negrita</label>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <input type="color" id="jm-prog-color-text" value="#333333" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="sendColorPreview('jm-prog')">
+                    <span style="font-size:11px;color:#7D84C1">Módulos, valores…</span>
+                  </div>
+                </div>
+                <div class="form-group"><label>Color de textos secundarios</label>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <input type="color" id="jm-prog-color-text-lt" value="#6B7194" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="sendColorPreview('jm-prog')">
+                    <span style="font-size:11px;color:#7D84C1">Labels, fechas…</span>
+                  </div>
+                </div>
+                <div class="form-group"><label>Color de botones</label>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="display:flex;border-radius:8px;overflow:hidden;border:1px solid #e0e7ff;flex-shrink:0">
+                      <input type="color" id="jm-prog-color-btn-start" value="#9497F4" title="Color inicio" style="width:44px;height:38px;border:none;cursor:pointer" oninput="sendColorPreview('jm-prog')">
+                      <div style="width:2px;background:#e0e7ff;flex-shrink:0"></div>
+                      <input type="color" id="jm-prog-color-btn-end" value="#89B9F8" title="Color fin" style="width:44px;height:38px;border:none;cursor:pointer" oninput="sendColorPreview('jm-prog')">
+                    </div>
+                    <span style="font-size:11px;color:#7D84C1">Gradiente botones</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px">
+                <button class="btn-secondary btn-sm" onclick="jmCancelarPrograma()">Cancelar</button>
+                <button class="btn-primary btn-sm" id="jm-btn-guardar-programa" onclick="jmGuardarPrograma()"><i class="fas fa-check" style="margin-right:5px"></i>Guardar programa</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- TAB 5: PRESENTACIÓN -->
+      <div class="ue-panel" id="jm-panel-4">
+        <div style="max-width:360px">
+          <div class="edit-row" style="margin-bottom:0">
+            <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:6px">Foto de perfil del profesional</label>
+            <label class="edit-file-label" for="jm-foto-perfil"><i class="fas fa-user-circle"></i><span id="jm-foto-perfil-name">Seleccionar imagen…</span></label>
+            <input type="file" id="jm-foto-perfil" accept="image/*" style="display:none" onchange="jmFotoPerfil(this)">
+          </div>
+          <div id="jm-foto-preview" style="display:none;margin-top:12px">
+            <img id="jm-foto-thumb" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #C9D9FF">
+          </div>
+        </div>
+        <div class="edit-row" style="margin-top:18px;max-width:520px">
+          <label style="display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:600;color:#555;margin-bottom:4px">
+            Descripción del profesional
+            <span id="jm-cnt-frase" style="font-weight:400;color:#b0b8cc">0/240</span>
+          </label>
+          <textarea id="jm-frase" maxlength="240" placeholder="Escribe una descripción del profesional" style="width:100%;min-height:80px;border:0.5px solid #C9D9FF;border-radius:8px;padding:8px 10px;font-size:12px;color:#374151;font-family:inherit;resize:vertical" oninput="document.getElementById('jm-cnt-frase').textContent=this.value.length+'/240'"></textarea>
+          <div style="margin-top:8px">
+            <button class="btn-primary btn-sm" onclick="jmGuardarFrase(this)"><i class="fas fa-check" style="margin-right:5px"></i>Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

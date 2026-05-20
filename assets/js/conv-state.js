@@ -1,0 +1,485 @@
+// ============================================
+// CONV-STATE.JS — Estado global y utilidades
+// Compartido por todos los módulos de conversaciones
+// ============================================
+
+console.log('✅ conv-state.js cargado');
+
+// Estado global (solo se inicializa una vez)
+if (typeof window.conversacionesState === 'undefined') {
+    window.conversacionesState = {
+        attachedFile: null,
+        recordedAudio: null,
+        audioExtension: 'ogg',
+        audioMimeType: 'audio/ogg;codecs=opus'
+    };
+}
+
+// Variables de estado del módulo
+let currentConversation = null;
+let conversations = [];
+let currentMessages = [];
+let currentCompanyId = null;
+let allMessages = [];
+let selectedMessageToReply = null;
+let messagesOrderReversed = false;
+let isSending = false;
+
+// ============================================
+// AVATAR RENDERER (compartido)
+// ============================================
+function renderAvatar(containerEl, { avatar_url, name, roundedClass }) {
+    if (!containerEl) return;
+
+    const hasPhoto = avatar_url && avatar_url.trim() !== "";
+
+    const currentUrl  = containerEl.getAttribute("data-avatar-url") || "";
+    const currentName = containerEl.getAttribute("data-avatar-name") || "";
+    // Si ya tiene el estado correcto Y el mismo nombre, no sobreescribir
+    if (hasPhoto && currentUrl === avatar_url) return;
+    if (!hasPhoto && currentUrl === "fallback" && currentName === (name || "")) return;
+
+    if (hasPhoto) {
+        containerEl.setAttribute("data-avatar-url", avatar_url);
+        containerEl.innerHTML = `
+            <img
+                src="${avatar_url}"
+                class="w-full h-full object-cover ${roundedClass || ''}"
+                alt="Avatar"
+                loading="lazy"
+                onerror="this.parentElement.setAttribute('data-avatar-url','fallback');this.remove();"
+            />
+        `;
+    } else {
+        containerEl.setAttribute("data-avatar-url", "fallback");
+        containerEl.setAttribute("data-avatar-name", name || "");
+        containerEl.style.background = "linear-gradient(135deg,#8e84fa,#91c0ff)";
+        containerEl.style.display    = "flex";
+        containerEl.style.alignItems = "center";
+        containerEl.style.justifyContent = "center";
+        const isPhone = /^\d+$/.test((name || '').replace(/[\s\+\-]/g, ''));
+        if (isPhone || !name) {
+            containerEl.innerHTML = '<i class="fas fa-user" style="font-size:13px;color:#fff;"></i>';
+        } else {
+            containerEl.innerHTML = '<span style="font-size:13px;font-weight:700;color:#fff;">' + getInitials(name) + '</span>';
+        }
+    }
+}
+
+// ============================================
+// UTILIDADES
+// ============================================
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function getInitials(name) {
+    if (!name) return '??';
+    const parts = name.trim().split(' ').filter(p => p.length > 0);
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+}
+
+function getColorForUser(userId) {
+    const colors = ['purple', 'blue', 'green', 'orange', 'pink', 'indigo', 'red', 'yellow'];
+    const hash = (userId || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[hash % colors.length];
+}
+
+function formatTimestamp(timestamp) {
+    if (!timestamp) return '';
+
+    try {
+        let ts = timestamp;
+        if (typeof ts === 'number') {
+            // Unix timestamp en segundos (WA) → convertir a ms
+            ts = ts < 1e12 ? ts * 1000 : ts;
+        } else if (typeof ts === 'string' && /^\d{4}-\d{2}-\d{2}/.test(ts)) {
+            // ISO sin tzinfo (Python isoformat() naive): "2026-04-29T20:01:00.000000"
+            // Browser lo trata como local pero es UTC — forzar Z
+            ts = ts.replace(' ', 'T');
+            if (!ts.endsWith('Z') && !/[+\-]\d{2}:\d{2}/.test(ts.slice(-6))) {
+                ts = ts + 'Z';
+            }
+        }
+        // Otros formatos como "Wed, 29 Apr 2026 20:02:43 GMT" los parsea new Date() directo
+        const date = new Date(ts);
+        if (isNaN(date.getTime())) return String(timestamp);
+
+        const now = new Date();
+        const isToday = date.toDateString() === now.toDateString();
+
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const isYesterday = date.toDateString() === yesterday.toDateString();
+
+        if (isToday) {
+            return date.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+        }
+        if (isYesterday) {
+            return 'Ayer';
+        }
+
+        const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+        if (diffDays < 7) {
+            const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            return days[date.getDay()];
+        }
+
+        return date.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' });
+    } catch (e) {
+        return '';
+    }
+}
+
+function formatTime(timestamp) {
+    if (!timestamp) return '';
+    try {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diff = now - date;
+
+        if (diff < 24 * 60 * 60 * 1000) {
+            return date.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+        }
+        if (diff < 7 * 24 * 60 * 60 * 1000) {
+            const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            return days[date.getDay()];
+        }
+        return date.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' });
+    } catch (e) {
+        return '';
+    }
+}
+
+function getMessagePreview(msg) {
+    if (!msg) return '';
+    if (msg.text) return msg.text;
+    if (msg.type === 'image') return '📷 Imagen';
+    if (msg.type === 'document') return '📄 Documento';
+    if (msg.type === 'audio') return '🎤 Audio';
+    if (msg.type === 'video') return '🎥 Video';
+    return 'Mensaje';
+}
+
+function mapTagColor(colorName) {
+    const colorMap = {
+        purple: '#7c3aed',
+        blue: '#3b82f6',
+        green: '#10b981',
+        orange: '#f59e0b',
+        pink: '#ec4899',
+        indigo: '#6366f1',
+        red: '#ef4444',
+        yellow: '#eab308',
+        gray: '#9ca3af'
+    };
+    return colorMap[colorName] || colorName || '#9ca3af';
+}
+
+// ============================================
+// UI HELPERS COMPARTIDOS
+// ============================================
+function mostrarEstadoSinEmpresaSeleccionada() {
+    const chatMessages = document.getElementById("chatMessages");
+    const chatHeader = document.getElementById("chatHeader");
+
+    if (chatHeader) {
+        chatHeader.classList.add("hidden");
+    }
+
+    if (!chatMessages) return;
+
+    chatMessages.innerHTML = `
+        <div class="h-full flex flex-col items-center justify-center text-center text-gray-400 px-6">
+            <div class="w-16 h-16 mb-4 rounded-2xl bg-[#e6ecf7] flex items-center justify-center shadow-sm">
+                <i class="fas fa-building text-[#5a7baa] text-3xl"></i>
+            </div>
+            <h2 class="text-lg font-semibold text-gray-600 mb-1">
+                Selecciona una empresa
+            </h2>
+            <p class="text-sm text-gray-400 max-w-sm">
+                Para comenzar, elige una empresa desde el selector de arriba y podrás ver sus conversaciones aquí.
+            </p>
+        </div>
+    `;
+}
+
+
+function mostrarEstadoSinConversacionSeleccionada() {
+    const chatContainer = document.getElementById('chatMessages');
+    const chatHeader = document.getElementById('chatHeader');
+    const contactPanel = document.getElementById('contactDetailPanel');
+    const inputBar = document.getElementById('messageInputBar');
+
+    if (chatContainer) chatContainer.innerHTML = '<div class="flex-1 flex items-center justify-center text-gray-400 text-sm"><p>Selecciona una conversación</p></div>';
+    if (chatHeader) chatHeader.classList.add('hidden');
+    if (contactPanel) contactPanel.classList.add('hidden');
+    if (inputBar) inputBar.classList.add('hidden');
+}
+
+function mostrarChatActivo() {
+    const chatHeader = document.getElementById('chatHeader');
+    const contactPanel = document.getElementById('contactDetailPanel');
+    const inputBar = document.getElementById('messageInputBar');
+
+    if (chatHeader) chatHeader.classList.remove('hidden');
+    if (contactPanel) contactPanel.classList.remove('hidden');
+    if (inputBar) inputBar.classList.remove('hidden');
+}
+
+function mostrarEstadoVacio(mensaje) {
+    const container = document.getElementById('conversationsList');
+    if (container) {
+        container.innerHTML = `
+            <div class="p-8 text-center text-gray-500">
+                <i class="fas fa-inbox text-4xl mb-3"></i>
+                <p>${mensaje}</p>
+            </div>
+        `;
+    }
+}
+
+function mostrarCargandoConversaciones() {
+    const container = document.getElementById('conversationsList');
+    if (!container) return;
+    container.innerHTML = `
+        <div style="padding:40px 16px;text-align:center;">
+            <div style="display:inline-flex;flex-direction:column;align-items:center;gap:12px;">
+                <div style="width:32px;height:32px;position:relative;">
+                    <svg viewBox="0 0 40 40" style="width:32px;height:32px;animation:convSpin .9s linear infinite;">
+                        <circle cx="20" cy="6" r="3" fill="#9961FF" opacity="1"/>
+                        <circle cx="30.1" cy="9.9" r="3" fill="#9961FF" opacity="0.87"/>
+                        <circle cx="34" cy="20" r="3" fill="#9961FF" opacity="0.75"/>
+                        <circle cx="30.1" cy="30.1" r="3" fill="#9961FF" opacity="0.62"/>
+                        <circle cx="20" cy="34" r="3" fill="#9961FF" opacity="0.5"/>
+                        <circle cx="9.9" cy="30.1" r="3" fill="#9961FF" opacity="0.37"/>
+                        <circle cx="6" cy="20" r="3" fill="#9961FF" opacity="0.25"/>
+                        <circle cx="9.9" cy="9.9" r="3" fill="#9961FF" opacity="0.12"/>
+                    </svg>
+                </div>
+                <span style="font-size:12px;font-weight:500;color:#7D84C1;">Cargando conversaciones...</span>
+            </div>
+            <style>@keyframes convSpin{to{transform:rotate(360deg)}}</style>
+        </div>
+    `;
+}
+
+function mostrarErrorConversaciones(msg) {
+    const container = document.getElementById('conversationsList');
+    if (!container) return;
+    container.innerHTML = `
+        <div style="padding:32px 16px;text-align:center;">
+            <div style="display:inline-flex;flex-direction:column;align-items:center;gap:10px;">
+                <div style="width:40px;height:40px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-exclamation-triangle" style="color:#ef4444;font-size:16px;"></i>
+                </div>
+                <span style="font-size:12px;font-weight:600;color:#374151;">Error al cargar</span>
+                <span style="font-size:11px;color:#9ca3af;max-width:180px;line-height:1.4;">${msg || 'No se pudieron cargar las conversaciones'}</span>
+                <button onclick="location.reload()"
+                    style="margin-top:4px;padding:5px 14px;background:#EFF6FF;border:1px solid #C9D9FF;border-radius:8px;font-size:11px;font-weight:600;color:#7D84C1;cursor:pointer;">
+                    <i class="fas fa-redo" style="margin-right:4px;font-size:10px;"></i>Reintentar
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function toggleLeftSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const icon = document.getElementById(sectionId + 'Icon');
+    if (!section || !icon) return;
+
+    const isHidden = section.classList.contains('hidden');
+    if (isHidden) {
+        section.classList.remove('hidden');
+        icon.classList.remove('fa-chevron-right');
+        icon.classList.add('fa-chevron-down');
+    } else {
+        section.classList.add('hidden');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-right');
+    }
+}
+
+// Inyectar CSS de transiciones una sola vez
+(function _injectRightSectionStyles() {
+    if (document.getElementById('_rpSectionStyles')) return;
+    const style = document.createElement('style');
+    style.id = '_rpSectionStyles';
+    style.textContent = `
+        .rp-section {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.32s ease, opacity 0.25s ease;
+        }
+        .rp-section.rp-open {
+            opacity: 1;
+        }
+        .rp-chevron {
+            transition: transform 0.25s ease;
+            display: inline-block;
+        }
+        .rp-chevron.rp-rotated {
+            transform: rotate(180deg);
+        }
+    `;
+    document.head.appendChild(style);
+})();
+
+/**
+ * toggleRightSection(sectionId)
+ * Abre/cierra secciones del panel derecho con animación max-height + opacity.
+ *
+ * Convenciones HTML:
+ *   Sección:  <div id="contactXxxSection" class="rp-section">…</div>
+ *   Chevron:  <i id="contactXxxIcon" class="rp-chevron fas fa-chevron-down"></i>
+ *             (usa el patrón clásico sectionId + 'Icon')
+ */
+function toggleRightSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+
+    // Asegurar clase base (idempotente, por si venía con 'hidden' de Tailwind)
+    section.classList.remove('hidden');
+    section.classList.add('rp-section');
+
+    const icon = document.getElementById(sectionId + 'Icon');
+    const isOpen = section.classList.contains('rp-open');
+
+    // Duración dinámica: secciones más altas necesitan más tiempo (min 0.32s, max 0.55s)
+    const _rpHeight = section.scrollHeight || 0;
+    const _rpDur    = Math.min(0.55, Math.max(0.32, _rpHeight / 1400)).toFixed(2);
+    const _rpDurOp  = Math.min(0.45, Math.max(0.25, _rpHeight / 1800)).toFixed(2);
+    section.style.transition = `max-height ${_rpDur}s cubic-bezier(0.4,0,0.2,1), opacity ${_rpDurOp}s ease`;
+
+    if (isOpen) {
+        // ── Cerrar ──
+        section.style.overflow = 'hidden';
+        section.style.maxHeight = _rpHeight + 'px';
+        section.getBoundingClientRect(); // forzar reflow
+        section.style.maxHeight = '0px';
+        section.classList.remove('rp-open');
+        if (icon) icon.classList.remove('rp-rotated');
+    } else {
+        // ── Abrir ──
+        section.style.overflow = 'hidden';
+        section.classList.add('rp-open');
+        section.style.maxHeight = section.scrollHeight + 'px';
+        if (icon) icon.classList.add('rp-rotated');
+
+        // Al terminar la transición: soltar max-height Y overflow
+        // para que el contenido dinámico y el scroll del padre funcionen
+        const onEnd = () => {
+            if (section.classList.contains('rp-open')) {
+                section.style.maxHeight = 'none';
+                section.style.overflow = 'visible';
+            }
+            section.removeEventListener('transitionend', onEnd);
+        };
+        section.addEventListener('transitionend', onEnd);
+    }
+
+    // Hook extensible para otros módulos (ej: carga lazy de agenda)
+    if (typeof window._onToggleRightSection === 'function') {
+        window._onToggleRightSection(sectionId, !isOpen);
+    }
+}
+
+function resetChatAndContactPanel() {
+    currentConversation = null;
+    selectedMessageToReply = null;
+
+    const chatHeader = document.getElementById("chatHeader");
+    if (chatHeader) chatHeader.classList.add("hidden");
+
+    const contactPanel = document.getElementById("contactDetailPanel");
+    if (contactPanel) contactPanel.classList.add("hidden");
+
+    const inputBar = document.getElementById("messageInputBar");
+    if (inputBar) inputBar.classList.add("hidden");
+
+    const chatMessages = document.getElementById("chatMessages");
+    if (chatMessages) chatMessages.innerHTML = '<div class="flex-1 flex items-center justify-center text-gray-400 text-sm"><p>Selecciona una conversación</p></div>';
+
+    // Limpiar header del contacto
+    const contactHeaderAvatar = document.getElementById("contactHeaderAvatar");
+    if (contactHeaderAvatar) contactHeaderAvatar.innerHTML = "";
+    const contactHeaderName = document.getElementById("contactHeaderName");
+    if (contactHeaderName) contactHeaderName.textContent = "—";
+    const contactPhone = document.getElementById("contactPhone");
+    if (contactPhone) contactPhone.textContent = "";
+    const notesContainer = document.getElementById("contactNotesContainer");
+    if (notesContainer) notesContainer.innerHTML = "";
+    const metaEl = document.getElementById("contactHeaderMeta");
+    if (metaEl) metaEl.innerHTML = "";
+}
+
+/**
+ * rpSlide(el, show, opts)
+ * Anima apertura/cierre de cualquier elemento inline con max-height + opacity.
+ * Úsalo en lugar de `style.display = 'none'/'block'`.
+ *
+ * @param {HTMLElement} el
+ * @param {boolean}     show   - true = abrir, false = cerrar
+ * @param {object}      opts
+ *   displayType {string}  - valor de display al abrir ('block'|'flex'|...) default 'block'
+ *   duration    {number}  - ms de la transición (default 280)
+ */
+function rpSlide(el, show, opts = {}) {
+    if (!el) return;
+    const displayType = opts.displayType || 'block';
+    const dur         = opts.duration    || 280;
+
+    // Aplicar transición si no la tiene aún
+    if (!el._rpSlideInit) {
+        el.style.transition  = `max-height ${dur}ms ease, opacity ${dur * 0.85}ms ease`;
+        el.style.overflow    = 'hidden';
+        el._rpSlideInit = true;
+    }
+
+    if (show) {
+        // Mostrar: primero poner display, luego animar
+        el.style.display    = displayType;
+        el.style.maxHeight  = '0px';
+        el.style.opacity    = '0';
+        // Forzar reflow
+        el.getBoundingClientRect();
+        el.style.maxHeight  = el.scrollHeight + 'px';
+        el.style.opacity    = '1';
+        // Al terminar: soltar max-height para contenido dinámico
+        const onEnd = () => {
+            if (el.style.opacity !== '0') {
+                el.style.maxHeight = 'none';
+                el.style.overflow  = 'visible';
+            }
+            el.removeEventListener('transitionend', onEnd);
+        };
+        el.addEventListener('transitionend', onEnd);
+    } else {
+        // Cerrar: bloquear overflow, fijar altura actual y animar a 0
+        el.style.overflow   = 'hidden';
+        el.style.maxHeight  = el.scrollHeight + 'px';
+        el.getBoundingClientRect();
+        el.style.maxHeight  = '0px';
+        el.style.opacity    = '0';
+        const onEnd = () => {
+            if (el.style.opacity === '0') {
+                el.style.display = 'none';
+            }
+            el.removeEventListener('transitionend', onEnd);
+        };
+        el.addEventListener('transitionend', onEnd);
+    }
+}
+
+// Exponer globales
+window.rpSlide            = rpSlide;
+window.toggleRightSection = toggleRightSection;
+window.toggleLeftSection  = toggleLeftSection;

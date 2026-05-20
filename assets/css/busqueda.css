@@ -1,0 +1,111 @@
+/* ══════════════════════════════════════
+   BÚSQUEDA DE SERVICIOS — HEAVENSY
+══════════════════════════════════════ */
+
+/* BASE */
+.busq-page *,
+.busq-page *::before,
+.busq-page *::after { box-sizing:border-box; margin:0; padding:0 }
+
+/* HERO */
+.busq-page .hero { position:relative; padding:4rem 0 3rem; overflow:hidden; background:linear-gradient(135deg,#2d3f7a,#355BB6) }
+.busq-page .hero-bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 68% }
+.busq-page .hero-inner { max-width:1080px; width:100%; margin:0 auto; padding:0 2rem; display:flex; flex-direction:column; gap:2rem; position:relative; z-index:1 }
+.busq-page .hero h1 { font-family:'Libre Baskerville',Georgia,serif; font-size:clamp(1.8rem,4vw,2.6rem); color:#fff; line-height:1.25; margin-bottom:.5rem }
+.busq-page .hero p { color:rgba(255,255,255,.82); font-size:1rem }
+
+/* SEARCH BAR */
+.busq-page .search-wrap { max-width:860px }
+.busq-page .search-bar { background:#fff; border-radius:14px; box-shadow:0 8px 32px rgba(53,91,182,.18); border:1.5px solid #E4E6F0; display:flex; align-items:center; padding:.45rem .45rem .45rem 1.1rem; gap:.7rem }
+.busq-page .search-bar input { flex:1; border:none; outline:none; font-size:.95rem; font-family:'DM Sans',sans-serif; color:#1E2140 }
+.busq-page .search-bar input::placeholder { color:#6B7194 }
+.busq-page .btn-busca { background:linear-gradient(90deg,#9497F4 0%,#89B9F8 100%); color:#fff; border:none; border-radius:10px; padding:10px 26px; font-size:14px; font-weight:600; font-family:'Poppins',sans-serif; cursor:pointer; white-space:nowrap }
+
+/* MAIN LAYOUT */
+.busq-page .main { max-width:1080px; margin:0 auto; padding:2rem 2rem 3rem; display:grid; grid-template-columns:250px 1fr; gap:1.8rem }
+
+/* FILTERS PANEL */
+.busq-page .filters { background:#fff; border-radius:16px; border:1px solid #E4E6F0; padding:1.3rem; height:fit-content; position:sticky; top:76px }
+.busq-page .f-title { font-family:'Poppins',sans-serif; font-weight:700; font-size:15px; color:#9961FF; margin-bottom:.8rem; display:flex; align-items:center; gap:8px }
+
+/* ACCORDION */
+.busq-page .acc-item { border-bottom:1px solid #E4E6F0 }
+.busq-page .acc-item:last-of-type { border-bottom:none }
+.busq-page .acc-header { display:flex; align-items:center; gap:10px; padding:.75rem 0; cursor:pointer; user-select:none }
+.busq-page .acc-icon { width:22px; height:22px; display:flex; align-items:center; justify-content:center; flex-shrink:0 }
+.busq-page .acc-label { flex:1; font-family:'Poppins',sans-serif; font-size:13.5px; font-weight:500; color:#1E2140 }
+.busq-page .acc-arrow { color:#9961FF; transition:transform .2s; flex-shrink:0 }
+.busq-page .acc-item.open .acc-arrow { transform:rotate(90deg) }
+.busq-page .acc-body { overflow:hidden; max-height:0; transition:max-height .25s ease,padding .2s; padding:0 0 0 32px }
+.busq-page .acc-item.open .acc-body { max-height:400px; padding:0 0 .9rem 32px }
+
+/* CHIPS */
+.busq-page .chips { display:flex; flex-wrap:wrap; gap:5px }
+.busq-page .chip { padding:4px 11px; border-radius:20px; font-size:12px; font-family:'Poppins',sans-serif; border:1.5px solid #E4E6F0; background:#fff; color:#6B7194; cursor:pointer; transition:all .15s }
+.busq-page .chip:hover,
+.busq-page .chip.on { background:#E1DEFF; border-color:#9961FF; color:#9961FF }
+
+/* FILTER OPTIONS */
+.busq-page .opts { display:flex; flex-direction:column; gap:.45rem }
+.busq-page .opt { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13.5px; color:#1E2140; font-family:'DM Sans',sans-serif }
+.busq-page .opt input { accent-color:#9961FF; width:14px; height:14px; cursor:pointer }
+.busq-page .sel-wrap { display:flex; flex-direction:column; gap:.45rem }
+.busq-page .sel-wrap select { width:100%; padding:7px 28px 7px 9px; border:1.5px solid #E4E6F0; border-radius:8px; font-size:13px; font-family:'DM Sans',sans-serif; color:#1E2140; background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7194' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 9px center; outline:none; cursor:pointer; appearance:none }
+.busq-page .range-wrap input[type=range] { width:100%; accent-color:#9961FF }
+.busq-page .range-labels { display:flex; justify-content:space-between; font-size:11.5px; color:#6B7194; margin-top:3px }
+.busq-page .stars { color:#f5a623; font-size:12px }
+.busq-page .btn-clear { width:100%; padding:8px; margin-top:1rem; background:none; border:1.5px solid #9961FF; border-radius:8px; color:#9961FF; font-family:'Poppins',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all .15s }
+.busq-page .btn-clear:hover { background:#E1DEFF }
+
+/* RESULTS HEADER */
+.busq-page .results-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem }
+.busq-page .res-count { font-family:'Poppins',sans-serif; font-size:13.5px; color:#6B7194 }
+.busq-page .res-count strong { color:#355BB6 }
+
+/* CARDS LIST */
+.busq-page .cards { display:flex; flex-direction:column; gap:.9rem }
+
+/* CARD */
+.busq-page .card { background:#fff; border-radius:16px; border:1px solid #E4E6F0; padding:1.1rem 1.8rem; display:flex; align-items:center; gap:1.1rem; transition:box-shadow .2s,transform .2s; cursor:pointer }
+.busq-page .card:hover { box-shadow:0 8px 26px rgba(53,91,182,.11); transform:translateY(-2px) }
+
+/* AVATAR */
+.busq-page .avatar { width:68px; height:68px; border-radius:50%; background:#EFF6FF; flex-shrink:0; border:2.5px solid #C9D9FF; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:#355BB6; overflow:hidden; align-self:center }
+.busq-page .avatar img { width:100%; height:100%; object-fit:cover; object-position:top center }
+
+/* CARD INFO */
+.busq-page .info { flex:1; min-width:0; align-self:center }
+.busq-page .top-row { display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; margin-bottom:2px }
+.busq-page .pname { font-family:'Libre Baskerville',Georgia,serif; font-size:15px; font-weight:400; color:#355BB6 }
+.busq-page .rating { font-size:12.5px; color:#6B7194; display:flex; align-items:center; gap:3px }
+.busq-page .eslogan { font-style:italic; font-size:12px; color:#6B7194; margin-bottom:5px }
+.busq-page .tags { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:4px }
+.busq-page .tag { padding:3px 10px; border-radius:20px; font-size:11px; font-family:'Poppins',sans-serif; font-weight:400 }
+.busq-page .tag-esp { background:#EFF6FF; color:#355BB6 }
+.busq-page .modalidad-txt { font-size:12px; color:#6B7194; font-family:'DM Sans',sans-serif; margin-bottom:4px }
+.busq-page .loc { font-size:12px; color:#6B7194; display:flex; align-items:center; gap:4px }
+
+/* VIDEO THUMB */
+.busq-page .vid { width:160px; height:90px; flex-shrink:0; border-radius:10px; background:linear-gradient(135deg,#2d3f7a,#3d5499); display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; cursor:pointer; align-self:center }
+.busq-page .vid::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 40% 35%,rgba(255,255,255,.18) 0%,transparent 65%) }
+.busq-page .play { width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.92); display:flex; align-items:center; justify-content:center; box-shadow:0 2px 12px rgba(0,0,0,.3); transition:transform .15s; position:relative; z-index:1 }
+.busq-page .vid:hover .play { transform:scale(1.1) }
+.busq-page .vid-dur { position:absolute; bottom:6px; right:7px; background:rgba(0,0,0,.72); color:#fff; font-size:.68rem; font-weight:600; padding:2px 6px; border-radius:4px; z-index:1; font-family:'Poppins',sans-serif }
+
+/* PAGINATION */
+.busq-page .pagination { display:flex; justify-content:center; gap:.5rem; margin-top:1.8rem }
+.busq-page .pag-btn { width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; border:1.5px solid #E4E6F0; background:#fff; font-family:'Poppins',sans-serif; font-size:13px; color:#6B7194; cursor:pointer; transition:all .15s }
+.busq-page .pag-btn.on { background:linear-gradient(90deg,#9497F4,#89B9F8); border-color:transparent; color:#fff; font-weight:600 }
+
+/* RESPONSIVE */
+@media(max-width:768px) {
+  .busq-page .main { grid-template-columns:1fr; padding-top:1.5rem }
+  .busq-page .filters { position:static }
+  .busq-page .hero h1 { font-size:1.8rem }
+  .busq-page .hero-inner { padding:0 1.2rem }
+  .busq-page .card { flex-direction:column; align-items:stretch; padding:1rem 1.2rem 0 }
+  .busq-page .card .vid { width:100%; height:180px; margin:0 0 1rem }
+}
+@media(max-width:480px) {
+  .busq-page .hero h1 { font-size:1.5rem }
+}

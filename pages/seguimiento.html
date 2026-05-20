@@ -1,0 +1,1026 @@
+<!-- pages/seguimiento.html — Sin estilos inline, todo en seguimiento.css -->
+<div id="page-seguimiento">
+
+  <!-- PANEL IZQUIERDO -->
+  <div class="seg-left-panel">
+
+    <div class="seg-lp-header">
+      <div class="seg-lp-title-row">
+        <div class="seg-lp-icon"><i class="fas fa-notes-medical"></i></div>
+        <span class="seg-lp-title">Seguimiento</span>
+        <button class="seg-lp-collapse-btn seg-hidden" id="seg-btn-collapse-left"
+          onclick="segToggleLeftPanel()" data-seg-tooltip="Colapsar panel">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+      </div>
+
+      <!-- Select oculto — necesario para compatibilidad interna -->
+      <select id="segCompanyFilter" style="display:none;"></select>
+
+      <div class="seg-search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" class="seg-search-input" id="seg-search"
+          placeholder="Buscar..." oninput="segBuscar(this.value)" />
+      </div>
+
+      <!-- Etiquetas activas del paciente (filtro visual) -->
+      <div class="seg-lp-etiquetas seg-hidden" id="seg-lp-etiquetas-wrap">
+        <div class="seg-lp-etiquetas-header" onclick="segToggleEtiquetasPanel()">
+          <span class="seg-lp-etiquetas-titulo">Etiquetas activas</span>
+          <i class="fas fa-chevron-down seg-lp-etiquetas-chev" id="seg-lp-etiquetas-chev"></i>
+        </div>
+        <div class="seg-lp-etiquetas-body" id="seg-lp-etiquetas-body">
+          <div class="seg-lp-etiquetas-chips" id="seg-lp-etiquetas-chips"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="seg-entity-list" id="seg-entity-list">
+      <div class="seg-list-empty" id="seg-list-empty-state">
+        <i class="fas fa-building"></i>
+        Selecciona una empresa para ver los registros
+      </div>
+    </div>
+
+    <div class="seg-list-legend">
+      <div class="seg-legend-row">
+        <div class="seg-entity-dot dot-active"></div>
+        <span id="lbl-legend-active">Registro en curso</span>
+      </div>
+      <div class="seg-legend-row">
+        <div class="seg-entity-dot dot-pending"></div>
+        <span id="lbl-legend-pending">Pendiente de envío</span>
+      </div>
+      <div class="seg-legend-row">
+        <div class="seg-entity-dot dot-sent"></div>
+        <span id="lbl-legend-sent">Enviado</span>
+      </div>
+    </div>
+
+  </div><!-- /.seg-left-panel -->
+
+
+  <!-- ÁREA PRINCIPAL -->
+  <div class="seg-main-area" id="seg-main-area">
+
+    <!-- Tab para expandir panel izquierdo — solo visible cuando está colapsado -->
+    <button class="seg-expand-tab seg-hidden" id="seg-btn-expand-left"
+      onclick="segToggleLeftPanel()" data-seg-tooltip="Mostrar pacientes">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+
+    <!-- Empty state -->
+    <div class="seg-empty-state" id="seg-empty-main">
+      <i class="fas fa-notes-medical"></i>
+      <p>Selecciona un registro</p>
+      <span>Elige una empresa y luego un <span id="lbl-empty-cliente">cliente</span> del panel izquierdo</span>
+    </div>
+
+    <!-- Loading state — mientras carga el contexto -->
+    <div class="seg-loading-main seg-hidden" id="seg-loading-main">
+      <div class="seg-spinner"></div>
+      <span>Cargando...</span>
+    </div>
+
+    <!-- Vista de registro (oculta hasta seleccionar) -->
+    <div class="seg-registro-wrap seg-hidden" id="seg-registro-wrap">
+
+      <!-- HERO -->
+      <div class="seg-hero">
+        <div class="seg-hero-avatar" id="seg-hero-avatar">😊</div>
+        <div class="seg-hero-info">
+          <div class="seg-hero-col-left">
+            <div class="seg-hero-name" id="seg-hero-name">—</div>
+            <div class="seg-hero-sub"  id="seg-hero-sub">—</div>
+          </div>
+          <div class="seg-hero-col-right">
+            <div class="seg-hero-chips" id="seg-hero-chips"></div>
+            <div class="seg-hero-nota seg-hidden" id="seg-hero-nota"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIMELINE -->
+      <div class="seg-scroll-area">
+      <div class="seg-tl-wrap">
+        <div class="seg-tl-bar" onclick="segToggleTL()">
+          <i class="fas fa-stream seg-tl-bar-icon"></i>
+          <span class="seg-tl-bar-title" id="seg-tl-titulo">Línea de tiempo</span>
+          <button class="seg-tl-hora-toggle" id="seg-tl-toggle-hora"
+            onclick="event.stopPropagation();segTlToggleHora(this)"
+            data-seg-tooltip="Mostrar/ocultar hora en la línea de tiempo">
+            <i class="fas fa-clock"></i> Hora
+          </button>
+          <i class="fas fa-chevron-down seg-tl-chevron" id="seg-tl-chev"></i>
+        </div>
+        <div class="seg-tl-content" id="seg-tl-content">
+          <div class="seg-tl-events" id="seg-tl-events"></div>
+          <button class="seg-tl-add-btn" onclick="segAddEvento()">+ evento</button>
+        </div>
+
+        <!-- Panel evolución de intensidades (colapsable) -->
+        <div class="seg-evo-panel" id="seg-evo-panel">
+          <div class="seg-evo-bar" onclick="segToggleEvo()">
+            <i class="fas fa-chart-line" style="font-size:9px;color:#7D84C1;opacity:.7;"></i>
+            <span class="seg-evo-title">Evolución de intensidades</span>
+            <span class="seg-evo-sesiones" id="seg-evo-sesiones"></span>
+            <i class="fas fa-chevron-down seg-evo-chevron" id="seg-evo-chev"></i>
+          </div>
+          <div class="seg-evo-content seg-hidden" id="seg-evo-content">
+            <div class="seg-evo-legend" id="seg-evo-legend"></div>
+            <div class="seg-evo-chart-scroll">
+              <div class="seg-evo-chart-wrap">
+                <canvas id="seg-evo-chart" role="img" aria-label="Evolución de intensidades por sesión"></canvas>
+              </div>
+            </div>
+            <div class="seg-evo-stats" id="seg-evo-stats"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel derivaciones (colapsable) -->
+      <div class="seg-der-panel" id="seg-der-panel">
+        <div class="seg-der-bar" onclick="segToggleDer()"
+          ondragover="segDerBarDragOver(event)"
+          ondragleave="segDerBarDragLeave(event)"
+          ondrop="segDerBarDrop(event)">
+          <i class="fas fa-code-branch" style="font-size:9px;color:#7D84C1;opacity:.7;"></i>
+          <span class="seg-der-title" id="seg-der-labels-title">Derivaciones</span>
+          <span class="seg-der-sub" id="seg-der-sub"></span>
+          <i class="fas fa-chevron-down seg-der-chev" id="seg-der-chev"></i>
+        </div>
+        <div class="seg-der-content seg-hidden" id="seg-der-content">
+          <div class="seg-der-chips" id="seg-der-chips"></div>
+          <div class="seg-der-detail seg-hidden" id="seg-der-detail">
+            <div class="seg-der-detail-hdr">
+              <span class="seg-der-detail-dot" id="seg-der-detail-dot">●</span>
+              <div class="seg-der-detail-title-group">
+                <span class="seg-der-detail-nombre" id="seg-der-detail-nombre"></span>
+                <span class="seg-der-detail-codigo" id="seg-der-detail-codigo"></span>
+              </div>
+              <button class="seg-der-detail-close" onclick="segDerCerrarDetalle()" data-seg-tooltip="Cerrar"><i class="fas fa-times"></i></button>
+              <span class="seg-der-detail-sub" id="seg-der-labels-asignados">— profesionales asignados</span>
+            </div>
+            <div class="seg-der-detail-body">
+              <div id="seg-der-lista"></div>
+              <div class="seg-der-sep"></div>
+              <div class="seg-der-add-interno">
+                <div class="seg-der-add-label" id="seg-der-labels-interno">Agregar profesional interno</div>
+                <div class="seg-der-add-row">
+                  <!-- Custom dropdown área -->
+                  <div class="seg-der-dd-wrap" id="seg-der-dd-area-wrap">
+                    <button class="seg-der-dd-btn" type="button" id="seg-der-dd-area-btn" onclick="segDerDdToggle('area')">
+                      <span class="seg-der-dd-label" id="seg-der-dd-area-label">— área / servicio —</span>
+                      <i class="fas fa-chevron-down seg-der-dd-chev" id="seg-der-dd-area-chev"></i>
+                    </button>
+                    <div class="seg-der-dd-list seg-hidden" id="seg-der-dd-area-list"></div>
+                  </div>
+                  <!-- Custom dropdown profesional -->
+                  <div class="seg-der-dd-wrap" id="seg-der-dd-prof-wrap">
+                    <button class="seg-der-dd-btn" type="button" id="seg-der-dd-prof-btn" onclick="segDerDdToggle('prof')">
+                      <span class="seg-der-dd-label" id="seg-der-dd-prof-label">— profesional —</span>
+                      <i class="fas fa-chevron-down seg-der-dd-chev" id="seg-der-dd-prof-chev"></i>
+                    </button>
+                    <div class="seg-der-dd-list seg-hidden" id="seg-der-dd-prof-list"></div>
+                  </div>
+                  <!-- Selects ocultos — usados por JS existente -->
+                  <select id="seg-der-sel-area" style="display:none" onchange="segDerFiltrarProfesionales()">
+                    <option value="">— área / servicio —</option>
+                  </select>
+                  <select id="seg-der-sel-prof" style="display:none">
+                    <option value="">— profesional —</option>
+                  </select>
+                  <button class="seg-der-add-btn" onclick="segDerAgregarInterno()">+ Asignar</button>
+                </div>
+              </div>
+              <div class="seg-der-add-externo">
+                <div class="seg-der-add-label" id="seg-der-labels-externo">Agregar profesional externo</div>
+                <div class="seg-der-add-row">
+                  <input id="seg-der-ext-nombre" placeholder="Nombre del profesional" />
+                  <input id="seg-der-ext-area" placeholder="Área / Especialidad" />
+                  <input id="seg-der-ext-lugar" placeholder="Institución / Lugar" />
+                  <button class="seg-der-add-btn" onclick="segDerAgregarExterno()">+ Agregar</button>
+                </div>
+              </div>
+              <div class="seg-der-actions">
+                <button class="seg-der-btn-ai" onclick="segDerResumenIA()">
+                  <i class="fas fa-wand-magic-sparkles"></i>
+                  <span id="seg-der-labels-resumen">Resumen IA para derivación</span>
+                </button>
+                <button class="seg-der-btn-pdf" onclick="segDerHistorialPDF()">
+                  <i class="fas fa-file-pdf"></i>
+                  <span id="seg-der-labels-historial">Historial completo (PDF)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Resumen IA para derivación -->
+      <div class="seg-der-modal-overlay seg-hidden" id="seg-der-resumen-overlay" onclick="segDerCerrarResumen()">
+        <div class="seg-der-modal" onclick="event.stopPropagation()" style="max-width:520px">
+          <div class="seg-der-modal-hdr" style="background:#f5f3ff">
+            <div class="seg-der-modal-avatar" style="background:#ede9fe;color:#5b21b6">
+              <i class="fas fa-wand-magic-sparkles" style="font-size:13px"></i>
+            </div>
+            <div class="seg-der-modal-info">
+              <div class="seg-der-modal-nombre">Resumen IA para derivación</div>
+              <div class="seg-der-modal-area" id="seg-der-resumen-subtitulo"></div>
+            </div>
+            <button class="seg-der-modal-close" onclick="segDerCerrarResumen()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="seg-der-modal-body" style="padding:0;overflow-y:auto;max-height:60vh">
+            <div id="seg-der-resumen-cuerpo" style="padding:14px 16px">
+              <div id="seg-der-resumen-loading" style="font-size:11px;color:#9ca3af;font-style:italic">Generando resumen con IA...</div>
+              <div id="seg-der-resumen-edit-hint" style="display:none;font-size:10px;color:#9961FF;margin-bottom:6px;display:none">
+                <i class="fas fa-pencil-alt" style="font-size:9px"></i> Puedes editar el contenido antes de enviarlo
+              </div>
+              <div id="seg-der-resumen-texto" contenteditable="false"
+                style="font-size:12px;line-height:1.7;color:#374151;display:none;outline:none;
+                       border-radius:6px;transition:background .15s,border .15s"></div>
+            </div>
+          </div>
+          <div class="seg-der-modal-footer">
+            <button class="seg-der-footer-btn" style="background:#f0fdf4;border:1px solid #86efac;color:#16a34a" onclick="segDerResumenCopiar()">
+              <i class="fas fa-copy"></i> Copiar
+            </button>
+            <button class="seg-der-footer-btn seg-der-footer-ai" onclick="segDerResumenEnviarWA()">
+              <i class="fab fa-whatsapp"></i> WhatsApp
+            </button>
+            <button class="seg-der-footer-btn" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af" onclick="segDerResumenEnviarEmail()">
+              <i class="fas fa-envelope"></i> Email
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal historial por profesional -->
+      <div class="seg-der-modal-overlay seg-hidden" id="seg-der-modal-overlay" onclick="segDerCerrarModal()">
+        <div class="seg-der-modal" onclick="event.stopPropagation()">
+          <div class="seg-der-modal-hdr">
+            <div class="seg-der-modal-avatar" id="seg-der-modal-avatar"></div>
+            <div class="seg-der-modal-info">
+              <div class="seg-der-modal-nombre" id="seg-der-modal-nombre"></div>
+              <div class="seg-der-modal-area" id="seg-der-modal-area"></div>
+              <div class="seg-der-modal-tags" id="seg-der-modal-tags"></div>
+            </div>
+            <button class="seg-der-modal-close" onclick="segDerCerrarModal()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="seg-der-modal-body" id="seg-der-modal-body"></div>
+          <div class="seg-der-modal-footer">
+            <button class="seg-der-footer-btn" style="background:#f0fdf4;border:1px solid #86efac;color:#16a34a" onclick="segDerHistorialCopiar()">
+              <i class="fas fa-copy"></i> Copiar
+            </button>
+            <button class="seg-der-footer-btn seg-der-footer-ai" onclick="segDerHistorialEnviarWA()">
+              <i class="fab fa-whatsapp"></i> WhatsApp
+            </button>
+            <button class="seg-der-footer-btn" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af" onclick="segDerHistorialEnviarEmail()">
+              <i class="fas fa-envelope"></i> Email
+            </button>
+            <button class="seg-der-footer-btn seg-der-footer-pdf" onclick="segDerExportarPDF()">
+              <i class="fas fa-file-pdf"></i> PDF
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="seg-tabs-bar">
+        <div class="seg-tab active done" id="seg-tab-notas" onclick="segSetTab('notas', this)">
+          <div class="seg-tab-num"><i class="fas fa-check seg-tab-check-icon"></i></div>
+          <span id="lbl-tab-notas">Notas de sesión</span>
+        </div>
+        <div class="seg-tab" id="seg-tab-cliente" onclick="segSetTab('cliente', this)">
+          <div class="seg-tab-num">2</div>
+          Para el <span id="lbl-tab-cliente" class="seg-tab-label-inline">cliente</span>
+        </div>
+        <div class="seg-tabs-spacer"></div>
+        <button class="seg-tabs-collapse-btn" id="seg-tabs-collapse-btn" onclick="segToggleNotas()" data-seg-tooltip="Colapsar notas">
+          <i class="fas fa-chevron-down" id="seg-notas-chev"></i>
+        </button>
+
+      </div>
+
+      <!-- CUERPO DE TABS -->
+      <div class="seg-body">
+
+        <!-- TAB 1: Notas -->
+        <div class="seg-tab-panel active" id="seg-panel-notas">
+
+          <div class="seg-col-main">
+
+            <div class="seg-date-row">
+              <!-- Date picker custom -->
+              <div class="seg-picker-wrap" id="seg-fecha-wrap">
+                <button class="seg-picker-btn" id="seg-fecha-btn"
+                  onclick="segToggleDatePicker()" type="button">
+                  <i class="fas fa-calendar-alt" style="color:#9961FF;font-size:11px"></i>
+                  <span id="seg-fecha-display">—</span>
+                </button>
+                <div class="seg-datepicker seg-hidden" id="seg-datepicker">
+                  <div class="cal-nav">
+                    <button class="cal-nav-btn" onclick="segCalNavMes(-1)" type="button"><i class="fas fa-chevron-left"></i></button>
+                    <span class="cal-nav-title" id="seg-cal-titulo"></span>
+                    <button class="cal-nav-btn" onclick="segCalNavMes(1)" type="button"><i class="fas fa-chevron-right"></i></button>
+                  </div>
+                  <div class="cal-grid" style="padding:4px 4px 2px">
+                    <div class="cal-day-header">Lun</div><div class="cal-day-header">Mar</div>
+                    <div class="cal-day-header">Mié</div><div class="cal-day-header">Jue</div>
+                    <div class="cal-day-header">Vie</div><div class="cal-day-header">Sáb</div>
+                    <div class="cal-day-header">Dom</div>
+                  </div>
+                  <div class="cal-grid cal-days-grid" id="seg-cal-dias"></div>
+                </div>
+              </div>
+
+              <!-- Time picker custom -->
+              <div class="seg-picker-wrap" id="seg-hora-wrap">
+                <button class="seg-picker-btn" id="seg-hora-btn"
+                  onclick="segToggleTimePicker()" type="button">
+                  <i class="fas fa-clock" style="color:#9961FF;font-size:11px"></i>
+                  <span id="seg-hora-display">—</span>
+                </button>
+                <div class="seg-timepicker seg-hidden" id="seg-timepicker">
+                  <div class="seg-tp-title">HH : MM</div>
+                  <div class="seg-tp-cols">
+                    <div class="seg-tp-col-wrap">
+                      <div class="seg-tp-col" id="seg-tp-horas"></div>
+                    </div>
+                    <div class="seg-tp-col-wrap">
+                      <div class="seg-tp-col" id="seg-tp-minutos"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Campos ocultos para el payload -->
+              <input type="hidden" id="seg-campo-fecha" />
+              <input type="hidden" id="seg-campo-hora" />
+
+              <span class="seg-badge-cur" id="seg-badge-estado"></span>
+              <div class="seg-actions-spacer"></div>
+              <!-- Botón nueva sesión junto al calendario -->
+              <button class="seg-btn-nueva-sesion-inline" id="seg-btn-nueva-sesion"
+                onclick="segNuevaSesion()" data-seg-tooltip="Nueva sesión">
+                <i class="fas fa-plus seg-icon-mr-sm"></i>
+                Nueva <span id="lbl-nueva-sesion">sesión</span>
+              </button>
+            </div>
+
+            <div class="seg-field-card" id="seg-notas-field-card">
+              <div class="seg-field-label">
+                <i class="fas fa-lock"></i>
+                <span id="lbl-notas-internas">Notas internas</span>
+                <span class="seg-notas-solo-ti">Solo para ti</span>
+                <div class="seg-etiquetas-chips" id="seg-etiquetas-chips"></div>
+                <div class="seg-plantillas-grupo">
+                  <span class="seg-plantillas-titulo-inline">Plantillas:</span>
+                  <div class="seg-plantillas-chips" id="seg-chips-notas">
+                    <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                  </div>
+                  <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantillaNotas()"
+                    data-seg-tooltip="Nueva plantilla de notas clínicas">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Editor normal (se oculta cuando hay formulario activo) -->
+              <div id="seg-notas-editor-wrap">
+                <div class="seg-notas-wrap" style="position:relative">
+                  <div
+                    class="seg-notas-editor"
+                    id="seg-campo-notas"
+                    contenteditable="true"
+                    spellcheck="true"
+                    data-placeholder="Escribe /síntoma, //diagnóstico CIE-10, &quot;hipótesis&quot;. Confirma con Espacio."
+                    id="seg-campo-notas-placeholder-attr"
+                  ></div>
+                </div>
+              </div>
+
+              <!-- Formulario de plantilla (reemplaza el editor) -->
+              <div id="seg-notas-formulario" class="seg-hidden">
+                <div class="seg-pn-form-header">
+                  <span id="seg-pn-form-nombre" class="seg-pn-form-titulo"></span>
+                </div>
+                <div id="seg-pn-form-campos" class="seg-pn-form-campos"></div>
+                <div class="seg-pn-form-footer">
+                  <!-- Auditoría: implementar en módulo de auditoría -->
+                  <button class="seg-pn-form-volver" onclick="segPnFormVolver()">
+                    <i class="fas fa-times"></i> Cerrar plantilla
+                  </button>
+                </div>
+              </div>
+
+              <!-- 4 secciones de chips bajo el editor -->
+              <div class="seg-chips-secciones" id="seg-chips-secciones">
+
+                <div class="seg-chip-seccion seg-hidden" id="seg-sec-sintoma">
+                  <div class="seg-chip-seccion-label seg-chip-label-sintoma">
+                    <i class="fas fa-circle-notch"></i> Síntoma
+                  </div>
+                  <div class="seg-chip-seccion-chips" id="seg-chips-sintoma"></div>
+                </div>
+
+                <div class="seg-chip-seccion seg-hidden" id="seg-sec-diagnostico">
+                  <div class="seg-chip-seccion-label seg-chip-label-diagnostico">
+                    <i class="fas fa-stethoscope"></i> Diagnóstico
+                  </div>
+                  <div class="seg-chip-seccion-chips" id="seg-chips-diagnostico"></div>
+                </div>
+
+                <div class="seg-chip-seccion seg-hidden" id="seg-sec-hipotesis">
+                  <div class="seg-chip-seccion-label seg-chip-label-hipotesis">
+                    <i class="fas fa-lightbulb"></i> Hipótesis
+                  </div>
+                  <div class="seg-chip-seccion-chips" id="seg-chips-hipotesis"></div>
+                </div>
+
+                <div class="seg-chip-seccion seg-hidden" id="seg-sec-trabajar">
+                  <div class="seg-chip-seccion-label seg-chip-label-trabajar">
+                    <i class="fas fa-bullseye"></i> Lo que abordaremos
+                  </div>
+                  <div class="seg-chip-seccion-chips" id="seg-chips-trabajar"></div>
+                </div>
+
+              </div>
+            </div>
+
+
+            <!-- Campo: Contenido principal -->
+            <div class="seg-field-con-plantillas">
+              <div class="seg-field-label">
+                <i class="fas fa-pen-alt seg-icon-muted"></i>
+                <span id="lbl-contenido">Lo que se trabajó</span>
+                <span class="seg-field-badge seg-badge-ia">Base para IA</span>
+                <div class="seg-plantillas-grupo">
+                  <span class="seg-plantillas-titulo-inline">Plantillas:</span>
+                  <div class="seg-plantillas-chips" id="seg-chips-principal">
+                    <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                  </div>
+                  <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantilla('principal')"
+                    data-seg-tooltip="Nueva plantilla">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+              <textarea class="seg-textarea" id="seg-campo-contenido"
+                placeholder="Describe el contenido de esta sesión..."
+                id="seg-campo-contenido"
+                oninput="segMarcarCambios()"></textarea>
+            </div>
+
+            <!-- Campo: Tareas -->
+            <div class="seg-field-con-plantillas">
+              <div class="seg-field-label">
+                <i class="fas fa-tasks seg-icon-muted"></i>
+                <span id="lbl-tareas">Tareas para el cliente</span>
+                <span class="seg-field-badge seg-badge-enviar">Se enviará</span>
+                <div class="seg-plantillas-grupo">
+                  <span class="seg-plantillas-titulo-inline">Plantillas:</span>
+                  <div class="seg-plantillas-chips" id="seg-chips-tareas">
+                    <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                  </div>
+                  <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantilla('tareas')"
+                    data-seg-tooltip="Nueva plantilla">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+              <textarea class="seg-textarea" id="seg-campo-tareas"
+                placeholder="Tareas o indicaciones..."
+                oninput="segMarcarCambios()"></textarea>
+            </div>
+
+            <!-- Campo: Próxima sesión -->
+            <div class="seg-field-con-plantillas">
+              <div class="seg-field-label">
+                <i class="fas fa-calendar-alt seg-icon-muted"></i>
+                <span id="lbl-proxima">Próxima sesión</span>
+                <span class="seg-field-badge seg-badge-enviar">Se enviará</span>
+                <button class="seg-btn-agendar-sesion" onclick="segAbrirModalAgenda()"
+                  data-seg-tooltip="Agendar sesión">
+                  <i class="fas fa-calendar-plus"></i> Agendar
+                </button>
+                <span id="seg-proxima-sesion-display" class="seg-proxima-display"></span>
+                <div class="seg-plantillas-grupo">
+                  <span class="seg-plantillas-titulo-inline">Plantillas:</span>
+                  <div class="seg-plantillas-chips" id="seg-chips-proxima">
+                    <span class="seg-plantillas-vacio">Aún no tienes plantillas.</span>
+                  </div>
+                  <button class="seg-btn-nueva-plantilla-inline" onclick="segNuevaPlantilla('proxima')"
+                    data-seg-tooltip="Nueva plantilla">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+              <textarea class="seg-textarea seg-textarea-sm" id="seg-campo-proxima"
+                placeholder="Plan para la próxima vez..."
+                oninput="segMarcarCambios()"></textarea>
+            </div>
+
+            <!-- Adjuntos -->
+            <div class="seg-adjuntos-section">
+              <div class="seg-field-label">
+                <i class="fas fa-paperclip seg-icon-muted"></i>
+                <span>Adjuntos</span>
+              </div>
+              <div class="seg-dropzone" id="seg-dropzone"
+                ondragover="event.preventDefault();this.classList.add('seg-dropzone-over')"
+                ondragleave="this.classList.remove('seg-dropzone-over')"
+                ondrop="segDropArchivo(event)">
+                <!-- Items adjuntos (dentro del dropzone) -->
+                <div class="seg-adjuntos-lista" id="seg-adjuntos-lista"></div>
+                <!-- Zona de carga (se reduce cuando hay archivos) -->
+                <div class="seg-dropzone-trigger" id="seg-dropzone-trigger">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <span>Arrastra archivos aquí o</span>
+                  <label class="seg-dropzone-btn">
+                    selecciona
+                    <input type="file" id="seg-file-input" multiple
+                      accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx"
+                      onchange="segSeleccionarArchivos(this.files)" style="display:none" />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botón Generar resumen IA — solo visible en Tab 1 -->
+            <div class="seg-generar-ia-wrap">
+              <button class="seg-btn-generar-ia-tab1" id="seg-btn-generar-ia" onclick="segGenerarResumen()">
+                <i class="fas fa-magic"></i>
+                Generar resumen IA
+              </button>
+            </div>
+
+          </div><!-- /.seg-col-main -->
+
+
+          <div class="seg-col-side">
+
+            <!-- Historial colapsable -->
+            <div class="seg-side-panel" id="seg-side-historial">
+              <div class="seg-side-panel-header" onclick="segToggleSidePanel('historial')">
+                <span class="seg-side-panel-title">Historial</span>
+                <i class="fas fa-chevron-down seg-side-panel-chev" id="seg-chev-historial"></i>
+              </div>
+              <div class="seg-side-panel-body" id="seg-body-historial">
+                <div class="seg-side-panel-scroll">
+                  <div id="seg-historial-list"></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div><!-- /#seg-panel-notas -->
+
+
+        <!-- TAB 2: Para el cliente -->
+        <div class="seg-tab-panel" id="seg-panel-cliente">
+
+          <div class="seg-col-main">
+
+            <!-- Selector de canal -->
+            <div class="seg-canal-section">
+              <div class="seg-field-label">
+                <i class="fas fa-share-alt seg-icon-muted"></i>
+                <span>Canal de envío</span>
+              </div>
+              <div class="seg-canal-chips" id="seg-canal-chips">
+                <button class="seg-canal-chip active" data-canal="whatsapp" onclick="segSetCanal('whatsapp', this)">
+                  <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+                <button class="seg-canal-chip" data-canal="chat" onclick="segSetCanal('chat', this)">
+                  <i class="fas fa-comment"></i> Chat Heavensy
+                </button>
+                <button class="seg-canal-chip" data-canal="email" onclick="segSetCanal('email', this)">
+                  <i class="fas fa-envelope"></i> Email
+                </button>
+              </div>
+            </div>
+
+            <!-- Resumen -->
+            <div class="seg-resumen-card" id="seg-resumen-wrap">
+              <div class="seg-field-label">
+                <i class="fas fa-magic"></i>
+                <span id="lbl-resumen">Resumen para el cliente</span>
+                <button class="seg-btn-volver-notas" onclick="segSetTab('notas', document.getElementById('seg-tab-notas'))">
+                  <i class="fas fa-arrow-left"></i> Volver a notas
+                </button>
+              </div>
+
+              <!-- Etiquetas sugeridas por IA -->
+              <div class="seg-etiquetas-ia seg-hidden" id="seg-etiquetas-ia-wrap">
+                <span class="seg-etiquetas-ia-titulo">Etiquetas sugeridas por IA:</span>
+                <div id="seg-etiquetas-ia-chips"></div>
+              </div>
+
+              <div class="seg-resumen-vacio" id="seg-resumen-vacio">
+                <i class="fas fa-magic seg-resumen-vacio-icon"></i>
+                Genera el resumen con IA desde la barra de acciones
+              </div>
+
+              <div class="seg-resumen-generando seg-hidden" id="seg-resumen-generando">
+                <div class="seg-spinner seg-spinner-centered"></div>
+                <span class="seg-generando-txt">Generando resumen...</span>
+              </div>
+
+              <div class="seg-resumen-text seg-hidden"
+                id="seg-resumen-text"
+                contenteditable="true"
+                oninput="segMarcarCambios()"></div>
+
+              <div class="seg-resumen-actions seg-hidden" id="seg-resumen-actions">
+                <button class="seg-btn-secondary" onclick="segRegenerarResumen()">
+                  <i class="fas fa-sync-alt seg-icon-mr-sm"></i>↺ Regenerar
+                </button>
+                <div class="seg-actions-spacer"></div>
+                <button class="seg-btn-enviar" id="seg-btn-enviar-cliente" onclick="segEnviarAlCliente()">
+                  <i class="fas fa-paper-plane seg-icon-mr-sm"></i>Enviar al cliente
+                </button>
+              </div>
+
+              <!-- Estado enviado -->
+              <div class="seg-enviado-badge seg-hidden" id="seg-enviado-badge">
+                <i class="fas fa-check-circle"></i>
+                <span id="seg-enviado-txt">Enviado por WhatsApp</span>
+              </div>
+            </div>
+
+          </div>
+
+        </div><!-- /#seg-panel-cliente -->
+
+
+
+
+
+      </div><!-- /.seg-body -->
+
+      </div><!-- /seg-scroll-area -->
+
+      <!-- BARRA DE ACCIONES -->
+      <div class="seg-actions-bar">
+        <span class="seg-autosave" id="seg-autosave-indicator"></span>
+        <div class="seg-actions-spacer"></div>
+        <div class="seg-actions-group">
+          <button class="seg-btn-guardar-principal" id="seg-btn-guardar" onclick="segGuardar()">
+            <i class="fas fa-save seg-icon-mr"></i>Guardar <span id="lbl-btn-guardar">sesión</span>
+          </button>
+          <button class="seg-btn-guardar-principal seg-hidden" id="seg-btn-cerrar-sesion" onclick="segCerrarSesion()">
+            <i class="fas fa-lock seg-icon-mr-sm"></i>Cerrar Sesión
+          </button>
+        </div>
+        <button class="seg-btn-promover seg-hidden" id="seg-btn-promover" onclick="segPromover()">
+          <i class="fas fa-arrow-up seg-icon-mr-sm"></i>Promover a <span id="lbl-promover-cliente">cliente</span>
+        </button>
+      </div>
+
+    </div><!-- /#seg-registro-wrap -->
+
+  </div><!-- /.seg-main-area -->
+
+</div><!-- /#page-seguimiento -->
+
+<div class="seg-toast" id="seg-toast">
+  <i class="fas fa-check-circle" id="seg-toast-icon"></i>
+  <span id="seg-toast-msg"></span>
+</div>
+
+<!-- Modal custom — reemplaza confirm/prompt nativos -->
+<div class="seg-modal-overlay seg-hidden" id="seg-modal-overlay">
+  <div class="seg-modal">
+    <p class="seg-modal-title" id="seg-modal-title"></p>
+    <p class="seg-modal-body" id="seg-modal-body"></p>
+    <div id="seg-modal-input-wrap" style="display:none">
+      <input type="text" class="seg-modal-input" id="seg-modal-input" />
+    </div>
+    <div class="seg-modal-actions">
+      <button class="seg-modal-btn seg-modal-btn-ghost" id="seg-modal-cancel">Cancelar</button>
+      <button class="seg-modal-btn seg-modal-btn-primary" id="seg-modal-ok">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal plantilla — crear/editar -->
+<div class="seg-modal-overlay seg-hidden" id="seg-plantilla-modal">
+  <div class="seg-modal seg-modal-plantilla">
+    <div class="seg-modal-plantilla-header">
+      <span id="seg-plantilla-modal-titulo">Nueva plantilla</span>
+      <button class="seg-modal-btn-close" onclick="segCerrarModalPlantilla()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <input type="text" class="seg-modal-input" id="seg-plantilla-nombre"
+      placeholder="Nombre de la plantilla..." style="margin-bottom:8px" />
+    <textarea class="seg-textarea" id="seg-plantilla-contenido"
+      placeholder="Contenido de la plantilla..."
+      style="min-height:100px;margin-bottom:14px"></textarea>
+    <div class="seg-modal-actions">
+      <button class="seg-modal-btn seg-modal-btn-ghost" onclick="segCerrarModalPlantilla()">Cancelar</button>
+      <button class="seg-modal-btn seg-modal-btn-primary" onclick="segGuardarPlantilla()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Form Builder — Plantilla Notas Clínicas -->
+<div class="seg-modal-overlay seg-hidden" id="seg-pn-modal">
+  <div class="seg-modal seg-pn-modal-box">
+    <div class="seg-modal-header">
+      <div class="seg-modal-title" id="seg-pn-modal-titulo">Nueva plantilla de notas</div>
+      <button class="seg-modal-close-btn" onclick="segPnCerrar()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div style="margin-bottom:12px">
+      <label class="seg-pn-label">Nombre de la plantilla</label>
+      <input type="text" class="seg-pn-input" id="seg-pn-nombre"
+        placeholder="Ej: Anamnesis inicial, Evaluación de ansiedad...">
+    </div>
+    <div style="margin-bottom:10px">
+      <label class="seg-pn-label">Campos</label>
+      <div id="seg-pn-campos-wrap" class="seg-pn-campos-wrap"></div>
+    </div>
+    <div class="seg-pn-tipos-wrap">
+      <button class="seg-pn-tipo-btn" onclick="segPnAgregarCampo('texto-corto')">
+        <i class="fas fa-font"></i> Texto corto
+      </button>
+      <button class="seg-pn-tipo-btn" onclick="segPnAgregarCampo('texto-largo')">
+        <i class="fas fa-align-left"></i> Texto largo
+      </button>
+      <button class="seg-pn-tipo-btn" onclick="segPnAgregarCampo('numero')">
+        <i class="fas fa-hashtag"></i> Número
+      </button>
+      <button class="seg-pn-tipo-btn" onclick="segPnAgregarCampo('selector')">
+        <i class="fas fa-list"></i> Selector
+      </button>
+      <button class="seg-pn-tipo-btn" onclick="segPnAgregarCampo('fecha')">
+        <i class="fas fa-calendar"></i> Fecha
+      </button>
+    </div>
+    <div class="seg-pn-preview-wrap">
+      <div class="seg-pn-preview-titulo">
+        <i class="fas fa-eye"></i> Vista previa
+      </div>
+      <div id="seg-pn-preview" class="seg-pn-preview-body">
+        <span class="seg-pn-preview-empty">Agrega campos para ver la vista previa</span>
+      </div>
+    </div>
+    <div class="seg-modal-footer">
+      <button class="seg-modal-btn seg-modal-btn-ghost" onclick="segPnCerrar()">Cancelar</button>
+      <button class="seg-modal-btn seg-modal-btn-primary" onclick="segPnGuardar()">
+        <i class="fas fa-save"></i> Guardar plantilla
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Dropdown diagnósticos CIE-10 (desktop) -->
+<!-- Modal Intensidad -->
+<div class="seg-modal-overlay seg-hidden" id="seg-intensidad-modal">
+  <div class="seg-modal seg-intensidad-modal-box">
+    <div class="seg-modal-header">
+      <div class="seg-modal-title" id="seg-intensidad-titulo">Intensidad</div>
+      <button class="seg-modal-close-btn" onclick="segCerrarModalIntensidad()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div id="seg-intensidad-lista" style="display:flex;flex-direction:column;gap:4px;margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MODAL AGENDA — Próxima Sesión
+═══════════════════════════════════════ -->
+<div class="seg-modal-overlay seg-hidden" id="seg-agenda-modal">
+  <div class="seg-modal seg-agenda-modal-box">
+
+    <!-- Header -->
+    <div class="seg-modal-header">
+      <div class="seg-modal-title">Agendar próxima sesión</div>
+      <button class="seg-modal-close-btn" onclick="segCerrarModalAgenda()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Modo toggle -->
+    <div class="seg-agenda-modo-wrap" id="seg-agenda-modo-wrap">
+      <button class="seg-agenda-modo-btn activo" id="seg-agenda-modo-sesion" onclick="segAgendaModo('sesion')">
+        <i class="fas fa-calendar-check"></i> Sesión
+      </button>
+      <button class="seg-agenda-modo-btn" id="seg-agenda-modo-recordatorio" onclick="segAgendaModo('recordatorio')">
+        <i class="fas fa-bell"></i> Recordatorio
+      </button>
+    </div>
+
+    <!-- Body: dos columnas -->
+    <div class="seg-agenda-body">
+
+      <!-- COLUMNA IZQUIERDA: servicios + calendario -->
+      <div class="seg-agenda-col-left">
+
+        <!-- Servicios -->
+        <div class="seg-agenda-section-label">Servicio</div>
+        <div class="seg-agenda-servicios" id="seg-agenda-servicios">
+          <div class="seg-agenda-loading"><i class="fas fa-spinner fa-spin"></i> Cargando...</div>
+        </div>
+
+        <!-- Especialista (si hay varios) -->
+        <div id="seg-agenda-especialista-wrap" class="seg-hidden">
+          <div class="seg-agenda-section-label" style="margin-top:10px">Especialista</div>
+          <div class="seg-agenda-servicios" id="seg-agenda-especialistas"></div>
+        </div>
+
+        <!-- Calendario -->
+        <div class="seg-agenda-cal-nav" id="seg-agenda-cal-nav">
+          <button class="seg-agenda-cal-btn" onclick="segAgendaCalNav(-1)">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span class="seg-agenda-cal-mes" id="seg-agenda-cal-mes"></span>
+          <button class="seg-agenda-cal-btn" onclick="segAgendaCalNav(1)">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+        <div class="seg-agenda-cal-grid" id="seg-agenda-cal-grid"></div>
+
+      </div>
+
+      <!-- COLUMNA DERECHA: horas + timer / recordatorio -->
+      <div class="seg-agenda-col-right">
+
+        <!-- MODO SESIÓN -->
+        <div id="seg-agenda-sesion-wrap">
+
+          <!-- Placeholder inicial -->
+          <div id="seg-agenda-placeholder" class="seg-agenda-placeholder">
+            <i class="fas fa-hand-point-left"></i>
+            Selecciona un servicio y luego una fecha
+          </div>
+
+          <div id="seg-agenda-horas-wrap" class="seg-hidden">
+            <div class="seg-agenda-section-label">Horas disponibles</div>
+            <div class="seg-agenda-horas" id="seg-agenda-horas"></div>
+          </div>
+
+          <div class="seg-agenda-timer-wrap seg-hidden" id="seg-agenda-timer-wrap">
+            <div class="seg-agenda-section-label">Aviso de pago</div>
+            <div class="seg-agenda-timer-row">
+              <span class="seg-agenda-timer-label">Activar cobro</span>
+              <!-- Custom dropdown -->
+              <div class="seg-agenda-dd-wrap" id="seg-agenda-timer-wrap-dd">
+                <button class="seg-agenda-dd-btn" type="button" onclick="segAgendaDdToggle()">
+                  <span id="seg-agenda-dd-label">48h antes</span>
+                  <i class="fas fa-chevron-down seg-agenda-dd-chevron"></i>
+                </button>
+                <div class="seg-agenda-dd-list seg-hidden" id="seg-agenda-dd-list">
+                  <!-- Renderizado dinámicamente por segRenderizarDropdownCobro() -->
+                </div>
+              </div>
+              <!-- Hidden value for JS -->
+              <input type="hidden" id="seg-agenda-timer" value="48">
+            </div>
+            <div class="seg-agenda-timer-row" style="margin-top:8px">
+              <span class="seg-agenda-timer-label">Link de pago</span>
+            </div>
+            <input type="text" class="seg-agenda-input" id="seg-agenda-link-pago"
+              placeholder="https://...">
+            <div style="margin-top:10px">
+              <div class="seg-agenda-section-label">Canal de confirmación</div>
+              <div class="seg-canal-chips" id="seg-agenda-sesion-canal-chips">
+                <button class="seg-canal-chip active" data-canal="whatsapp"
+                  onclick="segAgendaSesionSetCanal('whatsapp', this)">
+                  <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+                <button class="seg-canal-chip" data-canal="email"
+                  onclick="segAgendaSesionSetCanal('email', this)">
+                  <i class="fas fa-envelope"></i> Email
+                </button>
+                <button class="seg-canal-chip" data-canal="ninguno"
+                  onclick="segAgendaSesionSetCanal('ninguno', this)">
+                  <i class="fas fa-ban"></i> Sin notificación
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODO RECORDATORIO -->
+        <div id="seg-agenda-recordatorio-wrap" class="seg-hidden">
+          <div class="seg-agenda-timer-row">
+            <span class="seg-agenda-timer-label seg-agenda-timer-label--big">Hora de envío</span>
+            <div class="seg-picker-wrap" id="seg-agenda-hora-wrap">
+              <button class="seg-picker-btn" type="button" onclick="segAgendaTpToggle()">
+                <i class="fas fa-clock" style="color:#9961FF;font-size:11px"></i>
+                <span id="seg-agenda-hora-display">10:00</span>
+              </button>
+              <div class="seg-timepicker seg-hidden" id="seg-agenda-timepicker">
+                <div class="seg-tp-title">HH : MM</div>
+                <div class="seg-tp-cols">
+                  <div class="seg-tp-col-wrap">
+                    <div class="seg-tp-col" id="seg-agenda-tp-horas"></div>
+                  </div>
+                  <div class="seg-tp-col-wrap">
+                    <div class="seg-tp-col" id="seg-agenda-tp-minutos"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px">
+            <div class="seg-agenda-section-label">Link de agenda</div>
+            <input type="text" class="seg-agenda-input" id="seg-agenda-link-agenda"
+              placeholder="https://...">
+          </div>
+          <div style="margin-top:10px">
+            <div class="seg-agenda-section-label">Canal de envío</div>
+            <div class="seg-canal-chips" id="seg-agenda-canal-chips">
+              <button class="seg-canal-chip active" data-canal="whatsapp"
+                onclick="segAgendaSetCanal('whatsapp', this)">
+                <i class="fab fa-whatsapp"></i> WhatsApp
+              </button>
+              <button class="seg-canal-chip" data-canal="chat"
+                onclick="segAgendaSetCanal('chat', this)">
+                <i class="fas fa-comment"></i> Chat Heavensy
+              </button>
+              <button class="seg-canal-chip" data-canal="email"
+                onclick="segAgendaSetCanal('email', this)">
+                <i class="fas fa-envelope"></i> Email
+              </button>
+            </div>
+          </div>
+          <div style="margin-top:10px">
+            <div class="seg-agenda-section-label">Mensaje (opcional)</div>
+            <textarea class="seg-agenda-textarea" id="seg-agenda-msg-rec" rows="4"
+              placeholder="Ej: Le recuerdo que puede agendar su próxima sesión en..."></textarea>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Resumen selección -->
+    <div class="seg-agenda-resumen seg-hidden" id="seg-agenda-resumen"></div>
+
+    <!-- Advertencia disponibilidad -->
+    <div class="seg-agenda-aviso seg-hidden" id="seg-agenda-aviso">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span id="seg-agenda-aviso-msg"></span>
+    </div>
+
+    <!-- Footer -->
+    <div class="seg-modal-footer">
+      <button class="seg-modal-btn seg-modal-btn-ghost" onclick="segCerrarModalAgenda()">Cancelar</button>
+      <button class="seg-modal-btn seg-modal-btn-primary" id="seg-agenda-confirmar-btn"
+        onclick="segConfirmarAgenda()" disabled>
+        <i class="fas fa-calendar-check"></i> Agendar
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Dropdown diagnósticos CIE-10 (desktop) -->
+<div id="seg-diag-dropdown" class="seg-diag-dropdown seg-hidden"></div>
+
+<!-- Bottom sheet diagnósticos CIE-10 (móvil) -->
+<div id="seg-diag-sheet-overlay" class="seg-diag-sheet-overlay seg-hidden" onclick="segDiagSheetCerrar()"></div>
+<div id="seg-diag-sheet" class="seg-diag-sheet seg-hidden">
+  <div class="seg-diag-sheet-handle"></div>
+  <div class="seg-diag-sheet-header">
+    <span class="seg-diag-sheet-title">Diagnóstico CIE-10</span>
+    <button class="seg-diag-sheet-close" onclick="segDiagSheetCerrar()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <div class="seg-diag-sheet-search-wrap">
+    <i class="fas fa-search seg-diag-sheet-search-icon"></i>
+    <input type="text" id="seg-diag-sheet-input" class="seg-diag-sheet-search"
+      placeholder="Buscar diagnóstico..."
+      oninput="segDiagSheetFiltrar(this.value)"
+      autocomplete="off" autocorrect="off" spellcheck="false">
+  </div>
+  <div id="seg-diag-sheet-list" class="seg-diag-sheet-list"></div>
+</div>
+<!-- ═══ Modal Auditoría Campos Fijos ═══ -->
+<div class="seg-modal-overlay seg-hidden" id="seg-auditoria-modal" onclick="if(event.target===this)segCerrarAuditoriaCampos()">
+  <div class="seg-modal seg-auditoria-modal-wrap">
+    <div class="seg-modal-header">
+      <span class="seg-modal-title" id="seg-auditoria-titulo">Historial de cambios</span>
+      <button class="seg-modal-btn-close" onclick="segCerrarAuditoriaCampos()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="seg-modal-body" id="seg-auditoria-lista" style="padding:16px;overflow-y:auto;max-height:60vh;">
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js — librería de gráficos para la evolución de intensidades -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- jsPDF — genera archivos PDF en el navegador, usado para exportar el informe de derivación -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

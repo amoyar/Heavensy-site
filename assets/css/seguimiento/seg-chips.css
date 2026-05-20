@@ -1,0 +1,456 @@
+/* ═══════════════════════════════════════════════════════
+   SEGUIMIENTO — seg-chips.css
+   Chips síntoma/diagnóstico/hipótesis/trabajar, badges de intensidad, filtros
+═══════════════════════════════════════════════════════ */
+
+#seg-body-plantillas .seg-side-panel-scroll { max-height: 120px; }
+
+
+.seg-btn-nueva-sesion-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #f5f3ff;
+  color: #9961FF;
+  border: 1.5px solid #c4b5fd;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.seg-btn-nueva-sesion-inline:hover {
+  background: #ede9fe;
+  border-color: #9961FF;
+}
+.seg-btn-nueva-sesion-inline i { font-size: 9px; }
+
+/* Eliminar botón viejo del panel izquierdo si quedó */
+.seg-btn-nueva-sesion { display: none; }
+
+
+/* ── Basurero en tarjetas de historial ── */
+.seg-hist-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.seg-hist-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: transparent; /* oculto por defecto */
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color .15s, background .15s;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.seg-hist-card:hover .seg-hist-delete-btn {
+  color: #d1d5db; /* visible al hover de la card */
+}
+.seg-hist-delete-btn:hover {
+  color: #ef4444 !important;
+  background: #fef2f2;
+}
+
+/* ── Confirmación inline en tarjetas historial ── */
+.seg-hist-confirm {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #fff8f8;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+}
+
+.seg-hist-confirm-msg {
+  font-size: 11px;
+  color: #374151;
+  line-height: 1.5;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.seg-hist-confirm-msg i {
+  color: #f59e0b;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.seg-hist-confirm-btns {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.seg-hist-confirm-cancel {
+  padding: 4px 12px;
+  border: 0.5px solid #e5e7eb;
+  background: #fff;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all .12s;
+}
+.seg-hist-confirm-cancel:hover { background: #f3f4f6; }
+
+.seg-hist-confirm-ok {
+  padding: 4px 12px;
+  border: none;
+  background: #ef4444;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity .12s;
+}
+.seg-hist-confirm-ok:hover { opacity: .85; }
+
+/* ── Paneles colapsables col-side ── */
+.seg-side-panel {
+  border: 0.5px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: visible;
+  margin-bottom: 8px;
+}
+
+.seg-side-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #fafbff;
+  cursor: pointer;
+  user-select: none;
+  transition: background .12s;
+  border-radius: 10px 10px 0 0;
+}
+.seg-side-panel-header:hover { background: #f0f4ff; }
+
+.seg-side-panel-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7D84C1;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.seg-side-panel-chev {
+  font-size: 9px;
+  color: #9ca3af;
+  transition: transform .2s ease;
+}
+
+.seg-side-panel-body {
+  padding: 8px 10px;
+}
+
+/* ── Botón generar resumen IA en Tab 1 ── */
+.seg-generar-ia-wrap {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.seg-btn-generar-ia-tab1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: #EFF6FF;
+  border: 1.5px solid #C9D9FF;
+  color: #7D84C1;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.seg-btn-generar-ia-tab1:hover {
+  background: #E1DEFF;
+  border-color: #9961FF;
+  color: #9961FF;
+}
+.seg-btn-generar-ia-tab1 i { font-size: 11px; color: #9961FF; }
+
+/* ── Indicador autoguardado ── */
+.seg-autosave {
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: opacity .3s;
+}
+.seg-autosave.guardando { color: #9ca3af; }
+.seg-autosave.guardado  { color: #16a34a; }
+.seg-autosave.error     { color: #ef4444; }
+
+/* ── Botón guardar principal (violeta Heavensy) ── */
+.seg-btn-guardar-principal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #EFF6FF;
+  border: 1.5px solid #C9D9FF;
+  color: #7D84C1;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.seg-btn-guardar-principal:hover {
+  background: #E1DEFF;
+  border-color: #9961FF;
+  color: #9961FF;
+}
+.seg-btn-guardar-principal:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* ── Indicador autoguardado actualizado ── */
+.seg-autosave {
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: opacity .3s;
+  min-width: 100px;
+}
+.seg-autosave.guardando { color: #7D84C1; }
+.seg-autosave.guardado  { color: #7D84C1; }
+.seg-autosave.guardado .seg-autosave-check { color: #16a34a; }
+.seg-autosave.error     { color: #ef4444; }
+
+/* ── Panel toggle buttons ── */
+.seg-panel-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #7D84C1;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  transition: background .15s, color .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.seg-panel-toggle-btn:hover {
+  background: #EFF6FF;
+  color: #9961FF;
+}
+
+/* ── Botón colapsar en header del panel izquierdo ── */
+.seg-lp-collapse-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 11px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  margin-left: auto;
+  transition: color .15s, background .15s;
+  display: flex;
+  align-items: center;
+}
+.seg-lp-collapse-btn:hover {
+  color: #9961FF;
+  background: #f5f3ff;
+}
+
+/* ── Tab para expandir panel cuando está colapsado ── */
+.seg-expand-tab {
+  position: absolute;
+  left: 0;
+  top: 12px;
+  z-index: 20;
+  background: #fff;
+  border: 0.5px solid #e5e7eb;
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+  cursor: pointer;
+  color: #7D84C1;
+  font-size: 11px;
+  padding: 8px 5px;
+  box-shadow: 2px 0 6px rgba(0,0,0,.08);
+  transition: background .15s, color .15s;
+  display: flex;
+  align-items: center;
+}
+.seg-expand-tab:hover {
+  background: #f5f3ff;
+  color: #9961FF;
+  border-color: #c4b5fd;
+}
+/* Panel collapse — igual que conversaciones */
+.seg-left-panel {
+  transition: width .25s ease;
+  overflow: hidden !important;
+  flex-shrink: 0;
+  min-width: 0; /* permite que colapso a 0 funcione */
+}
+.seg-left-panel.panel-hidden {
+  width: 0 !important;
+  min-width: 0 !important;
+  border: none !important;
+}
+
+.seg-col-side {
+  transition: width .25s ease;
+  min-width: 0;
+}
+.seg-col-side.panel-hidden {
+  width: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+/* Móvil — panel izquierdo como overlay encima del contenido */
+
+/* ── Plantillas inline (misma fila que el label) ── */
+.seg-field-label-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: nowrap;
+}
+
+.seg-field-label-row .seg-field-label {
+  margin-bottom: 0;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.seg-plantillas-inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.seg-plantillas-titulo-inline {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+  flex-shrink: 0;
+}
+
+.seg-plantillas-inline .seg-plantillas-chips,
+.seg-plantillas-inline .seg-etiquetas-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.seg-plantillas-inline .seg-plantillas-vacio {
+  font-size: 10px;
+  color: #d1d5db;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+/* Grupo [Plantillas: chips +] alineado a la derecha */
+.seg-plantillas-grupo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Chips se alinean a la derecha creciendo hacia la izq, separados del + */
+.seg-field-label .seg-plantillas-chips,
+.seg-field-label .seg-etiquetas-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.seg-field-label .seg-plantillas-titulo-inline {
+  flex-shrink: 0;
+}
+
+/* Separar el botón + de los chips */
+.seg-btn-nueva-plantilla-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: #f5f3ff;
+  border: 1px solid #c4b5fd;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #9961FF;
+  font-size: 8px;
+  transition: all .12s;
+  flex-shrink: 0;
+  margin-left: 16px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.seg-btn-nueva-plantilla-inline:hover {
+  background: #ede9fe;
+  border-color: #9961FF;
+}
+
+/* ── Tooltip estilizado global Heavensy — manejado por JS ── */
+[data-seg-tooltip] { cursor: default; }
+
+/* ── Reset uppercase heredado del seg-field-label ── */
+.seg-field-label .seg-plantilla-chip,
+.seg-field-label .seg-etiqueta-chip,
+.seg-field-label .seg-plantillas-vacio,
+.seg-field-label .seg-btn-nueva-plantilla-inline,
+.seg-field-label .seg-chip-remove {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 9px !important;
+}
+.seg-field-label .seg-plantillas-titulo-inline {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 11px !important;
+}
+
+/* ── Móvil: tab expandir arriba ── */
+@media (max-width: 767px) {
+  .seg-expand-tab {
+    top: 12px;
+    transform: none;
+    padding: 14px 7px;
+    font-size: 13px;
+    z-index: 201;
+    box-shadow: 3px 0 10px rgba(0,0,0,.15);
+  }
+}

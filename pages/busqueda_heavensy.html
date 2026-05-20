@@ -1,0 +1,258 @@
+<!-- pages/busqueda_heavensy.html -->
+<div class="busq-page">
+
+  <!-- HERO -->
+  <div class="busq-hero">
+    <img class="busq-hero-bg" src="assets/img/foto%20busqueda%202.jpg.jpeg" alt="">
+    <div class="busq-hero-inner">
+      <div>
+        <h1>Explora servicios dentro<br>de nuestra comunidad</h1>
+        <p>Emprendedores, profesionales y empresas, listos para atenderte</p>
+      </div>
+      <div class="busq-searchbar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7194" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" id="busqInput" placeholder="¿Qué necesitas hoy?">
+        <button class="busq-btn-busca" onclick="busqBuscar()">Buscar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="busq-main">
+
+    <!-- FILTROS -->
+    <aside class="busq-filters">
+      <div class="busq-f-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+        Filtros
+      </div>
+
+      <div class="busq-acc-item open">
+        <div class="busq-acc-header" onclick="busqToggleAcc(this)">
+          <div class="busq-acc-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="#9961FF"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+          <span class="busq-acc-label">Categoría</span>
+          <svg class="busq-acc-arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="busq-acc-body">
+          <div class="busq-chips">
+            <div class="busq-chip on" data-cat="todos">Todos</div>
+            <div class="busq-chip" data-cat="salud">Salud</div>
+            <div class="busq-chip" data-cat="bienestar">Bienestar</div>
+            <div class="busq-chip" data-cat="educacion">Educación</div>
+            <div class="busq-chip" data-cat="legal">Legal / Finanzas</div>
+            <div class="busq-chip" data-cat="espacios">Espacios</div>
+            <div class="busq-chip" data-cat="eventos">Eventos / Cursos</div>
+            <div class="busq-chip" data-cat="otros">Otros</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="busq-acc-item">
+        <div class="busq-acc-header" onclick="busqToggleAcc(this)">
+          <div class="busq-acc-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="#9961FF"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div>
+          <span class="busq-acc-label">Modalidad</span>
+          <svg class="busq-acc-arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="busq-acc-body">
+          <div class="busq-opts">
+            <label class="busq-opt"><input type="checkbox" name="busqMod" value="presencial" checked> Presencial</label>
+            <label class="busq-opt"><input type="checkbox" name="busqMod" value="online" checked> Online</label>
+            <label class="busq-opt"><input type="checkbox" name="busqMod" value="domicilio" checked> A domicilio</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="busq-acc-item">
+        <div class="busq-acc-header" onclick="busqToggleAcc(this)">
+          <div class="busq-acc-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="#9961FF"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></div>
+          <span class="busq-acc-label">Ubicación</span>
+          <svg class="busq-acc-arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="busq-acc-body">
+          <div class="busq-sel-wrap">
+            <select id="busqPais">
+              <option value="">🌎 País</option>
+              <option value="cl" selected>🇨🇱 Chile</option>
+              <option value="ar">🇦🇷 Argentina</option>
+              <option value="co">🇨🇴 Colombia</option>
+              <option value="mx">🇲🇽 México</option>
+              <option value="pe">🇵🇪 Perú</option>
+              <option value="es">🇪🇸 España</option>
+            </select>
+            <select id="busqCiudad">
+              <option value="">📍 Ciudad</option>
+              <option value="santiago">Santiago</option>
+              <option value="valparaiso">Valparaíso</option>
+              <option value="concepcion">Concepción</option>
+              <option value="antofagasta">Antofagasta</option>
+              <option value="temuco">Temuco</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="busq-acc-item">
+        <div class="busq-acc-header" onclick="busqToggleAcc(this)">
+          <div class="busq-acc-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="#9961FF"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg></div>
+          <span class="busq-acc-label">Disponibilidad</span>
+          <svg class="busq-acc-arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="busq-acc-body">
+          <div class="busq-opts">
+            <label class="busq-opt"><input type="radio" name="busqDisp" value="cualquiera" checked> Cualquier momento</label>
+            <label class="busq-opt"><input type="radio" name="busqDisp" value="hoy"> Hoy</label>
+            <label class="busq-opt"><input type="radio" name="busqDisp" value="semana"> Esta semana</label>
+            <label class="busq-opt"><input type="radio" name="busqDisp" value="mes"> Este mes</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="busq-acc-item">
+        <div class="busq-acc-header" onclick="busqToggleAcc(this)">
+          <div class="busq-acc-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="#9961FF"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.83-1.38 2.83-3.12 3.16z"/></svg></div>
+          <span class="busq-acc-label">Precio</span>
+          <svg class="busq-acc-arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="busq-acc-body">
+          <div class="busq-range-wrap">
+            <input type="range" min="0" max="200000" step="5000" value="200000" id="busqPrecioRange" oninput="busqUpdatePrecio(this.value)">
+            <div class="busq-range-labels"><span>Gratis</span><span id="busqPrecioLabel">Sin límite</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="busq-acc-item">
+        <div class="busq-acc-header" onclick="busqToggleAcc(this)">
+          <div class="busq-acc-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="#9961FF"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></div>
+          <span class="busq-acc-label">Valoración</span>
+          <svg class="busq-acc-arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9961FF" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div class="busq-acc-body">
+          <div class="busq-opts">
+            <label class="busq-opt"><input type="radio" name="busqRating" value="0" checked> Cualquiera</label>
+            <label class="busq-opt"><input type="radio" name="busqRating" value="3"> <span class="busq-stars">★★★</span> 3+ estrellas</label>
+            <label class="busq-opt"><input type="radio" name="busqRating" value="4"> <span class="busq-stars">★★★★</span> 4+ estrellas</label>
+            <label class="busq-opt"><input type="radio" name="busqRating" value="5"> <span class="busq-stars">★★★★★</span> Solo 5 estrellas</label>
+          </div>
+        </div>
+      </div>
+
+      <button class="busq-btn-clear" onclick="busqLimpiar()">✕ &nbsp;Limpiar filtros</button>
+    </aside>
+
+    <!-- RESULTADOS -->
+    <section>
+      <div class="busq-results-hdr">
+        <div class="busq-res-count">Mostrando <strong id="busqCount">8</strong> profesionales</div>
+      </div>
+
+      <div class="busq-cards" id="busqCards">
+
+        <div class="busq-card" data-cat="salud" data-mod="presencial,online" data-rating="5.0">
+          <div class="busq-avatar">MP</div>
+          <div class="busq-info">
+            <div class="busq-top-row"><span class="busq-pname">María Pía Moya</span><span class="busq-rating"><span class="busq-stars">★</span> 5.0</span></div>
+            <div class="busq-eslogan">Revelación medicina</div>
+            <div class="busq-tags"><span class="busq-tag">Psicóloga</span><span class="busq-tag">Hipnosis</span><span class="busq-tag">Regresiones</span></div>
+            <div class="busq-mod">Presencial, Online</div>
+            <div class="busq-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> 🇨🇱 Av. Providencia 2318, Providencia</div>
+          </div>
+          <div class="busq-vid"><div class="busq-play"><svg width="14" height="14" viewBox="0 0 24 24" fill="#355BB6"><polygon points="5,3 19,12 5,21"/></svg></div><span class="busq-vid-dur">6:02</span></div>
+        </div>
+
+        <div class="busq-card" data-cat="bienestar" data-mod="presencial,domicilio" data-rating="5.0">
+          <div class="busq-avatar">CA</div>
+          <div class="busq-info">
+            <div class="busq-top-row"><span class="busq-pname">Camila Araya Valdez</span><span class="busq-rating"><span class="busq-stars">★</span> 5.0</span></div>
+            <div class="busq-eslogan">Masajes ultra relajantes</div>
+            <div class="busq-tags"><span class="busq-tag">Masajista</span><span class="busq-tag">Reiki</span><span class="busq-tag">Aromaterapia</span></div>
+            <div class="busq-mod">Presencial, A domicilio</div>
+            <div class="busq-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> 🇨🇱 Av. Suecia 28, Providencia</div>
+          </div>
+          <div class="busq-vid"><div class="busq-play"><svg width="14" height="14" viewBox="0 0 24 24" fill="#355BB6"><polygon points="5,3 19,12 5,21"/></svg></div><span class="busq-vid-dur">5:22</span></div>
+        </div>
+
+        <div class="busq-card" data-cat="bienestar" data-mod="presencial" data-rating="5.0">
+          <div class="busq-avatar">GF</div>
+          <div class="busq-info">
+            <div class="busq-top-row"><span class="busq-pname">Guillermo Fernández</span><span class="busq-rating"><span class="busq-stars">★</span> 5.0</span></div>
+            <div class="busq-eslogan">Libera tus tensiones de años</div>
+            <div class="busq-tags"><span class="busq-tag">Quiropráctico</span></div>
+            <div class="busq-mod">Presencial</div>
+            <div class="busq-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> 🇨🇱 Av. B. O'Higgins 334, Santiago</div>
+          </div>
+          <div class="busq-vid"><div class="busq-play"><svg width="14" height="14" viewBox="0 0 24 24" fill="#355BB6"><polygon points="5,3 19,12 5,21"/></svg></div><span class="busq-vid-dur">4:08</span></div>
+        </div>
+
+        <div class="busq-card" data-cat="educacion" data-mod="online" data-rating="4.8">
+          <div class="busq-avatar">CV</div>
+          <div class="busq-info">
+            <div class="busq-top-row"><span class="busq-pname">Carolina Vega Torres</span><span class="busq-rating"><span class="busq-stars">★</span> 4.8</span></div>
+            <div class="busq-eslogan">Inglés para tu futuro profesional</div>
+            <div class="busq-tags"><span class="busq-tag">Profesora</span><span class="busq-tag">Inglés</span></div>
+            <div class="busq-mod">Online</div>
+            <div class="busq-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> 🇨🇱 Online — Disponible para todo Chile</div>
+          </div>
+          <div class="busq-vid"><div class="busq-play"><svg width="14" height="14" viewBox="0 0 24 24" fill="#355BB6"><polygon points="5,3 19,12 5,21"/></svg></div><span class="busq-vid-dur">6:45</span></div>
+        </div>
+
+        <div class="busq-card" data-cat="legal" data-mod="presencial,online" data-rating="4.9">
+          <div class="busq-avatar">RM</div>
+          <div class="busq-info">
+            <div class="busq-top-row"><span class="busq-pname">Rodrigo Muñoz Abogados</span><span class="busq-rating"><span class="busq-stars">★</span> 4.9</span></div>
+            <div class="busq-eslogan">Tu tranquilidad legal, nuestra misión</div>
+            <div class="busq-tags"><span class="busq-tag">Derecho Laboral</span><span class="busq-tag">Familia</span></div>
+            <div class="busq-mod">Presencial, Online</div>
+            <div class="busq-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> 🇨🇱 Av. Apoquindo 4501, Las Condes</div>
+          </div>
+          <div class="busq-vid"><div class="busq-play"><svg width="14" height="14" viewBox="0 0 24 24" fill="#355BB6"><polygon points="5,3 19,12 5,21"/></svg></div><span class="busq-vid-dur">3:55</span></div>
+        </div>
+
+        <div class="busq-card" data-cat="espacios" data-mod="presencial" data-rating="4.7">
+          <div class="busq-avatar">CH</div>
+          <div class="busq-info">
+            <div class="busq-top-row"><span class="busq-pname">Cowork Hub Santiago</span><span class="busq-rating"><span class="busq-stars">★</span> 4.7</span></div>
+            <div class="busq-eslogan">Tu oficina cuando la necesites</div>
+            <div class="busq-tags"><span class="busq-tag">Cowork</span><span class="busq-tag">Arriendo sala</span></div>
+            <div class="busq-mod">Presencial</div>
+            <div class="busq-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> 🇨🇱 Monjitas 392, Santiago Centro</div>
+          </div>
+          <div class="busq-vid"><div class="busq-play"><svg width="14" height="14" viewBox="0 0 24 24" fill="#355BB6"><polygon points="5,3 19,12 5,21"/></svg></div><span class="busq-vid-dur">7:14</span></div>
+        </div>
+
+        <div class="busq-card" data-cat="eventos" data-mod="presencial,online" data-rating="5.0">
+          <div class="busq-avatar">TA</div>
+          <div class="busq-info">
+            <div class="busq-top-row"><span class="busq-pname">Taller Creativo Alma</span><span class="busq-rating"><span class="busq-stars">★</span> 5.0</span></div>
+            <div class="busq-eslogan">Arte terapia para reconectar contigo</div>
+            <div class="busq-tags"><span class="busq-tag">Talleres</span><span class="busq-tag">Arte terapia</span></div>
+            <div class="busq-mod">Presencial, Online</div>
+            <div class="busq-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> 🇨🇱 Bellavista 0131, Providencia</div>
+          </div>
+          <div class="busq-vid"><div class="busq-play"><svg width="14" height="14" viewBox="0 0 24 24" fill="#355BB6"><polygon points="5,3 19,12 5,21"/></svg></div><span class="busq-vid-dur">5:30</span></div>
+        </div>
+
+        <div class="busq-card" data-cat="salud" data-mod="online,domicilio" data-rating="4.9">
+          <div class="busq-avatar">VR</div>
+          <div class="busq-info">
+            <div class="busq-top-row"><span class="busq-pname">Valentina Ríos — Nutricionista</span><span class="busq-rating"><span class="busq-stars">★</span> 4.9</span></div>
+            <div class="busq-eslogan">Hábitos reales para una vida mejor</div>
+            <div class="busq-tags"><span class="busq-tag">Nutrición</span><span class="busq-tag">Deporte</span></div>
+            <div class="busq-mod">Online, A domicilio</div>
+            <div class="busq-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> 🇨🇱 Ñuñoa, Santiago</div>
+          </div>
+          <div class="busq-vid"><div class="busq-play"><svg width="14" height="14" viewBox="0 0 24 24" fill="#355BB6"><polygon points="5,3 19,12 5,21"/></svg></div><span class="busq-vid-dur">4:47</span></div>
+        </div>
+
+      </div>
+
+      <div class="busq-pagination">
+        <button class="busq-pag-btn on">1</button>
+        <button class="busq-pag-btn">2</button>
+        <button class="busq-pag-btn">3</button>
+        <button class="busq-pag-btn">›</button>
+      </div>
+    </section>
+
+  </div>
+</div>

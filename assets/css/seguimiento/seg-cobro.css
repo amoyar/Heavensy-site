@@ -1,0 +1,411 @@
+/* ═══════════════════════════════════════════════════════
+   SEGUIMIENTO — seg-cobro.css
+   Etiquetas sugeridas, cobro/sesión, badges de estado sesión
+═══════════════════════════════════════════════════════ */
+
+.seg-sugg-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  min-height: 28px;
+}
+
+.seg-sugg-placeholder {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.seg-sugg-tag {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  border: 1.5px dashed #9961FF;
+  color: #9961FF;
+  background: #fff;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.seg-sugg-tag:hover,
+.seg-sugg-tag.accepted {
+  background: #EFF6FF;
+  border-style: solid;
+}
+
+/* ── Textarea resumen ── */
+.seg-textarea-resumen {
+  min-height: 140px;
+}
+
+/* ── Canal chips ── */
+.seg-canal-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.seg-canal-chip {
+  padding: 7px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #7D84C1;
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+}
+
+.seg-canal-chip:hover {
+  border-color: #9961FF;
+  color: #9961FF;
+}
+
+.seg-canal-chip.on {
+  background: #EFF6FF;
+  border-color: #9961FF;
+  color: #9961FF;
+  font-weight: 600;
+}
+
+/* ── Botón enviar ── */
+.seg-btn-enviar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: #EFF6FF;
+  border: 1.5px solid #C9D9FF;
+  color: #7D84C1;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.seg-btn-enviar:hover { background: #E1DEFF; border-color: #9961FF; color: #9961FF; }
+.seg-btn-enviar.enviado { background: #f0fdf4; border-color: #86efac; color: #16a34a; cursor: default; }
+.seg-btn-enviar i { font-size: 11px; color: #9961FF; }
+
+/* ── Programados editor ── */
+.seg-prog-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: #fafbff;
+  border: 1px solid #C9D9FF;
+  border-radius: 10px;
+  margin-top: 8px;
+}
+
+/* ── Mini calendario (programados + avanzado) ── */
+.seg-mini-cal {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.seg-mini-cal-nav,
+.seg-mini-cal-nav.seg-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.seg-cal-nav-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7D84C1;
+  font-size: 10px;
+  transition: all .15s;
+}
+
+.seg-cal-nav-btn:hover { border-color: #9961FF; color: #9961FF; }
+
+.seg-cal-month-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  min-width: 120px;
+  text-align: center;
+}
+
+.seg-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.seg-cal-dow {
+  font-size: 10px;
+  font-weight: 500;
+  color: #9ca3af;
+  text-align: center;
+  padding: 3px 0;
+}
+
+.seg-cal-day {
+  font-size: 11px;
+  text-align: center;
+  padding: 5px 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #374151;
+  transition: all .15s;
+  border: 1px solid transparent;
+}
+
+.seg-cal-day:hover { background: #EFF6FF; color: #9961FF; }
+.seg-cal-day.cal-today { font-weight: 700; border-color: #9961FF; color: #9961FF; }
+.seg-cal-day.cal-selected { background: #9961FF; color: #fff; border-color: #9961FF; }
+.seg-cal-day.cal-past { color: #d1d5db; cursor: default; }
+.seg-cal-day.cal-empty { cursor: default; }
+
+.seg-cal-time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.seg-cal-time-label {
+  font-size: 11px;
+  color: #7D84C1;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.seg-cal-time-input {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  font-size: 12px;
+  color: #374151;
+  outline: none;
+  transition: border .15s;
+}
+
+.seg-cal-time-input:focus { border-color: #9961FF; }
+
+.seg-cal-selected {
+  font-size: 11px;
+  color: #9961FF;
+  font-weight: 500;
+  background: #EFF6FF;
+  padding: 5px 10px;
+  border-radius: 8px;
+  margin-top: 6px;
+}
+
+/* ── Modal calendario avanzado ── */
+.seg-modal-cal {
+  max-width: 680px !important;
+}
+
+.seg-cal-body {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 0;
+  align-items: start;
+}
+
+.seg-cal-col-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 16px;
+  border-right: 1px solid #e5e7eb;
+}
+
+.seg-cal-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 16px;
+}
+
+.seg-cal-servicios-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.seg-cal-servicio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .15s;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+.seg-cal-servicio:hover { border-color: #9961FF; background: #EFF6FF; }
+.seg-cal-servicio.active { border-color: #9961FF; background: #EFF6FF; }
+
+.seg-cal-servicio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.seg-cal-servicio-name {
+  font-size: 12px;
+  color: #374151;
+}
+
+.seg-cal-servicio.active .seg-cal-servicio-name { color: #9961FF; font-weight: 500; }
+
+.seg-cal-modo-toggle {
+  display: flex;
+  gap: 4px;
+  margin: 4px 0;
+}
+
+.seg-cal-modo-btn {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 11px;
+  color: #7D84C1;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.seg-cal-modo-btn.active {
+  border-color: #9961FF;
+  background: #EFF6FF;
+  color: #9961FF;
+  font-weight: 600;
+}
+
+.seg-cal-horas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.seg-cal-hora-btn {
+  padding: 4px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: #fff;
+  font-size: 11px;
+  color: #7D84C1;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.seg-cal-hora-btn:hover { border-color: #9961FF; color: #9961FF; background: #EFF6FF; }
+.seg-cal-hora-btn.active { border-color: #9961FF; background: #9961FF; color: #fff; }
+
+.seg-cal-link-preview {
+  font-size: 10px;
+  color: #9961FF;
+  background: #EFF6FF;
+  padding: 4px 8px;
+  border-radius: 7px;
+  word-break: break-all;
+  margin-top: 4px;
+}
+
+/* ── Modal registro (ver) ── */
+.seg-modal-lg { max-width: 560px !important; }
+
+.seg-registro-section { margin-bottom: 12px; }
+
+.seg-registro-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7D84C1;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seg-registro-valor {
+  font-size: 12px;
+  color: #374151;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background: #f9fafb;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.seg-registro-valor-privado {
+  background: #FFF8F8;
+  border-color: #FECACA;
+}
+
+/* ── Modal base (override para nuevos modales) ── */
+.seg-modal {
+  max-width: 420px;
+}
+
+/* ── Botón icono calendario en label ── */
+.seg-btn-cal-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9961FF;
+  padding: 2px 4px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  transition: background .15s;
+  margin-left: 2px;
+}
+
+.seg-btn-cal-icon:hover { background: #EFF6FF; }
+
+/* ── Historial mejorado (sesion cards en col-side) ── */
+.seg-sesion-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 9px 10px;
+  cursor: pointer;
+  transition: all .15s;
+  margin-bottom: 6px;
+}
+
+.seg-sesion-card:hover { border-color: #C9D9FF; box-shadow: 0 2px 8px rgba(153,97,255,.08); }
+.seg-sesion-card.active { border-color: #9961FF; background: #f5f0ff; }
+
+.seg-sesion-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.seg-sesion-fecha { font-size: 11px; font-weight: 600; color: #374151; }
+
+
+.seg-sesion-badge.nueva { background: #E1DEFF; color: #7c3aed; }
+.seg-sesion-badge.completado { background: #d1fae5; color: #065f46; }
+.seg-sesion-badge.enviado { background: #d1fae5; color: #065f46; }
