@@ -1,0 +1,374 @@
+// ============================================
+// CONTACTS.JS - Panel derecho (Tags & Notas)
+// ============================================
+
+console.log("📇 contacts.js cargado");
+
+// Estado actual del contacto
+let currentContactUserId = null;
+let currentContactProfile = null;
+let currentContactCompanyId = null;
+
+// --------------------------------------------
+// Helper fetch con auth
+// --------------------------------------------
+async function authFetch(url, options = {}) {
+    const token = getToken();
+    const headers = options.headers || {};
+
+    headers["Authorization"] = `Bearer ${token}`;
+    if (!(options.body instanceof FormData)) {
+        headers["Content-Type"] = "application/json";
+    }
+
+    const resp = await fetch(url, {
+        ...options,
+        headers
+    });
+
+    if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`HTTP ${resp.status}: ${text}`);
+    }
+
+    return resp.json();
+}
+
+// --------------------------------------------
+// Cargar perfil de contacto
+// --------------------------------------------
+async function loadContactProfile(userId, phone = null, profileName = null, companyId = null) {
+    try {
+        console.log("📇 Cargando contacto:", userId, companyId);
+
+        currentContactUserId = userId;
+        currentContactCompanyId = companyId;
+
+        const params = new URLSearchParams();
+        if (phone) params.append("phone", phone);
+        if (profileName) params.append("profile_name", profileName);
+        if (companyId) params.append("company_id", companyId);
+
+        const url = `${API_BASE_URL}/api/contacts/${encodeURIComponent(userId)}?${params.toString()}`;
+
+        const data = await authFetch(url, { method: "GET" });
+
+        if (!data.success) {
+            throw new Error(data.error || "No se pudo cargar contacto");
+        }
+
+        currentContactProfile = data.contact;
+        console.log("✅ Contacto cargado:", currentContactProfile);
+
+        renderContactPanel(currentContactProfile);
+
+        // ✅ Solo usar avatar real (no generado con iniciales)
+        const avatarObj = currentContactProfile.avatar || {};
+        const isRealAvatar = avatarObj.provider !== "generated" && avatarObj.type !== "initials";
+        const avatarUrl = isRealAvatar
+            ? (avatarObj.secure_url || avatarObj.url || "")
+            : "";
+
+        // Solo notificar si realmente cambió
+        if (window.updateConversationAvatar) {
+            window.updateConversationAvatar(currentContactUserId, avatarUrl);
+        }
+
+
+    } catch (err) {
+        console.error("❌ Error cargando contacto:", err);
+    }
+}
+// --------------------------------------------
+// Render principal del panel
+// --------------------------------------------
+function renderContactPanel(contact) {
+    renderContactHeader(contact);   // 👈 nuevo
+    renderTags(contact.tags || []);
+    renderNotes(contact.notes || []);
+}
+
+
+// --------------------------------------------
+// TAGS
+// --------------------------------------------
+function renderTags(tags) {
+    const container = document.getElementById("contactTagsContainer");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!tags.length) {
+        container.innerHTML = `<p class="text-xs text-gray-400">Sin tags</p>`;
+        return;
+    }
+
+    tags.forEach(tag => {
+        const span = document.createElement("span");
+
+       span.className = "px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 max-w-full break-words";
+        span.style.backgroundColor = tag.color || "#e9d5ff";
+        span.style.color = "#1f2937"; // texto oscuro
+
+        span.innerHTML = `
+            ${escapeHtml(tag.label)}
+            <button class="ml-1 font-bold" title="Quitar tag">×</button>
+        `;
+
+        span.querySelector("button").onclick = () => removeTag(tag.id);
+        container.appendChild(span);
+    });
+}
+
+async function addTag() {
+    const input = document.getElementById("newTagInput");
+    const colorInput = document.getElementById("newTagColor");
+    if (!input || !colorInput) return;
+
+    const label = input.value.trim();
+    const color = colorInput.value; // ej: "#7c3aed"
+
+    if (!label || !currentContactUserId) return;
+
+    try {
+        await authFetch(`${API_BASE_URL}/api/contacts/${encodeURIComponent(currentContactUserId)}/tags`, {
+            method: "POST",
+            body: JSON.stringify({ 
+                label,
+                color,
+                company_id: currentContactCompanyId
+            })
+        });
+
+        input.value = "";
+        await loadContactProfile(currentContactUserId, null, null, currentContactCompanyId);
+    } catch (err) {
+        console.error("❌ Error agregando tag:", err);
+        alert("No se pudo agregar el tag");
+    }
+}
+
+async function removeTag(tagId) {
+    if (!currentContactUserId) return;
+
+    try {
+        await authFetch(
+            `${API_BASE_URL}/api/contacts/${encodeURIComponent(currentContactUserId)}/tags/${encodeURIComponent(tagId)}?company_id=${encodeURIComponent(currentContactCompanyId)}`,
+            { method: "DELETE" }
+        );
+
+        await loadContactProfile(currentContactUserId, null, null, currentContactCompanyId);
+    } catch (err) {
+        console.error("❌ Error quitando tag:", err);
+        alert("No se pudo quitar el tag");
+    }
+}
+
+// --------------------------------------------
+// NOTAS
+// --------------------------------------------
+function renderNotes(notes) {
+    const container = document.getElementById("contactNotesContainer");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!notes.length) {
+        container.innerHTML = `<p class="text-xs text-gray-400">Sin notas</p>`;
+        return;
+    }
+
+    notes.forEach(note => {
+        const div = document.createElement("div");
+        div.className = "bg-white border border-gray-200 rounded-lg p-2 text-sm";
+
+        const date = note.created_at ? new Date(note.created_at).toLocaleString() : "";
+
+        div.innerHTML = `
+            <div class="flex justify-between items-start gap-2">
+                <div>
+                    <p class="text-gray-800">${escapeHtml(note.text)}</p>
+                    <p class="text-xs text-gray-400 mt-1">${escapeHtml(note.created_by || "")} · ${date}</p>
+                </div>
+                <button class="text-gray-400 hover:text-red-500" title="Eliminar nota">
+                    <i class="fas fa-trash text-xs"></i>
+                </button>
+            </div>
+        `;
+
+        div.querySelector("button").onclick = () => deleteNote(note.id);
+        container.appendChild(div);
+    });
+}
+
+async function addNote() {
+    const textarea = document.getElementById("newNoteInput");
+    if (!textarea || !currentContactUserId) return;
+
+    const text = textarea.value.trim();
+    if (!text) return;
+
+    try {
+        await authFetch(`${API_BASE_URL}/api/contacts/${encodeURIComponent(currentContactUserId)}/notes`, {
+            method: "POST",
+            body: JSON.stringify({ 
+                text,
+                company_id: currentContactCompanyId
+            })
+        });
+
+        textarea.value = "";
+        await loadContactProfile(currentContactUserId, null, null, currentContactCompanyId);
+    } catch (err) {
+        console.error("❌ Error agregando nota:", err);
+        alert("No se pudo agregar la nota");
+    }
+}
+
+async function deleteNote(noteId) {
+    if (!currentContactUserId) return;
+
+    try {
+        await authFetch(
+            `${API_BASE_URL}/api/contacts/${encodeURIComponent(currentContactUserId)}/notes/${encodeURIComponent(noteId)}?company_id=${encodeURIComponent(currentContactCompanyId)}`,
+            { method: "DELETE" }
+        );
+
+        await loadContactProfile(currentContactUserId, null, null, currentContactCompanyId);
+    } catch (err) {
+        console.error("❌ Error eliminando nota:", err);
+        alert("No se pudo eliminar la nota");
+    }
+}
+
+//-------------------------------------------------
+// Avatars
+//-------------------------------------------------
+
+function renderContactHeader(contact) {
+    const avatarEl = document.getElementById("contactHeaderAvatar");
+    const nameEl = document.getElementById("contactHeaderName");
+    const phoneEl = document.getElementById("contactPhone");
+    const metaEl = document.getElementById("contactHeaderMeta");
+
+    if (!contact || !avatarEl) return;
+
+    const name = contact.profile_name || contact.user_id || "—";
+    if (nameEl) nameEl.textContent = name;
+    if (phoneEl) phoneEl.textContent = contact.user_id || "—";
+
+    // ✅ Renderizar rating y plan
+    if (metaEl) {
+        const rating = contact.rating || 0;
+        const plan = contact.plan || "";
+
+        let starsHtml = "";
+        for (let i = 1; i <= 5; i++) {
+            if (i <= rating) {
+                starsHtml += '<i class="fas fa-star text-yellow-500"></i>';
+            } else {
+                starsHtml += '<i class="fas fa-star text-gray-300"></i>';
+            }
+        }
+
+        let planHtml = "";
+        if (plan) {
+            const planColors = {
+                "Premium": "bg-purple-100 text-purple-700",
+                "Basic": "bg-blue-100 text-blue-700",
+                "Free": "bg-gray-100 text-gray-600"
+            };
+            const colorClass = planColors[plan] || "bg-gray-100 text-gray-600";
+            planHtml = `<span class="px-2 py-0.5 rounded-full ${colorClass} font-bold text-[10px]">${plan}</span>`;
+        }
+
+        metaEl.innerHTML = `
+            <div class="flex items-center gap-1 text-xs">
+                ${starsHtml}
+                <span class="text-gray-600 font-semibold ml-1">${rating}</span>
+            </div>
+            ${planHtml}
+        `;
+    }
+
+    // ✅ Solo usar avatar real (no generado con iniciales)
+    const avatarObj = contact.avatar || {};
+    const isRealAvatar = avatarObj.provider !== "generated" && avatarObj.type !== "initials";
+    const avatarUrl = isRealAvatar
+        ? (avatarObj.secure_url || avatarObj.url || "")
+        : "";
+
+    // ✅ Usar renderAvatar() centralizado (definido en conversaciones.js)
+    avatarEl.classList.remove("bg-gray-200", "animate-pulse");
+    renderAvatar(avatarEl, {
+        avatar_url: avatarUrl,
+        name: name,
+        roundedClass: "rounded-full"
+    });
+}
+
+async function onAvatarFileSelected(e) {
+    const file = e.target.files[0];
+    if (!file || !currentContactUserId || !currentContactCompanyId) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("company_id", currentContactCompanyId);
+
+    try {
+        await authFetch(`${API_BASE_URL}/api/contacts/${encodeURIComponent(currentContactUserId)}/avatar`, {
+            method: "POST",
+            body: formData
+        });
+
+        // Recargar perfil del contacto
+        await loadContactProfile(
+            currentContactUserId,
+            null,
+            null,
+            currentContactCompanyId
+        );
+    } catch (err) {
+        console.error("❌ Error subiendo avatar:", err);
+        alert("No se pudo subir el avatar");
+    } finally {
+        // Limpiar input para poder subir la misma imagen de nuevo si quieres
+        e.target.value = "";
+    }
+}
+
+
+
+// --------------------------------------------
+// Utils
+// --------------------------------------------
+// escapeHtml ya definida en conversaciones.js
+
+// --------------------------------------------
+// Hook desde conversaciones.js
+// Llama esto cuando cambie el usuario seleccionado userId phone = null, name = null
+// --------------------------------------------
+
+document.addEventListener("DOMContentLoaded", () => {
+    const avatarEl = document.getElementById("contactHeaderAvatar");
+    const inputEl = document.getElementById("contactAvatarInput");
+
+    if (avatarEl && inputEl) {
+        avatarEl.style.cursor = "pointer";
+
+        avatarEl.addEventListener("click", () => {
+            inputEl.click();
+        });
+
+        inputEl.addEventListener("change", onAvatarFileSelected);
+    }
+});
+
+window.onConversationSelectedForContacts = function (userId, phone = null, name = null, companyId) {
+    console.log("📇 Conversación seleccionada → cargar contacto:", userId, companyId);
+
+    currentContactUserId = userId;
+    currentContactCompanyId = companyId;
+
+    loadContactProfile(userId, phone, name, companyId);
+};

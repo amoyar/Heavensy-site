@@ -1,0 +1,702 @@
+<!-- CONVERSACIONES PAGE - DISEÑO PROFESIONAL MEJORADO -->
+<div class="h-screen flex bg-gray-50 overflow-hidden">
+
+  <!-- COLUMNA 1: Sidebar de Conversaciones -->
+  <div class="w-60 flex-shrink-0 bg-white border-r border-gray-200  flex flex-col shadow-lg">
+
+    <!-- Header del Sidebar con título -->
+    <div class="px-3 py-2 border-b border-gray-200">
+      <div class="flex items-center gap-2 mb-2">
+        <div
+          class="w-7 h-7 rounded-lg bg-[#92acde] flex items-center justify-center">
+          <i class="fas fa-message text-[#c9dcef] text-sm"></i>
+        </div>
+        <h2 class="text-sm font-semibold text-gray-800">Conversaciones</h2>
+      </div>
+
+
+      <!-- Selector de Empresa -->
+      <div class="mb-3">
+        <!-- <label class="block text-xs font-medium text-gray-600 mb-1.5">
+          <i class="fas fa-building text-gray-400 text-xs"></i> Empresa
+        </label> -->
+        <select id="conversacionesCompanyFilter"
+          class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 focus:bg-white transition-all text-sm">
+          <option value="">Cargando empresas...</option>
+        </select>
+      </div>
+
+      <!-- Barra de búsqueda de contactos -->
+<!-- Buscador -->
+<div class="relative">
+  <input
+    type="text"
+    id="searchConversations"
+    placeholder="Buscar contacto..."
+    class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 focus:bg-white transition-all text-sm"
+  />
+  <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+</div>
+
+<!-- Filtros rápidos (chips) -->
+<div class="flex gap-1.5 mt-2 overflow-x-auto pb-1" id="filterChipsContainer" style="scrollbar-width:2px;">
+  
+  <button class="filter-chip active flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="all">
+    Todos
+    <span class="filter-count text-[9px] px-1 rounded-full bg-white/30 leading-none"></span>
+  </button>
+
+  <button class="filter-chip flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="unread">
+    No leídos
+    <span class="filter-count text-[9px] px-1 rounded-full bg-gray-200 leading-none"></span>
+  </button>
+
+  <button class="filter-chip flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="no_reply">
+    Sin responder
+    <span class="filter-count text-[9px] px-1 rounded-full bg-gray-200 leading-none"></span>
+  </button>
+
+  <button class="filter-chip flex items-center justify-center gap-1 px-2 h-5 rounded-full text-[11px] leading-none whitespace-nowrap transition-all flex-shrink-0" data-filter="ia_off">
+    IA Off
+    <span class="filter-count text-[9px] px-1 rounded-full bg-gray-200 leading-none"></span>
+  </button>
+
+</div>
+
+
+<!-- Filtros avanzados (colapsable) -->
+<button id="advancedFiltersToggle" onclick="toggleAdvancedFilters()"
+  class="w-full flex items-center justify-between mt-1.5 px-2 py-1 text-[10px] text-gray-400 hover:text-gray-600 transition-all">
+  <span class="flex items-center gap-1">
+    <i class="fas fa-sliders-h"></i> Filtros avanzados
+  </span>
+  <i id="advancedFiltersIcon" class="fas fa-chevron-down text-[8px] transition-transform"></i>
+</button>
+
+<div id="advancedFiltersPanel" class="hidden mt-1 mx-1 p-2 bg-gray-50 rounded-xl space-y-2 border border-gray-100">
+  <!-- Por Plan -->
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Plan</span>
+    <div class="flex gap-1 mt-1 flex-wrap" id="planFilters">
+      <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-purple-100 text-purple-700 font-semibold transition-all" data-plan="">Todos</button>
+      <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Premium">Premium</button>
+      <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Basic">Basic</button>
+      <button class="plan-filter-chip px-2 py-0.5 rounded-full text-[10px] bg-white text-gray-500 border border-gray-200 hover:bg-gray-100 transition-all" data-plan="Free">Free</button>
+    </div>
+  </div>
+  <!-- Por Tags (dinámico) -->
+  <div>
+    <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Tags</span>
+    <div class="flex gap-1 mt-1 flex-wrap" id="tagFilters">
+      <!-- Se llena dinámicamente desde JS -->
+    </div>
+  </div>
+  <!-- Limpiar -->
+  <button id="clearAdvancedFilters" onclick="clearAdvancedFilters()" class="hidden text-[10px] text-red-400 hover:text-red-600 transition-all">
+    <i class="fas fa-times"></i> Limpiar filtros
+  </button>
+</div>
+
+    </div>
+   
+    <div class="flex-1 overflow-y-auto bg-white" id="conversationsList">
+      <!-- JS inyecta las conversaciones aquí -->
+    </div>
+
+    <!-- Footer con contador -->
+    <div class="px-3 py-1.5 border-t border-gray-100 bg-gray-50">
+      <span id="conversationsCounter" class="text-[10px] text-gray-400"></span>
+    </div>
+
+  </div>
+
+
+  <!-- COLUMNA 2: Área de Chat Central -->
+  <div class="flex-1 bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col overflow-hidden">
+
+
+
+    <!-- Header del Chat (Altura optimizada) -->
+    <!-- Header del Chat -->
+<div id="chatHeader" class="bg-white border-b border-gray-200 px-4 py-1.5 shadow-sm z-10 h-12 flex items-center hidden">
+
+  <div class="flex items-center justify-between w-full">
+    <div class="flex items-center gap-2">
+
+      <!-- AVATAR DINÁMICO -->
+      <div class="relative">
+        <div id="chatHeaderAvatar" class="w-8 h-8 rounded-full overflow-hidden"></div>
+        <div
+          class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-sm">
+        </div>
+      </div>
+
+      <!-- NOMBRE Y TELÉFONO -->
+      <div>
+        <h3 id="chatHeaderName" class="font-bold text-gray-900 text-sm">—</h3>
+        <p id="chatHeaderPhone" class="text-[10px] text-gray-500">—</p>
+      </div>
+    </div>
+
+    <!-- BOTONES DERECHA -->
+    <div class="flex items-center gap-1">
+      <!-- IA Toggle Switch -->
+      <div id="iaToggleBtn" onclick="toggleIAForConversation()"
+        class="flex items-center gap-1 cursor-pointer select-none px-1.5 py-0.5 rounded-full transition-all bg-[#dbe4f0] hover:bg-[#c8d5e8]"
+        title="Desactivar respuestas automáticas de IA">
+        <i class="fas fa-robot text-[10px] text-[#5a7baa]"></i>
+        <div class="relative w-6 h-3.5 rounded-full bg-[#8faed4] transition-all">
+          <div id="iaToggleDot" class="absolute top-0.5 left-3 w-2.5 h-2.5 rounded-full bg-white shadow transition-all"></div>
+        </div>
+      </div>
+
+      <button id="toggleMessageOrder" onclick="toggleMessageOrder()"
+        class="p-2 hover:bg-blue-50 rounded-xl transition-all group" title="Cambiar orden">
+        <i class="fas fa-arrow-down-short-wide text-gray-500 group-hover:text-purple-600 text-sm"></i>
+      </button>
+      <button class="p-2 hover:bg-gray-100 rounded-xl transition-all">
+        <i class="fas fa-phone text-gray-500 text-sm"></i>
+      </button>
+      <button class="p-2 hover:bg-gray-100 rounded-xl transition-all">
+        <i class="fas fa-ellipsis-v text-gray-500 text-sm"></i>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+    <!-- Área de Mensajes (Ocupa todo el espacio disponible) -->
+  <div class="flex-1 overflow-y-auto p-3 chat-font" id="chatMessages">
+
+    </div>
+
+    <!-- Input de Mensaje (Pegado a la base y más bajo) -->
+    <div class="bg-gray-50 border-t border-gray-200 px-3 py-1 flex-shrink-0">
+
+      <div class="max-w-4xl mx-auto relative">
+        <!-- Preview de archivos adjuntos -->
+        <div id="attachmentPreview" class="hidden mb-2 bg-white rounded-xl p-2 border border-gray-200 shadow-sm">
+          <div
+            class="flex items-center gap-1 bg-white border border-gray-300 rounded-full px-3 py-1 focus-within:border-purple-400 transition-all shadow-sm">
+
+            <div id="previewContent" class="flex-1"></div>
+            <button onclick="clearAttachment()" class="p-1 hover:bg-gray-100 rounded-lg transition">
+              <i class="fas fa-times text-gray-500"></i>
+            </button>
+          </div>
+        </div>
+        <div id="messageErrorBubble" class="hidden mb-2">
+          <div class="inline-flex items-center gap-2 bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded-xl shadow-sm">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="messageErrorText">Debes escribir un mensaje o adjuntar un archivo</span>
+            <button onclick="hideMessageError()" class="ml-2 text-red-400 hover:text-red-600">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        <!-- Barra de entrada (Altura reducida py-1.0) -->
+         <!-- ============================= -->
+<!-- ============================= -->
+<!-- ⚡ Panel de Respuestas Rápidas -->
+<!-- ============================= -->
+<div id="quickRepliesPanel"
+  class="hidden absolute bottom-16 left-4 right-4 max-w-xl bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+    <div class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+      ⚡ Respuestas rápidas
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-[10px] text-gray-400 whitespace-nowrap">Ctrl + /</span>
+      <button id="qrCloseBtn" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Botones abrir/cerrar formulario -->
+  <div class="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
+    <button id="qrOpenFormBtn"
+      onclick="document.getElementById('qrFormWrapper').classList.remove('hidden'); document.getElementById('qrOpenFormBtn').classList.add('hidden'); document.getElementById('qrCloseFormBtn').classList.remove('hidden');"
+      class="flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-800 font-medium transition">
+      <i class="fas fa-plus text-[10px]"></i> Nueva respuesta
+    </button>
+    <button id="qrCloseFormBtn"
+      onclick="document.getElementById('qrFormWrapper').classList.add('hidden'); document.getElementById('qrCloseFormBtn').classList.add('hidden'); document.getElementById('qrOpenFormBtn').classList.remove('hidden');"
+      class="hidden flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-800 font-medium transition">
+      <i class="fas fa-times text-[10px]"></i> Cerrar
+    </button>
+  </div>
+
+  <!-- Formulario (oculto por defecto) -->
+  <div id="qrFormWrapper" class="hidden px-4 py-3 border-b border-gray-100 bg-gray-50">
+    <!-- Fila 1: shortcut + categoría -->
+    <div class="grid grid-cols-2 gap-2 mb-2">
+      <input id="qrFormShortcut" type="text" placeholder="/hola"
+        class="px-2 py-1 border border-gray-300 rounded-lg text-xs" />
+      <div class="relative">
+        <input id="qrFormCategory" type="text" placeholder="Selecciona Categoría o Ingresa nueva..." list="qrCategoryList" autocomplete="off"
+          class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs" />
+        <datalist id="qrCategoryList"></datalist>
+      </div>
+    </div>
+
+    <!-- Fila 2: toolbar de formato WA -->
+    <div class="flex items-center gap-1 mb-1 px-1">
+      <span class="text-[10px] text-gray-400 mr-1">Formato WA:</span>
+      <button type="button" onclick="qrFormatWrap('*')"
+        class="w-6 h-6 flex items-center justify-center rounded text-xs font-bold text-gray-600 hover:bg-gray-200 transition" title="Negrita (*texto*)">B</button>
+      <button type="button" onclick="qrFormatWrap('_')"
+        class="w-6 h-6 flex items-center justify-center rounded text-xs italic text-gray-600 hover:bg-gray-200 transition" title="Cursiva (_texto_)">I</button>
+      <button type="button" onclick="qrFormatWrap('~')"
+        class="w-6 h-6 flex items-center justify-center rounded text-xs line-through text-gray-600 hover:bg-gray-200 transition" title="Tachado (~texto~)">S</button>
+      <button type="button" onclick="qrFormatInsertNewline()"
+        class="w-6 h-6 flex items-center justify-center rounded text-xs text-gray-600 hover:bg-gray-200 transition" title="Salto de línea">↵</button>
+    </div>
+
+    <!-- Fila 3: textarea -->
+    <textarea id="qrFormText" rows="3" placeholder="Texto de la respuesta... (selecciona texto y usa los botones de formato)"
+      class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs resize-none focus:outline-none focus:border-purple-400"></textarea>
+
+    <div class="flex items-center justify-between mt-2">
+      <div class="text-[11px] text-gray-400" id="qrFormModeLabel">Modo: Crear</div>
+      <div class="flex gap-2">
+        <button id="qrFormCancelBtn"
+          onclick="document.getElementById('qrFormWrapper').classList.add('hidden'); document.getElementById('qrCloseFormBtn').classList.add('hidden'); document.getElementById('qrOpenFormBtn').classList.remove('hidden');"
+          class="px-3 py-1 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100">
+          Cancelar
+        </button>
+        <button id="qrFormSaveBtn"
+          class="px-3 py-1 text-xs rounded-lg bg-purple-600 text-white hover:bg-purple-700">
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Buscador -->
+  <div class="px-4 py-2 border-b border-gray-100">
+    <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5">
+      <i class="fas fa-search text-gray-400 text-sm"></i>
+      <input id="qrSearchInput" type="text" placeholder="Buscar respuesta..."
+        class="w-full bg-transparent text-sm outline-none" />
+    </div>
+  </div>
+
+  <!-- Categorías -->
+  <div id="qrCategories" class="px-4 py-2 flex gap-1.5 flex-wrap border-b border-gray-100"></div>
+
+  <!-- Lista -->
+  <div id="qrList" class="max-h-64 overflow-y-auto p-2 space-y-2"></div>
+</div>
+
+<div
+  class="flex items-center gap-1 bg-white border border-gray-300 rounded-full px-3 py-1.0 focus-within:border-purple-400 transition-all shadow-sm">
+
+  <!-- ⚡ Respuestas rápidas -->
+  <button id="quickRepliesBtn"
+    class="p-1.5 hover:bg-yellow-50 rounded-full transition-all flex-shrink-0"
+    title="Respuestas rápidas">
+    <i class="fas fa-bolt text-yellow-500 text-lg"></i>
+  </button>
+
+  <!-- Emoji -->
+  <!-- <button id="emojiBtn" class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0">
+    <i class="far fa-smile text-gray-400 text-lg"></i>
+  </button> -->
+
+  <button id="emojiBtn" class="text-gray-500 hover:text-purple-600">
+    <i class="fa-regular fa-face-smile"></i>
+  </button>
+
+  <input type="file" id="fileInput" class="hidden"
+    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip" onchange="handleFileSelect(event)" />
+
+  <!-- Adjuntar -->
+  <button onclick="document.getElementById('fileInput').click()"
+    class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0" title="Adjuntar">
+    <i class="fas fa-paperclip text-gray-400 text-lg"></i>
+  </button>
+
+  <!-- Input mensaje -->
+  <textarea id="messageInput" rows="1" placeholder="Escribe un mensaje..."
+    class="flex-1 bg-transparent focus:outline-none text-sm text-gray-900 placeholder-gray-400 resize-none leading-5"
+    style="max-height:60px; overflow-y:auto;"
+    oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,60)+'px';"
+    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+
+  <!-- Micrófono (grabar audio) -->
+  <button id="micButton"
+    onmousedown="startRecording()" onmouseup="stopRecording()"
+    ontouchstart="startRecording()" ontouchend="stopRecording()"
+    class="p-1.5 hover:bg-gray-100 rounded-full transition-all flex-shrink-0 group"
+    title="Mantener presionado para grabar audio">
+    <i id="micIcon" class="fas fa-microphone text-gray-400 group-hover:text-purple-500 text-sm"></i>
+  </button>
+
+  <!-- Preview de audio grabado -->
+  <div id="audioPreview" class="hidden items-center gap-1">
+    <audio id="audioPlayer" class="h-7" style="max-width:120px;" controls></audio>
+    <button onclick="clearAudioRecording()" class="p-1 text-red-400 hover:text-red-600" title="Descartar audio">
+      <i class="fas fa-times text-xs"></i>
+    </button>
+  </div>
+
+  <!-- Indicador de grabación -->
+  <div id="recordingIndicator" class="hidden items-center gap-1 px-2">
+    <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+    <span class="text-[10px] text-red-500 font-medium">Grabando...</span>
+  </div>
+
+  <!-- Enviar -->
+  <button id="sendButton" onclick="sendMessage()"
+    class="p-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-full transition-all shadow-md flex-shrink-0 active:scale-95">
+    <i class="fas fa-paper-plane text-xs"></i>
+  </button>
+</div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="sendSpinner" class="hidden ml-2">
+    <i class="fas fa-spinner fa-spin text-purple-600"></i>
+  </div>
+
+
+  <!-- COLUMNA 3: Panel de Contacto con bordes mejorados -->
+<!-- COLUMNA 3: Panel de Contacto -->
+<div id="contactPanel" class="w-64 bg-white border-l border-gray-200 flex flex-col overflow-y-auto overflow-x-hidden shadow-lg hidden">
+
+<!-- HEADER CONTACTO -->
+<div class="p-3 border-b border-gray-200 text-center flex flex-col items-center">
+
+  <div id="contactHeaderAvatar"
+       class="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center mb-2">
+  </div>
+
+  <input type="file" id="contactAvatarInput" class="hidden" accept="image/*" />
+
+  <h3 id="contactHeaderName" class="font-bold text-gray-900 text-sm mb-1">—</h3>
+
+  <div id="contactHeaderMeta" class="flex items-center justify-center gap-2 text-xs">
+  </div>
+
+  <!-- BOTON CONECTAR -->
+  <button id="connectPartnerBtn"
+    class="mt-2 flex items-center border border-gray-300 rounded-full gap-2 px-3 py-1.5 bg-gray-100 hover:bg-blue-50 text-gray-700 rounded-full text-xs transition-all shadow-sm">
+
+    <img src="assets/img/logo_no_socio.png"
+         class="w-6 h-6 object-contain">
+
+    <span>Conectar</span>
+
+  </button>
+
+</div>
+
+
+<!-- ============================= -->
+<!-- GRUPO CONTACTO -->
+<!-- ============================= -->
+
+<button onclick="toggleRightSection('contactGroup')"
+class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:bg-[#bdd0f7] transition-colors border-b border-[#b0c8f8]">
+<div class="flex items-center gap-2.5">
+  <i class="fas fa-user text-[#7D84C1] text-[13px] flex-shrink-0"></i>
+  <span class="text-xs font-extrabold text-[#7D84C1] uppercase tracking-wide">Contact · Lead</span>
+</div>
+<i id="contactGroupIcon" class="fas fa-chevron-down text-[10px] text-[#7D84C1]"></i>
+</button>
+
+
+<div id="contactGroup">
+
+
+<!-- INFORMACIÓN -->
+<div class="border-b border-gray-200">
+
+<button onclick="toggleRightSection('contactSection')"
+class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] transition-colors">
+<div class="flex items-center gap-2.5">
+  <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
+    <i class="fas fa-info-circle text-[#9961FF] text-[13px]"></i>
+  </div>
+  <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Información</span>
+</div>
+<i id="contactSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
+</button>
+
+
+<div id="contactSection">
+
+<div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
+
+<div class="bg-white border border-gray-100 rounded-lg p-3">
+
+<div class="flex items-center gap-2.5">
+
+<div class="w-9 h-9 rounded-lg bg-green-500 flex items-center justify-center">
+<i class="fab fa-whatsapp text-white"></i>
+</div>
+
+<div>
+<p id="contactPhone" class="text-sm font-bold text-gray-900">—</p>
+<p class="text-xs text-gray-500">Principal</p>
+</div>
+
+</div>
+</div>
+
+<div id="contactStatus"
+class="flex items-center gap-2 text-xs bg-gray-100 border border-gray-200 rounded-lg px-2.5 py-1.5">
+
+<div class="w-2 h-2 rounded-full bg-gray-400"></div>
+<span class="text-gray-600 font-semibold">Sin estado</span>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+
+<!-- EMBUDOS -->
+<div class="border-b border-gray-200">
+
+<button onclick="toggleRightSection('funnelsSection')"
+class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] transition-colors">
+<div class="flex items-center gap-2.5">
+  <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
+    <i class="fas fa-filter text-[#9961FF] text-[13px]"></i>
+  </div>
+  <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Embudos</span>
+  <span id="funnelsCounter" class="ml-2 text-[10px] bg-[#E1DEFF] text-[#9961FF] px-1.5 py-0.5 rounded-full font-semibold">0</span>
+</div>
+<i id="funnelsSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
+</button>
+
+
+<div id="funnelsSection" class="hidden">
+
+<div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+
+<div id="contactFunnelsContainer">
+<p class="text-xs text-gray-400">Sin embudos asignados</p>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- TAGS -->
+<div class="border-b border-gray-200">
+
+<button onclick="toggleRightSection('contactTagsSection')"
+class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] transition-colors">
+<div class="flex items-center gap-2.5">
+  <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
+    <i class="fas fa-tags text-[#9961FF] text-[13px]"></i>
+  </div>
+  <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Tags</span>
+  <span id="tagsCounter" class="ml-2 text-[10px] bg-[#E1DEFF] text-[#9961FF] px-1.5 py-0.5 rounded-full font-semibold">0</span>
+</div>
+<i id="contactTagsSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
+</button>
+
+
+<div id="contactTagsSection" class="hidden">
+
+<div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+
+<div id="contactTagsContainer" class="flex flex-wrap gap-1.5 mb-2.5"></div>
+
+<div class="flex items-center gap-1">
+
+<input id="newTagInput" type="text" placeholder="Nuevo tag..."
+class="flex-1 px-2 py-1 border border-gray-300 rounded-lg text-xs"/>
+
+<input id="newTagColor" type="color" value="#7c3aed"
+class="w-8 h-8 border border-gray-300 rounded-lg"/>
+
+<button onclick="addTag()"
+class="w-8 h-8 flex items-center justify-center bg-purple-600 text-white rounded-lg text-xs font-bold">
++
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- NOTAS -->
+<div class="border-b border-gray-200">
+
+<button onclick="toggleRightSection('notesSection')"
+class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] transition-colors">
+<div class="flex items-center gap-2.5">
+  <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
+    <i class="fas fa-sticky-note text-[#9961FF] text-[13px]"></i>
+  </div>
+  <span data-section="notes" class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Notas</span>
+  <span id="notesCounter" class="ml-2 text-[10px] bg-[#E1DEFF] text-[#9961FF] px-1.5 py-0.5 rounded-full font-semibold">0</span>
+</div>
+<i id="notesSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
+</button>
+
+
+<div id="notesSection" class="hidden">
+
+<div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+
+<div id="contactNotesContainer" class="space-y-2 mb-2"></div>
+
+<textarea id="newNoteInput"
+placeholder="Escribir nota..."
+class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs mb-2"></textarea>
+
+<button onclick="addNote()"
+class="w-full px-3 py-1 bg-purple-600 text-white rounded-lg text-xs font-bold">
+Agregar nota
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- SEGUIMIENTO -->
+<div class="border-b border-gray-200">
+
+<button onclick="toggleRightSection('seguimientoSection')"
+class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] transition-colors">
+<div class="flex items-center gap-2.5">
+  <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
+    <i class="fas fa-clock text-[#9961FF] text-[13px]"></i>
+  </div>
+  <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Seguimiento</span>
+  <span id="seguimientoCounter" class="ml-2 text-[10px] bg-[#E1DEFF] text-[#9961FF] px-1.5 py-0.5 rounded-full font-semibold" style="display:none;">0</span>
+</div>
+<i id="seguimientoSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
+</button>
+
+<div id="seguimientoSection" class="hidden">
+  <div class="bg-gray-50 rounded-xl px-2.5 pt-2.5 pb-1 shadow-sm border border-gray-100">
+    <div id="contactSeguimientoContainer">
+      <p class="text-xs text-gray-400 px-1">Selecciona un contacto.</p>
+    </div>
+  </div>
+</div>
+
+</div>
+
+
+</div>
+
+
+<!-- ============================= -->
+<!-- GRUPO SERVICIOS -->
+<!-- ============================= -->
+
+<button onclick="toggleRightSection('servicesGroup')"
+class="w-full flex items-center justify-between px-4 py-2.5 bg-[#C9D9FF] hover:bg-[#bdd0f7] transition-colors border-b border-[#b0c8f8] mt-1">
+<div class="flex items-center gap-2.5">
+  <i class="fas fa-bolt text-[#7D84C1] text-[13px] flex-shrink-0"></i>
+  <span class="text-xs font-extrabold text-[#7D84C1] uppercase tracking-wide">Mis Servicios</span>
+</div>
+<i id="servicesGroupIcon" class="fas fa-chevron-down text-[10px] text-[#7D84C1]"></i>
+</button>
+
+
+<div id="servicesGroup">
+
+  <!-- ============================= -->
+  <!-- AGENDA (hermana de SERVICIOS) -->
+  <!-- ============================= -->
+  <div class="border-b border-gray-200">
+
+    <button onclick="toggleRightSection('contactAgendaSection')"
+      class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] transition-colors">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-calendar-alt text-[#9961FF] text-[13px]"></i>
+        </div>
+        <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Agenda</span>
+      </div>
+      <i id="contactAgendaSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
+    </button>
+
+    <div id="contactAgendaSection" class="hidden">
+      <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+        <div id="contactAgendaContainer">
+          <p class="text-xs text-gray-400 px-1">Selecciona un contacto.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============================= -->
+  <!-- CALENDARIO DE CITAS          -->
+  <!-- ============================= -->
+  <div class="border-b border-gray-200">
+
+    <button onclick="toggleRightSection('contactCalendarSection'); calToggleLoad();"
+      class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[#dce8ff] transition-colors">
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-calendar-check text-[#9961FF] text-[13px]"></i>
+        </div>
+        <span class="font-semibold text-gray-700 text-xs uppercase tracking-wider">Calendario</span>
+      </div>
+      <i id="contactCalendarSectionIcon" class="fas fa-chevron-right text-xs text-gray-400"></i>
+    </button>
+
+    <div id="contactCalendarSection" class="hidden">
+      <div class="bg-gray-50 rounded-xl p-2.5 shadow-sm border border-gray-100">
+        <div id="contactCalendarContainer">
+          <p class="text-xs text-gray-400 px-1">Selecciona un contacto.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+</div>
+
+  <!-- mejorar los modales de confirmacion -->
+  <div id="qrToastContainer" class="fixed top-5 right-5 z-50 space-y-3"></div>
+
+  <!-- Modal confirmacion -->
+  <div id="qrConfirmModal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+  <div class="bg-white rounded-2xl shadow-xl w-[380px] p-6">
+    <h3 class="text-lg font-semibold text-gray-800 mb-3">Confirmar acción</h3>
+    <p id="qrConfirmMessage" class="text-sm text-gray-600 mb-6"></p>
+
+    <div class="flex justify-end gap-3">
+      <button id="qrConfirmCancel"
+              class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm">
+        Cancelar
+      </button>
+
+      <button id="qrConfirmAccept"
+              class="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm">
+        Eliminar
+      </button>
+    </div>
+  </div>
+</div>
