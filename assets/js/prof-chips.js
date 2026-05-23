@@ -25,7 +25,15 @@ function _calRenderProfChips() {
     <span class="prof-chip-name">Todos</span>
   </div>`;
 
-  calResources.forEach((r, i) => {
+  // Filtrar profesionales por servicio activo
+  const _visibleProfIds = calSvcFilter
+    ? new Set(Object.values(calServiceMap)
+        .filter(s => s._id === calSvcFilter ||
+          Object.entries(calServiceMap).some(([id,sv]) => id === calSvcFilter && sv.name === s.name))
+        .map(s => s.resource_id))
+    : null;
+
+  calResources.filter(r => !_visibleProfIds || _visibleProfIds.has(r._id)).forEach((r, i) => {
     const color = _PROF_COLORS[i % _PROF_COLORS.length];
     html += `<div class="prof-chip" data-id="${r._id}" data-name="${r.name.toLowerCase()}"
                onclick="_calSelProfChip(this)">
@@ -69,6 +77,7 @@ function _calSelProfChip(el) {
   calProfFilter = el.dataset.id || null;
   _calUpdateCrearHoraBtn();
   calRender();
+  if (document.getElementById('exc-panel')?.classList.contains('open')) calRenderExcList();
 }
 
 function _calProfSearch(q) {

@@ -2,14 +2,21 @@
 .cal-page { display:flex; flex-direction:column; height:100%; overflow:hidden; background:#f5f5f7; }
 
 /* ── BARRA DE PROFESIONALES ── */
-.cal-prof-bar { background:#fff; border-bottom:1px solid #e4e9f5; padding:7px 18px; display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; }
+.cal-prof-bar { background:#fff; border-bottom:1px solid #e4e9f5; padding:4px 18px; display:flex; flex-direction:column; gap:0; flex-shrink:0; }
+.cal-filter-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:0.5px solid #f0f0f5; }
+.cal-filter-row:last-child { border-bottom:none; }
+.cal-filter-row-label { font-size:9px; font-weight:700; color:#9BA3C0; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; flex-shrink:0; min-width:72px; }
+.cal-filter-search-wrap { display:flex; align-items:center; gap:5px; border:1px solid #e4e9f5; border-radius:20px; padding:4px 10px; flex-shrink:0; min-width:150px; background:#fff; }
+.cal-filter-search-wrap:focus-within { border-color:#9961FF; }
+.cal-filter-search-icon { font-size:11px; color:#9BA3C0; flex-shrink:0; }
+.cal-filter-search-input { border:none; outline:none; font-size:11px; font-family:'DM Sans',sans-serif; color:#374151; width:110px; background:transparent; }
+.cal-filter-chips { display:flex; gap:6px; flex:1; overflow-x:auto; scrollbar-width:none; align-items:center; }
+.cal-filter-chips::-webkit-scrollbar { display:none; }
 .cal-prof-chips { display:flex; flex-wrap:wrap; gap:6px; flex:1; }
 .prof-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 13px; border-radius:20px; border:1.5px solid #e4e9f5; background:#fff; font-size:12px; font-weight:500; color:#6b7194; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .15s; white-space:nowrap; }
 .prof-chip:hover { border-color:#9961FF; color:#9961FF; }
 .prof-chip-sel { background:#f5f0ff; border-color:#9961FF; color:#9961FF; font-weight:700; }
 .prof-chip-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-.cal-prof-search { border:1px solid #e4e9f5; border-radius:20px; padding:5px 13px; font-size:12px; color:#374151; outline:none; font-family:'DM Sans',sans-serif; width:180px; flex-shrink:0; }
-.cal-prof-search:focus { border-color:#9961FF; }
 
 /* ── TOOLBAR ── */
 .cal-toolbar { background:#fff; border-bottom:1px solid #e4e9f5; padding:9px 22px; display:flex; align-items:center; gap:10px; flex-shrink:0; flex-wrap:wrap; }
@@ -493,14 +500,15 @@
   display: none; position: fixed; z-index: 9999;
   background: #fff; border-radius: 12px; border: 1px solid #e4e9f5;
   box-shadow: 0 8px 32px rgba(15,25,80,0.14); padding: 10px;
+  width: fit-content;
 }
 .exc-tp-dropdown.open { display: flex; gap: 6px; }
-.exc-tp-col { width: 44px; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; align-items: center; }
+.exc-tp-col { width: 42px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
 .exc-tp-col-label { text-align: center; width: 100%; font-size: 9px; font-weight: 700; color: #9BA3C0; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
 .exc-tp-scroll { max-height: 160px; overflow-y: auto; scrollbar-width: none; width: 100%; }
 .exc-tp-scroll::-webkit-scrollbar { display: none; }
 
-.exc-tp-item { text-align: center; width: 100%; font-size: 12px; font-weight: 500; color: #374151; padding: 5px 4px; border-radius: 7px; cursor: pointer; transition: all .12s; }
+.exc-tp-item { display: flex; justify-content: center; align-items: center; width: 100%; font-size: 12px; font-weight: 500; color: #374151; padding: 5px 4px; border-radius: 7px; cursor: pointer; transition: all .12s; }
 .exc-tp-item:hover { background: #f5f0ff; color: #9961FF; }
 .exc-tp-item.active { background: #9961FF; color: #fff; font-weight: 700; }
 .cal-status-chip-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:72px; }

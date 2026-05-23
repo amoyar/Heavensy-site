@@ -17,11 +17,28 @@
     </div>
   </div>
 
-  <!-- FILTRO PROFESIONALES (solo aparece si hay más de 1) -->
+  <!-- FILTROS: SERVICIO + PROFESIONAL -->
   <div id="cal-prof-bar" style="display:none" class="cal-prof-bar">
-    <div id="cal-prof-chips" class="cal-prof-chips"></div>
-    <input id="cal-prof-search" class="cal-prof-search" type="text"
-           placeholder="Buscar profesional..." oninput="_calProfSearch(this.value)">
+    <!-- Fila 1: Servicio -->
+    <div class="cal-filter-row">
+      <span class="cal-filter-row-label">SERVICIO</span>
+      <div class="cal-filter-search-wrap">
+        <i class="fas fa-search cal-filter-search-icon"></i>
+        <input id="cal-svc-search" class="cal-filter-search-input" type="text"
+               placeholder="Buscar servicio…" oninput="_calSvcSearch(this.value)">
+      </div>
+      <div id="cal-svc-chips" class="cal-filter-chips"></div>
+    </div>
+    <!-- Fila 2: Profesional -->
+    <div class="cal-filter-row">
+      <span class="cal-filter-row-label">PROFESIONAL</span>
+      <div class="cal-filter-search-wrap">
+        <i class="fas fa-search cal-filter-search-icon"></i>
+        <input id="cal-prof-search" class="cal-filter-search-input" type="text"
+               placeholder="Buscar profesional…" oninput="_calProfSearch(this.value)">
+      </div>
+      <div id="cal-prof-chips" class="cal-filter-chips"></div>
+    </div>
   </div>
 
   <!-- CALENDAR BODY -->
@@ -259,7 +276,24 @@
         </div>
       </div>
 
-      <div class="form-group"><label>Motivo</label><input type="text" id="exc-reason" placeholder="Ej: Feriado, capacitación..."></div>
+      <div class="form-group">
+        <label>Motivo</label>
+        <input type="hidden" id="exc-reason" value="Sin motivo">
+        <div class="exc-custom-select-wrap">
+          <div class="exc-custom-select-trigger" id="exc-reason-trigger" onclick="_excToggleSelect('exc-reason-drop','exc-reason-trigger')">
+            <span id="exc-reason-label">Sin motivo</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M0 0l5 6 5-6z" fill="#9BA3C0"/></svg>
+          </div>
+          <div class="exc-custom-dropdown" id="exc-reason-drop">
+            <div class="exc-custom-option" onclick="_excSelReason('Sin motivo')">Sin motivo</div>
+            <div class="exc-custom-option" onclick="_excSelReason('Vacaciones')">Vacaciones</div>
+            <div class="exc-custom-option" onclick="_excSelReason('Feriado')">Feriado</div>
+            <div class="exc-custom-option" onclick="_excSelReason('Enfermedad')">Enfermedad</div>
+            <div class="exc-custom-option" onclick="_excSelReason('Capacitación')">Capacitación</div>
+            <div class="exc-custom-option" onclick="_excSelReason('Otro')">Otro</div>
+          </div>
+        </div>
+      </div>
       <button class="btn-save" style="width:100%;margin-top:4px" onclick="addException()">Agregar bloqueo</button>
     </div>
   </div>

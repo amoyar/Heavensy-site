@@ -23,7 +23,7 @@ let _calResourceId  = null;
 let _calYear        = null;
 let _calMonth       = null;  // 0-11
 let _calSelected    = null;  // 'YYYY-MM-DD'
-let _calActiveFilter     = null;  // status filtrado, null = todos
+let _calActiveFilter     = new Set();  // estados filtrados, vacío = todos
 let _calSpecialistFilter = null;  // resource_id filtrado, null = todos
 let _calServiceFilter    = null;  // service name (lowercase) filtrado, null = todos
 let _calAppointments = [];   // todas las citas del mes cargado
@@ -40,7 +40,8 @@ const _CAL_STATUS = {
     cancelled: { label: 'Cancelada',  color: '#ef4444', bg: '#fef2f2', dot: '#ef4444' },
     completed: { label: 'Completada', color: '#6b7280', bg: '#f9fafb', dot: '#9ca3af' },
     no_show:   { label: 'No asistió', color: '#8b5cf6', bg: '#faf5ff', dot: '#8b5cf6' },
-    expired:   { label: 'Expirada',   color: '#d1d5db', bg: '#f9fafb', dot: '#d1d5db' },
+    expired:      { label: 'Expirada',    color: '#d1d5db', bg: '#f9fafb', dot: '#d1d5db' },
+    rescheduled:  { label: 'Reagendada',  color: '#f7a325', bg: '#fffbeb', dot: '#f7a325' },
 };
 
 
@@ -163,7 +164,7 @@ function _calBuild(container) {
     const filteredAppts = _calAppointments.filter(a => {
         if (_calSpecialistFilter && a.resource_id !== _calSpecialistFilter) return false;
         if (_calServiceFilter && (a.service_name || a.service_id || '').toLowerCase().trim() !== _calServiceFilter) return false;
-        if (_calActiveFilter  && a.status !== _calActiveFilter) return false;
+        if (_calActiveFilter.size > 0 && !_calActiveFilter.has(a.status)) return false;
         return true;
     });
     filteredAppts.forEach(a => {
@@ -292,17 +293,17 @@ function _calBuild(container) {
         statusBar.className = 'cal-summary';
         statusBar.style.marginBottom = '0';
         const allBtn = document.createElement('button');
-        allBtn.className = 'cal-filter-btn' + (_calActiveFilter === null ? ' cal-filter-btn--active' : '');
+        allBtn.className = 'cal-filter-btn' + (_calActiveFilter.size === 0 ? ' cal-filter-btn--active' : '');
         allBtn.style.cssText = '--filter-color:#374151;--filter-bg:#f3f4f6;';
         allBtn.textContent = 'Todos';
-        allBtn.addEventListener('click', () => { _calActiveFilter = null; _calBuild(container); });
+        allBtn.addEventListener('click', () => { _calActiveFilter = new Set(); _calBuild(container); });
         statusBar.appendChild(allBtn);
         Object.entries(_CAL_STATUS).forEach(([key, cfg]) => {
             const btn = document.createElement('button');
-            btn.className = 'cal-filter-btn' + (_calActiveFilter === key ? ' cal-filter-btn--active' : '');
+            btn.className = 'cal-filter-btn' + (_calActiveFilter.has(key) ? ' cal-filter-btn--active' : '');
             btn.style.cssText = `--filter-color:${cfg.color};--filter-bg:${cfg.bg};`;
             btn.innerHTML = `<span class="cal-chip-dot" style="background:${cfg.dot}"></span>${cfg.label}`;
-            btn.addEventListener('click', () => { _calActiveFilter = _calActiveFilter === key ? null : key; _calBuild(container); });
+            btn.addEventListener('click', () => { if (_calActiveFilter.has(key)) { _calActiveFilter.delete(key); } else { _calActiveFilter.add(key); } _calBuild(container); });
             statusBar.appendChild(btn);
         });
         content.appendChild(statusBar);
@@ -452,7 +453,7 @@ function _calBuild(container) {
         let selectedAppts = (byDate[_calSelected] || []).sort((a,b) => a.start.localeCompare(b.start));
         if (_calSpecialistFilter) selectedAppts = selectedAppts.filter(a => a.resource_id === _calSpecialistFilter);
         if (_calServiceFilter)    selectedAppts = selectedAppts.filter(a => (a.service_name || a.service_id || '').toLowerCase().trim() === _calServiceFilter);
-        if (_calActiveFilter)     selectedAppts = selectedAppts.filter(a => a.status === _calActiveFilter);
+        if (_calActiveFilter.size > 0) selectedAppts = selectedAppts.filter(a => _calActiveFilter.has(a.status));
         const panel = _calBuildDayPanel(_calSelected, selectedAppts);
         // Fade-in suave
         panel.style.opacity   = '0';
