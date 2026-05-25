@@ -19,6 +19,7 @@ let ciMentionIndex  = -1;     // índice en el popup de menciones
 let ciIsAdmin       = false;
 let ciTypingTimeout = null;
 const _ciRenderedMsgIds = new Set(); // deduplicación de mensajes
+const _ciSentBuffer = []; // buffer anti-eco: [{text, ts}]
 let ciWasTyping     = false;
 let ciTotalUnread   = 0;
 
@@ -114,7 +115,10 @@ async function ciConnectSocket() {
 
   // Mensaje general recibido
   ciSocket.on('internal_message', (msg) => {
-    if (msg.from_id === ciCurrentUser.id) return; // ya renderizado localmente en ciEnviar
+    // Filtrar eco propio: buscar en buffer de mensajes recién enviados
+    const now = Date.now();
+    const idx = _ciSentBuffer.findIndex(s => s.text === msg.text && now - s.ts < 5000);
+    if (idx !== -1) { _ciSentBuffer.splice(idx, 1); return; }
     ciReceiveMessage('general', msg);
   });
 
@@ -396,6 +400,9 @@ function ciEnviar() {
     ciStopTyping();
     return;
   }
+
+  // Registrar en buffer anti-eco antes de emitir
+  _ciSentBuffer.push({ text: msg.text, ts: Date.now() });
 
   if (ciActiveChat === 'general') {
     ciSocket.emit('internal_message', msg);
