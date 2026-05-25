@@ -14,6 +14,11 @@ async function loadLayout() {
     initSidebarToggle();
     initSidebarActive();
     if (typeof loadSidebarCompanyName === 'function') loadSidebarCompanyName();
+    // Mostrar ojo de vista si es Super Admin Heavensy
+    if (window.IS_HEAVENSY) {
+      const btn = document.getElementById('nav-view-toggle');
+      if (btn) btn.style.display = 'inline-flex';
+    }
   } catch (e) {
     console.error('❌ Error cargando layout', e);
   }
@@ -39,7 +44,7 @@ function loadTopbarUsername() {
 
     // Nombre en navbar
     const nameEl = document.getElementById('nav-username');
-    if (nameEl) nameEl.textContent = fullName.split(' ')[0]; // Solo primer nombre
+    if (nameEl) nameEl.textContent = fullName.split(' ')[0];
 
     // Avatar con iniciales
     const avatarEl = document.getElementById('nav-avatar');

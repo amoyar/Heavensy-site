@@ -6,8 +6,6 @@
 
 /* ── Panel bar ── */
 .seg-der-panel {
-  border-top: 1px solid #c4b5fd;
-  border-radius: 10px 10px 0 0;
   background: #fff;
 }
 .seg-der-bar {

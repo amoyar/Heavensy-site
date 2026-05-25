@@ -13,21 +13,13 @@ async function loadPage(page) {
     appEl.innerHTML = html;
 
     // Ajustar main según página
-    const fullscreenPages = ['conversaciones', 'seguimiento', 'calendario', 'configuracion', 'mipagina', 'embudos'];
-    const noPaddingPages  = ['busqueda_heavensy'];
-
+    const fullscreenPages = ['conversaciones', 'seguimiento', 'calendario', 'configuracion', 'mipagina', 'embudos', 'chat_interno', 'roles', 'companies', 'mensajes'];
     if (fullscreenPages.includes(page)) {
       appEl.style.padding        = '0';
       appEl.style.overflow       = 'hidden';
       appEl.style.height         = 'calc(100dvh - 54px)';
       appEl.style.display        = 'flex';
       appEl.style.flexDirection  = 'column';
-    } else if (noPaddingPages.includes(page)) {
-      appEl.style.padding        = '0';
-      appEl.style.overflow       = 'auto';
-      appEl.style.height         = '';
-      appEl.style.display        = '';
-      appEl.style.flexDirection  = '';
     } else {
       appEl.style.padding        = '0.5rem';
       appEl.style.overflow       = 'auto';
@@ -80,6 +72,7 @@ function setupMobileConversaciones() {
   const chatHeader = document.getElementById('chatHeader');
   if (!wrapper || !chatHeader) return;
 
+  // Observar cuando chatHeader se hace visible → conversación seleccionada
   const observer = new MutationObserver(() => {
     if (isMobile() && !chatHeader.classList.contains('hidden')) {
       wrapper.classList.add('mobile-chat-active');
@@ -87,26 +80,31 @@ function setupMobileConversaciones() {
   });
   observer.observe(chatHeader, { attributes: true, attributeFilter: ['class'] });
 
+  // Botón ‹ → volver a la lista en mobile
   document.getElementById('btnToggleLeft')?.addEventListener('click', () => {
     if (isMobile()) {
       wrapper.classList.remove('mobile-chat-active', 'mobile-contact-open');
     }
   });
 
+  // Botón › → abrir/cerrar panel contacto en mobile
   document.getElementById('btnToggleRight')?.addEventListener('click', () => {
     if (isMobile()) {
       wrapper.classList.toggle('mobile-contact-open');
     }
   });
 
+  // Overlay oscuro → cerrar panel contacto
   document.getElementById('mobileContactOverlay')?.addEventListener('click', () => {
     wrapper.classList.remove('mobile-contact-open');
   });
 
+  // btnCloseContactPanel → cerrar panel contacto en mobile
   document.getElementById('btnCloseContactPanel')?.addEventListener('click', () => {
     if (isMobile()) wrapper.classList.remove('mobile-contact-open');
   });
 
+  // Al rotar/redimensionar: limpiar clases mobile si pasa a desktop
   window.addEventListener('resize', () => {
     if (!isMobile()) {
       wrapper.classList.remove('mobile-chat-active', 'mobile-contact-open');
@@ -118,6 +116,7 @@ function setupMobileConversaciones() {
 // MOBILE SEGUIMIENTO — Paneles colapsables
 // ============================================
 function setupMobileSeguimiento() {
+  // Al rotar de móvil a desktop — restaurar paneles abiertos
   window.addEventListener('resize', () => {
     const isMobile = window.innerWidth < 768;
     if (!isMobile) {

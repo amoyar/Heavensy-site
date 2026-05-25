@@ -186,6 +186,57 @@ function segSetTab(id, el) {
 }
 
 /* ─────────────────────────────────────────
+   ARCHIVADOR COLAPSAR
+───────────────────────────────────────── */
+function segArchToggle() {
+  var bar  = document.querySelector('.seg-arch-bar');
+  var chev = document.getElementById('seg-arch-chev');
+  if (!bar) return;
+  var collapsed = bar.classList.toggle('collapsed');
+  if (chev) chev.style.transform = collapsed ? 'rotate(180deg)' : '';
+}
+
+/* ─────────────────────────────────────────
+   ARCHIVADOR (TL / Evolución / Derivaciones)
+───────────────────────────────────────── */
+function segArchTab(panel, el) {
+  document.querySelectorAll('.seg-arch-tab').forEach(function(t) { t.classList.remove('active'); });
+  if (el) el.classList.add('active');
+
+  var tlPanel  = document.getElementById('seg-arch-panel-tl');
+  var evoPanel = document.getElementById('seg-evo-panel');
+  var derPanel = document.getElementById('seg-der-panel');
+
+  if (tlPanel)  tlPanel.classList.add('seg-hidden');
+  if (evoPanel) evoPanel.classList.add('seg-hidden');
+  if (derPanel) derPanel.classList.add('seg-hidden');
+
+  if (panel === 'tl' && tlPanel) {
+    tlPanel.classList.remove('seg-hidden');
+  }
+
+  if (panel === 'evo' && evoPanel) {
+    evoPanel.classList.remove('seg-hidden');
+    var evoContent = document.getElementById('seg-evo-content');
+    if (evoContent) evoContent.classList.remove('seg-hidden');
+    _segEvoVisible = true;
+    if (SEG.clienteId) segCargarEvolucion();
+  }
+
+  if (panel === 'der' && derPanel) {
+    derPanel.classList.remove('seg-hidden');
+    // seg-der-content puede tener seg-hidden si antes se colapsó vía segToggleDer
+    var derContent = document.getElementById('seg-der-content');
+    if (derContent) derContent.classList.remove('seg-hidden');
+    if (SEG.clienteId && typeof segDerCargar === 'function') {
+      if (typeof _segDer !== 'undefined' && !_segDer.panelChips.length && !_segDer.profesionales.length) {
+        segDerCargar();
+      }
+    }
+  }
+}
+
+/* ─────────────────────────────────────────
    TIMELINE TOGGLE
 ───────────────────────────────────────── */
 function segToggleTL() {

@@ -1,344 +1,694 @@
 <!-- COMPANIES PAGE — Heavensy -->
 <div id="companiesRoot" class="companies-root">
 
-  <!-- ── VISTA LISTADO ──────────────────────────────── -->
-  <div class="view active" id="view-list">
-  <div class="list-content">
-
-    <div class="companies-header">
-      <div>
-        <div class="companies-title">Empresas</div>
-        <div class="companies-subtitle">Administración de empresas del sistema</div>
-      </div>
-      <button class="btn-primary" onclick="openWizard(null)">
-        <i class="fas fa-plus"></i> Nueva empresa
-      </button>
-    </div>
-
-    <!-- STATS -->
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-label">Total empresas</div>
-        <div class="stat-val" id="st-total">0</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Activas</div>
-        <div class="stat-val green" id="st-active">0</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Inactivas</div>
-        <div class="stat-val red" id="st-inactive">0</div>
-      </div>
-    </div>
-
-    <!-- FILTROS -->
-    <div class="filters-bar">
-      <input class="filter-input" id="f-search" placeholder="Buscar empresa..." oninput="filterCompanies()" />
-      <select class="filter-select" id="f-plan" onchange="filterCompanies()">
-        <option value="">Todos los planes</option>
-        <option value="basic">Basic</option>
-        <option value="pro">Pro</option>
-        <option value="enterprise">Enterprise</option>
-      </select>
-      <select class="filter-select" id="f-status" onchange="filterCompanies()">
-        <option value="">Todos los estados</option>
-        <option value="active">Activa</option>
-        <option value="inactive">Inactiva</option>
-      </select>
-      <select class="filter-select" id="f-template" onchange="filterCompanies()">
-        <option value="">Todos los rubros</option>
-        <option value="salud">🏥 Salud</option>
-        <option value="cabanas">🏕️ Cabañas</option>
-        <option value="cowork">💼 Cowork</option>
-        <option value="fitness">💪 Fitness</option>
-        <option value="educacion">📚 Academia</option>
-        <option value="propiedades">🏠 Propiedades</option>
-      </select>
-      <button class="btn-secondary" onclick="clearCompanyFilters()">
-        <i class="fas fa-times"></i> Limpiar
-      </button>
-    </div>
-
-    <!-- TABLA -->
-    <div class="table-wrap">
-      <table class="companies-table">
-        <thead>
-          <tr>
-            <th>Empresa</th>
-            <th>Rubro</th>
-            <th>Plan</th>
-            <th>WhatsApp</th>
-            <th>Activo</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="companies-tbody">
-          <!-- Se llena dinámicamente -->
-        </tbody>
-      </table>
-      <div id="companies-empty" class="companies-empty" style="display:none">
-        <i class="fas fa-building"></i>
-        <p>No hay empresas que coincidan con los filtros.</p>
-      </div>
-      <div id="companies-loading" class="companies-loading" style="display:none">
-        <i class="fas fa-spinner fa-spin"></i> Cargando empresas...
-      </div>
-    </div>
-
+  <!-- ══════════════════════════════════════════
+       BARRA DE TABS PRINCIPAL
+  ══════════════════════════════════════════ -->
+  <div class="cp-main-tabs">
+    <button class="cp-main-tab active" id="cp-tab-empresas" onclick="cpSwitchTab('empresas', this)">
+      <i class="fas fa-building"></i> Empresas
+    </button>
+    <button class="cp-main-tab" id="cp-tab-usuarios" onclick="cpSwitchTab('usuarios', this)">
+      <i class="fas fa-users"></i> Usuarios
+    </button>
+    <button class="cp-main-tab" id="cp-tab-roles" onclick="cpSwitchTab('roles', this)">
+      <i class="fas fa-shield-alt"></i> Roles y Permisos
+    </button>
+    <button class="cp-main-tab hvy-only" id="cp-tab-catastro" onclick="cpSwitchTab('catastro', this)">
+      <i class="fas fa-table"></i> Catastro
+    </button>
   </div>
-  </div><!-- /view-list -->
 
-  <!-- ── VISTA WIZARD ───────────────────────────────── -->
-  <div class="view" id="view-wizard">
+  <!-- ══════════════════════════════════════════
+       PANEL 1 — EMPRESAS
+  ══════════════════════════════════════════ -->
+  <div class="cp-panel active" id="cp-panel-empresas">
 
-    <!-- Topbar wizard -->
-    <div class="wizard-topbar">
-      <button class="btn-secondary btn-sm" onclick="closeWizard()">
-        <i class="fas fa-arrow-left"></i> Volver
-      </button>
-      <span class="wizard-topbar-title" id="wizard-title">Nueva empresa</span>
-    </div>
+    <!-- Vista listado -->
+    <div class="view active" id="view-list">
+    <div class="list-content">
 
-    <!-- Steps -->
-    <div class="wizard-steps" id="wizard-steps">
-      <div class="step active" id="step-0" onclick="wGoStep(0)">
-        <div class="step-num">1</div>
-        <div class="step-label">Datos básicos</div>
-      </div>
-      <div class="step-line"></div>
-      <div class="step" id="step-1" onclick="wGoStep(1)">
-        <div class="step-num">2</div>
-        <div class="step-label">Rubro</div>
-      </div>
-      <div class="step-line"></div>
-      <div class="step" id="step-2" onclick="wGoStep(2)">
-        <div class="step-num">3</div>
-        <div class="step-label">WhatsApp</div>
-      </div>
-      <div class="step-line"></div>
-      <div class="step" id="step-3" onclick="wGoStep(3)">
-        <div class="step-num">4</div>
-        <div class="step-label">Bot</div>
-      </div>
-      <div class="step-line"></div>
-      <div class="step" id="step-4" onclick="wGoStep(4)">
-        <div class="step-num">5</div>
-        <div class="step-label">Revisión</div>
-      </div>
-    </div>
-
-    <!-- ── PANEL 1: Datos básicos ── -->
-    <div class="wizard-panel active" id="panel-0">
-      <div class="panel-content">
-        <div class="form-section-title"><i class="fas fa-building"></i> Información básica</div>
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label>ID Empresa *</label>
-            <input id="w-company_id" placeholder="EMPRESA_001" />
-            <span class="form-hint">Sin espacios, solo mayúsculas y guiones bajos</span>
-          </div>
-          <div class="form-group">
-            <label>Nombre comercial *</label>
-            <input id="w-name" placeholder="Mi Empresa" />
-          </div>
-          <div class="form-group">
-            <label>Razón social</label>
-            <input id="w-legal_name" placeholder="Mi Empresa SpA" />
-          </div>
-          <div class="form-group">
-            <label>RUT</label>
-            <input id="w-rut" placeholder="76.999.999-9" />
-          </div>
-          <div class="form-group form-full">
-            <label>Descripción</label>
-            <textarea id="w-description" rows="2" placeholder="Descripción de la empresa"></textarea>
-          </div>
+      <div class="companies-header">
+        <div>
+          <div class="companies-title">Empresas</div>
+          <div class="companies-subtitle">Administración de empresas del sistema</div>
         </div>
-
-        <div class="form-section-title" style="margin-top:20px"><i class="fas fa-address-card"></i> Contacto</div>
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label>Email de contacto *</label>
-            <input id="w-contact_email" type="email" placeholder="contacto@empresa.com" />
-          </div>
-          <div class="form-group">
-            <label>Teléfono</label>
-            <input id="w-contact_phone" type="tel" placeholder="+56912345678" />
-          </div>
-          <div class="form-group">
-            <label>Dirección</label>
-            <input id="w-address" placeholder="Santiago, Chile" />
-          </div>
-          <div class="form-group">
-            <label>Sitio web</label>
-            <input id="w-website" type="url" placeholder="https://empresa.com" />
-          </div>
-        </div>
-
-        <div class="form-section-title" style="margin-top:20px"><i class="fas fa-crown"></i> Plan</div>
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label>Plan de suscripción *</label>
-            <select id="w-plan_id">
-              <option value="">Seleccionar plan</option>
-              <option value="basic">Basic</option>
-              <option value="pro">Pro</option>
-              <option value="enterprise">Enterprise</option>
-            </select>
-          </div>
-          <div class="form-group form-check">
-            <label class="check-label">
-              <input type="checkbox" id="w-active" checked />
-              Empresa activa
-            </label>
-          </div>
-        </div>
-      </div>
-      <div class="nav-footer">
-        <div></div>
-        <button class="btn-primary" onclick="wNext(0)">Siguiente <i class="fas fa-arrow-right"></i></button>
-      </div>
-    </div>
-
-    <!-- ── PANEL 2: Rubro ── -->
-    <div class="wizard-panel" id="panel-1">
-      <div class="panel-content">
-        <div class="form-section-title"><i class="fas fa-th-large"></i> Rubro de la empresa</div>
-        <p class="form-hint" style="margin-bottom:16px">Selecciona el tipo de negocio. Esto configura automáticamente los labels, módulos y disponibilidad.</p>
-        <div class="rubro-grid" id="rubro-grid">
-          <div class="rubro-card active" data-key="salud" onclick="selectRubro('salud',this)">
-            <div class="rubro-icon">🏥</div>
-            <div class="rubro-name">Salud</div>
-            <div class="rubro-desc">Terapeutas, clínicas, consultas</div>
-          </div>
-          <div class="rubro-card" data-key="cabanas" onclick="selectRubro('cabanas',this)">
-            <div class="rubro-icon">🏕️</div>
-            <div class="rubro-name">Cabañas</div>
-            <div class="rubro-desc">Alojamiento, turismo</div>
-          </div>
-          <div class="rubro-card" data-key="cowork" onclick="selectRubro('cowork',this)">
-            <div class="rubro-icon">💼</div>
-            <div class="rubro-name">Cowork</div>
-            <div class="rubro-desc">Salas, espacios de trabajo</div>
-          </div>
-          <div class="rubro-card" data-key="fitness" onclick="selectRubro('fitness',this)">
-            <div class="rubro-icon">💪</div>
-            <div class="rubro-name">Fitness</div>
-            <div class="rubro-desc">Instructores, clases, gym</div>
-          </div>
-          <div class="rubro-card" data-key="educacion" onclick="selectRubro('educacion',this)">
-            <div class="rubro-icon">📚</div>
-            <div class="rubro-name">Academia</div>
-            <div class="rubro-desc">Profesores, cursos, clases</div>
-          </div>
-          <div class="rubro-card" data-key="propiedades" onclick="selectRubro('propiedades',this)">
-            <div class="rubro-icon">🏠</div>
-            <div class="rubro-name">Propiedades</div>
-            <div class="rubro-desc">Arriendos, visitas, inmobiliaria</div>
-          </div>
-        </div>
-
-        <!-- Preview del template seleccionado -->
-        <div class="template-preview" id="template-preview">
-          <div class="tp-header">
-            <span class="tp-badge" id="tp-badge">Terapeuta · Sesión</span>
-            <span class="tp-mode" id="tp-mode">Disponibilidad por hora</span>
-          </div>
-          <div class="tp-labels" id="tp-labels">
-            <!-- Se llena al seleccionar rubro -->
-          </div>
-          <div class="tp-modules" id="tp-modules">
-            <!-- Se llena al seleccionar rubro -->
-          </div>
-        </div>
-      </div>
-      <div class="nav-footer">
-        <button class="btn-secondary" onclick="wGoStep(0)"><i class="fas fa-arrow-left"></i> Volver</button>
-        <button class="btn-primary" onclick="wNext(1)">Siguiente <i class="fas fa-arrow-right"></i></button>
-      </div>
-    </div>
-
-    <!-- ── PANEL 3: WhatsApp ── -->
-    <div class="wizard-panel" id="panel-2">
-      <div class="panel-content">
-        <div class="form-section-title"><i class="fab fa-whatsapp"></i> Configuración WhatsApp Business</div>
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label>Phone Number ID</label>
-            <input id="w-phone_number_id" placeholder="492838720578038" />
-          </div>
-          <div class="form-group">
-            <label>Webhook URL</label>
-            <input id="w-wa_webhook_url" type="url" placeholder="https://api.empresa.com/webhook" />
-          </div>
-          <div class="form-group form-full">
-            <label>Access Token</label>
-            <input id="w-wa_access_token" type="password" placeholder="EAALbQzRvJKE..." class="font-mono" />
-          </div>
-          <div class="form-group form-full">
-            <label>Verify Token</label>
-            <input id="w-wa_verify_token" type="password" placeholder="mi_verify_token_secreto" class="font-mono" />
-          </div>
-        </div>
-        <div class="form-hint-box">
-          <i class="fas fa-info-circle"></i>
-          Estos datos se obtienen desde Meta Business Suite → WhatsApp → Configuración de API
-        </div>
-      </div>
-      <div class="nav-footer">
-        <button class="btn-secondary" onclick="wGoStep(1)"><i class="fas fa-arrow-left"></i> Volver</button>
-        <button class="btn-primary" onclick="wNext(2)">Siguiente <i class="fas fa-arrow-right"></i></button>
-      </div>
-    </div>
-
-    <!-- ── PANEL 4: Bot ── -->
-    <div class="wizard-panel" id="panel-3">
-      <div class="panel-content">
-        <div class="form-section-title"><i class="fas fa-robot"></i> Configuración del Bot</div>
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label>Nombre del bot</label>
-            <input id="w-bot_name" placeholder="Alicia" />
-          </div>
-          <div class="form-group">
-            <label>Máx. mensajes por sesión</label>
-            <input id="w-max_messages" type="number" placeholder="150" min="10" max="500" />
-          </div>
-          <div class="form-group form-full">
-            <label>Mensaje de bienvenida</label>
-            <textarea id="w-greeting_message" rows="3" placeholder="¡Hola! Soy el asistente virtual. ¿En qué puedo ayudarte?"></textarea>
-          </div>
-          <div class="form-group form-check">
-            <label class="check-label">
-              <input type="checkbox" id="w-bot_active" checked />
-              Bot activo
-            </label>
-          </div>
-        </div>
-      </div>
-      <div class="nav-footer">
-        <button class="btn-secondary" onclick="wGoStep(2)"><i class="fas fa-arrow-left"></i> Volver</button>
-        <button class="btn-primary" onclick="wNext(3)">Siguiente <i class="fas fa-arrow-right"></i></button>
-      </div>
-    </div>
-
-    <!-- ── PANEL 5: Revisión ── -->
-    <div class="wizard-panel" id="panel-4">
-      <div class="panel-content">
-        <div class="form-section-title"><i class="fas fa-check-circle"></i> Revisión final</div>
-        <div id="review-content">
-          <!-- Se llena dinámicamente en wGoStep(4) -->
-        </div>
-        <div id="wizard-error" class="wizard-error" style="display:none"></div>
-      </div>
-      <div class="nav-footer">
-        <button class="btn-secondary" onclick="wGoStep(3)"><i class="fas fa-arrow-left"></i> Volver</button>
-        <button class="btn-primary" id="save-btn" onclick="saveCompany()">
-          <i class="fas fa-check"></i> <span id="save-btn-text">Crear empresa</span>
+        <button class="btn-primary" onclick="openWizard(null)">
+          <i class="fas fa-plus"></i> Nueva empresa
         </button>
       </div>
-    </div>
 
-  </div><!-- /view-wizard -->
+      <!-- STATS -->
+      <div class="stats hvy-only" id="st-plans-bar">
+        <div class="stat">
+          <div class="stat-label">Total empresas</div>
+          <div class="stat-val" id="st-total">0</div>
+        </div>
+        <!-- Cards por plan: generadas dinámicamente por updateStats() -->
+      </div>
+
+      <!-- FILTROS -->
+      <div class="filters-bar hvy-only">
+        <input class="filter-input" id="f-search" placeholder="Buscar empresa..." oninput="filterCompanies()" />
+        <select class="filter-select" id="f-plan" onchange="filterCompanies()">
+          <option value="">Todos los planes</option>
+          <option value="gratis">Gratis</option>
+          <option value="automate">Automate Pro</option>
+          <option value="secretaria">Secretar IA Premium</option>
+          <option value="enterprise">Enterprise</option>
+          <option value="enterprise_full">Enterprise Full</option>
+        </select>
+        <select class="filter-select" id="f-status" onchange="filterCompanies()">
+          <option value="">Todos los estados</option>
+          <option value="active">Activa</option>
+          <option value="inactive">Inactiva</option>
+        </select>
+        <select class="filter-select" id="f-template" onchange="filterCompanies()">
+          <option value="">Todos los rubros</option>
+          <option value="salud">🏥 Salud</option>
+          <option value="cabanas">🏕️ Cabañas</option>
+          <option value="cowork">💼 Cowork</option>
+          <option value="fitness">💪 Fitness</option>
+          <option value="educacion">📚 Academia</option>
+          <option value="propiedades">🏠 Propiedades</option>
+        </select>
+        <button class="btn-secondary" onclick="clearCompanyFilters()">
+          <i class="fas fa-times"></i> Limpiar
+        </button>
+      </div>
+
+      <!-- TABLA -->
+      <div class="table-wrap">
+        <table class="companies-table">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Rubro</th>
+              <th>Plan</th>
+              <th>WhatsApp</th>
+              <th>Activo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="companies-tbody"></tbody>
+        </table>
+        <div id="companies-empty" class="companies-empty" style="display:none">
+          <i class="fas fa-building"></i>
+          <p>No hay empresas que coincidan con los filtros.</p>
+        </div>
+        <div id="companies-loading" class="companies-loading" style="display:none">
+          <i class="fas fa-spinner fa-spin"></i> Cargando empresas...
+        </div>
+      </div>
+
+    </div>
+    </div><!-- /view-list -->
+
+    <!-- Vista wizard -->
+    <div class="view" id="view-wizard">
+
+      <div class="wizard-topbar">
+        <button class="btn-secondary btn-sm" onclick="closeWizard()">
+          <i class="fas fa-arrow-left"></i> Volver
+        </button>
+        <span class="wizard-topbar-title" id="wizard-title">Nueva empresa</span>
+      </div>
+
+      <div class="wizard-steps" id="wizard-steps">
+        <div class="step active" id="step-0" onclick="wGoStep(0)">
+          <div class="step-num">1</div>
+          <div class="step-label">Datos básicos</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" id="step-1" onclick="wGoStep(1)">
+          <div class="step-num">2</div>
+          <div class="step-label">Rubro</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" id="step-2" onclick="wGoStep(2)">
+          <div class="step-num">3</div>
+          <div class="step-label">WhatsApp</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" id="step-3" onclick="wGoStep(3)">
+          <div class="step-num">4</div>
+          <div class="step-label">Bot</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step" id="step-4" onclick="wGoStep(4)">
+          <div class="step-num">5</div>
+          <div class="step-label">Revisión</div>
+        </div>
+      </div>
+
+      <!-- PANEL 1: Datos básicos -->
+      <div class="wizard-panel active" id="panel-0">
+        <div class="panel-content">
+          <div class="form-section-title"><i class="fas fa-building"></i> Información básica</div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>ID Empresa *</label>
+              <input id="w-company_id" placeholder="EMPRESA_001" />
+              <span class="form-hint">Sin espacios, solo mayúsculas y guiones bajos</span>
+            </div>
+            <div class="form-group">
+              <label>Nombre comercial *</label>
+              <input id="w-name" placeholder="Mi Empresa" />
+            </div>
+            <div class="form-group">
+              <label>Razón social</label>
+              <input id="w-legal_name" placeholder="Mi Empresa SpA" />
+            </div>
+            <div class="form-group">
+              <label>RUT</label>
+              <input id="w-rut" placeholder="76.999.999-9" />
+            </div>
+            <div class="form-group form-full">
+              <label>Descripción</label>
+              <textarea id="w-description" rows="2" placeholder="Descripción de la empresa"></textarea>
+            </div>
+          </div>
+          <div class="form-section-title" style="margin-top:20px"><i class="fas fa-address-card"></i> Contacto</div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Email de contacto *</label>
+              <input id="w-contact_email" type="email" placeholder="contacto@empresa.com" />
+            </div>
+            <div class="form-group">
+              <label>Teléfono</label>
+              <input id="w-contact_phone" type="tel" placeholder="+56912345678" />
+            </div>
+            <div class="form-group">
+              <label>Dirección</label>
+              <input id="w-address" placeholder="Santiago, Chile" />
+            </div>
+            <div class="form-group">
+              <label>Sitio web</label>
+              <input id="w-website" type="url" placeholder="https://empresa.com" />
+            </div>
+          </div>
+          <div class="form-section-title" style="margin-top:20px"><i class="fas fa-crown"></i> Plan</div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Plan de suscripción *</label>
+              <select id="w-plan_id">
+                <option value="">Seleccionar plan</option>
+                <option value="basic">Basic</option>
+                <option value="pro">Pro</option>
+                <option value="enterprise">Enterprise</option>
+              </select>
+            </div>
+            <div class="form-group form-check">
+              <label class="check-label">
+                <input type="checkbox" id="w-active" checked />
+                Empresa activa
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="nav-footer">
+          <div></div>
+          <button class="btn-primary" onclick="wNext(0)">Siguiente <i class="fas fa-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- PANEL 2: Rubro -->
+      <div class="wizard-panel" id="panel-1">
+        <div class="panel-content">
+          <div class="form-section-title"><i class="fas fa-th-large"></i> Rubro de la empresa</div>
+          <p class="form-hint" style="margin-bottom:16px">Selecciona el tipo de negocio. Esto configura automáticamente los labels, módulos y disponibilidad.</p>
+          <div class="rubro-grid" id="rubro-grid">
+            <div class="rubro-card active" data-key="salud" onclick="selectRubro('salud',this)">
+              <div class="rubro-icon">🏥</div>
+              <div class="rubro-name">Salud</div>
+              <div class="rubro-desc">Terapeutas, clínicas, consultas</div>
+            </div>
+            <div class="rubro-card" data-key="cabanas" onclick="selectRubro('cabanas',this)">
+              <div class="rubro-icon">🏕️</div>
+              <div class="rubro-name">Cabañas</div>
+              <div class="rubro-desc">Alojamiento, turismo</div>
+            </div>
+            <div class="rubro-card" data-key="cowork" onclick="selectRubro('cowork',this)">
+              <div class="rubro-icon">💼</div>
+              <div class="rubro-name">Cowork</div>
+              <div class="rubro-desc">Salas, espacios de trabajo</div>
+            </div>
+            <div class="rubro-card" data-key="fitness" onclick="selectRubro('fitness',this)">
+              <div class="rubro-icon">💪</div>
+              <div class="rubro-name">Fitness</div>
+              <div class="rubro-desc">Instructores, clases, gym</div>
+            </div>
+            <div class="rubro-card" data-key="educacion" onclick="selectRubro('educacion',this)">
+              <div class="rubro-icon">📚</div>
+              <div class="rubro-name">Academia</div>
+              <div class="rubro-desc">Profesores, cursos, clases</div>
+            </div>
+            <div class="rubro-card" data-key="propiedades" onclick="selectRubro('propiedades',this)">
+              <div class="rubro-icon">🏠</div>
+              <div class="rubro-name">Propiedades</div>
+              <div class="rubro-desc">Arriendos, visitas, inmobiliaria</div>
+            </div>
+          </div>
+          <div class="template-preview" id="template-preview">
+            <div class="tp-header">
+              <span class="tp-badge" id="tp-badge">Terapeuta · Sesión</span>
+              <span class="tp-mode" id="tp-mode">Disponibilidad por hora</span>
+            </div>
+            <div class="tp-labels" id="tp-labels"></div>
+            <div class="tp-modules" id="tp-modules"></div>
+          </div>
+        </div>
+        <div class="nav-footer">
+          <button class="btn-secondary" onclick="wGoStep(0)"><i class="fas fa-arrow-left"></i> Volver</button>
+          <button class="btn-primary" onclick="wNext(1)">Siguiente <i class="fas fa-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- PANEL 3: WhatsApp -->
+      <div class="wizard-panel" id="panel-2">
+        <div class="panel-content">
+          <div class="form-section-title"><i class="fab fa-whatsapp"></i> Configuración WhatsApp Business</div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Phone Number ID</label>
+              <input id="w-phone_number_id" placeholder="492838720578038" />
+            </div>
+            <div class="form-group">
+              <label>Webhook URL</label>
+              <input id="w-wa_webhook_url" type="url" placeholder="https://api.empresa.com/webhook" />
+            </div>
+            <div class="form-group form-full">
+              <label>Access Token</label>
+              <input id="w-wa_access_token" type="password" placeholder="EAALbQzRvJKE..." class="font-mono" />
+            </div>
+            <div class="form-group form-full">
+              <label>Verify Token</label>
+              <input id="w-wa_verify_token" type="password" placeholder="mi_verify_token_secreto" class="font-mono" />
+            </div>
+          </div>
+          <div class="form-hint-box">
+            <i class="fas fa-info-circle"></i>
+            Estos datos se obtienen desde Meta Business Suite → WhatsApp → Configuración de API
+          </div>
+        </div>
+        <div class="nav-footer">
+          <button class="btn-secondary" onclick="wGoStep(1)"><i class="fas fa-arrow-left"></i> Volver</button>
+          <button class="btn-primary" onclick="wNext(2)">Siguiente <i class="fas fa-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- PANEL 4: Bot -->
+      <div class="wizard-panel" id="panel-3">
+        <div class="panel-content">
+          <div class="form-section-title"><i class="fas fa-robot"></i> Configuración del Bot</div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Nombre del bot</label>
+              <input id="w-bot_name" placeholder="Alicia" />
+            </div>
+            <div class="form-group">
+              <label>Máx. mensajes por sesión</label>
+              <input id="w-max_messages" type="number" placeholder="150" min="10" max="500" />
+            </div>
+            <div class="form-group form-full">
+              <label>Mensaje de bienvenida</label>
+              <textarea id="w-greeting_message" rows="3" placeholder="¡Hola! Soy el asistente virtual. ¿En qué puedo ayudarte?"></textarea>
+            </div>
+            <div class="form-group form-check">
+              <label class="check-label">
+                <input type="checkbox" id="w-bot_active" checked />
+                Bot activo
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="nav-footer">
+          <button class="btn-secondary" onclick="wGoStep(2)"><i class="fas fa-arrow-left"></i> Volver</button>
+          <button class="btn-primary" onclick="wNext(3)">Siguiente <i class="fas fa-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- PANEL 5: Revisión -->
+      <div class="wizard-panel" id="panel-4">
+        <div class="panel-content">
+          <div class="form-section-title"><i class="fas fa-check-circle"></i> Revisión final</div>
+          <div id="review-content"></div>
+          <div id="wizard-error" class="wizard-error" style="display:none"></div>
+        </div>
+        <div class="nav-footer">
+          <button class="btn-secondary" onclick="wGoStep(3)"><i class="fas fa-arrow-left"></i> Volver</button>
+          <button class="btn-primary" id="save-btn" onclick="saveCompany()">
+            <i class="fas fa-check"></i> <span id="save-btn-text">Crear empresa</span>
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /view-wizard -->
+
+  </div><!-- /cp-panel-empresas -->
+
+  <!-- ══════════════════════════════════════════
+       PANEL 2 — USUARIOS
+  ══════════════════════════════════════════ -->
+  <div class="cp-panel" id="cp-panel-usuarios">
+    <div id="usersRoot" class="users-root">
+
+      <!-- Vista listado -->
+      <div class="view active" id="u-view-list">
+      <div class="u-list-content">
+
+        <div class="u-list-header">
+          <div>
+            <div class="u-list-title">Usuarios</div>
+            <div class="u-list-subtitle">Administración de usuarios del sistema</div>
+          </div>
+          <button class="u-btn-primary" onclick="openUserWizard(null)">
+            <i class="fas fa-plus"></i> Nuevo usuario
+          </button>
+        </div>
+
+        <div class="u-stats">
+          <div class="u-stat">
+            <div class="u-stat-label">Total usuarios</div>
+            <div class="u-stat-val" id="u-st-total">0</div>
+          </div>
+          <div class="u-stat">
+            <div class="u-stat-label">Activos</div>
+            <div class="u-stat-val green" id="u-st-active">0</div>
+          </div>
+          <div class="u-stat">
+            <div class="u-stat-label">Inactivos</div>
+            <div class="u-stat-val red" id="u-st-inactive">0</div>
+          </div>
+        </div>
+
+        <div class="u-filters-bar">
+          <input class="u-filter-input" id="u-f-search" placeholder="Buscar usuario..." oninput="filterUsers()"/>
+          <select class="u-filter-select" id="u-f-role" onchange="filterUsers()">
+            <option value="">Todos los roles</option>
+            <option value="ADMIN_ROL">Administrador</option>
+            <option value="OPERADOR_ROL">Operador</option>
+            <option value="SUPERVISOR_ROL">Supervisor</option>
+            <option value="PROFESIONAL_ROL">Profesional</option>
+            <option value="ASISTENTE_ROL">Asistente</option>
+          </select>
+          <select class="u-filter-select" id="u-f-status" onchange="filterUsers()">
+            <option value="">Todos los estados</option>
+            <option value="active">Activo</option>
+            <option value="inactive">Inactivo</option>
+          </select>
+          <select class="u-filter-select" id="u-f-resource" onchange="filterUsers()">
+            <option value="">Es recurso</option>
+            <option value="yes">Sí</option>
+            <option value="no">No</option>
+          </select>
+          <button class="u-btn-secondary u-btn-sm" onclick="clearUserFilters()">
+            <i class="fas fa-times"></i> Limpiar
+          </button>
+        </div>
+
+        <div class="u-table-wrap">
+          <table class="u-table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Recurso</th>
+                <th>Empresa</th>
+                <th>Activo</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="u-tbody"></tbody>
+          </table>
+          <div id="u-empty" class="u-empty" style="display:none">
+            <i class="fas fa-users"></i>
+            <p>No hay usuarios que coincidan con los filtros.</p>
+          </div>
+          <div id="u-loading" class="u-loading" style="display:none">
+            <i class="fas fa-spinner fa-spin"></i> Cargando usuarios...
+          </div>
+        </div>
+
+      </div>
+      </div><!-- /u-view-list -->
+
+      <!-- Vista wizard -->
+      <div class="view" id="u-view-wizard">
+
+        <div class="u-wizard-topbar">
+          <button class="u-btn-secondary u-btn-sm" onclick="closeUserWizard()">
+            <i class="fas fa-arrow-left"></i> Volver
+          </button>
+          <span class="u-wizard-topbar-title" id="u-wizard-title">Nuevo usuario</span>
+        </div>
+
+        <div class="u-wizard-steps">
+          <div class="u-step active" id="u-step-0" onclick="uGoStep(0)">
+            <div class="u-step-num">1</div>
+            <div class="u-step-label">Datos personales</div>
+          </div>
+          <div class="u-step-line"></div>
+          <div class="u-step" id="u-step-1" onclick="uGoStep(1)">
+            <div class="u-step-num">2</div>
+            <div class="u-step-label">Empresa y Rol</div>
+          </div>
+          <div class="u-step-line"></div>
+          <div class="u-step" id="u-step-2" onclick="uGoStep(2)">
+            <div class="u-step-num">3</div>
+            <div class="u-step-label">Recurso</div>
+          </div>
+          <div class="u-step-line"></div>
+          <div class="u-step" id="u-step-3" onclick="uGoStep(3)">
+            <div class="u-step-num">4</div>
+            <div class="u-step-label">Revisión</div>
+          </div>
+        </div>
+
+        <!-- Panel 1: Datos personales -->
+        <div class="u-wizard-panel active" id="u-panel-0">
+          <div class="u-panel-content">
+            <div class="u-form-section-title"><i class="fas fa-user"></i> Datos personales</div>
+            <div class="u-form-grid-2">
+              <div class="u-form-group">
+                <label>Nombre *</label>
+                <input id="u-first_name" placeholder="Juan"/>
+              </div>
+              <div class="u-form-group">
+                <label>Apellido *</label>
+                <input id="u-last_name" placeholder="Pérez"/>
+              </div>
+              <div class="u-form-group">
+                <label>Username *</label>
+                <input id="u-username" placeholder="juan.perez"/>
+                <span class="u-form-hint">Sin espacios ni caracteres especiales</span>
+              </div>
+              <div class="u-form-group">
+                <label>Email *</label>
+                <input id="u-email" type="email" placeholder="juan@empresa.com"/>
+              </div>
+              <div class="u-form-group">
+                <label>Teléfono</label>
+                <input id="u-phone" type="tel" placeholder="+56912345678"/>
+              </div>
+              <div class="u-form-group">
+                <label>RUT</label>
+                <input id="u-rut" placeholder="12.345.678-9"/>
+              </div>
+            </div>
+            <div class="u-form-section-title" style="margin-top:20px"><i class="fas fa-lock"></i> Acceso</div>
+            <div class="u-form-grid-2" id="u-password-block">
+              <div class="u-form-group">
+                <label>Contraseña *</label>
+                <input id="u-password" type="password" placeholder="Mínimo 8 caracteres"/>
+              </div>
+              <div class="u-form-group">
+                <label>Confirmar contraseña *</label>
+                <input id="u-password2" type="password" placeholder="Repetir contraseña"/>
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <label class="u-check-label">
+                <input type="checkbox" id="u-active" checked/>
+                Usuario activo
+              </label>
+            </div>
+          </div>
+          <div class="u-nav-footer">
+            <div></div>
+            <button class="u-btn-primary" onclick="uNext(0)">Siguiente <i class="fas fa-arrow-right"></i></button>
+          </div>
+        </div>
+
+        <!-- Panel 2: Empresa y Rol -->
+        <div class="u-wizard-panel" id="u-panel-1">
+          <div class="u-panel-content">
+            <div class="u-form-section-title"><i class="fas fa-building"></i> Empresa y Rol</div>
+            <p class="u-form-hint" style="margin-bottom:16px">Asigna el usuario a una o más empresas y define su rol en cada una.</p>
+            <div id="u-empresas-list"></div>
+            <button class="u-add-empresa-btn" onclick="uAddEmpresa()">
+              <i class="fas fa-plus"></i> Agregar empresa
+            </button>
+            <div class="u-form-hint-box" style="margin-top:14px">
+              <i class="fas fa-info-circle"></i>
+              Los roles determinan qué puede hacer el usuario dentro de cada empresa.
+            </div>
+          </div>
+          <div class="u-nav-footer">
+            <button class="u-btn-secondary" onclick="uGoStep(0)"><i class="fas fa-arrow-left"></i> Volver</button>
+            <button class="u-btn-primary" onclick="uNext(1)">Siguiente <i class="fas fa-arrow-right"></i></button>
+          </div>
+        </div>
+
+        <!-- Panel 3: Recurso -->
+        <div class="u-wizard-panel" id="u-panel-2">
+          <div class="u-panel-content">
+            <div class="u-form-section-title"><i class="fas fa-link"></i> Vincular a Recurso</div>
+            <p class="u-form-hint" style="margin-bottom:16px">Opcional. Si este usuario es también un recurso reservable, vincúlalo aquí.</p>
+            <div class="u-no-resource-opt selected" id="u-opt-none" onclick="uSelectResource(null)">
+              <div class="u-resource-icon-wrap"><i class="fas fa-user-slash"></i></div>
+              <div style="flex:1">
+                <div class="u-resource-name">Sin recurso vinculado</div>
+                <div class="u-resource-meta">Solo tiene acceso al sistema</div>
+              </div>
+              <div class="u-resource-check" id="u-check-none">
+                <i class="fas fa-check" style="font-size:9px"></i>
+              </div>
+            </div>
+            <div class="u-resource-search">
+              <input id="u-resource-search" placeholder="Buscar recurso..." oninput="uFilterResources(this.value)"/>
+            </div>
+            <div class="u-resource-list" id="u-resource-list">
+              <div class="u-empty" style="display:none" id="u-resource-empty">
+                <i class="fas fa-inbox"></i>
+                <p>No hay recursos disponibles.</p>
+              </div>
+            </div>
+          </div>
+          <div class="u-nav-footer">
+            <button class="u-btn-secondary" onclick="uGoStep(1)"><i class="fas fa-arrow-left"></i> Volver</button>
+            <button class="u-btn-primary" onclick="uNext(2)">Siguiente <i class="fas fa-arrow-right"></i></button>
+          </div>
+        </div>
+
+        <!-- Panel 4: Revisión -->
+        <div class="u-wizard-panel" id="u-panel-3">
+          <div class="u-panel-content">
+            <div class="u-form-section-title"><i class="fas fa-check-circle"></i> Revisión final</div>
+            <div id="u-review-content"></div>
+            <div id="u-wizard-error" class="u-wizard-error" style="display:none">
+              <i class="fas fa-exclamation-circle"></i>
+              <span id="u-wizard-error-msg"></span>
+            </div>
+          </div>
+          <div class="u-nav-footer">
+            <button class="u-btn-secondary" onclick="uGoStep(2)"><i class="fas fa-arrow-left"></i> Volver</button>
+            <button class="u-btn-primary" id="u-save-btn" onclick="saveUser()">
+              <i class="fas fa-check"></i> <span id="u-save-btn-text">Crear usuario</span>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /u-view-wizard -->
+
+    </div><!-- /usersRoot -->
+  </div><!-- /cp-panel-usuarios -->
+
+  <!-- ══════════════════════════════════════════
+       PANEL 3 — ROLES Y PERMISOS
+  ══════════════════════════════════════════ -->
+  <div class="cp-panel" id="cp-panel-roles">
+    <div class="rol-page">
+
+      <div class="rol-header">
+        <div class="rol-header-title">
+          <div class="rol-header-icon"><i class="fas fa-shield-alt"></i></div>
+          <div>
+            <h1>Roles y Permisos</h1>
+            <p>Gestiona los roles de tu equipo y sus niveles de acceso</p>
+          </div>
+        </div>
+        <button class="rol-btn-nuevo" onclick="rolAbrirCrear()">
+          <i class="fas fa-plus"></i> Nuevo rol
+        </button>
+      </div>
+
+      <div class="rol-body">
+        <div class="rol-acordeon-wrap">
+          <div id="rol-acordeon">
+            <div style="text-align:center;padding:40px;color:#9ba3c0;font-size:13px">
+              <i class="fas fa-spinner fa-spin"></i> Cargando roles...
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /cp-panel-roles -->
+
+  <!-- ══════════════════════════════════════════
+       PANEL 4 — CATASTRO (hvy-only)
+  ══════════════════════════════════════════ -->
+  <div class="cp-panel" id="cp-panel-catastro">
+    <div class="rol-page">
+      <div class="rol-header">
+        <div class="rol-header-title">
+          <div class="rol-header-icon"><i class="fas fa-table"></i></div>
+          <div>
+            <h1>Catastro</h1>
+            <p>Catastro de funciones por rol</p>
+          </div>
+        </div>
+      </div>
+      <div class="rol-body">
+        <div class="rol-catalogo-wrap">
+          <div class="rol-catalogo-table-wrap">
+            <table class="rol-catalogo-table" id="rol-catalogo-table">
+              <thead id="rol-catalogo-head"></thead>
+              <tbody id="rol-catalogo-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /cp-panel-catastro -->
 
 </div><!-- /companiesRoot -->
+
+<!-- ══════════════════════════════════════════
+     MODAL CREAR / EDITAR ROL (para panel 3)
+══════════════════════════════════════════ -->
+<div class="rol-modal-overlay" id="rol-modal" style="display:none" onclick="if(event.target===this)rolCerrarModal()">
+  <div class="rol-modal">
+    <div class="rol-modal-header">
+      <span class="rol-modal-title">
+        <i class="fas fa-shield-alt" style="color:#8e84fa"></i>
+        <span id="rol-modal-titulo">Nuevo rol</span>
+      </span>
+      <button class="rol-modal-close" onclick="rolCerrarModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="rol-modal-body">
+      <div style="margin-bottom:14px">
+        <label class="rol-form-label">Nombre del rol</label>
+        <input type="text" id="rol-input-nombre" class="rol-form-input" placeholder="Ej: Coordinador, Recepcionista...">
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="rol-form-label">Descripción (opcional)</label>
+        <input type="text" id="rol-input-desc" class="rol-form-input" placeholder="Describe qué hace este rol...">
+      </div>
+      <div>
+        <label class="rol-form-label">Color</label>
+        <div class="rol-color-grid" id="rol-color-grid"></div>
+        <input type="hidden" id="rol-input-color" value="#8e84fa">
+      </div>
+    </div>
+    <div class="rol-modal-footer">
+      <button class="rol-btn-cancel" onclick="rolCerrarModal()">Cancelar</button>
+      <button class="rol-btn-nuevo" onclick="rolGuardarRol()">
+        <i class="fas fa-check"></i> Guardar
+      </button>
+    </div>
+  </div>
+</div>
+

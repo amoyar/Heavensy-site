@@ -244,3 +244,163 @@
   font-size: 18px;
   line-height: 1;
 }
+
+/* ══════════════════════════════════════════════════
+   ARCHIVADOR: pestañas estilo carpeta realista
+══════════════════════════════════════════════════ */
+.seg-arch-bar {
+  display: flex;
+  align-items: flex-end;
+  flex-shrink: 0;
+  padding: 8px 12px 0 0;
+  background: #f3f4f6;
+  gap: 3px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Pestaña inactiva — carpeta detrás */
+.seg-arch-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px 8px;
+  flex: 1;
+  cursor: pointer;
+  user-select: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9d8ec7;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  white-space: nowrap;
+  position: relative;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 7px 7px 0 0;
+  margin-bottom: -1px;
+  z-index: 1;
+  box-shadow: -2px -2px 5px rgba(0,0,0,.04), 2px -2px 5px rgba(0,0,0,.04);
+  transition: background .15s, color .15s;
+}
+
+.seg-arch-tab i {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.seg-arch-tab:hover {
+  background: #ede9fe;
+  color: #7c3aed;
+}
+
+/* Pestaña activa — carpeta al frente */
+.seg-arch-tab.active {
+  background: #fff;
+  color: #7c3aed;
+  border: none;
+  z-index: 3;
+  box-shadow: -3px -3px 6px rgba(0,0,0,.07), 3px -3px 6px rgba(0,0,0,.07);
+  clip-path: inset(-10px -10px 0px -10px);
+}
+
+.seg-arch-tab.active i {
+  color: #9961FF;
+}
+
+
+/* Sin separadores — las pestañas mismas crean el espacio */
+.seg-arch-sep { display: none; }
+
+/* Botón colapsar archivador */
+.seg-arch-collapse-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 10px;
+  padding: 0 0 0 8px;
+  display: flex;
+  align-items: center;
+  align-self: center;
+  flex-shrink: 0;
+  transition: color .15s;
+}
+.seg-arch-collapse-btn:hover { color: #7D84C1; }
+.seg-arch-collapse-btn i { transition: transform .2s; }
+
+/* Estado colapsado: ocultar paneles y quitar tab activo */
+.seg-arch-bar.collapsed ~ .seg-tl-wrap,
+.seg-arch-bar.collapsed ~ .seg-evo-panel,
+.seg-arch-bar.collapsed ~ .seg-der-panel { display: none !important; }
+
+.seg-arch-bar.collapsed .seg-arch-tab.active {
+  background: #f3f4f6;
+  color: #9d8ec7;
+  border-bottom: none;
+  box-shadow: -2px -2px 5px rgba(0,0,0,.04), 2px -2px 5px rgba(0,0,0,.04);
+  clip-path: none;
+}
+
+.seg-arch-bar.collapsed .seg-arch-tab.active i {
+  color: #9d8ec7;
+}
+
+.seg-arch-bar.collapsed .seg-arch-tab-pill {
+  background: #e9eaec;
+  border-color: #d1d5db;
+  color: #9d8ec7;
+}
+
+.seg-arch-bar.collapsed .seg-arch-tab-meta {
+  color: #b0b9c8;
+}
+
+/* Título */
+.seg-arch-tab-title {
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Meta: "10 sesiones", "5 problemas · 10 profesionales" */
+.seg-arch-tab-meta {
+  font-size: 10px;
+  font-weight: 500;
+  color: #b8a9e0;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: nowrap;
+  margin-left: 2px;
+}
+
+.seg-arch-tab.active .seg-arch-tab-meta {
+  color: #8b5cf6;
+}
+
+/* Pill "Hora" dentro del tab TL */
+.seg-arch-tab-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  border: 0.5px solid #c4b5fd;
+  border-radius: 10px;
+  background: #ede9fe;
+  color: #7c3aed;
+  cursor: pointer;
+  transition: all .12s;
+  flex-shrink: 0;
+}
+
+.seg-arch-tab-pill:hover,
+.seg-arch-tab-pill.activo {
+  background: #ddd6fe;
+  border-color: #9961FF;
+  color: #6d28d9;
+}

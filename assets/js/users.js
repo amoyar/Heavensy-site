@@ -29,11 +29,9 @@ const AVAILABLE_ROLES = [
 // ============================================
 
 async function initUsersPage() {
-  console.log('🚀 Inicializando módulo de usuarios');
-
-  // Obtener empresa del usuario logueado
   const claims = getUserFromToken();
-  _userCompanyId = claims?.company_id || localStorage.getItem('company_id');
+  // Si hay override (ej: SA viendo empresa específica), usarlo
+  _userCompanyId = window._cpOverrideCompanyId || claims?.company_id || localStorage.getItem('company_id');
 
   await Promise.all([
     fetchUsers(),
@@ -113,7 +111,10 @@ function renderUsers() {
     tr.innerHTML = `
       <td>
         <div class="u-user-cell">
-          <div class="u-avatar" style="background:${color.bg};color:${color.text}">${initials}</div>
+          ${user.avatar_url
+            ? `<img src="${user.avatar_url}" class="u-avatar" style="object-fit:cover;border-radius:50%">`
+            : `<div class="u-avatar" style="background:${color.bg};color:${color.text}">${initials}</div>`
+          }
           <div>
             <div class="u-user-name">${escapeHtml(_fullName(user))}</div>
             <div class="u-user-sub">${escapeHtml(user.username || '')}</div>
@@ -738,12 +739,7 @@ function _getCompanyName(companyId) {
 }
 
 const _avatarPalette = [
-  { bg: '#E1DEFF', text: '#7c3aed' },
-  { bg: '#dbeafe', text: '#1d4ed8' },
-  { bg: '#dcfce7', text: '#15803d' },
-  { bg: '#fef3c7', text: '#d97706' },
-  { bg: '#fee2e2', text: '#dc2626' },
-  { bg: '#e0f2fe', text: '#0369a1' },
+  { bg: 'linear-gradient(135deg,#8e84fa 0%,#91c0ff 100%)', text: '#fff' },
 ];
 
 function _getAvatarColor(seed) {

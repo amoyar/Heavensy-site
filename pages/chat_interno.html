@@ -1,0 +1,497 @@
+<div class="ci-page">
+
+  <!-- SIDEBAR IZQUIERDO -->
+  <div class="ci-sidebar">
+
+    <!-- Header con tabs -->
+    <div class="ci-sidebar-header">
+      <div class="ci-sidebar-title">
+        <i class="fas fa-comments" style="color:#8e84fa"></i>
+        Chat <span id="ci-company-name">...</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="ci-tabs">
+          <button class="ci-tab active" id="ci-tab-todos"    onclick="ciFilterTab('todos')">Todos</button>
+          <button class="ci-tab"        id="ci-tab-general"  onclick="ciFilterTab('general')">General</button>
+          <button class="ci-tab"        id="ci-tab-salas"    onclick="ciFilterTab('salas')">Salas</button>
+          <button class="ci-tab"        id="ci-tab-privados" onclick="ciFilterTab('privados')">Privados</button>
+        </div>
+        <button class="ci-add-sala-circle" id="ci-add-sala-circle" onclick="ciAddBtnClick()" title="Nuevo">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Lista de chats -->
+    <div class="ci-chat-list" id="ci-chat-list">
+
+      <!-- Panel General -->
+      <div id="ci-panel-general">
+        <div class="ci-chat-item active" id="ci-general-item" onclick="ciOpenGeneral()">
+          <div class="ci-chat-item-avatar general">
+            <i class="fas fa-hashtag"></i>
+          </div>
+          <div class="ci-chat-item-info">
+            <div class="ci-chat-item-name">general</div>
+            <div class="ci-chat-item-last" id="ci-general-last">Sala principal del equipo</div>
+          </div>
+          <div class="ci-unread-badge" id="ci-general-badge" style="display:none">0</div>
+        </div>
+      </div>
+
+      <!-- Panel Salas -->
+      <div id="ci-panel-salas">
+        <div id="ci-salas-list"></div>
+      </div>
+
+      <!-- Panel Privados -->
+      <div id="ci-panel-privados">
+        <div id="ci-privados-list"></div>
+      </div>
+
+    </div>
+
+    <!-- Usuarios online -->
+    <div class="ci-online-section">
+      <div class="ci-online-label">
+        <i class="fas fa-circle" style="color:#22c55e;font-size:7px;margin-right:4px"></i>
+        En línea — <span id="ci-online-count">0</span>
+      </div>
+      <div class="ci-online-list" id="ci-online-list">
+        <div style="font-size:11px;color:#9BA3C0;padding:4px 6px">Conectando...</div>
+      </div>
+    </div>
+
+    <!-- Botón admin -->
+    <button class="ci-admin-btn" id="ci-admin-btn" onclick="ciAbrirParticipantes()" style="display:none">
+      <i class="fas fa-users-cog"></i> Gestionar participantes
+    </button>
+
+  </div>
+
+  <!-- AREA PRINCIPAL -->
+  <div class="ci-main">
+
+    <!-- Header del chat activo -->
+    <div class="ci-main-header" id="ci-main-header">
+      <div class="ci-main-header-avatar" id="ci-header-avatar">
+        <i class="fas fa-hashtag"></i>
+      </div>
+      <div class="ci-main-header-info">
+        <div class="ci-main-header-name" id="ci-header-name">general</div>
+        <div class="ci-main-header-sub" id="ci-header-sub">Sala principal del equipo</div>
+      </div>
+      <div style="position:relative;margin-left:auto;flex-shrink:0">
+        <button class="ci-menu-btn" id="ci-menu-btn" onclick="ciToggleMenu()">
+          <i class="fas fa-ellipsis-v"></i>
+        </button>
+        <div class="ci-menu-dropdown" id="ci-menu-dropdown">
+          <div class="ci-menu-item" id="ci-menu-info" onclick="ciMenuInfo()">
+            <i class="fas fa-info-circle"></i><span id="ci-menu-info-label">Ver información</span>
+          </div>
+          <div class="ci-menu-item" id="ci-menu-add" onclick="ciMenuAgregar()">
+            <i class="fas fa-user-plus"></i><span>Agregar personas</span>
+          </div>
+          <div class="ci-menu-item" onclick="ciMenuArchivos()">
+            <i class="fas fa-paperclip"></i><span>Ver archivos</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nota anclada -->
+    <div class="ci-pinned-banner" id="ci-pinned-banner" style="display:none">
+      <div class="ci-pinned-icon"><i class="fas fa-thumbtack"></i></div>
+      <div class="ci-pinned-content">
+        <div class="ci-pinned-text" id="ci-pinned-text"></div>
+        <div class="ci-pinned-confirmations" id="ci-pinned-confirmations"></div>
+      </div>
+      <button class="ci-pinned-confirm-btn" id="ci-pinned-confirm-btn" onclick="ciConfirmarNota()">
+        <i class="fas fa-check"></i> Visto bueno
+      </button>
+    </div>
+
+    <!-- Wrapper feed (position:relative para anclar la votación) -->
+    <div class="ci-feed-wrapper">
+
+      <!-- Votación anclada top-right -->
+      <div class="ci-pinned-vot" id="ci-pinned-vot" style="display:none">
+        <div class="ci-pinned-vot-header">
+          <div class="ci-pvot-icon"><i class="fas fa-poll"></i></div>
+          <span class="ci-pvot-title" id="ci-pinned-vot-pregunta"></span>
+        </div>
+        <span class="ci-pinned-vot-meta" id="ci-pinned-vot-meta"></span>
+        <div id="ci-pinned-vot-opciones"></div>
+      </div>
+
+    <!-- Feed de mensajes -->
+    <div class="ci-feed" id="ci-feed">
+      <div class="ci-empty" id="ci-feed-empty">
+        <i class="fas fa-comments"></i>
+        <p>Sé el primero en escribir algo</p>
+      </div>
+    </div>
+
+    </div><!-- /ci-feed-wrapper -->
+
+    <!-- Typing indicator -->
+    <div class="ci-typing" id="ci-typing" style="padding:0 20px 4px;display:none">
+      <div class="ci-typing-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <span class="ci-typing-text" id="ci-typing-text">alguien está escribiendo...</span>
+    </div>
+
+    <!-- Botón scroll al final -->
+    <button class="ci-scroll-btn" id="ci-scroll-btn" onclick="ciScrollBottom()" title="Ir al final" style="display:none">
+      <i class="fas fa-arrow-down"></i>
+    </button>
+
+    <!-- Input -->
+    <div class="ci-input-wrap">
+      <div class="ci-input-box" id="ci-input-box">
+
+        <!-- Mention popup -->
+        <div class="ci-mention-popup" id="ci-mention-popup"></div>
+
+        <div class="ci-input-actions" style="align-self:flex-end;position:relative">
+          <button class="ci-input-btn" onclick="ciTriggerMention()" title="Mencionar">
+            <i class="fas fa-at"></i>
+          </button>
+          <!-- Botón + expandible -->
+          <button class="ci-input-btn ci-plus-btn" id="ci-plus-btn" onclick="ciTogglePlus()" title="Más opciones">
+            <i class="fas fa-plus"></i>
+          </button>
+          <!-- Mini menú -->
+          <div class="ci-plus-menu" id="ci-plus-menu">
+            <button class="ci-plus-item" id="ci-nota-toggle" onclick="ciTogglePlus();ciToggleNotaMode()" title="Nota anclada">
+              <i class="fas fa-thumbtack"></i><span>Nota</span>
+            </button>
+            <button class="ci-plus-item" onclick="ciTogglePlus();ciAbrirVotacion()" title="Votación">
+              <i class="fas fa-poll"></i><span>Votación</span>
+            </button>
+            <button class="ci-plus-item" onclick="ciTogglePlus();ciAbrirProgramado()" title="Mensaje programado">
+              <i class="fas fa-clock"></i><span>Programar</span>
+            </button>
+            <button class="ci-plus-item" onclick="ciTogglePlus();ciAbrirTarea()" title="Asignar tarea">
+              <i class="fas fa-tasks"></i><span>Tarea</span>
+            </button>
+          </div>
+        </div>
+
+        <textarea
+          class="ci-input"
+          id="ci-input"
+          placeholder="Escribe un mensaje... usa @ para mencionar"
+          rows="1"
+          onkeydown="ciHandleKey(event)"
+          oninput="ciHandleInput(event)"
+        ></textarea>
+
+        <div style="align-self:flex-end">
+          <button class="ci-send-btn" id="ci-send-btn" onclick="ciEnviar()" disabled>
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- MODAL VOTACIÓN -->
+<div class="ci-modal-overlay" id="ci-modal-votacion" onclick="if(event.target===this)ciCerrarVotacion()">
+  <div class="ci-modal" style="width:440px">
+    <div class="ci-modal-header">
+      <span class="ci-modal-title"><i class="fas fa-poll" style="color:#8e84fa;margin-right:8px"></i>Nueva votación</span>
+      <button class="ci-modal-close" onclick="ciCerrarVotacion()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="ci-modal-body">
+      <div style="margin-bottom:14px">
+        <label class="ci-form-label">Pregunta</label>
+        <input id="ci-vot-pregunta" type="text" class="ci-form-input" placeholder="¿Cuál es tu pregunta?">
+      </div>
+      <div>
+        <label class="ci-form-label">Opciones</label>
+        <div id="ci-vot-opciones">
+          <div class="ci-vot-opcion-row"><input type="text" class="ci-form-input" placeholder="Opción 1"><button class="ci-vot-remove-btn" onclick="ciVotRemoveOpcion(this)" style="display:none"><i class="fas fa-times"></i></button></div>
+          <div class="ci-vot-opcion-row"><input type="text" class="ci-form-input" placeholder="Opción 2"><button class="ci-vot-remove-btn" onclick="ciVotRemoveOpcion(this)" style="display:none"><i class="fas fa-times"></i></button></div>
+        </div>
+        <button class="ci-vot-add-btn" onclick="ciVotAgregarOpcion()"><i class="fas fa-plus" style="margin-right:5px"></i>Agregar opción</button>
+      </div>
+    </div>
+    <div class="ci-modal-footer">
+      <button onclick="ciCerrarVotacion()" style="padding:9px 16px;border-radius:10px;border:1px solid #e4e9f5;background:#fff;color:#9BA3C0;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+      <button class="ci-modal-save" onclick="ciEnviarVotacion()"><i class="fas fa-poll" style="margin-right:6px"></i>Crear votación</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MENSAJE PROGRAMADO -->
+<div class="ci-modal-overlay" id="ci-modal-programado" onclick="if(event.target===this)ciCerrarProgramado()">
+  <div class="ci-modal ci-prog-modal">
+    <div class="ci-modal-header">
+      <span class="ci-modal-title"><i class="fas fa-clock" style="color:#8e84fa;margin-right:8px"></i>Programar mensaje</span>
+      <button class="ci-modal-close" onclick="ciCerrarProgramado()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="ci-modal-body">
+      <div style="margin-bottom:14px">
+        <label class="ci-form-label">Mensaje</label>
+        <textarea id="ci-prog-texto" class="ci-form-input" rows="3" placeholder="Escribe el mensaje que se enviará..." style="resize:none"></textarea>
+      </div>
+      <label class="ci-form-label" style="margin-bottom:8px;display:block">Fecha y hora de envío</label>
+      <div class="ci-dp-popup ci-pdp-inline-fixed">
+        <div class="ci-dp-cal-header">
+          <button onclick="ciPdpPrevMonth()"><i class="fas fa-chevron-left"></i></button>
+          <span id="ci-pdp-month-label"></span>
+          <button onclick="ciPdpNextMonth()"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="ci-dp-weekdays">
+          <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sa</span><span>Do</span>
+        </div>
+        <div class="ci-dp-days" id="ci-pdp-days"></div>
+        <div class="ci-dp-time">
+          <i class="fas fa-clock" style="color:#8e84fa;font-size:12px"></i>
+          <span>Hora:</span>
+          <select id="ci-pdp-hour" class="ci-dp-time-sel" onchange="ciPdpUpdateDisplay()"></select>
+          <span style="font-weight:700;color:#9ba3c0">:</span>
+          <select id="ci-pdp-min" class="ci-dp-time-sel" onchange="ciPdpUpdateDisplay()"></select>
+        </div>
+      </div>
+    </div>
+    <div class="ci-modal-footer">
+      <button onclick="ciCerrarProgramado()" style="padding:9px 16px;border-radius:10px;border:1px solid #e4e9f5;background:#fff;color:#9BA3C0;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+      <button class="ci-modal-save" onclick="ciEnviarProgramado()"><i class="fas fa-clock" style="margin-right:6px"></i>Programar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ASIGNAR TAREA -->
+<div class="ci-modal-overlay" id="ci-modal-tarea" onclick="if(event.target===this)ciCerrarTarea()">
+  <div class="ci-modal" style="width:460px">
+    <div class="ci-modal-header">
+      <span class="ci-modal-title"><i class="fas fa-tasks" style="color:#8e84fa;margin-right:8px"></i>Asignar tarea</span>
+      <button class="ci-modal-close" onclick="ciCerrarTarea()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="ci-modal-body">
+      <div style="margin-bottom:14px">
+        <label class="ci-form-label">Descripción de la tarea</label>
+        <textarea id="ci-tarea-desc" class="ci-form-input" rows="3" placeholder="¿Qué hay que hacer?" style="resize:none"></textarea>
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="ci-form-label">Responsables — <span id="ci-tarea-resp-count" style="color:#8e84fa">0 seleccionados</span></label>
+        <div id="ci-tarea-responsables" style="max-height:160px;overflow-y:auto;border:1.5px solid #e4e9f5;border-radius:10px;padding:6px"></div>
+      </div>
+      <!-- Datepicker personalizado -->
+      <div style="margin-bottom:14px">
+        <label class="ci-form-label">Fecha límite <span style="color:#9ba3c0;font-weight:400">(opcional)</span></label>
+        <div class="ci-datepicker-wrap" id="ci-dp-wrap">
+          <div class="ci-dp-trigger" id="ci-dp-trigger" onclick="ciDpToggle()">
+            <i class="fas fa-calendar-alt" style="color:#8e84fa;font-size:13px"></i>
+            <span id="ci-dp-display">Sin fecha límite</span>
+            <button class="ci-dp-clear" id="ci-dp-clear-btn" onclick="event.stopPropagation();ciDpClear()" style="display:none"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="ci-dp-popup" id="ci-dp-popup">
+            <div class="ci-dp-cal-header">
+              <button onclick="ciDpPrevMonth()"><i class="fas fa-chevron-left"></i></button>
+              <span id="ci-dp-month-label"></span>
+              <button onclick="ciDpNextMonth()"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="ci-dp-weekdays">
+              <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sa</span><span>Do</span>
+            </div>
+            <div class="ci-dp-days" id="ci-dp-days"></div>
+            <div class="ci-dp-time">
+              <i class="fas fa-clock" style="color:#8e84fa;font-size:12px"></i>
+              <span>Hora:</span>
+              <select id="ci-dp-hour" class="ci-dp-time-sel"></select>
+              <span style="font-weight:700;color:#9ba3c0">:</span>
+              <select id="ci-dp-min" class="ci-dp-time-sel"></select>
+            </div>
+            <div class="ci-dp-actions">
+              <button class="ci-dp-btn-clear" onclick="ciDpClear()">Limpiar</button>
+              <button class="ci-dp-btn-ok" onclick="ciDpConfirm()">Listo</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Prioridad chips -->
+      <div style="margin-bottom:14px">
+        <label class="ci-form-label">Prioridad</label>
+        <input type="hidden" id="ci-tarea-prioridad" value="normal">
+        <div class="ci-prio-group">
+          <button type="button" class="ci-prio-chip active" data-value="normal" onclick="ciSelPrio(this)">
+            <i class="fas fa-minus-circle"></i>Normal
+          </button>
+          <button type="button" class="ci-prio-chip" data-value="alta" onclick="ciSelPrio(this)">
+            <i class="fas fa-arrow-up"></i>Alta
+          </button>
+          <button type="button" class="ci-prio-chip urgente" data-value="urgente" onclick="ciSelPrio(this)">
+            <i class="fas fa-bolt"></i>Urgente
+          </button>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:#6b7194">
+          <input type="checkbox" id="ci-tarea-calendario" style="accent-color:#8e84fa;width:14px;height:14px">
+          Agregar al calendario del profesional
+        </label>
+      </div>
+    </div>
+    <div class="ci-modal-footer">
+      <button onclick="ciCerrarTarea()" style="padding:9px 16px;border-radius:10px;border:1px solid #e4e9f5;background:#fff;color:#9BA3C0;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+      <button class="ci-modal-save" onclick="ciEnviarTarea()"><i class="fas fa-check" style="margin-right:6px"></i>Asignar tarea</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INFO SALA/GRUPO -->
+<div class="ci-modal-overlay" id="ci-modal-info" onclick="if(event.target===this)ciCerrarInfo()">
+  <div class="ci-info-modal">
+
+    <!-- Hero con avatar -->
+    <div class="ci-info-hero">
+      <div class="ci-info-avatar-wrap" onclick="ciInfoCambiarAvatar()">
+        <div class="ci-info-avatar" id="ci-info-avatar-display"></div>
+        <div class="ci-info-avatar-overlay"><i class="fas fa-camera"></i></div>
+        <input type="file" id="ci-info-avatar-input" accept="image/*" style="display:none" onchange="ciInfoAvatarSelected(event)">
+      </div>
+      <button class="ci-info-close" onclick="ciCerrarInfo()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <!-- Nombre editable -->
+    <div class="ci-info-body">
+      <div class="ci-info-field">
+        <div class="ci-info-field-label">Nombre</div>
+        <div class="ci-info-field-row">
+          <input class="ci-info-input" id="ci-info-nombre" type="text" maxlength="40">
+          <button class="ci-info-edit-btn" onclick="ciInfoGuardar()"><i class="fas fa-check"></i></button>
+        </div>
+      </div>
+
+      <!-- Descripción editable -->
+      <div class="ci-info-field">
+        <div class="ci-info-field-label">Descripción</div>
+        <div class="ci-info-field-row">
+          <input class="ci-info-input" id="ci-info-desc" type="text" maxlength="80" placeholder="Sin descripción">
+          <button class="ci-info-edit-btn" onclick="ciInfoGuardar()"><i class="fas fa-check"></i></button>
+        </div>
+      </div>
+
+      <!-- Miembros -->
+      <div class="ci-info-field">
+        <div class="ci-info-field-label" id="ci-info-members-label">Miembros</div>
+        <div class="ci-info-members-list" id="ci-info-members-list"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="ci-info-footer">
+      <button class="ci-info-save-btn" onclick="ciInfoGuardar()">
+        <i class="fas fa-check" style="margin-right:6px"></i>Guardar cambios
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL NUEVA / EDITAR SALA -->
+<!-- MODAL NUEVO PRIVADO -->
+<div class="ci-modal-overlay" id="ci-modal-privado" onclick="if(event.target===this)ciCerrarNuevoPrivado()">
+  <div class="ci-modal" style="width:380px">
+    <div class="ci-modal-header">
+      <span class="ci-modal-title">
+        <i class="fas fa-user" style="color:#8e84fa;margin-right:8px"></i>Nuevo mensaje privado
+      </span>
+      <button class="ci-modal-close" onclick="ciCerrarNuevoPrivado()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="ci-modal-body">
+      <label class="ci-form-label" style="margin-bottom:10px;display:block">Selecciona una persona</label>
+      <div id="ci-privado-lista" style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+    </div>
+    <div class="ci-modal-footer">
+      <button onclick="ciCerrarNuevoPrivado()" style="padding:9px 16px;border-radius:10px;border:1px solid #e4e9f5;background:#fff;color:#9BA3C0;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+      <button class="ci-modal-save" onclick="ciCrearPrivado()"><i class="fas fa-paper-plane" style="margin-right:6px"></i>Iniciar chat</button>
+    </div>
+  </div>
+</div>
+
+<div class="ci-modal-overlay" id="ci-modal-sala" onclick="if(event.target===this)ciCerrarNuevaSala()">
+  <div class="ci-modal" style="width:460px">
+    <div class="ci-modal-header">
+      <span class="ci-modal-title" id="ci-modal-sala-title">
+        <i class="fas fa-layer-group" style="color:#8e84fa;margin-right:8px"></i>Nueva sala
+      </span>
+      <button class="ci-modal-close" onclick="ciCerrarNuevaSala()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="ci-modal-body">
+
+      <!-- Nombre -->
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;font-weight:700;color:#9BA3C0;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Nombre de la sala</label>
+        <input id="ci-sala-nombre" type="text" maxlength="40"
+          placeholder="Ej: Equipo Clínico, Coordinación..."
+          style="width:100%;border:1.5px solid #e4e9f5;border-radius:10px;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;color:#383838;transition:border-color .15s"
+          onfocus="this.style.borderColor='#8e84fa'" onblur="this.style.borderColor='#e4e9f5'">
+      </div>
+
+      <!-- Descripción -->
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:700;color:#9BA3C0;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px">Descripción <span style="font-weight:400;text-transform:none">(opcional)</span></label>
+        <input id="ci-sala-desc" type="text" maxlength="80"
+          placeholder="Ej: Coordinación del equipo de salud"
+          style="width:100%;border:1.5px solid #e4e9f5;border-radius:10px;padding:9px 13px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;color:#383838;transition:border-color .15s"
+          onfocus="this.style.borderColor='#8e84fa'" onblur="this.style.borderColor='#e4e9f5'">
+      </div>
+
+      <!-- Miembros -->
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#9BA3C0;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:8px">
+          Miembros — <span id="ci-sala-members-count" style="color:#8e84fa">0 seleccionados</span>
+        </label>
+        <div id="ci-sala-members-list" style="max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:2px">
+          <div style="text-align:center;padding:16px;color:#9BA3C0;font-size:13px">
+            <i class="fas fa-spinner fa-spin" style="margin-right:6px"></i>Cargando usuarios...
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="ci-modal-footer" style="justify-content:space-between">
+      <button id="ci-sala-delete-btn" onclick="ciEliminarSala()" style="display:none;padding:9px 16px;border-radius:10px;border:1px solid #fee2e2;background:#fff;color:#ef4444;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">
+        <i class="fas fa-trash" style="margin-right:5px"></i>Eliminar sala
+      </button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button onclick="ciCerrarNuevaSala()" style="padding:9px 16px;border-radius:10px;border:1px solid #e4e9f5;background:#fff;color:#9BA3C0;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+        <button class="ci-modal-save" onclick="ciGuardarSala()">
+          <i class="fas fa-check" style="margin-right:6px"></i><span id="ci-sala-save-label">Crear sala</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GESTIONAR PARTICIPANTES -->
+<div class="ci-modal-overlay" id="ci-modal-participantes" onclick="if(event.target===this)ciCerrarParticipantes()">
+  <div class="ci-modal">
+    <div class="ci-modal-header">
+      <span class="ci-modal-title"><i class="fas fa-users-cog" style="color:#8e84fa;margin-right:8px"></i>Participantes del chat</span>
+      <button class="ci-modal-close" onclick="ciCerrarParticipantes()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="ci-modal-body">
+      <p class="ci-modal-sub">Activa o desactiva quién puede participar en el chat general.</p>
+      <div id="ci-participants-list">
+        <div style="text-align:center;padding:20px;color:#9BA3C0;font-size:13px">
+          <i class="fas fa-spinner fa-spin" style="margin-right:6px"></i>Cargando usuarios...
+        </div>
+      </div>
+    </div>
+    <div class="ci-modal-footer">
+      <button class="ci-modal-save" onclick="ciGuardarParticipantes()">
+        <i class="fas fa-check" style="margin-right:6px"></i>Guardar cambios
+      </button>
+    </div>
+  </div>
+</div>

@@ -160,10 +160,10 @@
 .seg-tabs-bar {
   display: flex;
   align-items: stretch;
-  background: #f4f7fc;
-  border-top: 2px solid #9961FF;
+  background: #f3f4f6;
+  border-top: 1px solid #e8ecf5;
   border-bottom: 1px solid #e8ecf5;
-  border-radius: 10px 10px 0 0;
+  border-radius: 0;
   padding: 0 12px;
   flex-shrink: 0;
 }
@@ -176,7 +176,7 @@
   cursor: pointer;
   color: #7D84C1;
   font-size: 10px;
-  padding: 4px 6px;
+  padding: 4px 0 4px 6px;
   border-radius: 6px;
   transition: all .12s;
   display: flex;

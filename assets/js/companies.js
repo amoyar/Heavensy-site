@@ -34,9 +34,112 @@ const AVAILABILITY_LABELS = {
 // INICIALIZACIÓN
 // ============================================
 
+let _cpUsersInited = false;
+let _cpRolesInited  = false;
+let _cpViewMode     = 'heavensy'; // 'heavensy' | 'usuario'
+
 async function initCompaniesPage() {
-  console.log('🚀 Inicializando módulo de empresas');
+  _cpUsersInited = false;
+  _cpRolesInited  = false;
+  _cpViewMode = 'heavensy';
+  document.body.classList.add('heavensy-mode');
+
+  if (window.IS_HEAVENSY) {
+    const titleEl = document.querySelector('.companies-title');
+    if (titleEl) titleEl.textContent = 'Empresa Heavensy';
+    const uTitleEl = document.querySelector('.u-list-title');
+    if (uTitleEl) uTitleEl.textContent = 'Usuarios Heavensy';
+  }
+
+  _cpUpdateViewBtn();
   await fetchCompanies();
+  window.addEventListener('hashchange', _cpRestoreMode, { once: true });
+}
+
+function cpViewAsCompany(companyId) {
+  _cpViewMode = 'usuario';
+  document.body.classList.remove('heavensy-mode');
+  _companiesFiltered = _companies.filter(c => c.company_id === companyId);
+  renderCompanies();
+  window._cpOverrideCompanyId = companyId;
+  _cpUsersInited = false;
+  // Actualizar títulos con nombre de la empresa
+  const company = _companies.find(c => c.company_id === companyId);
+  const companyName = company?.name || companyId;
+  const titleEl = document.querySelector('.companies-title');
+  if (titleEl) titleEl.textContent = 'Empresa · ' + companyName;
+  const uTitleEl = document.querySelector('.u-list-title');
+  if (uTitleEl) uTitleEl.textContent = 'Usuarios · ' + companyName;
+  _cpUpdateViewBtn();
+}
+
+function _cpRestoreMode() {
+  if (window.IS_HEAVENSY) {
+    document.body.classList.add('heavensy-mode');
+  } else {
+    document.body.classList.remove('heavensy-mode');
+  }
+}
+
+function cpToggleView() {
+  const isHeavensy = document.body.classList.contains('heavensy-mode');
+  if (isHeavensy) {
+    _cpViewMode = 'usuario';
+    document.body.classList.remove('heavensy-mode');
+    // Mostrar solo empresa propia (HEAVENSY_001)
+    try {
+      const token = localStorage.getItem('token');
+      const p = JSON.parse(atob(token.split('.')[1]));
+      const userCompanyId = p.company_id || '';
+      _companiesFiltered = _companies.filter(c => c.company_id === userCompanyId);
+      window._cpOverrideCompanyId = userCompanyId;
+    } catch(e) { _companiesFiltered = []; }
+    renderCompanies();
+    _cpUsersInited = false;
+  } else {
+    _cpViewMode = 'heavensy';
+    document.body.classList.add('heavensy-mode');
+    // Restaurar todas las empresas y usuarios de HEAVENSY_001
+    _companiesFiltered = [..._companies];
+    window._cpOverrideCompanyId = null;
+    renderCompanies();
+    _cpUsersInited = false;
+    const titleEl = document.querySelector('.companies-title');
+    if (titleEl) titleEl.textContent = window.IS_HEAVENSY ? 'Empresa Heavensy' : 'Empresas';
+    const uTitleEl = document.querySelector('.u-list-title');
+    if (uTitleEl) uTitleEl.textContent = window.IS_HEAVENSY ? 'Usuarios Heavensy' : 'Usuarios';
+  }
+  _cpUpdateViewBtn();
+}
+
+function _cpUpdateViewBtn() {
+  if (typeof navUpdateEye === 'function') navUpdateEye();
+}
+
+function cpSwitchTab(tab, btn) {
+  document.querySelectorAll('.cp-main-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#companiesRoot .cp-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('cp-panel-' + tab).classList.add('active');
+
+  if (tab === 'usuarios' && !_cpUsersInited) {
+    _cpUsersInited = true;
+    if (typeof initUsersPage === 'function') initUsersPage();
+  }
+  if (tab === 'roles' && !_cpRolesInited) {
+    _cpRolesInited = true;
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const p = JSON.parse(atob(token.split('.')[1]));
+        window.rolCurrentUser = { id: p.user_id || p.sub, company_id: p.company_id, role: p.role };
+      }
+    } catch(e) {}
+    if (typeof rolCargarRoles === 'function') rolCargarRoles();
+  }
+  if (tab === 'catastro') {
+    if (typeof rolRenderCatalogo === 'function') rolRenderCatalogo();
+  }
 }
 
 // ============================================
@@ -111,6 +214,9 @@ function renderCompanies() {
         </label>
       </td>
       <td>
+        <button class="btn-icon btn-icon-hvy" title="Ver como empresa" onclick="cpViewAsCompany('${company.company_id}')">
+          <i class="fas fa-eye"></i>
+        </button>
         <button class="btn-icon" title="Editar" onclick="openWizard('${company.company_id}')">
           <i class="fas fa-pen"></i>
         </button>
@@ -123,15 +229,41 @@ function renderCompanies() {
   });
 }
 
-function updateStats() {
-  const total    = _companies.length;
-  const active   = _companies.filter(c => c.active !== false).length;
-  const inactive = total - active;
+const PLANES_LISTA = [
+  { id: 'gratis',          label: 'Gratis'              },
+  { id: 'automate',        label: 'Automate Pro'        },
+  { id: 'secretaria',      label: 'Secretar IA Premium' },
+  { id: 'enterprise',      label: 'Enterprise'          },
+  { id: 'enterprise_full', label: 'Enterprise Full'     },
+];
 
-  const el = id => document.getElementById(id);
-  if (el('st-total'))    el('st-total').textContent    = total;
-  if (el('st-active'))   el('st-active').textContent   = active;
-  if (el('st-inactive')) el('st-inactive').textContent = inactive;
+function updateStats() {
+  const total = _companies.length;
+  const el    = id => document.getElementById(id);
+  if (el('st-total')) el('st-total').textContent = total;
+
+  const bar = el('st-plans-bar');
+  if (!bar) return;
+
+  // Contar empresas por plan_id
+  const counts = {};
+  _companies.forEach(c => {
+    const pid = (c.plan_id || '').toLowerCase();
+    counts[pid] = (counts[pid] || 0) + 1;
+  });
+
+  // Limpiar cards anteriores
+  bar.querySelectorAll('.stat-plan').forEach(s => s.remove());
+
+  // Una card fija por cada plan conocido
+  PLANES_LISTA.forEach(({ id, label }) => {
+    const div = document.createElement('div');
+    div.className = 'stat stat-plan';
+    div.innerHTML =
+      '<div class="stat-label">' + label + '</div>' +
+      '<div class="stat-val">' + (counts[id] || 0) + '</div>';
+    bar.appendChild(div);
+  });
 }
 
 // ── Filtros ───────────────────────────────────
@@ -269,7 +401,7 @@ function closeWizard() {
 }
 
 function showView(viewId) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('#cp-panel-empresas .view').forEach(v => v.classList.remove('active'));
   const view = document.getElementById(viewId);
   if (view) view.classList.add('active');
 }
@@ -649,6 +781,9 @@ async function saveCompany() {
 // ============================================
 
 window.initCompaniesPage    = initCompaniesPage;
+window.cpSwitchTab          = cpSwitchTab;
+window.cpToggleView         = cpToggleView;
+window.cpViewAsCompany      = cpViewAsCompany;
 window.openWizard           = openWizard;
 window.closeWizard          = closeWizard;
 window.wGoStep              = wGoStep;

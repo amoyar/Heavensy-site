@@ -1,18 +1,111 @@
-<!-- ROLES PAGE -->
-<div class="container mx-auto">
-  <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">
-      <i class="fas fa-shield-alt text-blue-600"></i>
-      Roles y Permisos
-    </h1>
-    <p class="text-gray-600 mt-1">Gestiona los roles del sistema y sus permisos</p>
+<!-- ROLES Y PERMISOS -->
+<div class="rol-page">
+
+  <!-- Header -->
+  <div class="rol-header">
+    <div class="rol-header-title">
+      <div class="rol-header-icon"><i class="fas fa-shield-alt"></i></div>
+      <div>
+        <h1>Roles y Permisos</h1>
+        <p>Gestiona los roles de tu equipo y sus niveles de acceso</p>
+      </div>
+    </div>
+    <button class="rol-btn-nuevo" onclick="rolAbrirCrear()">
+      <i class="fas fa-plus"></i> Nuevo rol
+    </button>
   </div>
 
-  <!-- Roles Container -->
-  <div class="bg-white rounded-lg shadow p-6">
-    <h3 class="text-lg font-semibold mb-4">Roles del Sistema</h3>
-    <div id="rolesContainer" class="space-y-4">
-      <!-- Los roles se cargarán dinámicamente -->
+  <!-- Tabs -->
+  <div class="rol-tabs">
+    <button class="rol-tab-btn active" onclick="rolTab('roles')">
+      <i class="fas fa-shield-alt" style="margin-right:6px"></i>Roles y Permisos
+    </button>
+    <button class="rol-tab-btn" onclick="rolTab('usuarios')">
+      <i class="fas fa-users" style="margin-right:6px"></i>Usuarios
+    </button>
+    <button class="rol-tab-btn" onclick="rolTab('catalogo')">
+      <i class="fas fa-table" style="margin-right:6px"></i>Catastro
+    </button>
+  </div>
+
+  <!-- Body -->
+  <div class="rol-body">
+
+    <!-- ── TAB: ROLES (acordeón) ── -->
+    <div id="rol-tab-roles" class="rol-tab-content active">
+      <div class="rol-acordeon-wrap">
+        <div id="rol-acordeon">
+          <div style="text-align:center;padding:40px;color:#9ba3c0;font-size:13px">
+            <i class="fas fa-spinner fa-spin"></i> Cargando roles...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: USUARIOS ── -->
+    <div id="rol-tab-usuarios" class="rol-tab-content">
+      <div class="rol-usuarios-wrap">
+        <div class="rol-usuarios-header">
+          <div class="rol-usuarios-title">Usuarios y sus roles</div>
+          <div class="rol-search">
+            <i class="fas fa-search" style="color:#9ba3c0;font-size:12px"></i>
+            <input type="text" placeholder="Buscar usuario..." oninput="rolFiltrarUsuarios(this.value)">
+          </div>
+        </div>
+        <div id="rol-usuarios-tabla">
+          <div style="text-align:center;padding:40px;color:#9ba3c0;font-size:13px">
+            <i class="fas fa-spinner fa-spin"></i> Cargando usuarios...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: CATASTRO ── -->
+    <div id="rol-tab-catalogo" class="rol-tab-content">
+      <div class="rol-catalogo-wrap">
+        <div class="rol-catalogo-title">Catastro de funciones por rol</div>
+        <div class="rol-catalogo-table-wrap">
+          <table class="rol-catalogo-table" id="rol-catalogo-table">
+            <thead id="rol-catalogo-head"></thead>
+            <tbody id="rol-catalogo-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODAL CREAR / EDITAR ROL ── -->
+<div class="rol-modal-overlay" id="rol-modal" style="display:none" onclick="if(event.target===this)rolCerrarModal()">
+  <div class="rol-modal">
+    <div class="rol-modal-header">
+      <span class="rol-modal-title">
+        <i class="fas fa-shield-alt" style="color:#8e84fa"></i>
+        <span id="rol-modal-titulo">Nuevo rol</span>
+      </span>
+      <button class="rol-modal-close" onclick="rolCerrarModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="rol-modal-body">
+      <div style="margin-bottom:14px">
+        <label class="rol-form-label">Nombre del rol</label>
+        <input type="text" id="rol-input-nombre" class="rol-form-input" placeholder="Ej: Coordinador, Recepcionista...">
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="rol-form-label">Descripción (opcional)</label>
+        <input type="text" id="rol-input-desc" class="rol-form-input" placeholder="Describe qué hace este rol...">
+      </div>
+      <div>
+        <label class="rol-form-label">Color</label>
+        <div class="rol-color-grid" id="rol-color-grid"></div>
+        <input type="hidden" id="rol-input-color" value="#8e84fa">
+      </div>
+    </div>
+    <div class="rol-modal-footer">
+      <button class="rol-btn-cancel" onclick="rolCerrarModal()">Cancelar</button>
+      <button class="rol-btn-nuevo" onclick="rolGuardarRol()">
+        <i class="fas fa-check"></i> Guardar
+      </button>
     </div>
   </div>
 </div>

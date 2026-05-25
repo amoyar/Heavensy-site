@@ -6,7 +6,7 @@
 
     <div class="seg-lp-header">
       <div class="seg-lp-title-row">
-        <div class="seg-lp-icon"><i class="fas fa-notes-medical"></i></div>
+        <div class="seg-lp-icon"><i class="fas fa-layer-group"></i></div>
         <span class="seg-lp-title">Seguimiento</span>
         <button class="seg-lp-collapse-btn seg-hidden" id="seg-btn-collapse-left"
           onclick="segToggleLeftPanel()" data-seg-tooltip="Colapsar panel">
@@ -71,7 +71,7 @@
 
     <!-- Empty state -->
     <div class="seg-empty-state" id="seg-empty-main">
-      <i class="fas fa-notes-medical"></i>
+      <i class="fas fa-layer-group"></i>
       <p>Selecciona un registro</p>
       <span>Elige una empresa y luego un <span id="lbl-empty-cliente">cliente</span> del panel izquierdo</span>
     </div>
@@ -100,56 +100,74 @@
         </div>
       </div>
 
-      <!-- TIMELINE -->
+      <!-- ÁREA SCROLLEABLE -->
       <div class="seg-scroll-area">
-      <div class="seg-tl-wrap">
-        <div class="seg-tl-bar" onclick="segToggleTL()">
-          <i class="fas fa-stream seg-tl-bar-icon"></i>
-          <span class="seg-tl-bar-title" id="seg-tl-titulo">Línea de tiempo</span>
-          <button class="seg-tl-hora-toggle" id="seg-tl-toggle-hora"
-            onclick="event.stopPropagation();segTlToggleHora(this)"
-            data-seg-tooltip="Mostrar/ocultar hora en la línea de tiempo">
+
+      <!-- ARCHIVADOR: Línea de tiempo · Evolución · Derivaciones -->
+      <div class="seg-arch-bar">
+
+        <!-- Tab: Línea de tiempo -->
+        <div class="seg-arch-tab active" id="seg-arch-btn-tl" onclick="segArchTab('tl', this)">
+          <i class="fas fa-stream"></i>
+          <span class="seg-arch-tab-title" id="seg-tl-titulo">Línea de tiempo</span>
+          <span class="seg-arch-tab-pill" id="seg-tl-toggle-hora"
+            onclick="event.stopPropagation();segTlToggleHora(this)">
             <i class="fas fa-clock"></i> Hora
-          </button>
-          <i class="fas fa-chevron-down seg-tl-chevron" id="seg-tl-chev"></i>
+          </span>
         </div>
+
+        <div class="seg-arch-sep"></div>
+
+        <!-- Tab: Evolución de intensidades -->
+        <div class="seg-arch-tab" id="seg-arch-btn-evo" onclick="segArchTab('evo', this)">
+          <i class="fas fa-chart-line"></i>
+          <span class="seg-arch-tab-title">Evolución de intensidades</span>
+          <span class="seg-arch-tab-meta" id="seg-evo-sesiones"></span>
+        </div>
+
+        <div class="seg-arch-sep"></div>
+
+        <!-- Tab: Derivaciones -->
+        <div class="seg-arch-tab" id="seg-arch-btn-der" onclick="segArchTab('der', this)"
+          ondragover="segDerBarDragOver(event)"
+          ondragleave="segDerBarDragLeave(event)"
+          ondrop="segDerBarDrop(event)">
+          <i class="fas fa-code-branch"></i>
+          <span class="seg-arch-tab-title" id="seg-der-labels-title">Derivaciones</span>
+          <span class="seg-arch-tab-meta" id="seg-der-sub"></span>
+        </div>
+
+        <button class="seg-arch-collapse-btn" id="seg-arch-collapse-btn"
+          onclick="segArchToggle()" data-seg-tooltip="Colapsar">
+          <i class="fas fa-chevron-up" id="seg-arch-chev"></i>
+        </button>
+
+      </div><!-- /.seg-arch-bar -->
+
+      <!-- Contenido: Línea de tiempo -->
+      <div class="seg-tl-wrap" id="seg-arch-panel-tl">
         <div class="seg-tl-content" id="seg-tl-content">
           <div class="seg-tl-events" id="seg-tl-events"></div>
           <button class="seg-tl-add-btn" onclick="segAddEvento()">+ evento</button>
         </div>
+      </div>
 
-        <!-- Panel evolución de intensidades (colapsable) -->
-        <div class="seg-evo-panel" id="seg-evo-panel">
-          <div class="seg-evo-bar" onclick="segToggleEvo()">
-            <i class="fas fa-chart-line" style="font-size:9px;color:#7D84C1;opacity:.7;"></i>
-            <span class="seg-evo-title">Evolución de intensidades</span>
-            <span class="seg-evo-sesiones" id="seg-evo-sesiones"></span>
-            <i class="fas fa-chevron-down seg-evo-chevron" id="seg-evo-chev"></i>
-          </div>
-          <div class="seg-evo-content seg-hidden" id="seg-evo-content">
-            <div class="seg-evo-legend" id="seg-evo-legend"></div>
-            <div class="seg-evo-chart-scroll">
-              <div class="seg-evo-chart-wrap">
-                <canvas id="seg-evo-chart" role="img" aria-label="Evolución de intensidades por sesión"></canvas>
-              </div>
+      <!-- Contenido: Evolución de intensidades -->
+      <div class="seg-evo-panel seg-hidden" id="seg-evo-panel">
+        <div class="seg-evo-content" id="seg-evo-content">
+          <div class="seg-evo-legend" id="seg-evo-legend"></div>
+          <div class="seg-evo-chart-scroll">
+            <div class="seg-evo-chart-wrap">
+              <canvas id="seg-evo-chart" role="img" aria-label="Evolución de intensidades por sesión"></canvas>
             </div>
-            <div class="seg-evo-stats" id="seg-evo-stats"></div>
           </div>
+          <div class="seg-evo-stats" id="seg-evo-stats"></div>
         </div>
       </div>
 
-      <!-- Panel derivaciones (colapsable) -->
-      <div class="seg-der-panel" id="seg-der-panel">
-        <div class="seg-der-bar" onclick="segToggleDer()"
-          ondragover="segDerBarDragOver(event)"
-          ondragleave="segDerBarDragLeave(event)"
-          ondrop="segDerBarDrop(event)">
-          <i class="fas fa-code-branch" style="font-size:9px;color:#7D84C1;opacity:.7;"></i>
-          <span class="seg-der-title" id="seg-der-labels-title">Derivaciones</span>
-          <span class="seg-der-sub" id="seg-der-sub"></span>
-          <i class="fas fa-chevron-down seg-der-chev" id="seg-der-chev"></i>
-        </div>
-        <div class="seg-der-content seg-hidden" id="seg-der-content">
+      <!-- Contenido: Derivaciones -->
+      <div class="seg-der-panel seg-hidden" id="seg-der-panel">
+        <div class="seg-der-content" id="seg-der-content">
           <div class="seg-der-chips" id="seg-der-chips"></div>
           <div class="seg-der-detail seg-hidden" id="seg-der-detail">
             <div class="seg-der-detail-hdr">

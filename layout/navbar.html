@@ -20,6 +20,18 @@
   <!-- Derecha -->
   <div class="hv-nav-right">
 
+    <!-- Ojo de vista (hvy-only) -->
+    <button id="nav-view-toggle" onclick="navToggleView()"
+      style="display:none;background:none;border:none;cursor:pointer;align-items:center;justify-content:center;padding:4px;flex-shrink:0;color:rgba(255,255,255,0.75);transition:color .15s;"
+      onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.75)'">
+      <svg id="nav-eye-svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113z"/>
+        <circle cx="12" cy="12" r="3.2"/>
+      </svg>
+    </button>
+
+    <div class="hv-nav-divider"></div>
+
     <!-- IA / Estado de conexión -->
     <div id="connectionStatus" class="hv-nav-status" style="cursor:default;gap:7px">
       <svg id="connectionDot" width="16" height="16" viewBox="0 0 24 24" fill="none"

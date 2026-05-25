@@ -14,7 +14,7 @@ function checkAuth() {
 
   if (!token && !currentPage.includes('login.html')) {
     console.log('❌ No hay token, redirigiendo a login...');
-    window.location.replace('pages/login.html');
+    window.location.replace('login.html');
     return false;
   }
 
@@ -24,6 +24,52 @@ function checkAuth() {
 if (window.location.pathname.includes('index.html') || window.location.pathname.endsWith('/')) {
   checkAuth();
 }
+
+// ============================================
+// HEAVENSY MODE (funciones internas HVY)
+// ============================================
+
+function initHeavensyMode() {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    window.IS_HEAVENSY = (payload.company_id === 'HEAVENSY_001');
+    if (window.IS_HEAVENSY) {
+      document.body.classList.add('heavensy-mode');
+      const btn = document.getElementById('nav-view-toggle');
+      if (btn) btn.style.display = 'inline-flex';
+    }
+  } catch {}
+}
+initHeavensyMode();
+
+function navUpdateEye() {
+  const btn = document.getElementById('nav-view-toggle');
+  if (!btn) return;
+  const isHeavensy = document.body.classList.contains('heavensy-mode');
+  btn.style.color = isHeavensy ? 'rgba(255,255,255,0.75)' : '#c4b5fd';
+  btn.title = isHeavensy ? 'Vista: Heavensy' : 'Vista: Usuario';
+}
+
+function navToggleView() {
+  // Delegar a cpToggleView si estamos en companies
+  if (typeof cpToggleView === 'function' && document.getElementById('companiesRoot')) {
+    cpToggleView();
+    navUpdateEye();
+    return;
+  }
+  // Toggle global puro
+  const isHeavensy = document.body.classList.contains('heavensy-mode');
+  if (isHeavensy) {
+    document.body.classList.remove('heavensy-mode');
+  } else {
+    document.body.classList.add('heavensy-mode');
+  }
+  navUpdateEye();
+}
+window.navToggleView  = navToggleView;
+window.navUpdateEye   = navUpdateEye;
 
 // ============================================
 // COMPANY CONFIG
@@ -84,7 +130,7 @@ async function apiCall(endpoint, options = {}) {
 
     if (res.status === 401) {
       localStorage.clear();
-      window.location.replace('pages/login.html');
+      window.location.replace('login.html');
       return { ok: false };
     }
 

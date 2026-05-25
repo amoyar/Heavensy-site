@@ -509,3 +509,11 @@ input[type="text"]:focus {
   /* Panel de conversaciones: ocultar lista en mobile cuando hay chat abierto */
   #conversationsList { min-width: 100%; }
 }
+
+/* ── Heavensy-only features ── */
+.hvy-only { display: none !important; }
+.heavensy-mode .hvy-only { display: flex !important; }
+.heavensy-mode a.hvy-only { display: flex !important; }
+.heavensy-mode button.hvy-only { display: flex !important; }
+.heavensy-mode .stats.hvy-only { display: grid !important; }
+.heavensy-mode .filters-bar.hvy-only { display: flex !important; }
