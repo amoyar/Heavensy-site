@@ -297,21 +297,26 @@ async function ciLoadCompanyName() {
 // ── CARGAR PARTICIPANTES ──
 async function ciLoadParticipants() {
   try {
-    const res = await apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/participants`);
-    if (res.ok) {
-      ciParticipants = res.data.participants || [];
-    } else {
-      // Fallback: cargar usuarios de la empresa
-      const usersRes = await apiCall(`/api/companies/${ciCurrentUser.company_id}/users`);
-      if (usersRes.ok) {
-        ciParticipants = (usersRes.data.users || []).map(u => ({
-          user_id:  u.user_id || u._id,
-          name:     u.username || u.name || u.email,
-          role:     u.role || 'usuario',
-          enabled:  true
-        }));
-      }
+    // 1. Cargar todos los usuarios de la empresa (fuente de verdad)
+    const usersRes = await apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/members`);
+    const allUsers = usersRes.ok
+      ? (usersRes.data.users || []).map(u => ({
+          user_id: u.user_id,
+          name:    u.name,
+          role:    u.role || 'usuario',
+          enabled: true  // habilitado por defecto
+        }))
+      : [];
+
+    // 2. Si hay una config de participantes guardada, aplicar el filtro
+    const partRes = await apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/participants`);
+    if (partRes.ok && partRes.data.participants && partRes.data.participants.length > 0) {
+      const enabledIds = new Set(partRes.data.participants);
+      allUsers.forEach(u => { u.enabled = enabledIds.has(u.user_id); });
     }
+    // Sin config guardada → todos habilitados (ya es el default)
+
+    ciParticipants = allUsers;
   } catch (e) {
     console.warn('No se pudieron cargar participantes:', e.message);
     ciParticipants = [];
@@ -500,7 +505,7 @@ function ciCheckMention(input) {
   if (match) {
     const query = match[1].toLowerCase();
     const results = ciParticipants.filter(p =>
-      p.name.toLowerCase().includes(query) && p.user_id !== ciCurrentUser.id
+      p.enabled && p.name.toLowerCase().includes(query) && p.user_id !== ciCurrentUser.id
     );
     ciShowMentionPopup(results);
   } else {
@@ -914,9 +919,13 @@ function ciShowTaskBellNotification(data) {
 }
 
 // ── MODAL PARTICIPANTES ──
-function ciAbrirParticipantes() {
+async function ciAbrirParticipantes() {
   const overlay = document.getElementById('ci-modal-participantes');
   overlay.classList.add('open');
+  // Mostrar estado de carga mientras se refrescan los datos
+  const list = document.getElementById('ci-participants-list');
+  if (list) list.innerHTML = '<p style="text-align:center;color:#9BA3C0;font-size:13px;padding:20px"><i class="fas fa-spinner fa-spin"></i> Cargando...</p>';
+  await ciLoadParticipants();
   ciRenderParticipantsModal();
 }
 
@@ -931,6 +940,7 @@ function ciRenderParticipantsModal() {
     return;
   }
 
+  // Mostrar todos los usuarios con su estado habilitado/deshabilitado
   list.innerHTML = ciParticipants.map(p => `
     <div class="ci-participant-item">
       <div class="ci-participant-avatar">${ciInitials(p.name)}</div>
@@ -940,7 +950,8 @@ function ciRenderParticipantsModal() {
       </div>
       <button class="ci-toggle ${p.enabled ? 'on' : ''}"
               id="ci-toggle-${p.user_id}"
-              onclick="ciToggleParticipant('${p.user_id}', this)">
+              onclick="ciToggleParticipant('${p.user_id}', this)"
+              title="${p.enabled ? 'Deshabilitar acceso' : 'Habilitar acceso'}">
       </button>
     </div>
   `).join('');
@@ -955,10 +966,13 @@ function ciToggleParticipant(userId, btn) {
 async function ciGuardarParticipantes() {
   try {
     const enabled = ciParticipants.filter(p => p.enabled).map(p => p.user_id);
-    await apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/participants`, {
+    const res = await apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/participants`, {
       method: 'PUT',
       body: JSON.stringify({ enabled_users: enabled })
     });
+    if (!res.ok) throw new Error('Error al guardar participantes');
+    // Recargar para reflejar el estado guardado
+    await ciLoadParticipants();
     ciSocket?.emit('internal_participants_updated', { company_id: ciCurrentUser.company_id });
     ciCerrarParticipantes();
   } catch (e) {
@@ -1648,7 +1662,7 @@ function ciAbrirTarea() {
   // Cargar responsables
   const container = document.getElementById('ci-tarea-responsables');
   const participants = ciParticipants.length
-    ? ciParticipants
+    ? ciParticipants.filter(p => p.enabled)
     : Object.values(ciOnlineUsers).map(u => ({ user_id: u.id, name: u.name, role: u.role }));
 
   container.innerHTML = participants.map(p => `
@@ -2133,7 +2147,7 @@ function ciAbrirNuevoPrivado() {
 
   // Personas disponibles: participantes excluyendo al usuario actual
   const personas = ciParticipants.length
-    ? ciParticipants.filter(p => p.user_id !== ciCurrentUser.id)
+    ? ciParticipants.filter(p => p.enabled && p.user_id !== ciCurrentUser.id)
     : Object.values(ciOnlineUsers).filter(u => u.id !== ciCurrentUser.id)
         .map(u => ({ user_id: u.id, name: u.name, role: u.role }));
 
