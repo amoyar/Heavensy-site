@@ -18,8 +18,6 @@ let ciTypingUsers   = {};     // { room: [user_name,...] }
 let ciMentionIndex  = -1;     // índice en el popup de menciones
 let ciIsAdmin       = false;
 let ciTypingTimeout = null;
-const _ciRenderedMsgIds = new Set(); // deduplicación de mensajes
-const _ciSentBuffer = []; // buffer anti-eco: [{text, ts}]
 let ciWasTyping     = false;
 let ciTotalUnread   = 0;
 
@@ -115,10 +113,6 @@ async function ciConnectSocket() {
 
   // Mensaje general recibido
   ciSocket.on('internal_message', (msg) => {
-    // Filtrar eco propio: buscar en buffer de mensajes recién enviados
-    const now = Date.now();
-    const idx = _ciSentBuffer.findIndex(s => s.text === msg.text && now - s.ts < 5000);
-    if (idx !== -1) { _ciSentBuffer.splice(idx, 1); return; }
     ciReceiveMessage('general', msg);
   });
 
@@ -346,11 +340,6 @@ async function ciLoadHistory(roomId) {
 
 // ── RECIBIR MENSAJE ──
 function ciReceiveMessage(roomId, msg) {
-  // Deduplicación: ignorar si ya se renderizó este mensaje
-  if (msg.msg_id) {
-    if (_ciRenderedMsgIds.has(msg.msg_id)) return;
-    _ciRenderedMsgIds.add(msg.msg_id);
-  }
   if (!ciMessages[roomId]) ciMessages[roomId] = [];
   ciMessages[roomId].push(msg);
 
@@ -381,7 +370,6 @@ function ciEnviar() {
   if (!text) return;
 
   const msg = {
-    msg_id:    ciCurrentUser.id + '_' + Date.now(),
     from_id:   ciCurrentUser.id,
     from_name: ciCurrentUser.name,
     from_role: ciCurrentUser.role,
@@ -400,9 +388,6 @@ function ciEnviar() {
     ciStopTyping();
     return;
   }
-
-  // Registrar en buffer anti-eco antes de emitir
-  _ciSentBuffer.push({ text: msg.text, ts: Date.now() });
 
   if (ciActiveChat === 'general') {
     ciSocket.emit('internal_message', msg);
