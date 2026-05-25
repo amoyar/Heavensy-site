@@ -18,6 +18,7 @@ let ciTypingUsers   = {};     // { room: [user_name,...] }
 let ciMentionIndex  = -1;     // índice en el popup de menciones
 let ciIsAdmin       = false;
 let ciTypingTimeout = null;
+const _ciRenderedMsgIds = new Set(); // deduplicación de mensajes
 let ciWasTyping     = false;
 let ciTotalUnread   = 0;
 
@@ -67,6 +68,11 @@ async function initChat_internoPage() {
 
 // ── SOCKET ──
 async function ciConnectSocket() {
+  // Evitar doble conexión si el socket ya está activo
+  if (ciSocket && ciSocket.connected) return;
+  // Desconectar socket anterior si existe pero no está conectado
+  if (ciSocket) { ciSocket.disconnect(); ciSocket = null; }
+
   if (typeof io === 'undefined') {
     await new Promise((res, rej) => {
       const s = document.createElement('script');
@@ -108,12 +114,14 @@ async function ciConnectSocket() {
 
   // Mensaje general recibido
   ciSocket.on('internal_message', (msg) => {
+    if (msg.from_id === ciCurrentUser.id) return; // ya renderizado localmente en ciEnviar
     ciReceiveMessage('general', msg);
   });
 
   // Mensaje privado recibido
   ciSocket.on('internal_private_message', (msg) => {
     const roomId = msg.from_id === ciCurrentUser.id ? msg.to_id : msg.from_id;
+    if (msg.from_id === ciCurrentUser.id) return; // ya renderizado localmente en ciEnviar
     ciReceiveMessage(roomId, msg);
 
     // Si viene de alguien nuevo, agregar su chat a privados
@@ -334,6 +342,11 @@ async function ciLoadHistory(roomId) {
 
 // ── RECIBIR MENSAJE ──
 function ciReceiveMessage(roomId, msg) {
+  // Deduplicación: ignorar si ya se renderizó este mensaje
+  if (msg.msg_id) {
+    if (_ciRenderedMsgIds.has(msg.msg_id)) return;
+    _ciRenderedMsgIds.add(msg.msg_id);
+  }
   if (!ciMessages[roomId]) ciMessages[roomId] = [];
   ciMessages[roomId].push(msg);
 
@@ -364,6 +377,7 @@ function ciEnviar() {
   if (!text) return;
 
   const msg = {
+    msg_id:    ciCurrentUser.id + '_' + Date.now(),
     from_id:   ciCurrentUser.id,
     from_name: ciCurrentUser.name,
     from_role: ciCurrentUser.role,
