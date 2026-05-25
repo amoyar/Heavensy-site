@@ -496,16 +496,17 @@ async function calDeleteAppointment(a) {
 }
 
 // ── BLOQUEAR HORARIO ──
-async function calBlockSchedule(resourceId, date, start, end, reason) {
+async function calBlockSchedule(resourceId, date, start, end, blockType, reason) {
   const res = await apiCall(`/api/agenda/schedule/${resourceId}/block`, {
     method: 'POST',
-    body: JSON.stringify({ date, start, end, reason })
+    body: JSON.stringify({ date, start, end, block_type: blockType || 'Sin motivo', reason: reason || '' })
   });
   if (res.ok) {
     // Guardar localmente para visualizar (el backend no tiene GET de excepciones en el calendario)
     CAL_LOCAL_BLOCKS.push({
       id: res.data?.exception_id || Date.now().toString(),
       resource_id: resourceId,
+      block_type: blockType || 'Sin motivo',
       resource_name: calResources.find(r => r._id === resourceId)?.name || 'Recurso',
       date, start, end, reason
     });
@@ -530,6 +531,7 @@ async function calDeleteBlock(exceptionId) {
 }
 
 let CAL_LOCAL_BLOCKS = [];
+let calExcReasonFilter = new Set(); // filtro motivo panel bloqueos (sumativos)
 
 async function calLoadBlocksForResource(resourceId) {
   try {
@@ -546,10 +548,11 @@ async function calLoadBlocksForResource(resourceId) {
             id: e._id,
             resource_id:   e.resource_id,
             resource_name: calResources.find(r => r._id === e.resource_id)?.name || '',
-            date:   e.date,
-            start:  e.start  || '00:00',
-            end:    e.end    || '23:59',
-            reason: e.reason || '',
+            date:          e.date,
+            start:         e.start  || '00:00',
+            end:           e.end    || '23:59',
+            block_type:    e.block_type || 'Sin motivo',
+            reason:        e.reason || '',
           });
         }
       });
@@ -882,7 +885,8 @@ function calBuildBlockCard(b) {
   const card = document.createElement('div');
   card.className = 'appt bloqueado';
   card.innerHTML = `
-    <span class="appt-name" style="color:#383838"><i class="fas fa-ban" style="font-size:9px;margin-right:3px"></i>${b.reason || 'Bloqueado'}</span>
+    <span class="appt-name" style="color:#383838"><i class="fas fa-ban" style="font-size:9px;margin-right:3px"></i>${b.block_type || 'Bloqueado'}</span>
+    ${b.reason ? `<span class="appt-service" style="color:#383838;opacity:.75">${b.reason}</span>` : ''}
     <span class="appt-service" style="color:#8a2a2a;opacity:.8">${b.resource_name || ''}</span>`;
   return card;
 }
@@ -1734,10 +1738,19 @@ function calRenderExcList() {
   const list = document.getElementById('exc-list');
   if (!list) return;
 
+  // Renderizar chips de motivo
+  const reasonWrap = document.getElementById('exc-filter-reason-chips');
+  if (reasonWrap) {
+    const reasons = ['Vacaciones','Feriado','Enfermedad','Capacitación','Sin motivo','Otro'];
+    reasonWrap.innerHTML = `<div class="exc-filter-chip${calExcReasonFilter.size===0 ? ' on' : ''}" onclick="calExcReasonFilter=new Set();calRenderExcList()">Todos</div>`
+      + reasons.map(r => `<div class="exc-filter-chip${calExcReasonFilter.has(r) ? ' on' : ''}" onclick="_calExcToggleReason('${r}')">${r}</div>`).join('');
+  }
+
   const period = _calExcGetPeriodDates();
   const filtered = CAL_LOCAL_BLOCKS.filter(b =>
     b.date >= period.start && b.date <= period.end &&
-    (!calProfFilter || b.resource_id === calProfFilter)
+    (!calProfFilter || b.resource_id === calProfFilter) &&
+    (calExcReasonFilter.size === 0 || calExcReasonFilter.has(b.block_type))
   );
 
   if (!filtered.length) {
@@ -1748,7 +1761,8 @@ function calRenderExcList() {
     <div class="exc-item">
       <div class="exc-item-date"><i class="fas fa-calendar" style="margin-right:5px"></i>${b.date} · ${b.start}–${b.end}</div>
       <div class="exc-item-reason">${b.resource_name}</div>
-      <div style="font-size:11px;color:#6b7194;margin-top:2px">${b.reason}</div>
+      <div style="font-size:11px;color:#6b7194;margin-top:2px">${b.block_type || 'Sin motivo'}</div>
+      ${b.reason ? `<div style="font-size:11px;color:#9BA3C0;margin-top:1px">${b.reason}</div>` : ''}
       <button class="exc-del" onclick="deleteExc('${b.id}')"><i class="fas fa-times"></i></button>
     </div>`).join('');
 }
@@ -1758,28 +1772,35 @@ async function addException() {
   const date   = document.getElementById('exc-date')?.value;
   const start  = document.getElementById('exc-start')?.value || '09:00';
   const end    = document.getElementById('exc-end')?.value   || '18:00';
-  const reason = document.getElementById('exc-reason')?.value || 'Sin motivo';
+  const blockType = document.getElementById('exc-reason')?.value || 'Sin motivo';
+  const reason    = document.getElementById('exc-motivo')?.value?.trim() || '';
   if (!date) { calShowToast('Selecciona una fecha', 'warning'); return; }
   if (!resourceId && calResources.length) { calShowToast('Selecciona un recurso', 'warning'); return; }
 
   if (resourceId === 'todos') {
     let ok = 0;
     for (const r of calResources) {
-      const id = await calBlockSchedule(r._id, date, start, end, reason);
+      const id = await calBlockSchedule(r._id, date, start, end, blockType, reason);
       if (id) ok++;
     }
     if (ok > 0) {
-      const excReason = document.getElementById('exc-reason');
-      if (excReason) excReason.value = '';
+      document.getElementById('exc-reason').value = 'Sin motivo';
+      const excReasonLbl = document.getElementById('exc-reason-label');
+      if (excReasonLbl) excReasonLbl.textContent = 'Sin motivo';
+      const excMotivo = document.getElementById('exc-motivo');
+      if (excMotivo) excMotivo.value = '';
       calShowToast(`Bloqueo creado para ${ok} profesionales`);
       calRenderExcList();
       calRender();
     }
   } else {
-    const id = await calBlockSchedule(resourceId, date, start, end, reason);
+    const id = await calBlockSchedule(resourceId, date, start, end, blockType, reason);
     if (id) {
-      const excReason = document.getElementById('exc-reason');
-      if (excReason) excReason.value = '';
+      document.getElementById('exc-reason').value = 'Sin motivo';
+      const excReasonLbl = document.getElementById('exc-reason-label');
+      if (excReasonLbl) excReasonLbl.textContent = 'Sin motivo';
+      const excMotivo = document.getElementById('exc-motivo');
+      if (excMotivo) excMotivo.value = '';
       calRenderExcList();
       calRender();
     }
@@ -2257,6 +2278,13 @@ function _excSelReason(value) {
 }
 window._excSelReason = _excSelReason;
 
+function _calExcToggleReason(r) {
+  if (calExcReasonFilter.has(r)) calExcReasonFilter.delete(r);
+  else calExcReasonFilter.add(r);
+  calRenderExcList();
+}
+window._calExcToggleReason = _calExcToggleReason;
+
 function _excSelectOption(dropId, hiddenId, labelId, triggerId, el) {
   document.getElementById(hiddenId).value = el.dataset.value;
   const lbl = document.getElementById(labelId);
@@ -2492,6 +2520,7 @@ async function initCalendarioPage() {
   calLoadedMonths    = new Set();
   CAL_GROUP_EVENTS   = [];
   CAL_LOCAL_BLOCKS   = [];
+  calExcReasonFilter = new Set();
   calSelectedAppts.clear();
   CAL_LOCAL_MOVES.clear();
   document.documentElement.style.setProperty('--hour-h', getHourH() + 'px');

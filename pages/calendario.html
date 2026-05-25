@@ -172,6 +172,10 @@
     <span class="exc-panel-title"><i class="fas fa-ban" style="color:#ef4444;margin-right:8px"></i>Bloqueos de agenda</span>
     <button class="modal-close" onclick="closeExceptions()">✕</button>
   </div>
+  <div class="exc-filter-zone">
+    <div class="exc-filter-label">Filtrar por tipo</div>
+    <div class="exc-chips-row" id="exc-filter-reason-chips"></div>
+  </div>
   <div class="exc-panel-body">
     <div id="exc-list"></div>
     <div class="exc-add-form">
@@ -216,16 +220,19 @@
         <!-- Tipo — custom select -->
         <div class="form-group">
           <label>Tipo</label>
-          <input type="hidden" id="exc-type" value="block">
+          <input type="hidden" id="exc-reason" value="Sin motivo">
           <div class="exc-custom-select-wrap">
-            <div class="exc-custom-select-trigger" id="exc-type-trigger" onclick="_excToggleSelect('exc-type-drop','exc-type-trigger')">
-              <span id="exc-type-label">Bloqueo</span>
+            <div class="exc-custom-select-trigger" id="exc-reason-trigger" onclick="_excToggleSelect('exc-reason-drop','exc-reason-trigger')">
+              <span id="exc-reason-label">Sin motivo</span>
               <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M0 0l5 6 5-6z" fill="#9BA3C0"/></svg>
             </div>
-            <div class="exc-custom-dropdown" id="exc-type-drop">
-              <div class="exc-custom-option active" data-value="block" onclick="_excSelectOption('exc-type-drop','exc-type','exc-type-label','exc-type-trigger',this)">Bloqueo</div>
-              <div class="exc-custom-option" data-value="vacation" onclick="_excSelectOption('exc-type-drop','exc-type','exc-type-label','exc-type-trigger',this)">Vacaciones</div>
-              <div class="exc-custom-option" data-value="sick" onclick="_excSelectOption('exc-type-drop','exc-type','exc-type-label','exc-type-trigger',this)">Ausencia</div>
+            <div class="exc-custom-dropdown" id="exc-reason-drop">
+              <div class="exc-custom-option" onclick="_excSelReason('Sin motivo')">Sin motivo</div>
+              <div class="exc-custom-option" onclick="_excSelReason('Vacaciones')">Vacaciones</div>
+              <div class="exc-custom-option" onclick="_excSelReason('Feriado')">Feriado</div>
+              <div class="exc-custom-option" onclick="_excSelReason('Enfermedad')">Enfermedad</div>
+              <div class="exc-custom-option" onclick="_excSelReason('Capacitación')">Capacitación</div>
+              <div class="exc-custom-option" onclick="_excSelReason('Otro')">Otro</div>
             </div>
           </div>
         </div>
@@ -276,23 +283,10 @@
         </div>
       </div>
 
+
       <div class="form-group">
-        <label>Motivo</label>
-        <input type="hidden" id="exc-reason" value="Sin motivo">
-        <div class="exc-custom-select-wrap">
-          <div class="exc-custom-select-trigger" id="exc-reason-trigger" onclick="_excToggleSelect('exc-reason-drop','exc-reason-trigger')">
-            <span id="exc-reason-label">Sin motivo</span>
-            <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M0 0l5 6 5-6z" fill="#9BA3C0"/></svg>
-          </div>
-          <div class="exc-custom-dropdown" id="exc-reason-drop">
-            <div class="exc-custom-option" onclick="_excSelReason('Sin motivo')">Sin motivo</div>
-            <div class="exc-custom-option" onclick="_excSelReason('Vacaciones')">Vacaciones</div>
-            <div class="exc-custom-option" onclick="_excSelReason('Feriado')">Feriado</div>
-            <div class="exc-custom-option" onclick="_excSelReason('Enfermedad')">Enfermedad</div>
-            <div class="exc-custom-option" onclick="_excSelReason('Capacitación')">Capacitación</div>
-            <div class="exc-custom-option" onclick="_excSelReason('Otro')">Otro</div>
-          </div>
-        </div>
+        <label>Motivo <span style="font-weight:400;color:#9BA3C0;font-size:11px">(opcional)</span></label>
+        <input type="text" id="exc-motivo" placeholder="Ej: Congreso anual, Semana Santa..." style="width:100%;padding:8px 12px;border:1px solid #e4e9f5;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:#374151;outline:none;">
       </div>
       <button class="btn-save" style="width:100%;margin-top:4px" onclick="addException()">Agregar bloqueo</button>
     </div>
