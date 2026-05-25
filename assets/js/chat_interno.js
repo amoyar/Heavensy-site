@@ -57,6 +57,9 @@ async function initChat_internoPage() {
     // Cargar salas temáticas
     await ciLoadSalas();
 
+    // Restaurar chats privados previos desde servidor
+    await _ciRestorePrivados();
+
     // Watcher scroll
     ciInitScrollWatcher();
 
@@ -114,6 +117,14 @@ async function ciConnectSocket() {
   // Mensaje general recibido
   ciSocket.on('internal_message', (msg) => {
     ciReceiveMessage('general', msg);
+  });
+
+  // Mensaje de sala temática recibido
+  ciSocket.on('internal_room_message', (msg) => {
+    const roomId = msg.room_id;
+    if (!roomId) return;
+    if (!ciMessages[roomId]) ciMessages[roomId] = [];
+    ciReceiveMessage(roomId, msg);
   });
 
   // Mensaje privado recibido
@@ -179,11 +190,6 @@ async function ciConnectSocket() {
   // Nota resuelta (todos confirmaron)
   ciSocket.on('internal_note_resolved', (data) => {
     if (ciActiveNota?.id === data.nota_id) ciOcultarNota();
-  });
-
-  // Mensaje de sala temática
-  ciSocket.on('internal_room_message', (msg) => {
-    ciReceiveMessage(msg.room_id, msg);
   });
 
   // Nueva sala creada por otro usuario
@@ -326,9 +332,17 @@ async function ciLoadParticipants() {
 // ── CARGAR HISTORIAL ──
 async function ciLoadHistory(roomId) {
   try {
-    const endpoint = roomId === 'general'
-      ? `/api/internal-chat/${ciCurrentUser.company_id}/history`
-      : `/api/internal-chat/${ciCurrentUser.company_id}/private/${roomId}/history`;
+    // Determinar endpoint según tipo de room
+    let endpoint;
+    if (roomId === 'general') {
+      endpoint = `/api/internal-chat/${ciCurrentUser.company_id}/history`;
+    } else if (roomId.startsWith('private:') || ciSalas.every(s => s.id !== roomId)) {
+      // Privado: el roomId es el user_id del otro usuario
+      endpoint = `/api/internal-chat/${ciCurrentUser.company_id}/private/${roomId}/history`;
+    } else {
+      // Sala temática
+      endpoint = `/api/internal-chat/${ciCurrentUser.company_id}/rooms/${roomId}/history`;
+    }
 
     const res = await apiCall(endpoint);
     if (res.ok) {
@@ -397,7 +411,13 @@ function ciEnviar() {
   if (ciActiveChat === 'general') {
     ciSocket.emit('internal_message', msg);
     ciReceiveMessage('general', { ...msg, own: true });
+  } else if (ciSalas.some(s => s.id === ciActiveChat)) {
+    // Sala temática
+    const salaMsg = { ...msg, room_id: ciActiveChat };
+    ciSocket.emit('internal_room_message', salaMsg);
+    ciReceiveMessage(ciActiveChat, { ...salaMsg, own: true });
   } else {
+    // Privado
     const privateMsg = {
       ...msg,
       to_id: ciActiveChat,
@@ -595,7 +615,7 @@ function ciRenderFeed(roomId) {
   let lastAuthor = '';
 
   msgs.forEach((msg, i) => {
-    const dateStr = ciFormatDate(msg.timestamp);
+    const dateStr = ciFormatDate(msg.timestamp || msg.created_at);
     if (dateStr !== lastDate) {
       const sep = document.createElement('div');
       sep.className = 'ci-date-sep';
@@ -606,7 +626,7 @@ function ciRenderFeed(roomId) {
     }
 
     const continued = lastAuthor === msg.from_id &&
-      i > 0 && (new Date(msg.timestamp) - new Date(msgs[i-1].timestamp)) < 120000;
+      i > 0 && (new Date(msg.timestamp || msg.created_at) - new Date(msgs[i-1].timestamp || msgs[i-1].created_at)) < 120000;
 
     feed.appendChild(ciBuildMsgEl(msg, continued));
     lastAuthor = msg.from_id;
@@ -626,7 +646,7 @@ function ciAppendMessage(msg, roomId) {
   const idx  = msgs.length - 1;
   const prev = msgs[idx - 1];
   const continued = prev && prev.from_id === msg.from_id &&
-    (new Date(msg.timestamp) - new Date(prev.timestamp)) < 120000;
+    (new Date(msg.timestamp || msg.created_at) - new Date(prev.timestamp || prev.created_at)) < 120000;
 
   feed.appendChild(ciBuildMsgEl(msg, continued));
 }
@@ -638,7 +658,7 @@ function ciBuildMsgEl(msg, continued) {
 
   const initials  = ciInitials(msg.from_name || '?');
   const roleLabel = ciRoleLabel(msg.from_role);
-  const timeStr   = ciFormatTime(msg.timestamp);
+  const timeStr   = ciFormatTime(msg.timestamp || msg.created_at);
   const textHtml  = ciFormatText(msg.text || '');
 
   div.innerHTML = `
@@ -727,7 +747,7 @@ function ciFilterTab(tab) {
   });
 }
 
-function ciSwitchTab() {}
+function ciSwitchTab(tab) { if (tab) ciFilterTab(tab); }
 
 // ── ABRIR CHAT GENERAL ──
 function ciOpenGeneral() {
@@ -762,6 +782,9 @@ function ciIniciarPrivado(userId, userName) {
 
   ciAddPrivateChatItem(userId, userName, ciOnlineUsers[userId]?.role || '');
 
+  // Persistir en localStorage para restaurar tras refresh
+  _ciSavePrivado(userId, userName);
+
   // Marcar activo
   document.querySelectorAll('.ci-chat-item').forEach(el => el.classList.remove('active'));
   document.getElementById(`ci-priv-${userId}`)?.classList.add('active');
@@ -795,6 +818,33 @@ function ciIniciarPrivado(userId, userName) {
     to_id:     userId,
     company_id: ciCurrentUser.company_id
   });
+}
+
+function _ciSavePrivado(userId, userName) {
+  // No se necesita guardar localmente — el servidor persiste los mensajes
+}
+
+async function _ciRestorePrivados() {
+  try {
+    const res = await apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/my-privates`);
+    if (!res.ok || !res.data.privates) return;
+
+    for (const priv of res.data.privates) {
+      const otherId = priv.other_id;
+      // Buscar nombre en participantes
+      const participant = ciParticipants.find(p => p.user_id === otherId);
+      const otherName   = participant?.name || otherId;
+
+      if (!document.getElementById(`ci-priv-${otherId}`)) {
+        ciAddPrivateChatItem(otherId, otherName, participant?.role || '');
+        if (!ciMessages[otherId]) ciMessages[otherId] = [];
+        if (!ciUnread[otherId])   ciUnread[otherId]   = 0;
+        ciLoadHistory(otherId);
+      }
+    }
+  } catch(e) {
+    console.warn('No se pudieron restaurar privados:', e.message);
+  }
 }
 
 function ciAddPrivateChatItem(userId, userName, role) {
@@ -1002,18 +1052,21 @@ function ciRoleLabel(role) {
 
 function ciFormatDate(ts) {
   if (!ts) return 'Hoy';
-  const d     = new Date(ts);
-  const today = new Date();
-  const diff  = Math.floor((today - d) / 86400000);
+  const d      = new Date(ts);
+  const today  = new Date();
+  const dLocal = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const tLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diff   = Math.floor((tLocal - dLocal) / 86400000);
   if (diff === 0) return 'Hoy';
   if (diff === 1) return 'Ayer';
-  return d.toLocaleDateString('es-CL', { day: 'numeric', month: 'long' });
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return d.toLocaleDateString([], { day: 'numeric', month: 'long' });
 }
 
 function ciFormatTime(ts) {
   if (!ts) return '';
   try {
-    return new Date(ts).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   } catch { return ''; }
 }
 
@@ -2051,6 +2104,8 @@ async function ciLoadSalas() {
       });
       if (!ciMessages[sala.id]) ciMessages[sala.id] = [];
       if (!ciUnread[sala.id])   ciUnread[sala.id]   = 0;
+      // Precargar historial de la sala
+      ciLoadHistory(sala.id);
     }
   });
 }
