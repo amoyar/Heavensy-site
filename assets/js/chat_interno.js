@@ -228,7 +228,11 @@ async function ciConnectSocket() {
 
   // Votación recibida de otro usuario
   ciSocket.on('internal_votacion', (v) => {
-    if (v.room_id !== ciActiveChat) return;
+    // Para privados: room_id es "private:{uid1}:{uid2}", ciActiveChat es userId
+    const isForThisChat = v.room_id === ciActiveChat ||
+      (v.room_id?.startsWith('private:') && v.room_id.includes(ciCurrentUser.id) &&
+       (v.to_id === ciCurrentUser.id || v.from_id === ciCurrentUser.id));
+    if (!isForThisChat) return;
     ciPinVotacion(v);
   });
 
@@ -347,11 +351,8 @@ async function ciLoadParticipants() {
 // ── HELPER: detectar si un roomId es sala temática ──
 function _ciIsSala(roomId) {
   if (!roomId || roomId === 'general') return false;
-  // Si está en ciSalas → es sala
-  if (ciSalas.some(s => s.id === roomId)) return true;
-  // Si parece un MongoDB ObjectId (24 hex chars) y no parece user_id numérico → es sala
-  if (/^[a-f0-9]{24}$/.test(roomId)) return true;
-  return false;
+  // Fuente única de verdad: la lista cargada de salas
+  return ciSalas.some(s => s.id === roomId);
 }
 
 // ── CARGAR HISTORIAL ──
@@ -902,7 +903,12 @@ function ciAddPrivateChatItem(userId, userName, role) {
 // ── BADGES ──
 function ciUpdateUnreadBadge(roomId) {
   const count = ciUnread[roomId] || 0;
-  const badge = document.getElementById(roomId === 'general' ? 'ci-general-badge' : `ci-badge-${roomId}`);
+  // Buscar el badge correcto según tipo de room
+  let badgeId;
+  if (roomId === 'general')       badgeId = 'ci-general-badge';
+  else if (_ciIsSala(roomId))     badgeId = `ci-sala-badge-${roomId}`;
+  else                             badgeId = `ci-badge-${roomId}`;
+  const badge = document.getElementById(badgeId);
   if (badge) {
     badge.textContent = count;
     badge.style.display = count > 0 ? 'flex' : 'none';
@@ -919,13 +925,11 @@ function ciUpdateSidebarBadge() {
 
 function ciUpdateChatPreview(roomId, text) {
   const truncated = text.length > 30 ? text.slice(0, 30) + '...' : text;
-  if (roomId === 'general') {
-    const el = document.getElementById('ci-general-last');
-    if (el) el.textContent = truncated;
-  } else {
-    const el = document.getElementById(`ci-priv-last-${roomId}`);
-    if (el) el.textContent = truncated;
-  }
+  let el;
+  if (roomId === 'general')   el = document.getElementById('ci-general-last');
+  else if (_ciIsSala(roomId)) el = document.getElementById(`ci-sala-last-${roomId}`);
+  else                         el = document.getElementById(`ci-priv-last-${roomId}`);
+  if (el) el.textContent = truncated;
 }
 
 // ── MENTION TOAST ──
@@ -1087,7 +1091,6 @@ function ciFormatDate(ts) {
   const diff   = Math.floor((tLocal - dLocal) / 86400000);
   if (diff === 0) return 'Hoy';
   if (diff === 1) return 'Ayer';
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return d.toLocaleDateString([], { day: 'numeric', month: 'long' });
 }
 
@@ -1235,12 +1238,13 @@ function ciRenderVotacionCard(v, own) {
     const voted  = o.votos.includes(ciCurrentUser.id);
     const voters = o.votos.map(uid => {
       const u = ciOnlineUsers[uid] || {};
-      return u.name || uid;
+      const p = ciParticipants.find(x => x.user_id === uid) || {};
+      return u.name || p.name || uid;
     }).join(', ');
     return `
       <button class="ci-vot-option-btn${voted ? ' voted' : ''}"
               onclick="ciVotar('${v.id}', ${i})"
-              ${yaVote || allVoted ? 'disabled' : ''}>
+              ${allVoted ? 'disabled' : ''}>
         <div class="ci-vot-option-bar" style="width:${pct}%"></div>
         <span class="ci-vot-option-text">${escapeHtml(o.texto)}</span>
         <span class="ci-vot-option-pct">${pct}%</span>
@@ -1336,7 +1340,7 @@ function _ciRenderPinnedVot(v) {
     return `
       <button class="ci-pinned-vot-btn${voted ? ' voted' : ''}${isWinner ? ' winner' : ''}"
               onclick="ciVotar('${v.id}',${i})"
-              ${yaVote || allVoted ? 'disabled' : ''}>
+              ${allVoted ? 'disabled' : ''}>
         <div class="ci-pinned-vot-bar" style="width:${pct}%"></div>
         <span class="ci-pinned-vot-label">${escapeHtml(o.texto)}</span>
         <span class="ci-pinned-vot-pct">${pct}%</span>
@@ -1402,7 +1406,7 @@ function ciUpdateVotacionUI(votId, v) {
     if (bar)   bar.style.width    = pct + '%';
     if (pctEl) pctEl.textContent  = pct + '%';
     btn.classList.toggle('voted', voted);
-    btn.disabled = yaVote || allVoted;
+    btn.disabled = allVoted; // solo bloquear cuando todos votaron
   });
 
   const pendientes = v.members?.filter(id => !v.opciones.some(o => o.votos?.includes(id))).length ?? 0;
@@ -1818,10 +1822,15 @@ function ciEnviarTarea() {
 
   if (!responsables.length) { alert('Selecciona al menos un responsable'); return; }
 
+  const isPrivadoT = !_ciIsSala(ciActiveChat) && ciActiveChat !== 'general';
+  const tareaRoomId = isPrivadoT
+    ? 'private:' + [ciCurrentUser.id, ciActiveChat].sort().join(':')
+    : ciActiveChat;
+
   const tarea = {
     id:           'tarea_' + Date.now(),
     type:         'tarea',
-    room_id:      ciActiveChat,
+    room_id:      tareaRoomId,
     company_id:   ciCurrentUser.company_id,
     from_id:      ciCurrentUser.id,
     from_name:    ciCurrentUser.name,
@@ -1839,9 +1848,10 @@ function ciEnviarTarea() {
   ciRenderTareaCard(tarea, true);
   ciCerrarTarea();
 
-  apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/rooms/${ciActiveChat}/tarea`, {
-    method: 'POST', body: JSON.stringify(tarea)
-  }).catch(() => {});
+  const tareaEndpoint = isPrivadoT
+    ? `/api/internal-chat/${ciCurrentUser.company_id}/private-tarea`
+    : `/api/internal-chat/${ciCurrentUser.company_id}/rooms/${ciActiveChat}/tarea`;
+  apiCall(tareaEndpoint, { method: 'POST', body: JSON.stringify(tarea) }).catch(() => {});
 }
 
 function ciRenderTareaCard(t, own) {
@@ -1947,9 +1957,14 @@ function ciToggleNotaMode() {
 function ciEnviarNota(text) {
   const roomId   = ciActiveChat;
   const members  = ciGetRoomMembers(roomId);
+  const isPrivadoN = !_ciIsSala(roomId) && roomId !== 'general';
+  const notaRoomId = isPrivadoN
+    ? 'private:' + [ciCurrentUser.id, roomId].sort().join(':')
+    : roomId;
+
   const nota = {
     id:            'nota_' + Date.now(),
-    room_id:       roomId,
+    room_id:       notaRoomId,
     company_id:    ciCurrentUser.company_id,
     text:          text,
     from_id:       ciCurrentUser.id,
@@ -1966,15 +1981,16 @@ function ciEnviarNota(text) {
   ciMostrarNota(nota);
 
   // Persistir en backend
-  apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/rooms/${roomId}/pinned`, {
-    method: 'POST',
-    body: JSON.stringify(nota)
-  }).catch(() => {});
+  const notaEndpoint = isPrivadoN
+    ? `/api/internal-chat/${ciCurrentUser.company_id}/private-nota`
+    : `/api/internal-chat/${ciCurrentUser.company_id}/rooms/${roomId}/pinned`;
+  apiCall(notaEndpoint, { method: 'POST', body: JSON.stringify(nota) }).catch(() => {});
 }
 
 function ciGetRoomMembers(roomId) {
   if (roomId === 'general') {
-    return Object.keys(ciOnlineUsers);
+    // Usar todos los participantes habilitados, no solo los online
+    return ciParticipants.filter(p => p.enabled).map(p => p.user_id);
   }
   const sala = ciSalas.find(s => s.id === roomId);
   if (sala) return [...sala.members];
@@ -2024,13 +2040,15 @@ function ciRenderNotaConfirmations(nota) {
 
   confirmados.forEach(id => {
     const user = ciOnlineUsers[id] || {};
-    const name = user.name || id;
+    const part = ciParticipants.find(p => p.user_id === id) || {};
+    const name = user.name || part.name || id;
     html += `<span class="ci-pinned-chip confirmed"><i class="fas fa-check"></i>${ciInitials(name)}</span>`;
   });
 
   pendientes.forEach(id => {
     const user = ciOnlineUsers[id] || {};
-    const name = user.name || id;
+    const part = ciParticipants.find(p => p.user_id === id) || {};
+    const name = user.name || part.name || id;
     html += `<span class="ci-pinned-chip pending"><i class="fas fa-clock"></i>${ciInitials(name)}</span>`;
   });
 
@@ -2192,7 +2210,7 @@ function ciRenderSalasList() {
         </div>
         <div class="ci-sala-info">
           <div class="ci-sala-name">${escapeHtml(sala.name)}</div>
-          <div class="ci-sala-last">${escapeHtml(lastText)}</div>
+          <div class="ci-sala-last" id="ci-sala-last-${sala.id}">${escapeHtml(lastText)}</div>
           <div class="ci-sala-members"><i class="fas fa-users" style="font-size:8px;margin-right:3px"></i>${memberCount} miembro${memberCount !== 1 ? 's' : ''}</div>
         </div>
         ${unread > 0 ? `<div class="ci-unread-badge" id="ci-sala-badge-${sala.id}">${unread}</div>` : `<div class="ci-unread-badge" id="ci-sala-badge-${sala.id}" style="display:none">0</div>`}
@@ -2245,13 +2263,6 @@ function ciOpenSala(salaId) {
   ciShowTyping(salaId);
   ciStopTyping();
   ciRestorePinnedBanners(salaId);
-
-  // Unirse al room socket si no estaba
-  ciSocket?.emit('join_internal_room', {
-    room_id:    salaId,
-    company_id: ciCurrentUser.company_id,
-    user_id:    ciCurrentUser.id
-  });
 }
 
 // Abrir modal para crear sala
@@ -2332,7 +2343,7 @@ function ciCerrarNuevaSala() {
 function ciRenderMembersList(selectedIds) {
   const container = document.getElementById('ci-sala-members-list');
   const participants = ciParticipants.length
-    ? ciParticipants
+    ? ciParticipants.filter(p => p.enabled)
     : Object.values(ciOnlineUsers).map(u => ({ user_id: u.id, name: u.name, role: u.role }));
 
   if (!participants.length) {
@@ -2392,7 +2403,7 @@ async function ciGuardarSala() {
         `/api/internal-chat/${ciCurrentUser.company_id}/rooms/${ciEditingSalaId}`,
         { method: 'PUT', body: JSON.stringify({ name: nombre, description: desc, members, color }) }
       );
-      if (res.ok || true) {
+      if (res.ok) {
         const idx = ciSalas.findIndex(s => s.id === ciEditingSalaId);
         if (idx >= 0) ciSalas[idx] = { ...ciSalas[idx], name: nombre, desc, members, color };
       }
@@ -2500,15 +2511,22 @@ function ciMenuInfo() {
   const isPrivado = ciActiveChat !== 'general' && !ciSalas.find(s => s.id === ciActiveChat);
 
   if (isPrivado) {
-    // Info usuario privado
-    const user = ciOnlineUsers[ciActiveChat] || { name: ciActiveChat, role: '', online: false };
+    // Info usuario privado — buscar nombre en ciOnlineUsers, ciParticipants y historial
+    const onlineUser      = ciOnlineUsers[ciActiveChat];
+    const participantUser = ciParticipants.find(p => p.user_id === ciActiveChat);
+    const otherName       = onlineUser?.name || participantUser?.name || ciActiveChat;
+    const otherRole       = onlineUser?.role || participantUser?.role || '';
+    const isOnline        = !!onlineUser?.online;
     ciAbrirInfoModal({
       tipo:    'privado',
-      nombre:  user.name || ciActiveChat,
-      desc:    user.role || '',
+      nombre:  otherName,
+      desc:    'Chat privado',
       avatar:  null,
       color:   'linear-gradient(135deg,#8e84fa 0%,#91c0ff 55%)',
-      members: [{ id: ciActiveChat, name: user.name || ciActiveChat, role: user.role || '', online: !!user.online }]
+      members: [
+        { id: ciActiveChat,    name: otherName,          role: otherRole,          online: isOnline },
+        { id: ciCurrentUser.id, name: ciCurrentUser.name, role: ciCurrentUser.role, online: true }
+      ]
     });
   } else if (ciActiveChat === 'general') {
     ciAbrirInfoModal({
@@ -2523,8 +2541,11 @@ function ciMenuInfo() {
     const sala = ciSalas.find(s => s.id === ciActiveChat);
     if (!sala) return;
     const members = sala.members.map(uid => {
-      const u = ciOnlineUsers[uid] || {};
-      return { id: uid, name: u.name || uid, role: u.role || '', online: !!u.online };
+      const online = ciOnlineUsers[uid] || {};
+      const part   = ciParticipants.find(p => p.user_id === uid) || {};
+      const name   = online.name || part.name || uid;
+      const role   = online.role || part.role || '';
+      return { id: uid, name, role, online: !!online.online };
     });
     ciAbrirInfoModal({
       tipo:    'sala',
