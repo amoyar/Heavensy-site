@@ -1171,14 +1171,22 @@ function ciEnviarVotacion() {
     .map(inp => inp.value.trim()).filter(Boolean);
   if (opciones.length < 2) { alert('Agrega al menos 2 opciones'); return; }
 
+  // Determinar room_id y tipo de chat
+  const isPrivado = !_ciIsSala(ciActiveChat) && ciActiveChat !== 'general';
+  const roomId    = isPrivado
+    ? 'private:' + [ciCurrentUser.id, ciActiveChat].sort().join(':')
+    : ciActiveChat;
+
   const votacion = {
-    id:         'vot_' + Date.now(),
-    type:       'votacion',
-    room_id:    ciActiveChat,
-    company_id: ciCurrentUser.company_id,
-    from_id:    ciCurrentUser.id,
-    from_name:  ciCurrentUser.name,
-    from_role:  ciCurrentUser.role,
+    id:             'vot_' + Date.now(),
+    type:           'votacion',
+    room_id:        roomId,
+    chat_type:      isPrivado ? 'private' : (_ciIsSala(ciActiveChat) ? 'sala' : 'general'),
+    to_id:          isPrivado ? ciActiveChat : null,
+    company_id:     ciCurrentUser.company_id,
+    from_id:        ciCurrentUser.id,
+    from_name:      ciCurrentUser.name,
+    from_role:      ciCurrentUser.role,
     pregunta,
     opciones:       opciones.map(o => ({ texto: o, votos: [] })),
     members:        [...new Set([ciCurrentUser.id, ...ciGetRoomMembers(ciActiveChat)])],
@@ -1190,9 +1198,16 @@ function ciEnviarVotacion() {
   ciPinVotacion(votacion);
   ciCerrarVotacion();
 
-  apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/rooms/${ciActiveChat}/votacion`, {
-    method: 'POST', body: JSON.stringify(votacion)
-  }).catch(() => {});
+  // Persistir en backend según tipo
+  if (isPrivado) {
+    apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/private-votacion`, {
+      method: 'POST', body: JSON.stringify(votacion)
+    }).catch(() => {});
+  } else {
+    apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/rooms/${ciActiveChat}/votacion`, {
+      method: 'POST', body: JSON.stringify(votacion)
+    }).catch(() => {});
+  }
 }
 
 function ciRenderVotacionCard(v, own) {
@@ -1355,7 +1370,9 @@ function ciConfirmarVotacion(votId) {
   ciSocket?.emit('internal_vot_confirmada', {
     vot_id:     votId,
     user_id:    ciCurrentUser.id,
-    room_id:    ciActiveChat,
+    room_id:    ciPinnedVotacion.room_id,
+    chat_type:  ciPinnedVotacion.chat_type || 'sala',
+    to_id:      ciPinnedVotacion.to_id || null,
     company_id: ciCurrentUser.company_id
   });
 }
@@ -1402,12 +1419,15 @@ function ciVotar(votId, opcionIdx) {
   const o = ciPinnedVotacion.opciones[opcionIdx];
   if (o) o.votos.push(ciCurrentUser.id);
 
+  // Usar el room_id de la votación (ya tiene el formato correcto)
   ciSocket?.emit('internal_voto', {
     vot_id:     votId,
     opcion_idx: opcionIdx,
     user_id:    ciCurrentUser.id,
     user_name:  ciCurrentUser.name,
-    room_id:    ciActiveChat,
+    room_id:    ciPinnedVotacion.room_id,
+    chat_type:  ciPinnedVotacion.chat_type || 'sala',
+    to_id:      ciPinnedVotacion.to_id || null,
     company_id: ciCurrentUser.company_id
   });
 
