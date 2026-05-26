@@ -226,10 +226,15 @@ async function ciConnectSocket() {
 
   // Voto emitido (actualizar porcentajes en todos)
   ciSocket.on('internal_voto', (data) => {
-    if (data.votacion) {
-      ciUpdateVotacionUI(data.vot_id, data.votacion);
-      ciUpdatePinnedVotacion(data.votacion);
+    if (!data.votacion) return;
+    const v = data.votacion;
+    // Sincronizar ciPinnedVotacion con estado del servidor
+    if (ciPinnedVotacion && ciPinnedVotacion.id === v.id) {
+      ciPinnedVotacion.opciones = v.opciones;
+      ciAllPinnedVots[ciPinnedVotacion.room_id] = ciPinnedVotacion;
+      _ciRenderPinnedVot(ciPinnedVotacion);
     }
+    ciUpdateVotacionUI(v.id, v);
   });
 
   // Tarea recibida de otro usuario
@@ -1197,9 +1202,8 @@ function ciRenderVotacionCard(v, own) {
 
   const total = v.opciones.reduce((s, o) => s + o.votos.length, 0);
   const yaVote = v.opciones.some(o => o.votos.includes(ciCurrentUser.id));
-  const activeMembers = v.members.filter(id => ciParticipants.some(p => p.user_id === id));
-  const checkMembers  = activeMembers.length > 0 ? activeMembers : v.members;
-  const allVoted = checkMembers.every(id => v.opciones.some(o => o.votos.includes(id)));
+  const allVoted = v.members.length > 0 &&
+                  v.members.every(id => v.opciones.some(o => o.votos.includes(id)));
 
   const div = document.createElement('div');
   div.className = `ci-msg${own ? ' own' : ''}`;
@@ -1281,9 +1285,9 @@ function _ciRenderPinnedVot(v) {
 
   const total          = v.opciones.reduce((s, o) => s + (o.votos?.length || 0), 0);
   const yaVote         = v.opciones.some(o => o.votos?.includes(ciCurrentUser.id));
-  const _activeMembers = (v.members||[]).filter(id => ciParticipants.some(p => p.user_id === id));
-  const _checkMembers  = _activeMembers.length > 0 ? _activeMembers : (v.members||[]);
-  const allVoted       = _checkMembers.every(id => v.opciones.some(o => o.votos?.includes(id)));
+  // allVoted: todos los members han votado al menos en una opción
+  const allVoted = (v.members||[]).length > 0 &&
+                   (v.members||[]).every(id => v.opciones.some(o => o.votos?.includes(id)));
   const confirmaciones = v.confirmaciones || [];
   const allConfirmed   = v.members?.every(id => confirmaciones.includes(id));
   const yaConfirme     = confirmaciones.includes(ciCurrentUser.id);
@@ -1362,9 +1366,8 @@ function ciUpdateVotacionUI(votId, v) {
 
   const total    = v.opciones.reduce((s, o) => s + (o.votos?.length || 0), 0);
   const yaVote   = v.opciones.some(o => o.votos?.includes(ciCurrentUser.id));
-  const _am2 = (v.members||[]).filter(id => ciParticipants.some(p => p.user_id === id));
-  const _cm2 = _am2.length > 0 ? _am2 : (v.members||[]);
-  const allVoted = _cm2.every(id => v.opciones.some(o => o.votos?.includes(id)));
+  const allVoted = (v.members||[]).length > 0 &&
+                  (v.members||[]).every(id => v.opciones.some(o => o.votos?.includes(id)));
 
   card.querySelectorAll('.ci-vot-option-btn').forEach((btn, i) => {
     const o   = v.opciones[i];
@@ -1385,7 +1388,12 @@ function ciUpdateVotacionUI(votId, v) {
 }
 
 function ciVotar(votId, opcionIdx) {
-  if (!ciPinnedVotacion || ciPinnedVotacion.id !== votId) return;
+  // Si la votación no está activa en el pinned, buscarla en el registro
+  if (!ciPinnedVotacion || ciPinnedVotacion.id !== votId) {
+    const vFound = Object.values(ciAllPinnedVots).find(v => v.id === votId);
+    if (vFound) ciPinnedVotacion = vFound;
+    else return;
+  }
 
   // Permitir cambiar voto: quitar voto anterior y registrar nuevo
   ciPinnedVotacion.opciones.forEach(o => {
