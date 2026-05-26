@@ -869,6 +869,12 @@ async function _ciRestorePrivados() {
         if (!ciMessages[otherId]) ciMessages[otherId] = [];
         if (!ciUnread[otherId])   ciUnread[otherId]   = 0;
         ciLoadHistory(otherId);
+        // Re-unirse al room privado del socket para recibir eventos en tiempo real
+        ciSocket?.emit('join_internal_private', {
+          from_id:    ciCurrentUser.id,
+          to_id:      otherId,
+          company_id: ciCurrentUser.company_id
+        });
       }
     }
   } catch(e) {
