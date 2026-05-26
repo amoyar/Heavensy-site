@@ -831,12 +831,15 @@ async function _ciRestorePrivados() {
 
     for (const priv of res.data.privates) {
       const otherId = priv.other_id;
-      // Buscar nombre en participantes
+      // Nombre: desde servidor > participantes > online > fallback
       const participant = ciParticipants.find(p => p.user_id === otherId);
-      const otherName   = participant?.name || otherId;
+      const onlineUser  = ciOnlineUsers[otherId];
+      const otherName   = priv.other_name && priv.other_name !== otherId
+                          ? priv.other_name
+                          : participant?.name || onlineUser?.name || 'Usuario';
 
       if (!document.getElementById(`ci-priv-${otherId}`)) {
-        ciAddPrivateChatItem(otherId, otherName, participant?.role || '');
+        ciAddPrivateChatItem(otherId, otherName, participant?.role || onlineUser?.role || '');
         if (!ciMessages[otherId]) ciMessages[otherId] = [];
         if (!ciUnread[otherId])   ciUnread[otherId]   = 0;
         ciLoadHistory(otherId);
@@ -1180,7 +1183,9 @@ function ciRenderVotacionCard(v, own) {
 
   const total = v.opciones.reduce((s, o) => s + o.votos.length, 0);
   const yaVote = v.opciones.some(o => o.votos.includes(ciCurrentUser.id));
-  const allVoted = v.members.every(id => v.opciones.some(o => o.votos.includes(id)));
+  const activeMembers = v.members.filter(id => ciParticipants.some(p => p.user_id === id));
+  const checkMembers  = activeMembers.length > 0 ? activeMembers : v.members;
+  const allVoted = checkMembers.every(id => v.opciones.some(o => o.votos.includes(id)));
 
   const div = document.createElement('div');
   div.className = `ci-msg${own ? ' own' : ''}`;
@@ -1262,7 +1267,9 @@ function _ciRenderPinnedVot(v) {
 
   const total          = v.opciones.reduce((s, o) => s + (o.votos?.length || 0), 0);
   const yaVote         = v.opciones.some(o => o.votos?.includes(ciCurrentUser.id));
-  const allVoted       = v.members?.every(id => v.opciones.some(o => o.votos?.includes(id)));
+  const _activeMembers = (v.members||[]).filter(id => ciParticipants.some(p => p.user_id === id));
+  const _checkMembers  = _activeMembers.length > 0 ? _activeMembers : (v.members||[]);
+  const allVoted       = _checkMembers.every(id => v.opciones.some(o => o.votos?.includes(id)));
   const confirmaciones = v.confirmaciones || [];
   const allConfirmed   = v.members?.every(id => confirmaciones.includes(id));
   const yaConfirme     = confirmaciones.includes(ciCurrentUser.id);
@@ -1341,7 +1348,9 @@ function ciUpdateVotacionUI(votId, v) {
 
   const total    = v.opciones.reduce((s, o) => s + (o.votos?.length || 0), 0);
   const yaVote   = v.opciones.some(o => o.votos?.includes(ciCurrentUser.id));
-  const allVoted = v.members?.every(id => v.opciones.some(o => o.votos?.includes(id)));
+  const _am2 = (v.members||[]).filter(id => ciParticipants.some(p => p.user_id === id));
+  const _cm2 = _am2.length > 0 ? _am2 : (v.members||[]);
+  const allVoted = _cm2.every(id => v.opciones.some(o => o.votos?.includes(id)));
 
   card.querySelectorAll('.ci-vot-option-btn').forEach((btn, i) => {
     const o   = v.opciones[i];
@@ -1364,9 +1373,12 @@ function ciUpdateVotacionUI(votId, v) {
 function ciVotar(votId, opcionIdx) {
   if (!ciPinnedVotacion || ciPinnedVotacion.id !== votId) return;
 
-  // Evitar doble voto
-  const yaVote = ciPinnedVotacion.opciones.some(o => o.votos?.includes(ciCurrentUser.id));
-  if (yaVote) return;
+  // Permitir cambiar voto: quitar voto anterior y registrar nuevo
+  ciPinnedVotacion.opciones.forEach(o => {
+    if (o.votos) o.votos = o.votos.filter(id => id !== ciCurrentUser.id);
+  });
+  const o = ciPinnedVotacion.opciones[opcionIdx];
+  if (o) o.votos.push(ciCurrentUser.id);
 
   ciSocket?.emit('internal_voto', {
     vot_id:     votId,
@@ -1377,9 +1389,6 @@ function ciVotar(votId, opcionIdx) {
     company_id: ciCurrentUser.company_id
   });
 
-  // Actualizar estado local y re-renderizar pinned
-  const o = ciPinnedVotacion.opciones[opcionIdx];
-  if (o) o.votos.push(ciCurrentUser.id);
   _ciRenderPinnedVot(ciPinnedVotacion);
 }
 
