@@ -129,15 +129,19 @@ async function ciConnectSocket() {
 
   // Mensaje privado recibido
   ciSocket.on('internal_private_message', (msg) => {
-    const roomId = msg.from_id === ciCurrentUser.id ? msg.to_id : msg.from_id;
     if (msg.from_id === ciCurrentUser.id) return; // ya renderizado localmente en ciEnviar
+    const roomId = msg.from_id; // roomId en frontend = user_id del otro
     ciReceiveMessage(roomId, msg);
 
-    // Si viene de alguien nuevo, agregar su chat a privados
-    if (!ciMessages[roomId]) {
-      ciMessages[roomId] = [];
+    // Si viene de alguien nuevo, crear item en sidebar
+    if (!document.getElementById(`ci-priv-${msg.from_id}`)) {
       ciAddPrivateChatItem(msg.from_id, msg.from_name, msg.from_role);
+      if (!ciMessages[msg.from_id]) ciMessages[msg.from_id] = [];
+      if (!ciUnread[msg.from_id])   ciUnread[msg.from_id]   = 0;
     }
+    // Actualizar último mensaje en sidebar
+    const lastEl = document.getElementById(`ci-priv-last-${msg.from_id}`);
+    if (lastEl) lastEl.textContent = msg.text;
   });
 
   // Typing
@@ -329,6 +333,16 @@ async function ciLoadParticipants() {
   }
 }
 
+// ── HELPER: detectar si un roomId es sala temática ──
+function _ciIsSala(roomId) {
+  if (!roomId || roomId === 'general') return false;
+  // Si está en ciSalas → es sala
+  if (ciSalas.some(s => s.id === roomId)) return true;
+  // Si parece un MongoDB ObjectId (24 hex chars) y no parece user_id numérico → es sala
+  if (/^[a-f0-9]{24}$/.test(roomId)) return true;
+  return false;
+}
+
 // ── CARGAR HISTORIAL ──
 async function ciLoadHistory(roomId) {
   try {
@@ -336,12 +350,12 @@ async function ciLoadHistory(roomId) {
     let endpoint;
     if (roomId === 'general') {
       endpoint = `/api/internal-chat/${ciCurrentUser.company_id}/history`;
-    } else if (roomId.startsWith('private:') || ciSalas.every(s => s.id !== roomId)) {
-      // Privado: el roomId es el user_id del otro usuario
-      endpoint = `/api/internal-chat/${ciCurrentUser.company_id}/private/${roomId}/history`;
-    } else {
-      // Sala temática
+    } else if (_ciIsSala(roomId)) {
+      // Sala temática — usar ID de sala directamente
       endpoint = `/api/internal-chat/${ciCurrentUser.company_id}/rooms/${roomId}/history`;
+    } else {
+      // Privado — roomId es el user_id del otro usuario
+      endpoint = `/api/internal-chat/${ciCurrentUser.company_id}/private/${roomId}/history`;
     }
 
     const res = await apiCall(endpoint);
@@ -2160,6 +2174,13 @@ function ciOpenSala(salaId) {
   if (!sala) return;
 
   ciActiveChat = salaId;
+
+  // Asegurar join al room socket de esta sala
+  ciSocket?.emit('join_internal_room', {
+    room_id:    salaId,
+    company_id: ciCurrentUser.company_id,
+    user_id:    ciCurrentUser.id
+  });
 
   // Inicializar mensajes si no existen
   if (!ciMessages[salaId]) ciMessages[salaId] = [];
