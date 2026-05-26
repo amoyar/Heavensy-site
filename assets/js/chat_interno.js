@@ -60,6 +60,9 @@ async function initChat_internoPage() {
     // Restaurar chats privados previos desde servidor
     await _ciRestorePrivados();
 
+    // Unirse preventivamente a rooms privados con todos los participantes
+    _ciJoinAllPrivateRooms();
+
     // Watcher scroll
     ciInitScrollWatcher();
 
@@ -228,10 +231,20 @@ async function ciConnectSocket() {
 
   // Votación recibida de otro usuario
   ciSocket.on('internal_votacion', (v) => {
-    // Para privados: room_id es "private:{uid1}:{uid2}", ciActiveChat es userId
+    // Para privados: asegurar que estamos en el room privado
+    if (v.room_id?.startsWith('private:') && v.room_id.includes(ciCurrentUser.id)) {
+      const parts = v.room_id.replace('private:', '').split(':');
+      const otherId = parts.find(id => id !== ciCurrentUser.id);
+      if (otherId) {
+        ciSocket?.emit('join_internal_private', {
+          from_id: ciCurrentUser.id, to_id: otherId, company_id: ciCurrentUser.company_id
+        });
+        if (!ciMessages[otherId]) ciMessages[otherId] = [];
+        if (!ciUnread[otherId])   ciUnread[otherId]   = 0;
+      }
+    }
     const isForThisChat = v.room_id === ciActiveChat ||
-      (v.room_id?.startsWith('private:') && v.room_id.includes(ciCurrentUser.id) &&
-       (v.to_id === ciCurrentUser.id || v.from_id === ciCurrentUser.id));
+      (v.room_id?.startsWith('private:') && v.room_id.includes(ciCurrentUser.id));
     if (!isForThisChat) return;
     ciPinVotacion(v);
   });
@@ -346,6 +359,19 @@ async function ciLoadParticipants() {
     console.warn('No se pudieron cargar participantes:', e.message);
     ciParticipants = [];
   }
+}
+
+// ── PRE-JOIN ROOMS PRIVADOS ──
+function _ciJoinAllPrivateRooms() {
+  // Unirse preventivamente al room privado con cada participante habilitado
+  // Esto garantiza recibir eventos aunque no se haya abierto el chat aún
+  ciParticipants.filter(p => p.enabled && p.user_id !== ciCurrentUser.id).forEach(p => {
+    ciSocket?.emit('join_internal_private', {
+      from_id:    ciCurrentUser.id,
+      to_id:      p.user_id,
+      company_id: ciCurrentUser.company_id
+    });
+  });
 }
 
 // ── HELPER: detectar si un roomId es sala temática ──
