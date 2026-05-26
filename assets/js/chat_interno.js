@@ -69,9 +69,23 @@ async function initChat_internoPage() {
 }
 
 // ── SOCKET ──
+function _ciSendJoin() {
+  // Siempre enviar join para refrescar presencia online
+  if (!ciSocket || !ciCurrentUser) return;
+  ciSocket.emit('join_internal_chat', {
+    company_id: ciCurrentUser.company_id,
+    user_id:    ciCurrentUser.id,
+    user_name:  ciCurrentUser.name,
+    role:       ciCurrentUser.role
+  });
+}
+
 async function ciConnectSocket() {
-  // Evitar doble conexión si el socket ya está activo
-  if (ciSocket && ciSocket.connected) return;
+  // Si el socket ya está conectado, solo refrescar presencia y salir
+  if (ciSocket && ciSocket.connected) {
+    _ciSendJoin();
+    return;
+  }
   // Desconectar socket anterior si existe pero no está conectado
   if (ciSocket) { ciSocket.disconnect(); ciSocket = null; }
 
@@ -94,13 +108,7 @@ async function ciConnectSocket() {
 
   ciSocket.on('connect', () => {
     console.log('✅ Chat interno conectado');
-    // Unirse al room general de la empresa
-    ciSocket.emit('join_internal_chat', {
-      company_id: ciCurrentUser.company_id,
-      user_id:    ciCurrentUser.id,
-      user_name:  ciCurrentUser.name,
-      role:       ciCurrentUser.role
-    });
+    _ciSendJoin();
   });
 
   ciSocket.on('disconnect', () => {
@@ -314,14 +322,12 @@ async function ciLoadParticipants() {
   try {
     // 1. Cargar todos los usuarios de la empresa (fuente de verdad)
     const usersRes = await apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/members`);
-    const allUsers = usersRes.ok
-      ? (usersRes.data.users || []).map(u => ({
-          user_id: u.user_id,
-          name:    u.name,
-          role:    u.role || 'usuario',
-          enabled: true  // habilitado por defecto
-        }))
-      : [];
+    const allUsers = (usersRes.ok ? (usersRes.data.users || []) : []).map(u => ({
+      user_id: u.user_id,
+      name:    u.name,
+      role:    u.role || 'usuario',
+      enabled: true
+    }));
 
     // 2. Si hay una config de participantes guardada, aplicar el filtro
     const partRes = await apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/participants`);
