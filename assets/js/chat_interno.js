@@ -467,7 +467,11 @@ function ciReceiveMessage(roomId, msg) {
   if (!ciMessages[roomId]) ciMessages[roomId] = [];
   ciMessages[roomId].push(msg);
 
-  if (ciActiveChat === roomId) {
+  // Verificar que el chat esté montado en el DOM, no solo que sea el chat activo
+  const chatIsMounted = !!document.getElementById('ci-feed');
+  const showInline    = chatIsMounted && ciActiveChat === roomId;
+
+  if (showInline) {
     ciAppendMessage(msg, roomId);
     ciScrollBottom();
   } else {
