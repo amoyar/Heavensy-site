@@ -719,6 +719,7 @@ function ciRenderFeed(roomId) {
 
 function ciAppendMessage(msg, roomId) {
   const feed = document.getElementById('ci-feed');
+  if (!feed) return; // chat no montado
 
   // Quitar empty state si existe
   const empty = feed.querySelector('.ci-empty');
@@ -793,8 +794,9 @@ function ciShowTyping(room) {
 function ciUpdateOnlineList(users) {
   const list   = document.getElementById('ci-online-list');
   const count  = document.getElementById('ci-online-count');
-  const online = Object.values(users).filter(u => u.online && u.id !== ciCurrentUser.id);
+  if (!list || !count) return; // sidebar no montado
 
+  const online = Object.values(users).filter(u => u.online && u.id !== ciCurrentUser.id);
   count.textContent = online.length;
 
   if (!online.length) {
@@ -944,6 +946,8 @@ function ciAddPrivateChatItem(userId, userName, role) {
   if (document.getElementById(`ci-priv-${userId}`)) return; // ya existe
 
   const list = document.getElementById('ci-privados-list');
+  if (!list) return; // sidebar no montado (usuario en otra página)
+
   const item = document.createElement('div');
   item.className = 'ci-chat-item';
   item.id = `ci-priv-${userId}`;
@@ -1024,11 +1028,20 @@ function ciShowMessageToast(roomId, msg) {
   `;
   toast.onclick = () => {
     toast.remove();
-    if (window.location.hash !== '#chat_interno') window.location.hash = 'chat_interno';
-    // Abrir el chat correspondiente
-    if (roomId === 'general')      ciOpenGeneral();
-    else if (_ciIsSala(roomId))    ciOpenSala(roomId);
-    else                            ciIniciarPrivado(roomId, msg.from_name);
+    const wasInChat = window.location.hash === '#chat_interno';
+    if (!wasInChat) {
+      window.location.hash = 'chat_interno';
+      // Esperar a que el módulo se monte antes de abrir el chat
+      setTimeout(() => {
+        if (roomId === 'general')      ciOpenGeneral();
+        else if (_ciIsSala(roomId))    ciOpenSala(roomId);
+        else                            ciIniciarPrivado(roomId, msg.from_name);
+      }, 300);
+    } else {
+      if (roomId === 'general')      ciOpenGeneral();
+      else if (_ciIsSala(roomId))    ciOpenSala(roomId);
+      else                            ciIniciarPrivado(roomId, msg.from_name);
+    }
   };
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 5000);
@@ -2290,6 +2303,7 @@ async function ciLoadSalas() {
 // Render lista de salas en el sidebar
 function ciRenderSalasList() {
   const container = document.getElementById('ci-salas-list');
+  if (!container) return; // sidebar no montado
   if (!ciSalas.length) {
     container.innerHTML = '';
     return;
