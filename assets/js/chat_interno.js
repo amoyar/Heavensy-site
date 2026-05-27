@@ -361,6 +361,27 @@ async function ciLoadParticipants() {
   }
 }
 
+// ── CARGAR VOTACIÓN ACTIVA ──
+async function _ciLoadActiveVotacion(roomId) {
+  try {
+    // Para privados, construir el room_id en formato private:
+    const apiRoomId = (!_ciIsSala(roomId) && roomId !== 'general')
+      ? 'private:' + [ciCurrentUser.id, roomId].sort().join(':')
+      : roomId;
+
+    const res = await apiCall(
+      `/api/internal-chat/${ciCurrentUser.company_id}/rooms/${encodeURIComponent(apiRoomId)}/votacion/active`
+    );
+    if (res.ok && res.data.votacion) {
+      ciPinVotacion(res.data.votacion);
+    } else {
+      ciUnpinVotacion(false);
+    }
+  } catch(e) {
+    ciUnpinVotacion(false);
+  }
+}
+
 // ── PRE-JOIN ROOMS PRIVADOS ──
 function _ciJoinAllPrivateRooms() {
   // Unirse preventivamente al room privado con cada participante habilitado
@@ -820,6 +841,7 @@ function ciOpenGeneral() {
 
   // Render
   ciRenderFeed('general');
+  _ciLoadActiveVotacion('general');
   ciRestorePinnedBanners('general');
   ciShowTyping('general');
   ciStopTyping();
@@ -860,6 +882,7 @@ function ciIniciarPrivado(userId, userName) {
   // Render + historial
   ciRenderFeed(userId);
   ciLoadHistory(userId);
+  _ciLoadActiveVotacion(userId);
   ciShowTyping(userId);
   ciStopTyping();
   ciRestorePinnedBanners(userId);
@@ -2292,6 +2315,7 @@ function ciOpenSala(salaId) {
   // Render + historial
   ciRenderFeed(salaId);
   ciLoadHistory(salaId);
+  _ciLoadActiveVotacion(salaId);
   ciShowTyping(salaId);
   ciStopTyping();
   ciRestorePinnedBanners(salaId);
