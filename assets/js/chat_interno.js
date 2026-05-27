@@ -81,6 +81,34 @@ function _ciSendJoin() {
     user_name:  ciCurrentUser.name,
     role:       ciCurrentUser.role
   });
+
+  // Re-unirse a todos los rooms — necesario tras reconexión (el servidor
+  // pierde la membresía de rooms cuando el socket se desconecta)
+  _ciRejoinAllRooms();
+}
+
+function _ciRejoinAllRooms() {
+  if (!ciSocket || !ciCurrentUser) return;
+
+  // Salas donde el usuario es miembro
+  (ciSalas || []).forEach(sala => {
+    if (sala.members && sala.members.includes(ciCurrentUser.id)) {
+      ciSocket.emit('join_internal_room', {
+        room_id:    sala.id,
+        company_id: ciCurrentUser.company_id,
+        user_id:    ciCurrentUser.id
+      });
+    }
+  });
+
+  // Rooms privados con cada participante habilitado
+  (ciParticipants || []).filter(p => p.enabled && p.user_id !== ciCurrentUser.id).forEach(p => {
+    ciSocket.emit('join_internal_private', {
+      from_id:    ciCurrentUser.id,
+      to_id:      p.user_id,
+      company_id: ciCurrentUser.company_id
+    });
+  });
 }
 
 async function ciConnectSocket() {
