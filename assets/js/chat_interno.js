@@ -142,14 +142,18 @@ async function ciConnectSocket() {
   ciSocket.on('internal_private_message', (msg) => {
     if (msg.from_id === ciCurrentUser.id) return; // ya renderizado localmente en ciEnviar
     const roomId = msg.from_id; // roomId en frontend = user_id del otro
-    ciReceiveMessage(roomId, msg);
 
-    // Si viene de alguien nuevo, crear item en sidebar
+    // Asegurar que el item del sidebar existe ANTES de incrementar unread
+    // (sin esto, el badge nunca se actualiza porque su elemento DOM no existe)
     if (!document.getElementById(`ci-priv-${msg.from_id}`)) {
       ciAddPrivateChatItem(msg.from_id, msg.from_name, msg.from_role);
       if (!ciMessages[msg.from_id]) ciMessages[msg.from_id] = [];
       if (!ciUnread[msg.from_id])   ciUnread[msg.from_id]   = 0;
     }
+
+    // Ahora sí procesar el mensaje (incrementa unread + actualiza badge)
+    ciReceiveMessage(roomId, msg);
+
     // Actualizar último mensaje en sidebar
     const lastEl = document.getElementById(`ci-priv-last-${msg.from_id}`);
     if (lastEl) lastEl.textContent = msg.text;
@@ -444,6 +448,11 @@ function ciReceiveMessage(roomId, msg) {
     ciUpdateUnreadBadge(roomId);
     ciTotalUnread++;
     ciUpdateSidebarBadge();
+
+    // Mostrar toast solo si el mensaje no es del usuario actual
+    if (msg.from_id !== ciCurrentUser.id) {
+      ciShowMessageToast(roomId, msg);
+    }
   }
 
   // Actualizar preview en sidebar
@@ -985,6 +994,44 @@ function ciUpdateChatPreview(roomId, text) {
   else if (_ciIsSala(roomId)) el = document.getElementById(`ci-sala-last-${roomId}`);
   else                         el = document.getElementById(`ci-priv-last-${roomId}`);
   if (el) el.textContent = truncated;
+}
+
+// ── MESSAGE TOAST (notificación al recibir mensaje fuera del chat activo) ──
+function ciShowMessageToast(roomId, msg) {
+  // Determinar título según tipo de chat
+  let title;
+  if (roomId === 'general') {
+    title = `${msg.from_name} en General`;
+  } else if (_ciIsSala(roomId)) {
+    const sala = ciSalas.find(s => s.id === roomId);
+    title = `${msg.from_name} en ${sala?.name || 'sala'}`;
+  } else {
+    title = `Mensaje de ${msg.from_name}`;
+  }
+
+  const existing = document.getElementById('ci-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'ci-toast';
+  toast.className = 'ci-notif-toast';
+  toast.innerHTML = `
+    <div class="ci-notif-toast-icon">${ciInitials(msg.from_name || '?')}</div>
+    <div class="ci-notif-toast-body">
+      <div class="ci-notif-toast-title">${escapeHtml(title)}</div>
+      <div class="ci-notif-toast-msg">${escapeHtml((msg.text || '').slice(0, 80))}</div>
+    </div>
+  `;
+  toast.onclick = () => {
+    toast.remove();
+    if (window.location.hash !== '#chat_interno') window.location.hash = 'chat_interno';
+    // Abrir el chat correspondiente
+    if (roomId === 'general')      ciOpenGeneral();
+    else if (_ciIsSala(roomId))    ciOpenSala(roomId);
+    else                            ciIniciarPrivado(roomId, msg.from_name);
+  };
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
 }
 
 // ── MENTION TOAST ──
