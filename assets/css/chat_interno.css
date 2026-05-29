@@ -2286,8 +2286,8 @@
 /* ── Reproductor de audio custom (estilo WhatsApp) ── */
 .ci-audio-player {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 2px;
   padding: 10px 14px;
   border-radius: 14px;
   min-width: 240px;
@@ -2300,6 +2300,40 @@
 .ci-msg.own .ci-audio-player {
   background: #eaf2ff;
   border: 1px solid #d4e4fb;
+}
+/* Fila 1: botón play + barra/tiempo */
+.ci-audio-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* Fila 2: controles extra alineados a la derecha */
+.ci-audio-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: -2px;
+}
+.ci-audio-ctrl {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  transition: color .15s;
+}
+.ci-audio-ctrl:hover { color: var(--ci-purple); }
+.ci-audio-speed {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ci-purple);
+  min-width: 22px;
+  justify-content: center;
 }
 .ci-audio-engine {
   display: none;

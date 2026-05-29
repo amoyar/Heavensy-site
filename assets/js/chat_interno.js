@@ -1077,20 +1077,34 @@ function _ciRenderAttachment(att) {
   if (att.type === 'audio') {
     const dur = att.duration ? _ciFmtAudioTime(att.duration) : '0:00';
     return `
-      <div class="ci-msg-attach ci-audio-player" data-audio-state="paused">
+      <div class="ci-msg-attach ci-audio-player" data-audio-state="paused" data-audio-url="${safeUrl}" data-audio-name="${safeName}">
         <audio class="ci-audio-engine" src="${safeUrl}" preload="metadata"></audio>
-        <button class="ci-audio-play" type="button" aria-label="Reproducir">
-          <i class="fas fa-play"></i>
-        </button>
-        <div class="ci-audio-body">
-          <div class="ci-audio-track" role="slider" aria-label="Progreso del audio" tabindex="0">
-            <div class="ci-audio-track-fill"></div>
-            <div class="ci-audio-track-handle"></div>
+        <div class="ci-audio-main">
+          <button class="ci-audio-play" type="button" aria-label="Reproducir">
+            <i class="fas fa-play"></i>
+          </button>
+          <div class="ci-audio-body">
+            <div class="ci-audio-track" role="slider" aria-label="Progreso del audio" tabindex="0">
+              <div class="ci-audio-track-fill"></div>
+              <div class="ci-audio-track-handle"></div>
+            </div>
+            <div class="ci-audio-time">
+              <span class="ci-audio-current">0:00</span>
+              <span class="ci-audio-duration">${dur}</span>
+            </div>
           </div>
-          <div class="ci-audio-time">
-            <span class="ci-audio-current">0:00</span>
-            <span class="ci-audio-duration">${dur}</span>
-          </div>
+        </div>
+        <div class="ci-audio-controls">
+          <button class="ci-audio-ctrl ci-audio-back" type="button" aria-label="Retroceder 10 segundos" title="Retroceder 10s">
+            <i class="fas fa-rotate-left"></i>
+          </button>
+          <button class="ci-audio-ctrl ci-audio-fwd" type="button" aria-label="Adelantar 10 segundos" title="Adelantar 10s">
+            <i class="fas fa-rotate-right"></i>
+          </button>
+          <button class="ci-audio-ctrl ci-audio-speed" type="button" aria-label="Velocidad de reproducción" title="Velocidad">1x</button>
+          <button class="ci-audio-ctrl ci-audio-download" type="button" aria-label="Descargar audio" title="Descargar">
+            <i class="fas fa-download"></i>
+          </button>
         </div>
       </div>`;
   }
@@ -1146,6 +1160,7 @@ function ciShowTyping(room) {
   if (room !== ciActiveChat) return;
   const typingEl = document.getElementById('ci-typing');
   const textEl   = document.getElementById('ci-typing-text');
+  if (!typingEl || !textEl) return;  // chat no montado o elementos ausentes
   const users    = Object.values(ciTypingUsers[room] || {});
 
   if (users.length === 0) {
@@ -1219,6 +1234,7 @@ function ciOpenGeneral() {
   // Limpiar no leídos
   ciUnread['general'] = 0;
   ciUpdateUnreadBadge('general');
+  ciUpdateSidebarBadge();
 
   // Render
   ciRenderFeed('general');
@@ -1257,6 +1273,7 @@ function ciIniciarPrivado(userId, userName) {
   // Limpiar no leídos
   ciUnread[userId] = 0;
   ciUpdateUnreadBadge(userId);
+  ciUpdateSidebarBadge();
 
   // Cambiar a tab privados
   ciSwitchTab('privados');
@@ -2848,6 +2865,7 @@ function ciOpenSala(salaId) {
   // Limpiar no leídos
   ciUnread[salaId] = 0;
   ciUpdateUnreadBadge(salaId);
+  ciUpdateSidebarBadge();
 
   // Render + historial
   ciRenderFeed(salaId);

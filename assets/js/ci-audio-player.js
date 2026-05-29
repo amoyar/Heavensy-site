@@ -116,6 +116,77 @@
         if (player) _togglePlay(player);
         return;
       }
+
+      // Retroceder 10s
+      const backBtn = e.target.closest('.ci-audio-back');
+      if (backBtn) {
+        e.preventDefault();
+        const player = backBtn.closest('.ci-audio-player');
+        const audio = player && player.querySelector('.ci-audio-engine');
+        if (audio) {
+          audio.currentTime = Math.max(0, audio.currentTime - 10);
+          _updateProgress(player);
+        }
+        return;
+      }
+
+      // Adelantar 10s
+      const fwdBtn = e.target.closest('.ci-audio-fwd');
+      if (fwdBtn) {
+        e.preventDefault();
+        const player = fwdBtn.closest('.ci-audio-player');
+        const audio = player && player.querySelector('.ci-audio-engine');
+        if (audio && audio.duration && isFinite(audio.duration)) {
+          audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
+          _updateProgress(player);
+        }
+        return;
+      }
+
+      // Velocidad (cicla 1x → 1.5x → 2x → 1x)
+      const speedBtn = e.target.closest('.ci-audio-speed');
+      if (speedBtn) {
+        e.preventDefault();
+        const player = speedBtn.closest('.ci-audio-player');
+        const audio = player && player.querySelector('.ci-audio-engine');
+        if (audio) {
+          const speeds = [1, 1.5, 2];
+          const idx = speeds.indexOf(audio.playbackRate);
+          const next = speeds[(idx + 1) % speeds.length];
+          audio.playbackRate = next;
+          speedBtn.textContent = (next === 1 ? '1' : next === 1.5 ? '1.5' : '2') + 'x';
+        }
+        return;
+      }
+
+      // Descargar
+      const dlBtn = e.target.closest('.ci-audio-download');
+      if (dlBtn) {
+        e.preventDefault();
+        const player = dlBtn.closest('.ci-audio-player');
+        if (player) {
+          const url  = player.dataset.audioUrl;
+          const name = player.dataset.audioName || 'audio';
+          if (url) {
+            // En URLs de Cloudinary, el atributo download se ignora por CORS y el
+            // archivo se abriría en vez de bajar. El flag fl_attachment fuerza la
+            // descarga desde el lado de Cloudinary.
+            let dlUrl = url;
+            if (url.includes('/upload/') && url.includes('cloudinary')) {
+              dlUrl = url.replace('/upload/', '/upload/fl_attachment/');
+            }
+            const a = document.createElement('a');
+            a.href = dlUrl;
+            a.download = name;
+            a.rel = 'noopener';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }
+        }
+        return;
+      }
+
       // Click directo en la barra (seek)
       const track = e.target.closest('.ci-audio-track');
       if (track && !_dragging) {
