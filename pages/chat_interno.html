@@ -123,7 +123,7 @@
     </div>
 
     <!-- Wrapper feed (position:relative para anclar la votación) -->
-    <div class="ci-feed-wrapper">
+    <div class="ci-feed-wrapper" id="ci-feed-wrapper">
 
       <!-- Votación anclada top-right -->
       <div class="ci-pinned-vot" id="ci-pinned-vot" style="display:none">
@@ -160,6 +160,15 @@
 
     <!-- Input -->
     <div class="ci-input-wrap">
+      <!-- Banner de respuesta a mensaje citado -->
+      <div class="ci-reply-banner" id="ci-reply-banner" style="display:none">
+        <div class="ci-reply-icon"><i class="fas fa-reply"></i></div>
+        <div class="ci-reply-content" id="ci-reply-content"></div>
+        <button class="ci-reply-cancel" id="ci-reply-cancel" type="button" title="Cancelar respuesta">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
       <!-- Preview de adjuntos pendientes (antes de enviar) -->
       <div class="ci-attach-preview" id="ci-attach-preview" style="display:none"></div>
 
@@ -168,7 +177,7 @@
         <!-- Mention popup -->
         <div class="ci-mention-popup" id="ci-mention-popup"></div>
 
-        <div class="ci-input-actions" style="align-self:flex-end;position:relative">
+        <div class="ci-input-actions" style="position:relative">
           <button class="ci-input-btn" onclick="ciTriggerMention()" title="Mencionar">
             <i class="fas fa-at"></i>
           </button>
@@ -184,6 +193,10 @@
                  multiple
                  accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
                  style="display:none" />
+          <!-- Botón micrófono (mantener presionado para grabar) -->
+          <button class="ci-input-btn" id="ci-mic-btn" title="Mantener presionado para grabar" type="button">
+            <i class="fas fa-microphone" id="ci-mic-icon"></i>
+          </button>
           <!-- Botón + expandible -->
           <button class="ci-input-btn ci-plus-btn" id="ci-plus-btn" onclick="ciTogglePlus()" title="Más opciones">
             <i class="fas fa-plus"></i>

@@ -42,6 +42,8 @@ async function initChat_internoPage() {
       role:       rawRole,
       company_id: payload.company_id || ''
     };
+    // Exponer para módulos externos (ci-attach.js lo usa como fallback de companyId)
+    window.ciCurrentUser = ciCurrentUser;
 
     // Detectar rol admin (acepta varias nomenclaturas)
     const adminRoles = ['admin', 'superadmin', 'owner', 'ADMIN_ROL', 'SUPER_ADMIN_ROL', 'OWNER_ROL'];
@@ -93,6 +95,32 @@ async function initChat_internoPage() {
       };
       window.ciInitAttach();
     }
+
+    // Inicializar reply (desde ci-reply.js)
+    if (typeof window.ciInitReply === 'function') {
+      window.ciInitReply();
+    }
+
+    // Inicializar grabación de audio (desde ci-audio.js)
+    if (typeof window.ciInitAudio === 'function') {
+      window.ciInitAudio();
+    }
+
+    // Inicializar reproductor de audio custom (desde ci-audio-player.js)
+    if (typeof window.ciInitAudioPlayer === 'function') {
+      window.ciInitAudioPlayer();
+    }
+
+    // Cerrar menús "..." al hacer click fuera
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.ci-msg-menu-wrap')) {
+        document.querySelectorAll('.ci-msg-menu').forEach(m => {
+          m.style.display = 'none';
+          const a = m.closest('.ci-msg-actions');
+          if (a) a.classList.remove('menu-open');
+        });
+      }
+    });
 
   } catch (e) {
     console.error('Error init chat interno:', e);
@@ -208,11 +236,8 @@ async function ciConnectSocket() {
     }
 
     // Ahora sí procesar el mensaje (incrementa unread + actualiza badge)
+    // ciReceiveMessage ya actualiza el preview del sidebar (incluyendo archivos)
     ciReceiveMessage(roomId, msg);
-
-    // Actualizar último mensaje en sidebar
-    const lastEl = document.getElementById(`ci-priv-last-${msg.from_id}`);
-    if (lastEl) lastEl.textContent = msg.text;
   });
 
   // Typing
@@ -581,7 +606,7 @@ function ciReceiveMessage(roomId, msg) {
   }
 
   // Actualizar preview en sidebar
-  ciUpdateChatPreview(roomId, msg.text || '');
+  ciUpdateChatPreview(roomId, msg.text || '', msg);
 
   // Notificar si hay mención a este usuario
   if (msg.text && msg.text.includes('@' + ciCurrentUser.name) && msg.from_id !== ciCurrentUser.id) {
@@ -629,28 +654,39 @@ async function ciEnviar() {
     }
   }
 
+  // Tomar la cita pendiente (si existe). Solo se adjunta al PRIMER mensaje
+  // cuando hay múltiples adjuntos, para no duplicar la cita en cada uno.
+  const replyTo = (typeof window.ciGetReplyTo === 'function') ? window.ciGetReplyTo() : null;
+
   // Si solo hay texto, enviar un único mensaje (comportamiento original)
   // Si hay adjuntos, enviar N mensajes (uno por adjunto), el último lleva el texto
   const messagesToSend = [];
   if (attachments.length) {
     attachments.forEach((att, i) => {
-      const isLast = (i === attachments.length - 1);
+      const isLast  = (i === attachments.length - 1);
+      const isFirst = (i === 0);
       messagesToSend.push({
         text:       isLast ? text : '',
         attachment: att,
+        reply_to:   isFirst ? replyTo : null,
       });
     });
   } else {
-    messagesToSend.push({ text, attachment: null });
+    messagesToSend.push({ text, attachment: null, reply_to: replyTo });
   }
 
   for (const m of messagesToSend) {
+    // ID generado en cliente: permite citar el mensaje propio inmediatamente
+    // y que el "saltar al original" funcione en el lado del emisor.
+    const clientMsgId = 'cm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     const msg = {
+      message_id: clientMsgId,
       from_id:    ciCurrentUser.id,
       from_name:  ciCurrentUser.name,
       from_role:  ciCurrentUser.role,
       text:       m.text,
       attachment: m.attachment,
+      reply_to:   m.reply_to,
       timestamp:  new Date().toISOString(),
       company_id: ciCurrentUser.company_id
     };
@@ -691,11 +727,12 @@ async function ciEnviar() {
     });
   }
 
-  // Limpiar input y cola de adjuntos
+  // Limpiar input, cola de adjuntos y cita pendiente
   input.value = '';
   input.style.height = 'auto';
   document.getElementById('ci-send-btn').disabled = true;
   if (typeof window.ciAttachClear === 'function') window.ciAttachClear();
+  if (typeof window.ciClearReply  === 'function') window.ciClearReply();
 
   ciStopTyping();
 }
@@ -906,12 +943,19 @@ function ciBuildMsgEl(msg, continued) {
   const isOwn = msg.from_id === ciCurrentUser.id || msg.own;
   const div   = document.createElement('div');
   div.className = `ci-msg${isOwn ? ' own' : ''}${continued ? ' continued' : ''}`;
+  if (msg.message_id) div.dataset.messageId = msg.message_id;
 
-  const initials  = ciInitials(msg.from_name || '?');
-  const roleLabel = ciRoleLabel(msg.from_role);
-  const timeStr   = ciFormatTime(msg.timestamp || msg.created_at);
-  const textHtml  = ciFormatText(msg.text || '');
+  const initials   = ciInitials(msg.from_name || '?');
+  const roleLabel  = ciRoleLabel(msg.from_role);
+  const timeStr    = ciFormatTime(msg.timestamp || msg.created_at);
+  const textHtml   = ciFormatText(msg.text || '');
   const attachHtml = _ciRenderAttachment(msg.attachment);
+  const replyHtml  = _ciRenderReplyTo(msg.reply_to);
+
+  // Datos para citar este mensaje (en data-* para que ciSetReply los lea)
+  // Guardamos como JSON safe → un ID temporal en memoria sería más limpio,
+  // pero data-attrs ya funcionan y sobreviven re-renders parciales.
+  const msgRefId = msg.message_id || '';
 
   div.innerHTML = `
     <div class="ci-msg-avatar">${initials}</div>
@@ -921,14 +965,93 @@ function ciBuildMsgEl(msg, continued) {
         <span class="ci-msg-role ${msg.from_role || ''}">${roleLabel}</span>
         <span class="ci-msg-time">${timeStr}</span>
       </div>
+      ${replyHtml}
       ${attachHtml}
       ${textHtml ? `<div class="ci-msg-text">${textHtml}</div>` : ''}
     </div>
     <div class="ci-msg-actions">
-      ${!isOwn ? `<button class="ci-msg-action-btn" onclick="ciIniciarPrivado('${msg.from_id}','${escapeHtml(msg.from_name||'')}')" title="Mensaje privado"><i class="fas fa-reply"></i></button>` : ''}
+      ${msgRefId ? `<button class="ci-msg-action-btn" data-action="reply" title="Responder"><i class="fas fa-reply"></i></button>` : ''}
+      ${!isOwn ? `
+        <div class="ci-msg-menu-wrap">
+          <button class="ci-msg-action-btn" data-action="more" title="Más">
+            <i class="fas fa-ellipsis-v"></i>
+          </button>
+          <div class="ci-msg-menu" style="display:none">
+            <button class="ci-msg-menu-item" data-action="private"><i class="fas fa-comment"></i> Mensaje privado</button>
+          </div>
+        </div>
+      ` : ''}
     </div>
   `;
+
+  // Listeners delegados al div del mensaje
+  div.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+
+    if (action === 'reply') {
+      e.stopPropagation();
+      if (window.ciSetReply) window.ciSetReply(msg);
+    } else if (action === 'more') {
+      e.stopPropagation();
+      const menu    = btn.parentElement.querySelector('.ci-msg-menu');
+      const actions = btn.closest('.ci-msg-actions');
+      const willOpen = menu.style.display === 'none';
+      // Cerrar otros menús abiertos y quitarles el "pin"
+      document.querySelectorAll('.ci-msg-menu').forEach(m => {
+        if (m !== menu) {
+          m.style.display = 'none';
+          const a = m.closest('.ci-msg-actions');
+          if (a) a.classList.remove('menu-open');
+        }
+      });
+      menu.style.display = willOpen ? 'block' : 'none';
+      // Mantener las acciones visibles mientras el menú está abierto
+      // (sin esto, al salir el mouse el overflow:hidden recorta el menú)
+      if (actions) actions.classList.toggle('menu-open', willOpen);
+    } else if (action === 'private') {
+      e.stopPropagation();
+      ciIniciarPrivado(msg.from_id, msg.from_name || '');
+    }
+  });
+
+  // Click en una cita renderizada → salta al mensaje original
+  const replyEl = div.querySelector('.ci-msg-reply');
+  if (replyEl && replyEl.dataset.replyTo) {
+    replyEl.addEventListener('click', () => {
+      if (window.ciJumpToMessage) window.ciJumpToMessage(replyEl.dataset.replyTo);
+    });
+  }
+
   return div;
+}
+
+// Renderiza la cita (reply_to) arriba del mensaje
+function _ciRenderReplyTo(rt) {
+  if (!rt || !rt.message_id) return '';
+  const name = escapeHtml(rt.from_name || 'Usuario');
+  let preview = '';
+  if (rt.text && rt.text.trim()) {
+    preview = escapeHtml(rt.text.trim());
+  } else if (rt.attachment_type === 'image') preview = '📷 Foto';
+  else if (rt.attachment_type === 'video')   preview = '🎥 Video';
+  else if (rt.attachment_type === 'audio')   preview = '🎵 Audio';
+  else if (rt.attachment_type)               preview = '📎 Archivo';
+
+  // Thumbnail si la cita es de una imagen
+  const thumb = (rt.attachment_type === 'image' && rt.attachment_url)
+    ? `<img class="ci-msg-reply-thumb" src="${(rt.attachment_url || '').replace(/"/g, '&quot;')}" alt="" />`
+    : '';
+
+  return `
+    <div class="ci-msg-reply" data-reply-to="${escapeHtml(rt.message_id)}" title="Ir al mensaje original">
+      <div class="ci-msg-reply-texts">
+        <div class="ci-msg-reply-name">${name}</div>
+        <div class="ci-msg-reply-text">${preview}</div>
+      </div>
+      ${thumb}
+    </div>`;
 }
 
 // Renderiza el attachment dentro del mensaje según su tipo
@@ -952,9 +1075,23 @@ function _ciRenderAttachment(att) {
       </div>`;
   }
   if (att.type === 'audio') {
+    const dur = att.duration ? _ciFmtAudioTime(att.duration) : '0:00';
     return `
-      <div class="ci-msg-attach ci-attach-audio">
-        <audio class="ci-msg-audio" src="${safeUrl}" controls preload="metadata"></audio>
+      <div class="ci-msg-attach ci-audio-player" data-audio-state="paused">
+        <audio class="ci-audio-engine" src="${safeUrl}" preload="metadata"></audio>
+        <button class="ci-audio-play" type="button" aria-label="Reproducir">
+          <i class="fas fa-play"></i>
+        </button>
+        <div class="ci-audio-body">
+          <div class="ci-audio-track" role="slider" aria-label="Progreso del audio" tabindex="0">
+            <div class="ci-audio-track-fill"></div>
+            <div class="ci-audio-track-handle"></div>
+          </div>
+          <div class="ci-audio-time">
+            <span class="ci-audio-current">0:00</span>
+            <span class="ci-audio-duration">${dur}</span>
+          </div>
+        </div>
       </div>`;
   }
   // Documento (PDF, Word, Excel, ZIP, etc.) → abrir en pestaña nueva
@@ -983,6 +1120,14 @@ function _ciFormatSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
   return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+// Formatea segundos a "m:ss" para el reproductor de audio
+function _ciFmtAudioTime(secs) {
+  if (!secs || !isFinite(secs) || secs < 0) return '0:00';
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  return m + ':' + (s < 10 ? '0' : '') + s;
 }
 
 function ciFormatText(text) {
@@ -1217,8 +1362,25 @@ function ciUpdateSidebarBadge() {
   badge.style.display = total > 0 ? 'flex' : 'none';
 }
 
-function ciUpdateChatPreview(roomId, text) {
-  const truncated = text.length > 30 ? text.slice(0, 30) + '...' : text;
+// Texto de preview de un mensaje (texto, o etiqueta del adjunto si no hay texto)
+function _ciMsgPreviewText(msg) {
+  if (!msg) return '';
+  if (msg.text && msg.text.trim()) return msg.text;
+  if (msg.attachment) {
+    const t = msg.attachment.type;
+    return t === 'image' ? '📷 Foto'
+         : t === 'video' ? '🎥 Video'
+         : t === 'audio' ? '🎵 Audio'
+         : '📎 ' + (msg.attachment.name || 'Archivo');
+  }
+  return '';
+}
+
+function ciUpdateChatPreview(roomId, text, msg) {
+  // Si no hay texto pero hay adjunto, mostrar un preview según el tipo
+  let preview = text || '';
+  if (!preview && msg) preview = _ciMsgPreviewText(msg);
+  const truncated = preview.length > 30 ? preview.slice(0, 30) + '...' : preview;
   let el;
   if (roomId === 'general')   el = document.getElementById('ci-general-last');
   else if (_ciIsSala(roomId)) el = document.getElementById(`ci-sala-last-${roomId}`);
@@ -1249,7 +1411,7 @@ function ciShowMessageToast(roomId, msg) {
     <div class="ci-notif-toast-icon">${ciInitials(msg.from_name || '?')}</div>
     <div class="ci-notif-toast-body">
       <div class="ci-notif-toast-title">${escapeHtml(title)}</div>
-      <div class="ci-notif-toast-msg">${escapeHtml((msg.text || '').slice(0, 80))}</div>
+      <div class="ci-notif-toast-msg">${escapeHtml(_ciMsgPreviewText(msg).slice(0, 80))}</div>
     </div>
   `;
   toast.onclick = () => {
@@ -2625,7 +2787,7 @@ function ciRenderSalasList() {
   container.innerHTML = ciSalas.map(sala => {
     const isMember  = sala.members.includes(ciCurrentUser.id);
     const lastMsg   = (ciMessages[sala.id] || []).slice(-1)[0];
-    const lastText  = lastMsg ? (lastMsg.text || '').slice(0, 35) : (sala.desc || 'Sin mensajes aún');
+    const lastText  = lastMsg ? _ciMsgPreviewText(lastMsg).slice(0, 35) : (sala.desc || 'Sin mensajes aún');
     const unread    = ciUnread[sala.id] || 0;
     const memberCount = sala.members.length;
     const isActive  = ciActiveChat === sala.id;
@@ -3050,7 +3212,8 @@ function ciConfirmar(opts = {}) {
     mensaje   = '¿Estás seguro?',
     confirmar = 'Aceptar',
     cancelar  = 'Cancelar',
-    peligro   = false
+    peligro   = false,
+    soloAceptar = false   // si true, muestra un solo botón (modo aviso)
   } = opts;
 
   return new Promise(resolve => {
@@ -3079,7 +3242,7 @@ function ciConfirmar(opts = {}) {
           <div style="font-size:13px;color:#6b7194;line-height:1.5">${escapeHtml(mensaje)}</div>
         </div>
         <div class="ci-modal-footer" style="justify-content:center;gap:8px;padding-top:16px">
-          <button id="ci-confirmar-cancel" style="padding:9px 20px;border-radius:10px;border:1px solid #e4e9f5;background:#fff;color:#9BA3C0;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">${escapeHtml(cancelar)}</button>
+          ${soloAceptar ? '' : `<button id="ci-confirmar-cancel" style="padding:9px 20px;border-radius:10px;border:1px solid #e4e9f5;background:#fff;color:#9BA3C0;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">${escapeHtml(cancelar)}</button>`}
           <button id="ci-confirmar-ok" style="${btnColor};padding:9px 20px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">${escapeHtml(confirmar)}</button>
         </div>
       </div>
@@ -3098,12 +3261,16 @@ function ciConfirmar(opts = {}) {
     };
 
     document.getElementById('ci-confirmar-ok').onclick     = () => cleanup(true);
-    document.getElementById('ci-confirmar-cancel').onclick = () => cleanup(false);
+    const cancelBtn = document.getElementById('ci-confirmar-cancel');
+    if (cancelBtn) cancelBtn.onclick = () => cleanup(false);
     overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
     document.addEventListener('keydown', onKey);
 
-    // Focus en el botón cancelar por defecto (más seguro)
-    setTimeout(() => document.getElementById('ci-confirmar-cancel').focus(), 50);
+    // Focus seguro: cancelar si existe, sino aceptar
+    setTimeout(() => {
+      const f = document.getElementById('ci-confirmar-cancel') || document.getElementById('ci-confirmar-ok');
+      if (f) f.focus();
+    }, 50);
   });
 }
 
@@ -3391,6 +3558,7 @@ window.ciVotRemoveOpcion    = ciVotRemoveOpcion;
 window.ciVotar              = ciVotar;
 window.ciConfirmarVoto      = ciConfirmarVoto;
 window.ciConfirmarVotacion  = ciConfirmarVotacion;
+window.ciConfirmar          = ciConfirmar;
 window.ciAbrirProgramado    = ciAbrirProgramado;
 window.ciCerrarProgramado   = ciCerrarProgramado;
 window.ciEnviarProgramado   = ciEnviarProgramado;
@@ -3408,6 +3576,5 @@ window.ciDpClear            = ciDpClear;
 window.ciDpConfirm          = ciDpConfirm;
 window.ciPdpPrevMonth       = ciPdpPrevMonth;
 window.ciPdpNextMonth       = ciPdpNextMonth;
-window.ciConfirmarNota      = ciConfirmarNota;
 window.ciCrearPrivado       = ciCrearPrivado;
 window.ciCerrarNuevoPrivado = ciCerrarNuevoPrivado;

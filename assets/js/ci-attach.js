@@ -110,12 +110,13 @@
       const msg = 'Algunos archivos no se pudieron adjuntar:\n\n' + errors.join('\n');
       console.warn(msg);
       if (window.ciConfirmar) {
-        // Reusar el modal custom si está disponible
+        // Reusar el modal custom como aviso (un solo botón)
         window.ciConfirmar({
-          titulo:    'Archivos rechazados',
-          mensaje:   errors.join(' · '),
-          confirmar: 'Entendido',
-          cancelar:  'Cerrar',
+          titulo:      'Archivos rechazados',
+          mensaje:     errors.join(' · '),
+          confirmar:   'Entendido',
+          peligro:     true,
+          soloAceptar: true,
         });
       } else {
         alert(msg);
@@ -203,21 +204,37 @@
 
     const url = `${apiBase}/api/internal-chat/${companyId}/upload`;
 
-    let res;
+    let r, res;
     try {
-      const r = await fetch(url, {
+      r = await fetch(url, {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token },
         body: fd,
       });
-      res = await r.json();
     } catch (e) {
       console.error('ci-attach: error de red al subir:', e);
+      if (window.showToast) window.showToast('Error de conexión al subir archivos', 'error');
+      return [];
+    }
+
+    // 401 → sesión expirada (mismo comportamiento que apiCall en app.js)
+    if (r.status === 401) {
+      console.log('❌ ci-attach: token inválido o expirado, redirigiendo...');
+      localStorage.clear();
+      window.location.replace('../login.html');
+      return [];
+    }
+
+    try {
+      res = await r.json();
+    } catch (e) {
+      console.error('ci-attach: respuesta no-JSON:', e);
       return [];
     }
 
     if (!res || !res.ok) {
       console.error('ci-attach: respuesta inválida:', res);
+      if (window.showToast) window.showToast('No se pudieron subir los archivos', 'error');
       return [];
     }
 
@@ -303,4 +320,6 @@
   window.ciAttachHasPending = () => _queue.length > 0;
   window.ciAttachUploadAll  = _uploadAll;
   window.ciAttachClear      = _clearQueue;
+  // Permite agregar archivos/blobs desde otros módulos (ej: ci-audio.js)
+  window.ciAttachAddFiles   = (fileList) => _addFiles(fileList);
 })();
