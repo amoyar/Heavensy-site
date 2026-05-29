@@ -69,8 +69,16 @@
 
   </div>
 
+  <!-- Overlay para cerrar sidebar en móvil al tocar fuera -->
+  <div class="ci-sidebar-overlay" id="ci-sidebar-overlay" onclick="ciToggleSidebar()"></div>
+
   <!-- AREA PRINCIPAL -->
   <div class="ci-main">
+
+    <!-- BOTÓN TOGGLE SIDEBAR (anclado al borde izquierdo del área principal) -->
+    <button class="ci-toggle-sidebar" id="ci-toggle-sidebar" onclick="ciToggleSidebar()" aria-label="Mostrar u ocultar panel">
+      <i class="fas fa-chevron-left" id="ci-toggle-sidebar-icon"></i>
+    </button>
 
     <!-- Header del chat activo -->
     <div class="ci-main-header" id="ci-main-header">
@@ -108,6 +116,9 @@
       </div>
       <button class="ci-pinned-confirm-btn" id="ci-pinned-confirm-btn" onclick="ciConfirmarNota()">
         <i class="fas fa-check"></i> Visto bueno
+      </button>
+      <button class="ci-pinned-delete-btn" id="ci-pinned-delete-btn" onclick="ciEliminarNota()" title="Eliminar nota" style="display:none">
+        <i class="fas fa-trash"></i>
       </button>
     </div>
 
@@ -149,6 +160,9 @@
 
     <!-- Input -->
     <div class="ci-input-wrap">
+      <!-- Preview de adjuntos pendientes (antes de enviar) -->
+      <div class="ci-attach-preview" id="ci-attach-preview" style="display:none"></div>
+
       <div class="ci-input-box" id="ci-input-box">
 
         <!-- Mention popup -->
@@ -158,6 +172,18 @@
           <button class="ci-input-btn" onclick="ciTriggerMention()" title="Mencionar">
             <i class="fas fa-at"></i>
           </button>
+          <!-- Botón emoji (picker desde emoji.js) -->
+          <button class="ci-input-btn" id="ci-emoji-btn" title="Emoji" type="button">
+            <i class="far fa-smile"></i>
+          </button>
+          <!-- Botón adjuntar archivo -->
+          <button class="ci-input-btn" id="ci-attach-btn" title="Adjuntar archivo" type="button">
+            <i class="fas fa-paperclip"></i>
+          </button>
+          <input type="file" id="ci-attach-input"
+                 multiple
+                 accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
+                 style="display:none" />
           <!-- Botón + expandible -->
           <button class="ci-input-btn ci-plus-btn" id="ci-plus-btn" onclick="ciTogglePlus()" title="Más opciones">
             <i class="fas fa-plus"></i>

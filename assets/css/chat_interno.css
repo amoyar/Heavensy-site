@@ -225,6 +225,7 @@
   overflow: hidden;
   background: var(--ci-bg);
   font-family: 'DM Sans', 'Poppins', sans-serif;
+  position: relative; /* Necesario para anclar .ci-sidebar absoluta en móvil */
 }
 
 /* ── PANEL IZQUIERDO ── */
@@ -1624,7 +1625,10 @@
   flex-shrink: 0;
 }
 
-.ci-notif-toast-body {}
+.ci-notif-toast-body {
+  flex: 1;
+  min-width: 0;
+}
 
 .ci-notif-toast-title {
   font-size: 12px;
@@ -1747,7 +1751,10 @@
   gap: 16px;
 }
 
-.ci-info-field {}
+.ci-info-field {
+  display: flex;
+  flex-direction: column;
+}
 
 .ci-info-field-label {
   font-size: 10px;
@@ -1981,4 +1988,412 @@
 .ci-modal-body::-webkit-scrollbar-thumb {
   background: var(--ci-border);
   border-radius: 4px;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE — Toggle sidebar + Móvil
+═══════════════════════════════════════════ */
+
+/* Botón toggle: anclado al borde izquierdo de ci-main, debajo del header,
+   completamente DENTRO del área del chat para que nunca choque con la
+   sidebar ni con el header del sitio */
+.ci-toggle-sidebar {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 56px;
+  background: #fff;
+  border: 1px solid var(--ci-border);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  color: var(--ci-blue);
+  font-size: 11px;
+  cursor: pointer;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, .06);
+  transition: background .15s ease, color .15s ease;
+  padding: 0;
+}
+.ci-toggle-sidebar:hover {
+  background: #f5f6fa;
+  color: #547fff;
+}
+.ci-toggle-sidebar i { pointer-events: none; }
+
+/* Transición suave de la sidebar */
+.ci-sidebar {
+  transition: margin-left .25s ease;
+}
+
+/* Estado: sidebar colapsada en desktop */
+.ci-page.sidebar-collapsed .ci-sidebar {
+  margin-left: -280px;
+}
+
+/* Overlay (solo visible en móvil cuando sidebar abierta) */
+.ci-sidebar-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, .35);
+  z-index: 15;
+}
+
+/* ── MÓVIL ── */
+@media (max-width: 768px) {
+  .ci-sidebar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 85%;
+    max-width: 320px;
+    min-width: 0;
+    z-index: 18;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, .12);
+  }
+
+  /* En móvil la sidebar empieza OCULTA por defecto */
+  .ci-page .ci-sidebar {
+    margin-left: -100%;
+  }
+  /* Y se muestra cuando NO está colapsada (toggle al revés en móvil) */
+  .ci-page.sidebar-open .ci-sidebar {
+    margin-left: 0;
+  }
+
+  /* Overlay visible solo cuando sidebar abierta en móvil */
+  .ci-page.sidebar-open .ci-sidebar-overlay {
+    display: block;
+  }
+
+  /* En móvil el botón conserva los estilos base (left:0, vertical centrado).
+     Solo aseguramos que esté visible sobre el overlay de la sidebar. */
+  .ci-toggle-sidebar {
+    z-index: 25;
+  }
+}
+
+/* Botón eliminar en banner pinned */
+.ci-pinned-delete-btn {
+  background: transparent;
+  border: 1px solid #fee2e2;
+  color: #ef4444;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s ease;
+}
+.ci-pinned-delete-btn:hover { background: #fee2e2; }
+
+/* Botón eliminar en votación pinned */
+.ci-pvot-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  opacity: 0.7;
+  transition: opacity .15s ease, background .15s ease;
+}
+.ci-pvot-delete-btn:hover { opacity: 1; background: #fee2e2; }
+
+/* Opción seleccionada pendiente de confirmar (antes de enviar el voto) */
+.ci-pinned-vot-btn.pending {
+  border-color: #8e84fa;
+  background: linear-gradient(135deg, #f3f1ff 0%, #e8edff 100%);
+}
+.ci-pinned-vot-btn.pending .ci-pinned-vot-label {
+  color: #5a79d4;
+  font-weight: 600;
+}
+/* ═══════════════════════════════════════════
+   ADJUNTOS — Preview y mensajes con archivos
+═══════════════════════════════════════════ */
+
+/* Preview de adjuntos pendientes (arriba del input, antes de enviar) */
+.ci-attach-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fafbfd;
+  border-top: 1px solid var(--ci-border);
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.ci-attach-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--ci-border);
+  border-radius: 10px;
+  padding: 6px 10px 6px 6px;
+  max-width: 240px;
+  min-width: 0;
+}
+
+.ci-attach-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #eef0fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ci-attach-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ci-attach-thumb-icon {
+  color: var(--ci-purple);
+  font-size: 18px;
+}
+
+.ci-attach-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.ci-attach-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ci-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ci-attach-size {
+  font-size: 10px;
+  color: var(--ci-muted);
+}
+
+.ci-attach-remove {
+  background: transparent;
+  border: none;
+  color: var(--ci-muted);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, color .15s;
+}
+.ci-attach-remove:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+/* ── Drag & drop ── */
+.ci-feed-wrapper.ci-dnd-active::before,
+.ci-feed.ci-dnd-active::before {
+  content: 'Suelta los archivos aquí';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(142, 132, 250, .15);
+  color: var(--ci-purple);
+  font-size: 16px;
+  font-weight: 600;
+  border: 2px dashed var(--ci-purple);
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ── Mensaje con attachment ── */
+.ci-msg-attach {
+  margin-top: 4px;
+  max-width: 320px;
+}
+
+.ci-attach-image {
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f0f1f5;
+  cursor: pointer;
+}
+.ci-msg-img {
+  max-width: 100%;
+  max-height: 320px;
+  display: block;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform .15s;
+}
+.ci-msg-img:hover {
+  transform: scale(1.01);
+}
+
+.ci-attach-video,
+.ci-attach-audio {
+  border-radius: 10px;
+  overflow: hidden;
+}
+.ci-msg-video {
+  max-width: 100%;
+  max-height: 360px;
+  display: block;
+  border-radius: 10px;
+  background: #000;
+}
+.ci-msg-audio {
+  width: 100%;
+  min-width: 240px;
+}
+
+.ci-attach-doc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--ci-border);
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: background .15s, border-color .15s;
+}
+.ci-attach-doc:hover {
+  background: #fafbfd;
+  border-color: var(--ci-purple);
+}
+.ci-attach-doc-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #eef0fa;
+  color: var(--ci-purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.ci-attach-doc-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.ci-attach-doc-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ci-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ci-attach-doc-size {
+  font-size: 11px;
+  color: var(--ci-muted);
+}
+.ci-attach-doc-download {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ci-purple);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.ci-attach-doc-download:hover {
+  background: #eef0fa;
+}
+
+/* ═══════════════════════════════════════════
+   LIGHTBOX (preview pantalla completa)
+═══════════════════════════════════════════ */
+.ci-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .9);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+.ci-lb-content {
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ci-lb-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.ci-lb-pdf {
+  width: 90vw;
+  height: 90vh;
+  max-width: 1100px;
+  border: none;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.ci-lb-close, .ci-lb-download, .ci-lb-nav {
+  position: absolute;
+  background: rgba(255, 255, 255, .12);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: background .15s;
+}
+.ci-lb-close:hover,
+.ci-lb-download:hover,
+.ci-lb-nav:hover {
+  background: rgba(255, 255, 255, .25);
+}
+.ci-lb-close    { top: 20px; right: 20px; }
+.ci-lb-download { top: 20px; right: 76px; }
+.ci-lb-nav      { top: 50%; transform: translateY(-50%); }
+.ci-lb-prev     { left: 20px; }
+.ci-lb-next     { right: 20px; }
+
+@media (max-width: 768px) {
+  .ci-lightbox { padding: 16px; }
+  .ci-lb-close    { top: 12px; right: 12px; }
+  .ci-lb-download { top: 12px; right: 64px; }
 }

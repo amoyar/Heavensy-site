@@ -30,13 +30,25 @@ async function initChat_internoPage() {
     const token = localStorage.getItem('token');
     if (!token) return;
     const payload = JSON.parse(atob(token.split('.')[1]));
+
+    // Normalizar rol: el JWT puede traer 'role' (string) o 'roles' (array)
+    const rawRole = payload.role
+      || (Array.isArray(payload.roles) && payload.roles[0])
+      || 'usuario';
+
     ciCurrentUser = {
       id:         payload.user_id || payload.sub || payload.email,
       name:       payload.username || payload.name || payload.email || 'Usuario',
-      role:       payload.role || 'usuario',
+      role:       rawRole,
       company_id: payload.company_id || ''
     };
-    ciIsAdmin = ['admin','superadmin','owner'].includes(ciCurrentUser.role);
+
+    // Detectar rol admin (acepta varias nomenclaturas)
+    const adminRoles = ['admin', 'superadmin', 'owner', 'ADMIN_ROL', 'SUPER_ADMIN_ROL', 'OWNER_ROL'];
+    const allRoles   = payload.role
+      ? [payload.role]
+      : (Array.isArray(payload.roles) ? payload.roles : []);
+    ciIsAdmin = allRoles.some(r => adminRoles.includes(r));
 
     if (ciIsAdmin) {
       document.getElementById('ci-admin-btn').style.display = '';
@@ -65,6 +77,22 @@ async function initChat_internoPage() {
 
     // Watcher scroll
     ciInitScrollWatcher();
+
+    // Inicializar emoji picker (desde ci-emoji.js + emoji.js)
+    if (typeof window.ciInitEmoji === 'function') {
+      window.ciInitEmoji();
+    }
+
+    // Inicializar gestor de adjuntos (desde ci-attach.js)
+    if (typeof window.ciInitAttach === 'function') {
+      // Configurar (ci-attach no puede acceder a let-locales del módulo)
+      window.ciAttachConfig = {
+        apiBase:   (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : '',
+        companyId: ciCurrentUser.company_id,
+        get token() { return localStorage.getItem('token'); },
+      };
+      window.ciInitAttach();
+    }
 
   } catch (e) {
     console.error('Error init chat interno:', e);
@@ -237,6 +265,34 @@ async function ciConnectSocket() {
   // Nota resuelta (todos confirmaron)
   ciSocket.on('internal_note_resolved', (data) => {
     if (ciActiveNota?.id === data.nota_id) ciOcultarNota();
+  });
+
+  // Nota eliminada por otro usuario (creador o admin)
+  ciSocket.on('internal_nota_deleted', (data) => {
+    const notaId = data.nota_id;
+    const roomId = data.room_id;
+    // Limpiar de cache
+    if (roomId && ciAllPinnedNotas[roomId]?.nota_id === notaId) {
+      delete ciAllPinnedNotas[roomId];
+    }
+    // Si está activa en pantalla, ocultarla
+    if (ciActiveNota?.nota_id === notaId) {
+      ciActiveNota = null;
+      const banner = document.getElementById('ci-pinned-banner');
+      if (banner) banner.style.display = 'none';
+    }
+  });
+
+  // Votación eliminada por otro usuario (creador o admin)
+  ciSocket.on('internal_votacion_deleted', (data) => {
+    const votId  = data.vot_id;
+    const roomId = data.room_id;
+    if (roomId && ciAllPinnedVots[roomId]?.id === votId) {
+      delete ciAllPinnedVots[roomId];
+    }
+    if (ciPinnedVotacion?.id === votId) {
+      ciUnpinVotacion(false);
+    }
   });
 
   // Nueva sala creada por otro usuario
@@ -434,6 +490,43 @@ function _ciIsSala(roomId) {
   return ciSalas.some(s => s.id === roomId);
 }
 
+// ── RESPONSIVE: Toggle sidebar ──
+function ciToggleSidebar() {
+  const page = document.querySelector('.ci-page');
+  if (!page) return;
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
+  const icon = document.getElementById('ci-toggle-sidebar-icon');
+
+  if (isMobile) {
+    // En móvil: clase sidebar-open controla si está visible
+    page.classList.toggle('sidebar-open');
+    if (icon) {
+      icon.className = page.classList.contains('sidebar-open')
+        ? 'fas fa-chevron-left'
+        : 'fas fa-chevron-right';
+    }
+  } else {
+    // En desktop: clase sidebar-collapsed controla si está oculta
+    page.classList.toggle('sidebar-collapsed');
+    if (icon) {
+      icon.className = page.classList.contains('sidebar-collapsed')
+        ? 'fas fa-chevron-right'
+        : 'fas fa-chevron-left';
+    }
+  }
+}
+
+// Helper: cerrar sidebar al abrir un chat (solo móvil)
+function _ciAutoCloseSidebarMobile() {
+  if (!window.matchMedia('(max-width: 768px)').matches) return;
+  const page = document.querySelector('.ci-page');
+  if (page && page.classList.contains('sidebar-open')) {
+    page.classList.remove('sidebar-open');
+    const icon = document.getElementById('ci-toggle-sidebar-icon');
+    if (icon) icon.className = 'fas fa-chevron-right';
+  }
+}
+
 // ── CARGAR HISTORIAL ──
 async function ciLoadHistory(roomId) {
   try {
@@ -497,72 +590,113 @@ function ciReceiveMessage(roomId, msg) {
 }
 
 // ── ENVIAR MENSAJE ──
-function ciEnviar() {
+async function ciEnviar() {
   const input = document.getElementById('ci-input');
   const text  = (input.value || '').trim();
-  if (!text) return;
 
-  const msg = {
-    from_id:   ciCurrentUser.id,
-    from_name: ciCurrentUser.name,
-    from_role: ciCurrentUser.role,
-    text:      text,
-    timestamp: new Date().toISOString(),
-    company_id: ciCurrentUser.company_id
-  };
+  // Hay adjuntos pendientes?
+  const hasAttach = typeof window.ciAttachHasPending === 'function' && window.ciAttachHasPending();
 
-  // Si está en modo nota, enviar como nota anclada
+  // Si no hay texto ni adjuntos, salir
+  if (!text && !hasAttach) return;
+
+  // Si está en modo nota, NO permitir adjuntos (las notas son texto)
   if (ciNotaMode) {
+    if (!text) return;
     ciEnviarNota(text);
     input.value = '';
     input.style.height = 'auto';
     document.getElementById('ci-send-btn').disabled = true;
-    ciToggleNotaMode(); // desactivar modo nota
+    ciToggleNotaMode();
     ciStopTyping();
     return;
   }
 
-  if (ciActiveChat === 'general') {
-    ciSocket.emit('internal_message', msg);
-    ciReceiveMessage('general', { ...msg, own: true });
-  } else if (ciSalas.some(s => s.id === ciActiveChat)) {
-    // Sala temática
-    const salaMsg = { ...msg, room_id: ciActiveChat };
-    ciSocket.emit('internal_room_message', salaMsg);
-    ciReceiveMessage(ciActiveChat, { ...salaMsg, own: true });
-  } else {
-    // Privado
-    const privateMsg = {
-      ...msg,
-      to_id: ciActiveChat,
-      room: `private:${[ciCurrentUser.id, ciActiveChat].sort().join(':')}`
-    };
-    ciSocket.emit('internal_private_message', privateMsg);
-    ciReceiveMessage(ciActiveChat, { ...privateMsg, own: true });
+  // Subir adjuntos si hay
+  let attachments = [];
+  if (hasAttach) {
+    const sendBtn = document.getElementById('ci-send-btn');
+    if (sendBtn) sendBtn.disabled = true;
+    try {
+      attachments = await window.ciAttachUploadAll();
+    } catch (e) {
+      console.error('Error subiendo adjuntos:', e);
+    }
+    if (!attachments.length) {
+      // Falló la subida: no enviar nada y reactivar botón
+      if (sendBtn) sendBtn.disabled = !input.value.trim();
+      return;
+    }
   }
 
-  // Detectar menciones y emitirlas
-  const mentions = ciExtractMentions(text);
-  mentions.forEach(name => {
-    const participant = ciParticipants.find(p => p.name === name);
-    if (participant) {
-      ciSocket.emit('internal_mention', {
-        from_id:   ciCurrentUser.id,
-        from_name: ciCurrentUser.name,
-        to_id:     participant.user_id,
-        text:      text,
-        room:      ciActiveChat,
-        company_id: ciCurrentUser.company_id
+  // Si solo hay texto, enviar un único mensaje (comportamiento original)
+  // Si hay adjuntos, enviar N mensajes (uno por adjunto), el último lleva el texto
+  const messagesToSend = [];
+  if (attachments.length) {
+    attachments.forEach((att, i) => {
+      const isLast = (i === attachments.length - 1);
+      messagesToSend.push({
+        text:       isLast ? text : '',
+        attachment: att,
       });
-    }
-  });
+    });
+  } else {
+    messagesToSend.push({ text, attachment: null });
+  }
 
-  // Limpiar input
+  for (const m of messagesToSend) {
+    const msg = {
+      from_id:    ciCurrentUser.id,
+      from_name:  ciCurrentUser.name,
+      from_role:  ciCurrentUser.role,
+      text:       m.text,
+      attachment: m.attachment,
+      timestamp:  new Date().toISOString(),
+      company_id: ciCurrentUser.company_id
+    };
+
+    if (ciActiveChat === 'general') {
+      ciSocket.emit('internal_message', msg);
+      ciReceiveMessage('general', { ...msg, own: true });
+    } else if (ciSalas.some(s => s.id === ciActiveChat)) {
+      const salaMsg = { ...msg, room_id: ciActiveChat };
+      ciSocket.emit('internal_room_message', salaMsg);
+      ciReceiveMessage(ciActiveChat, { ...salaMsg, own: true });
+    } else {
+      const privateMsg = {
+        ...msg,
+        to_id: ciActiveChat,
+        room:  `private:${[ciCurrentUser.id, ciActiveChat].sort().join(':')}`
+      };
+      ciSocket.emit('internal_private_message', privateMsg);
+      ciReceiveMessage(ciActiveChat, { ...privateMsg, own: true });
+    }
+  }
+
+  // Detectar menciones (solo si hay texto)
+  if (text) {
+    const mentions = ciExtractMentions(text);
+    mentions.forEach(name => {
+      const participant = ciParticipants.find(p => p.name === name);
+      if (participant) {
+        ciSocket.emit('internal_mention', {
+          from_id:    ciCurrentUser.id,
+          from_name:  ciCurrentUser.name,
+          to_id:      participant.user_id,
+          text:       text,
+          room:       ciActiveChat,
+          company_id: ciCurrentUser.company_id
+        });
+      }
+    });
+  }
+
+  // Limpiar input y cola de adjuntos
   input.value = '';
   input.style.height = 'auto';
   document.getElementById('ci-send-btn').disabled = true;
+  if (typeof window.ciAttachClear === 'function') window.ciAttachClear();
 
-  // Detener typing
   ciStopTyping();
 }
 
@@ -573,8 +707,9 @@ function ciHandleInput(e) {
   input.style.height = 'auto';
   input.style.height = Math.min(input.scrollHeight, 120) + 'px';
 
-  // Habilitar/deshabilitar botón enviar
-  document.getElementById('ci-send-btn').disabled = !input.value.trim();
+  // Habilitar/deshabilitar botón enviar (también si hay adjuntos pendientes)
+  const hasAttach = typeof window.ciAttachHasPending === 'function' && window.ciAttachHasPending();
+  document.getElementById('ci-send-btn').disabled = !input.value.trim() && !hasAttach;
 
   // Mention autocomplete
   ciCheckMention(input);
@@ -711,6 +846,7 @@ function ciExtractMentions(text) {
 // ── RENDER FEED ──
 function ciRenderFeed(roomId) {
   const feed = document.getElementById('ci-feed');
+  if (!feed) return; // chat no montado
   const msgs = ciMessages[roomId] || [];
 
   feed.innerHTML = '';
@@ -775,6 +911,7 @@ function ciBuildMsgEl(msg, continued) {
   const roleLabel = ciRoleLabel(msg.from_role);
   const timeStr   = ciFormatTime(msg.timestamp || msg.created_at);
   const textHtml  = ciFormatText(msg.text || '');
+  const attachHtml = _ciRenderAttachment(msg.attachment);
 
   div.innerHTML = `
     <div class="ci-msg-avatar">${initials}</div>
@@ -784,13 +921,68 @@ function ciBuildMsgEl(msg, continued) {
         <span class="ci-msg-role ${msg.from_role || ''}">${roleLabel}</span>
         <span class="ci-msg-time">${timeStr}</span>
       </div>
-      <div class="ci-msg-text">${textHtml}</div>
+      ${attachHtml}
+      ${textHtml ? `<div class="ci-msg-text">${textHtml}</div>` : ''}
     </div>
     <div class="ci-msg-actions">
       ${!isOwn ? `<button class="ci-msg-action-btn" onclick="ciIniciarPrivado('${msg.from_id}','${escapeHtml(msg.from_name||'')}')" title="Mensaje privado"><i class="fas fa-reply"></i></button>` : ''}
     </div>
   `;
   return div;
+}
+
+// Renderiza el attachment dentro del mensaje según su tipo
+function _ciRenderAttachment(att) {
+  if (!att || !att.url) return '';
+  const safeName = escapeHtml(att.name || 'archivo');
+  const safeUrl  = (att.url || '').replace(/"/g, '&quot;');
+
+  if (att.type === 'image') {
+    return `
+      <div class="ci-msg-attach ci-attach-image">
+        <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" title="Abrir en pestaña nueva">
+          <img class="ci-msg-img" src="${safeUrl}" alt="${safeName}" />
+        </a>
+      </div>`;
+  }
+  if (att.type === 'video') {
+    return `
+      <div class="ci-msg-attach ci-attach-video">
+        <video class="ci-msg-video" src="${safeUrl}" controls preload="metadata"></video>
+      </div>`;
+  }
+  if (att.type === 'audio') {
+    return `
+      <div class="ci-msg-attach ci-attach-audio">
+        <audio class="ci-msg-audio" src="${safeUrl}" controls preload="metadata"></audio>
+      </div>`;
+  }
+  // Documento (PDF, Word, Excel, ZIP, etc.) → abrir en pestaña nueva
+  const sizeStr = att.size ? _ciFormatSize(att.size) : '';
+  const mime    = att.mime_type || '';
+  const icon    = mime.includes('pdf')           ? 'fa-file-pdf'
+                : mime.includes('word')          ? 'fa-file-word'
+                : mime.includes('sheet') || mime.includes('excel')       ? 'fa-file-excel'
+                : mime.includes('presentation') || mime.includes('powerpoint') ? 'fa-file-powerpoint'
+                : mime.includes('zip') || mime.includes('rar')           ? 'fa-file-archive'
+                : 'fa-file';
+  return `
+    <a class="ci-msg-attach ci-attach-doc" href="${safeUrl}" target="_blank" rel="noopener noreferrer" title="Abrir ${safeName} en pestaña nueva">
+      <div class="ci-attach-doc-icon"><i class="fas ${icon}"></i></div>
+      <div class="ci-attach-doc-info">
+        <div class="ci-attach-doc-name">${safeName}</div>
+        <div class="ci-attach-doc-size">${sizeStr}</div>
+      </div>
+      <span class="ci-attach-doc-download" title="Abrir">
+        <i class="fas fa-external-link-alt"></i>
+      </span>
+    </a>`;
+}
+
+function _ciFormatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
 }
 
 function ciFormatText(text) {
@@ -868,6 +1060,7 @@ function ciSwitchTab(tab) { if (tab) ciFilterTab(tab); }
 // ── ABRIR CHAT GENERAL ──
 function ciOpenGeneral() {
   ciActiveChat = 'general';
+  _ciAutoCloseSidebarMobile();
 
   // Marcar activo en sidebar
   document.querySelectorAll('.ci-chat-item').forEach(el => el.classList.remove('active'));
@@ -895,6 +1088,7 @@ function ciIniciarPrivado(userId, userName) {
   if (userId === ciCurrentUser.id) return;
 
   ciActiveChat = userId;
+  _ciAutoCloseSidebarMobile();
   if (!ciMessages[userId]) ciMessages[userId] = [];
 
   ciAddPrivateChatItem(userId, userName, ciOnlineUsers[userId]?.role || '');
@@ -1320,12 +1514,25 @@ function ciVotRemoveOpcion(btn) {
 }
 
 function ciEnviarVotacion() {
+  // Prevenir doble click
+  const saveBtn = document.querySelector('#ci-modal-votacion .ci-modal-save');
+  if (saveBtn && saveBtn.disabled) return;
+  if (saveBtn) saveBtn.disabled = true;
+
   const pregunta = document.getElementById('ci-vot-pregunta').value.trim();
-  if (!pregunta) { document.getElementById('ci-vot-pregunta').focus(); return; }
+  if (!pregunta) {
+    document.getElementById('ci-vot-pregunta').focus();
+    if (saveBtn) saveBtn.disabled = false;
+    return;
+  }
 
   const opciones = Array.from(document.querySelectorAll('#ci-vot-opciones input'))
     .map(inp => inp.value.trim()).filter(Boolean);
-  if (opciones.length < 2) { alert('Agrega al menos 2 opciones'); return; }
+  if (opciones.length < 2) {
+    alert('Agrega al menos 2 opciones');
+    if (saveBtn) saveBtn.disabled = false;
+    return;
+  }
 
   // Determinar room_id y tipo de chat
   const isPrivado = !_ciIsSala(ciActiveChat) && ciActiveChat !== 'general';
@@ -1364,6 +1571,9 @@ function ciEnviarVotacion() {
       method: 'POST', body: JSON.stringify(votacion)
     }).catch(() => {});
   }
+
+  // Reactivar el botón (modal puede reutilizarse)
+  if (saveBtn) saveBtn.disabled = false;
 }
 
 function ciRenderVotacionCard(v, own) {
@@ -1429,6 +1639,7 @@ function ciRenderVotacionCard(v, own) {
 
 let ciPinnedVotacion   = null; // votación del chat activo
 let ciAllPinnedVots    = {};   // roomId → votacion
+let ciPendingVoteIdx   = {};   // votId → opcionIdx (selección pendiente sin enviar)
 
 function ciPinVotacion(v) {
   ciPinnedVotacion = v;
@@ -1481,20 +1692,22 @@ function _ciRenderPinnedVot(v) {
 
   const optsEl = document.getElementById('ci-pinned-vot-opciones');
   optsEl.innerHTML = v.opciones.map((o, i) => {
-    const pct     = total > 0 ? Math.round(((o.votos?.length || 0) / total) * 100) : 0;
-    const voted   = o.votos?.includes(ciCurrentUser.id);
+    const pct      = total > 0 ? Math.round(((o.votos?.length || 0) / total) * 100) : 0;
+    const voted    = o.votos?.includes(ciCurrentUser.id);
     const isWinner = allVoted && i === winnerIdx;
+    // Marca la opción que el usuario ha pre-seleccionado (sin enviar aún)
+    const isPending = !yaVote && ciPendingVoteIdx[v.id] === i;
     return `
-      <button class="ci-pinned-vot-btn${voted ? ' voted' : ''}${isWinner ? ' winner' : ''}"
+      <button class="ci-pinned-vot-btn${voted ? ' voted' : ''}${isWinner ? ' winner' : ''}${isPending ? ' pending' : ''}"
               onclick="ciVotar('${v.id}',${i})"
-              ${allVoted ? 'disabled' : ''}>
+              ${(allVoted || yaVote) ? 'disabled' : ''}>
         <div class="ci-pinned-vot-bar" style="width:${pct}%"></div>
         <span class="ci-pinned-vot-label">${escapeHtml(o.texto)}</span>
         <span class="ci-pinned-vot-pct">${pct}%</span>
       </button>`;
   }).join('');
 
-  // Botón confirmar (aparece cuando todos votaron)
+  // Botón confirmar (cambia según estado)
   const el = document.getElementById('ci-pinned-vot');
   let confirmEl = el.querySelector('.ci-pvot-confirm');
   if (!confirmEl) {
@@ -1502,7 +1715,14 @@ function _ciRenderPinnedVot(v) {
     confirmEl.className = 'ci-pvot-confirm';
     el.appendChild(confirmEl);
   }
-  if (allVoted) {
+
+  if (!yaVote && !allVoted) {
+    // Antes de votar: botón "Votar" — habilitado solo si hay selección pendiente
+    const hasPending = ciPendingVoteIdx[v.id] !== undefined;
+    confirmEl.innerHTML = `<button class="ci-pvot-confirm-btn"${hasPending ? '' : ' disabled'} onclick="ciConfirmarVoto('${v.id}')"><i class="fas fa-paper-plane"></i> Votar</button>`;
+    confirmEl.style.display = '';
+  } else if (allVoted) {
+    // Después de que todos votaron: botón "Entendido" para confirmar el cierre
     confirmEl.innerHTML = yaConfirme
       ? `<button class="ci-pvot-confirm-btn confirmed" disabled><i class="fas fa-check"></i> Confirmado</button>`
       : `<button class="ci-pvot-confirm-btn" onclick="ciConfirmarVotacion('${v.id}')"><i class="fas fa-check"></i> Entendido</button>`;
@@ -1513,6 +1733,24 @@ function _ciRenderPinnedVot(v) {
 
   // Cerrar solo cuando todos confirmaron
   if (allConfirmed) setTimeout(() => ciUnpinVotacion(), 2000);
+
+  // Botón eliminar visible solo si es creador o admin
+  const soyCreador = v.from_id === ciCurrentUser.id;
+  let delBtn = el.querySelector('.ci-pvot-delete-btn');
+  if (soyCreador || ciIsAdmin) {
+    if (!delBtn) {
+      delBtn = document.createElement('button');
+      delBtn.className = 'ci-pvot-delete-btn';
+      delBtn.title = 'Eliminar votación';
+      delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+      delBtn.onclick = () => ciEliminarVotacion(v.id);
+      el.appendChild(delBtn);
+    } else {
+      delBtn.onclick = () => ciEliminarVotacion(v.id);
+    }
+  } else if (delBtn) {
+    delBtn.remove();
+  }
 }
 
 function ciConfirmarVotacion(votId) {
@@ -1569,14 +1807,35 @@ function ciVotar(votId, opcionIdx) {
     else return;
   }
 
-  // Permitir cambiar voto: quitar voto anterior y registrar nuevo
+  // Si el usuario ya votó, no puede cambiar
+  const yaVote = ciPinnedVotacion.opciones.some(o => o.votos?.includes(ciCurrentUser.id));
+  if (yaVote) return;
+
+  // Solo guardar la selección local (sin emitir todavía)
+  // El usuario puede cambiar la opción cuantas veces quiera antes de confirmar
+  ciPendingVoteIdx[votId] = opcionIdx;
+  _ciRenderPinnedVot(ciPinnedVotacion);
+}
+
+function ciConfirmarVoto(votId) {
+  if (!ciPinnedVotacion || ciPinnedVotacion.id !== votId) return;
+  const opcionIdx = ciPendingVoteIdx[votId];
+  if (opcionIdx === undefined) return;
+
+  // Registrar voto localmente
   ciPinnedVotacion.opciones.forEach(o => {
     if (o.votos) o.votos = o.votos.filter(id => id !== ciCurrentUser.id);
   });
   const o = ciPinnedVotacion.opciones[opcionIdx];
-  if (o) o.votos.push(ciCurrentUser.id);
+  if (o) {
+    if (!o.votos) o.votos = [];
+    o.votos.push(ciCurrentUser.id);
+  }
 
-  // Usar el room_id de la votación (ya tiene el formato correcto)
+  // Limpiar selección pendiente (ya votó)
+  delete ciPendingVoteIdx[votId];
+
+  // Emitir al servidor
   ciSocket?.emit('internal_voto', {
     vot_id:     votId,
     opcion_idx: opcionIdx,
@@ -1950,12 +2209,21 @@ function ciTareaUpdateCount() {
 }
 
 function ciEnviarTarea() {
+  // Prevenir doble click
+  const saveBtn = document.querySelector('#ci-modal-tarea .ci-modal-save');
+  if (saveBtn && saveBtn.disabled) return;
+  if (saveBtn) saveBtn.disabled = true;
+
   const desc       = document.getElementById('ci-tarea-desc').value.trim();
   const fecha      = ciDpGetValue();
   const prioridad  = document.getElementById('ci-tarea-prioridad').value;
   const calendario = document.getElementById('ci-tarea-calendario').checked;
 
-  if (!desc) { document.getElementById('ci-tarea-desc').focus(); return; }
+  if (!desc) {
+    document.getElementById('ci-tarea-desc').focus();
+    if (saveBtn) saveBtn.disabled = false;
+    return;
+  }
 
   const responsables = Array.from(
     document.querySelectorAll('#ci-tarea-responsables input:checked')
@@ -1967,7 +2235,11 @@ function ciEnviarTarea() {
     };
   });
 
-  if (!responsables.length) { alert('Selecciona al menos un responsable'); return; }
+  if (!responsables.length) {
+    alert('Selecciona al menos un responsable');
+    if (saveBtn) saveBtn.disabled = false;
+    return;
+  }
 
   const isPrivadoT = !_ciIsSala(ciActiveChat) && ciActiveChat !== 'general';
   const tareaRoomId = isPrivadoT
@@ -1999,6 +2271,9 @@ function ciEnviarTarea() {
     ? `/api/internal-chat/${ciCurrentUser.company_id}/private-tarea`
     : `/api/internal-chat/${ciCurrentUser.company_id}/rooms/${ciActiveChat}/tarea`;
   apiCall(tareaEndpoint, { method: 'POST', body: JSON.stringify(tarea) }).catch(() => {});
+
+  // Reactivar el botón (modal puede reutilizarse)
+  if (saveBtn) saveBtn.disabled = false;
 }
 
 function ciRenderTareaCard(t, own) {
@@ -2172,6 +2447,12 @@ function ciMostrarNota(nota) {
     confirmBtn.classList.remove('confirmed');
     confirmBtn.innerHTML = '<i class="fas fa-check"></i> Visto bueno';
     confirmBtn.disabled = false;
+  }
+
+  // Botón eliminar visible solo si es creador o admin
+  const deleteBtn = document.getElementById('ci-pinned-delete-btn');
+  if (deleteBtn) {
+    deleteBtn.style.display = (soySender || ciIsAdmin) ? 'inline-flex' : 'none';
   }
 }
 
@@ -2374,6 +2655,7 @@ function ciOpenSala(salaId) {
   if (!sala) return;
 
   ciActiveChat = salaId;
+  _ciAutoCloseSidebarMobile();
 
   // Asegurar join al room socket de esta sala
   ciSocket?.emit('join_internal_room', {
@@ -2447,12 +2729,24 @@ function ciCerrarNuevoPrivado() {
 }
 
 function ciCrearPrivado() {
+  // Prevenir doble click
+  const saveBtn = document.querySelector('#ci-modal-privado .ci-modal-save');
+  if (saveBtn && saveBtn.disabled) return;
+  if (saveBtn) saveBtn.disabled = true;
+
   const sel = document.querySelector('input[name="ci-privado-persona"]:checked');
-  if (!sel) { alert('Selecciona una persona'); return; }
+  if (!sel) {
+    alert('Selecciona una persona');
+    if (saveBtn) saveBtn.disabled = false;
+    return;
+  }
   const userId   = sel.value;
   const userName = sel.dataset.name;
   ciCerrarNuevoPrivado();
   ciIniciarPrivado(userId, userName);
+
+  // Reactivar el botón (modal puede reutilizarse)
+  if (saveBtn) saveBtn.disabled = false;
 }
 
 function ciAbrirNuevaSala() {
@@ -2525,6 +2819,11 @@ function ciUpdateMemberCount() {
 
 // Guardar sala (crear o editar)
 async function ciGuardarSala() {
+  // Prevenir doble click — desactivar el botón mientras se procesa
+  const saveBtn = document.querySelector('#ci-modal-sala .ci-modal-save');
+  if (saveBtn && saveBtn.disabled) return;
+  if (saveBtn) saveBtn.disabled = true;
+
   const nombre  = (document.getElementById('ci-sala-nombre').value || '').trim();
   const desc    = (document.getElementById('ci-sala-desc').value   || '').trim();
   const members = Array.from(
@@ -2534,6 +2833,7 @@ async function ciGuardarSala() {
   if (!nombre) {
     document.getElementById('ci-sala-nombre').focus();
     document.getElementById('ci-sala-nombre').style.borderColor = '#ef4444';
+    if (saveBtn) saveBtn.disabled = false;
     return;
   }
 
@@ -2598,6 +2898,9 @@ async function ciGuardarSala() {
   ciRenderSalasList();
   ciCerrarNuevaSala();
 
+  // Reactivar el botón (estará disabled si el modal se reutiliza)
+  if (saveBtn) saveBtn.disabled = false;
+
   // Cambiar a tab salas
   ciSwitchTab('salas');
 }
@@ -2608,7 +2911,14 @@ async function ciEliminarSala() {
   const sala = ciSalas.find(s => s.id === ciEditingSalaId);
   if (!sala) return;
 
-  if (!confirm(`¿Eliminar la sala "${sala.name}"? Esta acción no se puede deshacer.`)) return;
+  const ok = await ciConfirmar({
+    titulo:  'Eliminar sala',
+    mensaje: `¿Eliminar la sala "${sala.name}"? Esta acción no se puede deshacer.`,
+    confirmar: 'Eliminar',
+    cancelar:  'Cancelar',
+    peligro:   true
+  });
+  if (!ok) return;
 
   try {
     await apiCall(
@@ -2625,6 +2935,176 @@ async function ciEliminarSala() {
 
   ciRenderSalasList();
   ciCerrarNuevaSala();
+}
+
+// ═══════════════════════════════════════════════
+//  ELIMINAR NOTA Y VOTACIÓN (solo creador o admin)
+// ═══════════════════════════════════════════════
+
+async function ciEliminarNota() {
+  const nota = ciActiveNota;
+  if (!nota) return;
+
+  // Validación cliente (backend valida también)
+  if (nota.from_id !== ciCurrentUser.id && !ciIsAdmin) return;
+
+  const ok = await ciConfirmar({
+    titulo:    'Eliminar nota',
+    mensaje:   '¿Eliminar la nota anclada? Esta acción no se puede deshacer.',
+    confirmar: 'Eliminar',
+    cancelar:  'Cancelar',
+    peligro:   true
+  });
+  if (!ok) return;
+
+  try {
+    const res = await apiCall(
+      `/api/internal-chat/${ciCurrentUser.company_id}/notas/${nota.nota_id}`,
+      { method: 'DELETE' }
+    );
+    if (!res.ok) {
+      alert(res.data?.error || 'No se pudo eliminar la nota');
+      return;
+    }
+  } catch (e) {
+    console.warn('Error eliminando nota:', e.message);
+    return;
+  }
+
+  // Limpiar estado local
+  delete ciAllPinnedNotas[nota.room_id];
+  ciActiveNota = null;
+  const banner = document.getElementById('ci-pinned-banner');
+  if (banner) banner.style.display = 'none';
+
+  // Notificar a los demás
+  ciSocket?.emit('internal_nota_deleted', {
+    nota_id:    nota.nota_id,
+    room_id:    nota.room_id,
+    chat_type:  nota.chat_type || (_ciIsSala(nota.room_id) ? 'sala' : (nota.room_id?.startsWith('private:') ? 'private' : 'general')),
+    company_id: ciCurrentUser.company_id
+  });
+}
+
+async function ciEliminarVotacion(votId) {
+  const v = ciPinnedVotacion;
+  if (!v || v.id !== votId) return;
+
+  // Validación cliente (backend valida también)
+  if (v.from_id !== ciCurrentUser.id && !ciIsAdmin) return;
+
+  const ok = await ciConfirmar({
+    titulo:    'Eliminar votación',
+    mensaje:   `¿Eliminar la votación "${v.pregunta}"? Esta acción no se puede deshacer.`,
+    confirmar: 'Eliminar',
+    cancelar:  'Cancelar',
+    peligro:   true
+  });
+  if (!ok) return;
+
+  try {
+    const res = await apiCall(
+      `/api/internal-chat/${ciCurrentUser.company_id}/votaciones/${votId}`,
+      { method: 'DELETE' }
+    );
+    if (!res.ok) {
+      alert(res.data?.error || 'No se pudo eliminar la votación');
+      return;
+    }
+  } catch (e) {
+    console.warn('Error eliminando votación:', e.message);
+    return;
+  }
+
+  // Limpiar estado local
+  delete ciAllPinnedVots[v.room_id];
+  ciUnpinVotacion(false);
+
+  // Notificar a los demás
+  ciSocket?.emit('internal_votacion_deleted', {
+    vot_id:     votId,
+    room_id:    v.room_id,
+    chat_type:  v.chat_type || (_ciIsSala(v.room_id) ? 'sala' : (v.room_id?.startsWith('private:') ? 'private' : 'general')),
+    to_id:      v.to_id || null,
+    company_id: ciCurrentUser.company_id
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  MODAL DE CONFIRMACIÓN CUSTOM
+// ═══════════════════════════════════════════════
+//  Reemplaza el confirm() nativo con un modal con estilo Heavensy.
+//  Retorna una Promise<boolean>.
+//
+//  Uso:
+//    const ok = await ciConfirmar({
+//      titulo:    'Eliminar sala',
+//      mensaje:   '¿Estás seguro?',
+//      confirmar: 'Eliminar',
+//      cancelar:  'Cancelar',
+//      peligro:   true   // botón rojo en vez de violeta
+//    });
+function ciConfirmar(opts = {}) {
+  const {
+    titulo    = 'Confirmar',
+    mensaje   = '¿Estás seguro?',
+    confirmar = 'Aceptar',
+    cancelar  = 'Cancelar',
+    peligro   = false
+  } = opts;
+
+  return new Promise(resolve => {
+    // Quitar cualquier modal previo
+    const existing = document.getElementById('ci-modal-confirmar');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'ci-modal-overlay open';
+    overlay.id        = 'ci-modal-confirmar';
+    overlay.style.cssText = 'display:flex;align-items:center;justify-content:center;z-index:9999';
+
+    const btnColor = peligro
+      ? 'background:#ef4444;color:#fff;border:none'
+      : 'background:linear-gradient(135deg,#8e84fa 0%,#91c0ff 55%);color:#fff;border:none';
+    const iconColor = peligro ? '#ef4444' : '#8e84fa';
+    const icon      = peligro ? 'fa-exclamation-triangle' : 'fa-question-circle';
+
+    overlay.innerHTML = `
+      <div class="ci-modal" style="width:380px;max-width:90vw">
+        <div class="ci-modal-body" style="text-align:center;padding:24px 22px 8px">
+          <div style="width:54px;height:54px;border-radius:50%;background:${peligro ? '#fee2e2' : '#eef0fa'};display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+            <i class="fas ${icon}" style="color:${iconColor};font-size:24px"></i>
+          </div>
+          <div style="font-size:16px;font-weight:700;color:#383838;margin-bottom:8px">${escapeHtml(titulo)}</div>
+          <div style="font-size:13px;color:#6b7194;line-height:1.5">${escapeHtml(mensaje)}</div>
+        </div>
+        <div class="ci-modal-footer" style="justify-content:center;gap:8px;padding-top:16px">
+          <button id="ci-confirmar-cancel" style="padding:9px 20px;border-radius:10px;border:1px solid #e4e9f5;background:#fff;color:#9BA3C0;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">${escapeHtml(cancelar)}</button>
+          <button id="ci-confirmar-ok" style="${btnColor};padding:9px 20px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">${escapeHtml(confirmar)}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const cleanup = (result) => {
+      overlay.remove();
+      document.removeEventListener('keydown', onKey);
+      resolve(result);
+    };
+
+    const onKey = (e) => {
+      if (e.key === 'Escape') cleanup(false);
+      else if (e.key === 'Enter') cleanup(true);
+    };
+
+    document.getElementById('ci-confirmar-ok').onclick     = () => cleanup(true);
+    document.getElementById('ci-confirmar-cancel').onclick = () => cleanup(false);
+    overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
+    document.addEventListener('keydown', onKey);
+
+    // Focus en el botón cancelar por defecto (más seguro)
+    setTimeout(() => document.getElementById('ci-confirmar-cancel').focus(), 50);
+  });
 }
 
 // Socket: recibir mensaje de sala
@@ -2889,6 +3369,8 @@ window.ciEditarSala          = ciEditarSala;
 window.ciCerrarNuevaSala     = ciCerrarNuevaSala;
 window.ciGuardarSala         = ciGuardarSala;
 window.ciEliminarSala        = ciEliminarSala;
+window.ciEliminarNota        = ciEliminarNota;
+window.ciEliminarVotacion    = ciEliminarVotacion;
 window.ciOpenSala            = ciOpenSala;
 window.ciUpdateMemberCount   = ciUpdateMemberCount;
 window.ciAbrirParticipantes  = ciAbrirParticipantes;
@@ -2898,6 +3380,7 @@ window.ciGuardarParticipantes = ciGuardarParticipantes;
 
 // Init page — requerido por el router
 window.initChat_internoPage = initChat_internoPage;
+window.ciToggleSidebar      = ciToggleSidebar;
 window.ciFilterTab          = ciFilterTab;
 window.ciAddBtnClick        = ciAddBtnClick;
 window.ciAbrirVotacion      = ciAbrirVotacion;
@@ -2906,6 +3389,7 @@ window.ciEnviarVotacion     = ciEnviarVotacion;
 window.ciVotAgregarOpcion   = ciVotAgregarOpcion;
 window.ciVotRemoveOpcion    = ciVotRemoveOpcion;
 window.ciVotar              = ciVotar;
+window.ciConfirmarVoto      = ciConfirmarVoto;
 window.ciConfirmarVotacion  = ciConfirmarVotacion;
 window.ciAbrirProgramado    = ciAbrirProgramado;
 window.ciCerrarProgramado   = ciCerrarProgramado;

@@ -77,6 +77,7 @@ const RECENT_KEY = "_ep_recent";
 const RECENT_MAX = 24;
 
 let pickerEl       = null;
+let _activeAnchor  = null;   // botón que disparó el picker (lleva data-emoji-input)
 let activeCategory = null;   // se setea al cargar (primera categoría de la API)
 let searchTimeout  = null;
 let isSearching    = false;
@@ -392,7 +393,10 @@ function mkBtn(emoji) {
 }
 
 function insertEmoji(emoji) {
-  const inp = document.getElementById("messageInput");
+  // El botón actualmente abierto guarda en data-emoji-input el ID del input destino.
+  // Si no existe, fallback al input clásico "messageInput".
+  const inputId = (_activeAnchor && _activeAnchor.dataset.emojiInput) || "messageInput";
+  const inp = document.getElementById(inputId);
   if (!inp) return;
   const s = typeof inp.selectionStart === "number" ? inp.selectionStart : inp.value.length;
   const e = typeof inp.selectionEnd   === "number" ? inp.selectionEnd   : inp.value.length;
@@ -404,6 +408,7 @@ function insertEmoji(emoji) {
 
 // ─── Abrir / Cerrar ───────────────────────────────────────────────────────────
 function openPicker(anchor) {
+  _activeAnchor = anchor;   // recordar qué botón abrió el picker
   if (!pickerEl) pickerEl = buildPicker();
   pickerEl.classList.remove("ep-close");
   pickerEl.style.display = "flex";
@@ -442,6 +447,7 @@ function closePicker() {
   pickerEl.classList.add("ep-close");
   setTimeout(() => {
     if (pickerEl) { pickerEl.style.display = "none"; pickerEl.classList.remove("ep-close"); }
+    _activeAnchor = null;
   }, 130);
 }
 
@@ -453,12 +459,23 @@ document.addEventListener("mousedown", () => closePicker());
 document.addEventListener("keydown", e => { if (e.key === "Escape") closePicker(); });
 
 // ─── Init con MutationObserver ────────────────────────────────────────────────
-function initEmojiPicker() {
-  const btn = document.getElementById("emojiBtn");
+// API:
+//   initEmojiPicker()                                  → default (botón "emojiBtn", input "messageInput")
+//   initEmojiPicker({ btnId, inputId })                → personalizado (otros módulos)
+//
+// El botón guarda el ID del input destino en data-emoji-input. insertEmoji()
+// lo lee al insertar el emoji elegido.
+function initEmojiPicker(opts) {
+  const o      = opts || {};
+  const btnId  = o.btnId   || "emojiBtn";
+  const inputId = o.inputId || "messageInput";
+
+  const btn = document.getElementById(btnId);
   if (!btn || btn._emojiReady) return false;
   btn._emojiReady = true;
+  btn.dataset.emojiInput = inputId;   // se lee desde insertEmoji
   btn.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); togglePicker(btn); });
-  console.log("✅ Emoji picker Pro (API mode) inicializado");
+  console.log(`✅ Emoji picker inicializado (btn=${btnId}, input=${inputId})`);
   return true;
 }
 
@@ -467,3 +484,6 @@ new MutationObserver(() => {
   const b = document.getElementById("emojiBtn");
   if (b && !b._emojiReady) initEmojiPicker();
 }).observe(document.body, { childList: true, subtree: true });
+
+// Exponer para que otros módulos puedan inicializar con sus propios IDs
+window.initEmojiPicker = initEmojiPicker;
