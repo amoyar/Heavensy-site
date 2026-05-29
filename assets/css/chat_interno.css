@@ -590,30 +590,36 @@
   min-width: 0;
   flex: 0 1 auto;
 }
+/* Contenedor del contenido (reply+attach+texto): ancla para las acciones flotantes */
+.ci-msg-content {
+  position: relative;
+}
+.ci-msg.own .ci-msg-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
 
 /* Las acciones quedan junto al mensaje, no en el extremo derecho.
    Ocultas: no reservan espacio (width:0). Al hover: se expanden. */
 .ci-msg-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 5;
   opacity: 0;
-  width: 0;
-  overflow: hidden;
   transition: opacity .15s;
   display: flex;
   gap: 4px;
   align-items: center;
-  align-self: center;
   flex-shrink: 0;
 }
 .ci-msg:hover .ci-msg-actions {
   opacity: 1;
-  width: auto;
-  overflow: visible;
 }
 /* Mientras el menú "..." está abierto, mantener acciones visibles aunque no haya hover */
 .ci-msg-actions.menu-open {
   opacity: 1;
-  width: auto;
-  overflow: visible;
 }
 
 .ci-msg-meta {
@@ -672,23 +678,24 @@
   background: rgba(142,132,250,.15);
 }
 
-/* Acciones al hover (estilos del botón; el layout está en .ci-msg-actions arriba) */
+/* Acciones flotantes sobre el mensaje (estilo overlay semitransparente) */
 .ci-msg-action-btn {
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  border: 1px solid var(--ci-border);
-  background: var(--ci-white);
+  border: none;
+  background: rgba(255, 255, 255, .92);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 10px;
-  color: var(--ci-muted);
+  font-size: 11px;
+  color: var(--ci-purple);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
   transition: all .15s;
 }
 
-.ci-msg-action-btn:hover { color: var(--ci-blue); border-color: var(--ci-blue); }
+.ci-msg-action-btn:hover { background: #fff; color: var(--ci-blue); }
 
 /* Mensaje continuo (mismo autor seguido) */
 .ci-msg.continued .ci-msg-avatar { visibility: hidden; }
@@ -2173,6 +2180,7 @@
 }
 
 .ci-attach-thumb {
+  position: relative;
   width: 40px;
   height: 40px;
   border-radius: 8px;
@@ -2710,4 +2718,46 @@
 @keyframes ciMicPulse {
   0%, 100% { opacity: 1; }
   50%      { opacity: .4; }
+}
+
+/* ── Indicador de carga al subir adjuntos ── */
+@keyframes ciSpin {
+  to { transform: rotate(360deg); }
+}
+/* Overlay sobre el thumbnail (oculto por defecto) */
+.ci-attach-uploading {
+  position: absolute;
+  inset: 0;
+  background: rgba(40, 45, 70, .55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+}
+/* Se muestra solo cuando el preview está en estado .uploading */
+.ci-attach-preview.uploading .ci-attach-uploading {
+  display: flex;
+}
+/* Mientras sube, deshabilitar el botón de quitar */
+.ci-attach-preview.uploading .ci-attach-remove {
+  pointer-events: none;
+  opacity: .4;
+}
+.ci-attach-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(255, 255, 255, .4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: ciSpin .7s linear infinite;
+}
+/* Spinner dentro del botón enviar */
+.ci-send-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, .4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: ciSpin .7s linear infinite;
+  display: inline-block;
 }

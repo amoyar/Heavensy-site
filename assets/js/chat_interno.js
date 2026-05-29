@@ -92,6 +92,16 @@ async function initChat_internoPage() {
         apiBase:   (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : '',
         companyId: ciCurrentUser.company_id,
         get token() { return localStorage.getItem('token'); },
+        // Cuando cambia la cola de adjuntos, refrescar el estado del botón enviar
+        // (debe habilitarse si hay adjuntos aunque no haya texto escrito).
+        onQueueChange: (count) => {
+          const input   = document.getElementById('ci-input');
+          const sendBtn = document.getElementById('ci-send-btn');
+          if (sendBtn) {
+            const hasText = !!(input && input.value.trim());
+            sendBtn.disabled = !hasText && count === 0;
+          }
+        },
       };
       window.ciInitAttach();
     }
@@ -641,12 +651,19 @@ async function ciEnviar() {
   let attachments = [];
   if (hasAttach) {
     const sendBtn = document.getElementById('ci-send-btn');
-    if (sendBtn) sendBtn.disabled = true;
+    let prevBtnHtml = '';
+    if (sendBtn) {
+      sendBtn.disabled = true;
+      prevBtnHtml = sendBtn.innerHTML;
+      sendBtn.innerHTML = '<span class="ci-send-spinner"></span>';
+    }
     try {
       attachments = await window.ciAttachUploadAll();
     } catch (e) {
       console.error('Error subiendo adjuntos:', e);
     }
+    // Restaurar el ícono del botón
+    if (sendBtn && prevBtnHtml) sendBtn.innerHTML = prevBtnHtml;
     if (!attachments.length) {
       // Falló la subida: no enviar nada y reactivar botón
       if (sendBtn) sendBtn.disabled = !input.value.trim();
@@ -965,22 +982,24 @@ function ciBuildMsgEl(msg, continued) {
         <span class="ci-msg-role ${msg.from_role || ''}">${roleLabel}</span>
         <span class="ci-msg-time">${timeStr}</span>
       </div>
-      ${replyHtml}
-      ${attachHtml}
-      ${textHtml ? `<div class="ci-msg-text">${textHtml}</div>` : ''}
-    </div>
-    <div class="ci-msg-actions">
-      ${msgRefId ? `<button class="ci-msg-action-btn" data-action="reply" title="Responder"><i class="fas fa-reply"></i></button>` : ''}
-      ${!isOwn ? `
-        <div class="ci-msg-menu-wrap">
-          <button class="ci-msg-action-btn" data-action="more" title="Más">
-            <i class="fas fa-ellipsis-v"></i>
-          </button>
-          <div class="ci-msg-menu" style="display:none">
-            <button class="ci-msg-menu-item" data-action="private"><i class="fas fa-comment"></i> Mensaje privado</button>
-          </div>
+      <div class="ci-msg-content">
+        ${replyHtml}
+        ${attachHtml}
+        ${textHtml ? `<div class="ci-msg-text">${textHtml}</div>` : ''}
+        <div class="ci-msg-actions">
+          ${msgRefId ? `<button class="ci-msg-action-btn" data-action="reply" title="Responder"><i class="fas fa-reply"></i></button>` : ''}
+          ${!isOwn ? `
+            <div class="ci-msg-menu-wrap">
+              <button class="ci-msg-action-btn" data-action="more" title="Más">
+                <i class="fas fa-ellipsis-v"></i>
+              </button>
+              <div class="ci-msg-menu" style="display:none">
+                <button class="ci-msg-menu-item" data-action="private"><i class="fas fa-comment"></i> Mensaje privado</button>
+              </div>
+            </div>
+          ` : ''}
         </div>
-      ` : ''}
+      </div>
     </div>
   `;
 

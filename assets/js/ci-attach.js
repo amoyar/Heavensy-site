@@ -142,11 +142,12 @@
   // ── Render preview ───────────────────────────────────────────────────────
   function _renderPreview() {
     const wrap = document.getElementById('ci-attach-preview');
-    if (!wrap) return;
+    if (!wrap) { _notifyChange(); return; }
 
     if (!_queue.length) {
       wrap.innerHTML = '';
       wrap.style.display = 'none';
+      _notifyChange();
       return;
     }
 
@@ -160,7 +161,10 @@
         : `<div class="ci-attach-thumb-icon"><i class="fas ${icon}"></i></div>`;
       return `
         <div class="ci-attach-item" data-id="${it.id}">
-          <div class="ci-attach-thumb">${thumb}</div>
+          <div class="ci-attach-thumb">
+            ${thumb}
+            <div class="ci-attach-uploading"><span class="ci-attach-spinner"></span></div>
+          </div>
           <div class="ci-attach-info">
             <div class="ci-attach-name" title="${safeName}">${safeName}</div>
             <div class="ci-attach-size">${sizeStr}</div>
@@ -181,6 +185,23 @@
         _removeFromQueue(id);
       });
     });
+
+    _notifyChange();
+  }
+
+  // Notifica al exterior (chat_interno) que la cola cambió, para que actualice
+  // el estado del botón enviar (debe habilitarse si hay adjuntos aunque no haya texto).
+  function _notifyChange() {
+    const cfg = window.ciAttachConfig || {};
+    if (typeof cfg.onQueueChange === 'function') {
+      try { cfg.onQueueChange(_queue.length); } catch (e) { console.error(e); }
+    }
+  }
+
+  // Activa/desactiva el estado visual "subiendo" (overlay con spinner en thumbnails)
+  function _setUploading(on) {
+    const wrap = document.getElementById('ci-attach-preview');
+    if (wrap) wrap.classList.toggle('uploading', on);
   }
 
   // ── Upload ───────────────────────────────────────────────────────────────
@@ -204,45 +225,60 @@
 
     const url = `${apiBase}/api/internal-chat/${companyId}/upload`;
 
-    let r, res;
+    // Activar indicador de carga (overlay con spinner en thumbnails)
+    _setUploading(true);
+    const _uploadStart = Date.now();
     try {
-      r = await fetch(url, {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token },
-        body: fd,
-      });
-    } catch (e) {
-      console.error('ci-attach: error de red al subir:', e);
-      if (window.showToast) window.showToast('Error de conexión al subir archivos', 'error');
-      return [];
-    }
+      let r, res;
+      try {
+        r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: fd,
+        });
+      } catch (e) {
+        console.error('ci-attach: error de red al subir:', e);
+        if (window.showToast) window.showToast('Error de conexión al subir archivos', 'error');
+        return [];
+      }
 
-    // 401 → sesión expirada (mismo comportamiento que apiCall en app.js)
-    if (r.status === 401) {
-      console.log('❌ ci-attach: token inválido o expirado, redirigiendo...');
-      localStorage.clear();
-      window.location.replace('../login.html');
-      return [];
-    }
+      // 401 → sesión expirada (mismo comportamiento que apiCall en app.js)
+      if (r.status === 401) {
+        console.log('❌ ci-attach: token inválido o expirado, redirigiendo...');
+        localStorage.clear();
+        window.location.replace('../login.html');
+        return [];
+      }
 
-    try {
-      res = await r.json();
-    } catch (e) {
-      console.error('ci-attach: respuesta no-JSON:', e);
-      return [];
-    }
+      try {
+        res = await r.json();
+      } catch (e) {
+        console.error('ci-attach: respuesta no-JSON:', e);
+        return [];
+      }
 
-    if (!res || !res.ok) {
-      console.error('ci-attach: respuesta inválida:', res);
-      if (window.showToast) window.showToast('No se pudieron subir los archivos', 'error');
-      return [];
-    }
+      if (!res || !res.ok) {
+        console.error('ci-attach: respuesta inválida:', res);
+        if (window.showToast) window.showToast('No se pudieron subir los archivos', 'error');
+        return [];
+      }
 
-    if (res.errors && res.errors.length) {
-      console.warn('ci-attach: errores parciales:', res.errors);
-    }
+      if (res.errors && res.errors.length) {
+        console.warn('ci-attach: errores parciales:', res.errors);
+      }
 
-    return res.uploaded || [];
+      return res.uploaded || [];
+    } finally {
+      // Garantizar que el indicador se vea al menos 600ms aunque la subida
+      // sea muy rápida (si no, parpadea y el usuario no alcanza a verlo).
+      const MIN_VISIBLE_MS = 600;
+      const elapsed = Date.now() - _uploadStart;
+      if (elapsed < MIN_VISIBLE_MS) {
+        await new Promise(r => setTimeout(r, MIN_VISIBLE_MS - elapsed));
+      }
+      // Apagar indicador SIEMPRE (éxito, error o salida temprana)
+      _setUploading(false);
+    }
   }
 
   // ── Drag & drop ──────────────────────────────────────────────────────────
