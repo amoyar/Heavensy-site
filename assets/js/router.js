@@ -139,3 +139,21 @@ function setupMobileSeguimiento() {
 // Inicializar
 window.addEventListener('hashchange', handleRoute);
 document.addEventListener('DOMContentLoaded', handleRoute);
+
+// ============================================
+// CHAT INTERNO — Conexión en segundo plano
+// ============================================
+// Conecta el socket del chat interno al cargar la app (no solo al entrar
+// al chat), para recibir mensajes y actualizar el badge de no leídos del
+// sidebar esté el usuario en la página que esté.
+document.addEventListener('DOMContentLoaded', () => {
+  const tryInit = (attempts) => {
+    attempts = attempts || 0;
+    if (typeof window.ciInitBackground === 'function') {
+      window.ciInitBackground();
+    } else if (attempts < 20) {
+      setTimeout(() => tryInit(attempts + 1), 150);
+    }
+  };
+  tryInit();
+});

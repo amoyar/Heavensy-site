@@ -366,6 +366,11 @@
   text-overflow: ellipsis;
   margin-top: 1px;
 }
+/* Nombre de quien escribió el último mensaje (prefijo en el preview) */
+.ci-chat-item-sender {
+  color: var(--ci-purple);
+  font-weight: 600;
+}
 
 .ci-unread-badge {
   min-width: 18px;

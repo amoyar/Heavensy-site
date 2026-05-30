@@ -25,44 +25,123 @@ const CI_ROOM_PREFIX   = 'chat_interno:';
 const CI_TYPING_DELAY  = 2500; // ms sin escribir para emitir stop
 
 // ── INIT ──
+// ── IDENTIDAD: parsea el token y setea ciCurrentUser (idempotente) ──
+function _ciSetupIdentity() {
+  if (ciCurrentUser) return true;  // ya seteado
+  const token = localStorage.getItem('token');
+  if (!token) return false;
+  let payload;
+  try {
+    payload = JSON.parse(atob(token.split('.')[1]));
+  } catch (e) {
+    console.error('ci: token inválido', e);
+    return false;
+  }
+
+  const rawRole = payload.role
+    || (Array.isArray(payload.roles) && payload.roles[0])
+    || 'usuario';
+
+  ciCurrentUser = {
+    id:         payload.user_id || payload.sub || payload.email,
+    name:       payload.username || payload.name || payload.email || 'Usuario',
+    role:       rawRole,
+    company_id: payload.company_id || ''
+  };
+  window.ciCurrentUser = ciCurrentUser;
+
+  const adminRoles = ['admin', 'superadmin', 'owner', 'ADMIN_ROL', 'SUPER_ADMIN_ROL', 'OWNER_ROL'];
+  const allRoles   = payload.role
+    ? [payload.role]
+    : (Array.isArray(payload.roles) ? payload.roles : []);
+  ciIsAdmin = allRoles.some(r => adminRoles.includes(r));
+
+  return true;
+}
+
+// ── BACKGROUND: conexión + recepción de mensajes/badges SIN render de UI ──
+// Se llama una vez al cargar la app (desde el router), para que el usuario
+// reciba mensajes y vea el badge de no leídos esté en la página que esté.
+let _ciBackgroundReady = false;
+async function ciInitBackground() {
+  if (_ciBackgroundReady) return;
+  if (!_ciSetupIdentity()) return;  // sin token, no hay nada que conectar
+
+  try {
+    // Cargar participantes (necesario para unirse a rooms privados de todos
+    // y para que los privados entrantes tengan nombre/rol al crear su item)
+    await ciLoadParticipants();
+
+    // Cargar no leídos persistidos desde el backend (sobreviven a refresh/logout)
+    await ciLoadUnreadCounts();
+
+    // Conectar socket (registra todos los listeners de recepción)
+    await ciConnectSocket();
+
+    // Unirse a general + rooms privados con todos los participantes,
+    // así llegan los mensajes aunque no se haya abierto ese chat
+    _ciJoinAllPrivateRooms();
+
+    _ciBackgroundReady = true;
+    console.log('✅ Chat interno: background conectado');
+  } catch (e) {
+    console.error('Error en ciInitBackground:', e);
+  }
+}
+window.ciInitBackground = ciInitBackground;
+
+// Carga los no leídos persistidos desde el backend y actualiza ciUnread + badges.
+// Se llama al iniciar para que el contador sobreviva a refresh, logout y reconexión.
+async function ciLoadUnreadCounts() {
+  if (!ciCurrentUser || !ciCurrentUser.company_id) return;
+  try {
+    const res = await apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/unread`);
+    if (res && res.ok && res.data && res.data.counts) {
+      const counts = res.data.counts;
+      // Poblar ciUnread con lo que viene del servidor (fuente de verdad al iniciar)
+      Object.keys(counts).forEach(roomId => {
+        ciUnread[roomId] = counts[roomId];
+      });
+      // Refrescar badges visibles (item por item + total del sidebar)
+      Object.keys(counts).forEach(roomId => ciUpdateUnreadBadge(roomId));
+      ciUpdateSidebarBadge();
+    }
+  } catch (e) {
+    console.error('ci: error cargando no leídos:', e);
+  }
+}
+window.ciLoadUnreadCounts = ciLoadUnreadCounts;
+
+// Persiste en el backend que el usuario leyó una conversación (fire-and-forget).
+// isPrivate=true cuando roomId es el user_id del otro (privado).
+function ciMarkRead(roomId, isPrivate) {
+  if (!ciCurrentUser || !ciCurrentUser.company_id || !roomId) return;
+  try {
+    apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/mark-read`, {
+      method: 'POST',
+      body: JSON.stringify({ room_id: roomId, is_private: !!isPrivate })
+    });
+  } catch (e) {
+    console.error('ci: error marcando leído:', e);
+  }
+}
+window.ciMarkRead = ciMarkRead;
+
 async function initChat_internoPage() {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-    const payload = JSON.parse(atob(token.split('.')[1]));
-
-    // Normalizar rol: el JWT puede traer 'role' (string) o 'roles' (array)
-    const rawRole = payload.role
-      || (Array.isArray(payload.roles) && payload.roles[0])
-      || 'usuario';
-
-    ciCurrentUser = {
-      id:         payload.user_id || payload.sub || payload.email,
-      name:       payload.username || payload.name || payload.email || 'Usuario',
-      role:       rawRole,
-      company_id: payload.company_id || ''
-    };
-    // Exponer para módulos externos (ci-attach.js lo usa como fallback de companyId)
-    window.ciCurrentUser = ciCurrentUser;
-
-    // Detectar rol admin (acepta varias nomenclaturas)
-    const adminRoles = ['admin', 'superadmin', 'owner', 'ADMIN_ROL', 'SUPER_ADMIN_ROL', 'OWNER_ROL'];
-    const allRoles   = payload.role
-      ? [payload.role]
-      : (Array.isArray(payload.roles) ? payload.roles : []);
-    ciIsAdmin = allRoles.some(r => adminRoles.includes(r));
+    // Asegurar identidad + conexión (si el background ya corrió, esto es no-op)
+    if (!_ciSetupIdentity()) return;
+    await ciInitBackground();
 
     if (ciIsAdmin) {
-      document.getElementById('ci-admin-btn').style.display = '';
+      const adminBtn = document.getElementById('ci-admin-btn');
+      if (adminBtn) adminBtn.style.display = '';
     }
 
     // Nombre de empresa en el header
     ciLoadCompanyName();
 
-    // Cargar participantes habilitados
-    await ciLoadParticipants();
-
-    // Conectar socket
+    // Conectar socket (idempotente: si ya está conectado, solo refresca presencia)
     await ciConnectSocket();
 
     // Cargar historial general
@@ -525,6 +604,12 @@ function _ciIsSala(roomId) {
   return ciSalas.some(s => s.id === roomId);
 }
 
+// Un room es privado si no es el general ni una sala temática
+// (entonces el roomId es el user_id del otro participante).
+function _ciIsPrivateRoom(roomId) {
+  return !!roomId && roomId !== 'general' && !_ciIsSala(roomId);
+}
+
 // ── RESPONSIVE: Toggle sidebar ──
 function ciToggleSidebar() {
   const page = document.querySelector('.ci-page');
@@ -602,6 +687,11 @@ function ciReceiveMessage(roomId, msg) {
   if (showInline) {
     ciAppendMessage(msg, roomId);
     ciScrollBottom();
+    // El usuario está viendo este chat → marcar como leído en el backend,
+    // así no reaparece como no leído tras un refresh.
+    if (msg.from_id !== ciCurrentUser.id) {
+      ciMarkRead(roomId, _ciIsPrivateRoom(roomId));
+    }
   } else {
     // Incrementar no leídos
     ciUnread[roomId] = (ciUnread[roomId] || 0) + 1;
@@ -1254,6 +1344,7 @@ function ciOpenGeneral() {
   ciUnread['general'] = 0;
   ciUpdateUnreadBadge('general');
   ciUpdateSidebarBadge();
+  ciMarkRead('general', false);  // persistir
 
   // Render
   ciRenderFeed('general');
@@ -1293,6 +1384,7 @@ function ciIniciarPrivado(userId, userName) {
   ciUnread[userId] = 0;
   ciUpdateUnreadBadge(userId);
   ciUpdateSidebarBadge();
+  ciMarkRead(userId, true);  // persistir (privado)
 
   // Cambiar a tab privados
   ciSwitchTab('privados');
@@ -1341,6 +1433,16 @@ async function _ciRestorePrivados() {
           from_id:    ciCurrentUser.id,
           to_id:      otherId,
           company_id: ciCurrentUser.company_id
+        });
+      }
+
+      // Preview con el remitente del último mensaje (si lo hay)
+      if (priv.last_text || priv.last_attachment) {
+        ciUpdateChatPreview(otherId, priv.last_text || '', {
+          from_id:    priv.last_from_id,
+          from_name:  priv.last_from_name,
+          text:       priv.last_text,
+          attachment: priv.last_attachment
         });
       }
     }
@@ -1417,11 +1519,29 @@ function ciUpdateChatPreview(roomId, text, msg) {
   let preview = text || '';
   if (!preview && msg) preview = _ciMsgPreviewText(msg);
   const truncated = preview.length > 30 ? preview.slice(0, 30) + '...' : preview;
+
   let el;
   if (roomId === 'general')   el = document.getElementById('ci-general-last');
   else if (_ciIsSala(roomId)) el = document.getElementById(`ci-sala-last-${roomId}`);
   else                         el = document.getElementById(`ci-priv-last-${roomId}`);
-  if (el) el.textContent = truncated;
+  if (!el) return;
+
+  // Prefijo con el nombre de quien escribió (Opción 3): ayuda a saber de quién
+  // es el mensaje, sobre todo en salas. Si lo envié yo, uso "Tú:".
+  let senderPrefix = '';
+  if (msg && msg.from_id) {
+    const isMine = msg.from_id === (ciCurrentUser && ciCurrentUser.id);
+    const name   = isMine ? 'Tú' : (msg.from_name || '');
+    if (name) {
+      senderPrefix = `<span class="ci-chat-item-sender">${escapeHtml(name)}:</span> `;
+    }
+  }
+
+  if (senderPrefix) {
+    el.innerHTML = senderPrefix + escapeHtml(truncated);
+  } else {
+    el.textContent = truncated;
+  }
 }
 
 // ── MESSAGE TOAST (notificación al recibir mensaje fuera del chat activo) ──
@@ -2823,7 +2943,18 @@ function ciRenderSalasList() {
   container.innerHTML = ciSalas.map(sala => {
     const isMember  = sala.members.includes(ciCurrentUser.id);
     const lastMsg   = (ciMessages[sala.id] || []).slice(-1)[0];
-    const lastText  = lastMsg ? _ciMsgPreviewText(lastMsg).slice(0, 35) : (sala.desc || 'Sin mensajes aún');
+    const lastBody  = lastMsg ? _ciMsgPreviewText(lastMsg).slice(0, 35) : (sala.desc || 'Sin mensajes aún');
+    // Prefijo con el remitente del último mensaje (Opción 3)
+    let lastHtml;
+    if (lastMsg && lastMsg.from_id) {
+      const isMine = lastMsg.from_id === ciCurrentUser.id;
+      const sName  = isMine ? 'Tú' : (lastMsg.from_name || '');
+      lastHtml = sName
+        ? `<span class="ci-chat-item-sender">${escapeHtml(sName)}:</span> ${escapeHtml(lastBody)}`
+        : escapeHtml(lastBody);
+    } else {
+      lastHtml = escapeHtml(lastBody);
+    }
     const unread    = ciUnread[sala.id] || 0;
     const memberCount = sala.members.length;
     const isActive  = ciActiveChat === sala.id;
@@ -2837,7 +2968,7 @@ function ciRenderSalasList() {
         </div>
         <div class="ci-sala-info">
           <div class="ci-sala-name">${escapeHtml(sala.name)}</div>
-          <div class="ci-sala-last" id="ci-sala-last-${sala.id}">${escapeHtml(lastText)}</div>
+          <div class="ci-sala-last" id="ci-sala-last-${sala.id}">${lastHtml}</div>
           <div class="ci-sala-members"><i class="fas fa-users" style="font-size:8px;margin-right:3px"></i>${memberCount} miembro${memberCount !== 1 ? 's' : ''}</div>
         </div>
         ${unread > 0 ? `<div class="ci-unread-badge" id="ci-sala-badge-${sala.id}">${unread}</div>` : `<div class="ci-unread-badge" id="ci-sala-badge-${sala.id}" style="display:none">0</div>`}
@@ -2885,6 +3016,7 @@ function ciOpenSala(salaId) {
   ciUnread[salaId] = 0;
   ciUpdateUnreadBadge(salaId);
   ciUpdateSidebarBadge();
+  ciMarkRead(salaId, false);  // persistir (sala)
 
   // Render + historial
   ciRenderFeed(salaId);
