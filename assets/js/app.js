@@ -110,24 +110,86 @@ loadCompanyConfig();
 // API CALL (🔥 CLAVE)
 // ============================================
 
-async function apiCall(endpoint, options = {}) {
-  const token = localStorage.getItem('token');
+// Promesa compartida del refresh en curso: si varias peticiones reciben 401
+// a la vez, solo se hace UN refresh y las demás esperan su resultado.
+let _refreshPromise = null;
 
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {})
+async function _tryRefreshToken() {
+  // Si ya hay un refresh en curso, reutilizar esa promesa (evita refrescos múltiples)
+  if (_refreshPromise) return _refreshPromise;
+
+  _refreshPromise = (async () => {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) return false;
+    try {
+      // company_id actual para mantener la empresa seleccionada al refrescar
+      let companyId = null;
+      try {
+        const t = localStorage.getItem('token');
+        if (t) companyId = JSON.parse(atob(t.split('.')[1])).company_id;
+      } catch {}
+
+      const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${refreshToken}`,
+        },
+        body: JSON.stringify(companyId ? { company_id: companyId } : {}),
+      });
+
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (data && data.access_token) {
+        localStorage.setItem('token', data.access_token);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    } finally {
+      // Liberar el lock al terminar (éxito o fallo), lo libera solo quien lo creó
+      _refreshPromise = null;
+    }
+  })();
+
+  return _refreshPromise;
+}
+
+async function apiCall(endpoint, options = {}) {
+  const doFetch = (tok) => {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    };
+    if (tok && !options.skipAuth) {
+      headers.Authorization = `Bearer ${tok}`;
+    }
+    return fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
   };
 
-  if (token && !options.skipAuth) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
   try {
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers
-    });
+    let res = await doFetch(localStorage.getItem('token'));
 
+    // 401 → intentar refrescar la sesión UNA vez y reintentar la petición.
+    // Excepciones: peticiones sin auth, y los propios endpoints de auth
+    // (evita bucles si el refresh o el login devuelven 401).
+    const isAuthEndpoint = endpoint.includes('/api/auth/refresh')
+                        || endpoint.includes('/api/auth/login');
+    if (res.status === 401 && !options.skipAuth && !options._retried && !isAuthEndpoint) {
+      const refreshed = await _tryRefreshToken();
+      if (refreshed) {
+        // Reintentar la petición original con el token nuevo
+        res = await doFetch(localStorage.getItem('token'));
+      } else {
+        // No se pudo refrescar (refresh token expirado/ausente) → al login
+        localStorage.clear();
+        window.location.replace('login.html');
+        return { ok: false };
+      }
+    }
+
+    // Si tras el reintento sigue 401, sesión definitivamente inválida
     if (res.status === 401) {
       localStorage.clear();
       window.location.replace('login.html');

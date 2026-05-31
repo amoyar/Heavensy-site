@@ -111,10 +111,13 @@ async function handleLogin(e) {
     _clearAttempts();
     _loginInProgress = false;
 
-    const { access_token, user } = res.data;
+    const { access_token, refresh_token, user } = res.data;
 
     // Guardar empresas del usuario para el selector en la barra lateral
     localStorage.setItem('hs_user_companies', JSON.stringify(user?.all_companies || []));
+
+    // Guardar refresh token para renovar la sesión sin re-login (duración la define el backend)
+    if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
 
     // Entrar directamente a la empresa primaria
     _finishLogin(access_token);
@@ -230,17 +233,48 @@ async function _finishLogin(token) {
 // SESSION CHECK
 // ===============================
 
-function checkExistingSession() {
+async function checkExistingSession() {
   const token = localStorage.getItem('token');
-  if (!token) return;
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    if (Date.now() < payload.exp * 1000) {
-      window.location.href = 'index.html#dashboard';
-    } else {
+
+  // Si hay access token vigente, entrar directo
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (Date.now() < payload.exp * 1000) {
+        window.location.href = 'index.html#dashboard';
+        return;
+      }
+    } catch {
       localStorage.removeItem('token');
     }
-  } catch { localStorage.removeItem('token'); }
+  }
+
+  // Access token ausente o expirado: si hay refresh token, intentar renovar
+  // la sesión sin pedir login (la duración del refresh la define el backend).
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (refreshToken) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${refreshToken}`,
+        },
+        body: JSON.stringify({}),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.access_token) {
+          localStorage.setItem('token', data.access_token);
+          window.location.href = 'index.html#dashboard';
+          return;
+        }
+      }
+    } catch {}
+    // El refresh token también expiró/ inválido → limpiar y mostrar login
+    localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
+  }
 }
 
 // ===============================
