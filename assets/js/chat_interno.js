@@ -5,6 +5,7 @@
 
 // ── STATE ──
 let ciSocket        = null;
+let _ciAuthRetried  = false;  // evita bucle de reintento de auth del socket
 let ciCurrentUser   = null;   // { id, name, role, company_id }
 let ciActiveChat    = 'general'; // 'general' | sala_id | user_id
 let ciParticipants  = [];     // usuarios habilitados para el chat
@@ -221,6 +222,7 @@ function _ciSendJoin() {
   // Siempre enviar join para refrescar presencia online
   if (!ciSocket || !ciCurrentUser) return;
   ciSocket.emit('join_internal_chat', {
+    token:      localStorage.getItem('token'),  // identidad verificada en el backend
     company_id: ciCurrentUser.company_id,
     user_id:    ciCurrentUser.id,
     user_name:  ciCurrentUser.name,
@@ -292,6 +294,22 @@ async function ciConnectSocket() {
     ciUpdateOnlineList({});
   });
 
+  // Si el servidor rechaza el join por sesión inválida, intentar refrescar el
+  // token y reconectar UNA vez (evita quedar conectado pero sin recibir nada).
+  ciSocket.on('internal_chat_joined', async (res) => {
+    if (res && res.ok === false && !_ciAuthRetried) {
+      _ciAuthRetried = true;
+      try {
+        if (typeof _tryRefreshToken === 'function') {
+          await _tryRefreshToken();
+        }
+      } catch (e) {}
+      _ciSendJoin();  // reintentar con el token actualizado
+    } else if (res && res.ok) {
+      _ciAuthRetried = false;  // join exitoso, resetear el flag
+    }
+  });
+
   // Usuarios online actualizados
   ciSocket.on('internal_users_online', (data) => {
     ciOnlineUsers = data.users || {};
@@ -332,7 +350,10 @@ async function ciConnectSocket() {
   // Typing
   ciSocket.on('internal_typing', (data) => {
     if (data.user_id === ciCurrentUser.id) return;
-    const room = data.room || 'general';
+    // En privados, el 'room' que llega es el ciActiveChat del emisor (= mi id).
+    // Para mostrarlo en MI lista, la clave debe ser el emisor (data.user_id).
+    let room = data.room || 'general';
+    if (room === ciCurrentUser.id) room = data.user_id;  // privado cruzado → usar emisor
     if (!ciTypingUsers[room]) ciTypingUsers[room] = {};
     ciTypingUsers[room][data.user_id] = data.user_name;
     ciShowTyping(room);
@@ -345,7 +366,8 @@ async function ciConnectSocket() {
   });
 
   ciSocket.on('internal_typing_stop', (data) => {
-    const room = data.room || 'general';
+    let room = data.room || 'general';
+    if (room === ciCurrentUser.id) room = data.user_id;  // privado cruzado → usar emisor
     if (ciTypingUsers[room]) {
       delete ciTypingUsers[room][data.user_id];
       ciShowTyping(room);
@@ -862,10 +884,12 @@ function ciHandleInput(e) {
   if (input.value.trim()) {
     if (!ciWasTyping) {
       ciWasTyping = true;
+      const isPriv = _ciIsPrivateRoom(ciActiveChat);
       ciSocket?.emit('internal_typing', {
         user_id:   ciCurrentUser.id,
         user_name: ciCurrentUser.name,
         room:      ciActiveChat,
+        to_id:     isPriv ? ciActiveChat : null,  // privado: destinatario para armar el room
         company_id: ciCurrentUser.company_id
       });
     }
@@ -879,9 +903,11 @@ function ciHandleInput(e) {
 function ciStopTyping() {
   if (ciWasTyping) {
     ciWasTyping = false;
+    const isPriv = _ciIsPrivateRoom(ciActiveChat);
     ciSocket?.emit('internal_typing_stop', {
       user_id:   ciCurrentUser.id,
       room:      ciActiveChat,
+      to_id:     isPriv ? ciActiveChat : null,
       company_id: ciCurrentUser.company_id
     });
   }
@@ -1378,7 +1404,10 @@ function ciIniciarPrivado(userId, userName) {
 
   const isOnline = ciOnlineUsers[userId]?.online;
   document.getElementById('ci-header-name').textContent = userName;
-  document.getElementById('ci-header-sub').textContent  = isOnline ? '● En línea' : '○ Desconectado';
+  const subEl = document.getElementById('ci-header-sub');
+  subEl.innerHTML = isOnline
+    ? '<span class="ci-header-dot online"></span> En línea'
+    : '<span class="ci-header-dot"></span> Desconectado';
 
   // Limpiar no leídos
   ciUnread[userId] = 0;

@@ -347,6 +347,18 @@
 
 .ci-online-dot.online { background: var(--ci-online); }
 
+/* Punto de estado en el header del chat (inline junto al texto) */
+.ci-header-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+  background: var(--ci-offline);
+}
+.ci-header-dot.online { background: var(--ci-online); }
+
 .ci-chat-item-info { flex: 1; min-width: 0; }
 
 .ci-chat-item-name {
