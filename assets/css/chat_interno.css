@@ -1148,16 +1148,14 @@
   cursor: default;
 }
 
-.ci-pinned-banner {
-  background: #fffbeb;
-  border-bottom: 1.5px solid #fde68a;
-  border-left: 4px solid #f59e0b;
-  padding: 10px 14px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+/* ── Pila de notas ancladas (múltiples) ── */
+.ci-pinned-stack {
+  background: var(--ci-bg, #f4f6fb);
+  border-bottom: 1px solid var(--ci-border, #e4e9f5);
   flex-shrink: 0;
   animation: ci-pin-in .25s ease;
+  max-height: 240px;
+  overflow-y: auto;
 }
 
 @keyframes ci-pin-in {
@@ -1165,29 +1163,98 @@
   to   { opacity:1; transform:translateY(0); }
 }
 
-.ci-pinned-icon {
-  color: #f59e0b;
-  font-size: 13px;
-  margin-top: 2px;
-  flex-shrink: 0;
-  transform: rotate(45deg);
+.ci-pinned-stack-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 14px 4px;
+}
+.ci-pinned-stack-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ci-text, #383838);
+}
+.ci-pinned-stack-title i { color: var(--ci-purple, #8e84fa); font-size: 12px; transform: rotate(45deg); }
+.ci-pinned-count {
+  background: #eeedfe;
+  color: #3c3489;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 9px;
+}
+.ci-pinned-toggle-all {
+  font-size: 11px;
+  color: var(--ci-muted, #9BA3C0);
+  cursor: pointer;
+}
+.ci-pinned-toggle-all:hover { color: var(--ci-purple, #8e84fa); }
+
+.ci-pinned-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 10px 10px;
 }
 
-.ci-pinned-content { flex: 1; min-width: 0; }
+/* Tarjeta de nota individual */
+.ci-pinned-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 11px;
+  border-radius: 0 8px 8px 0;
+}
+.ci-pinned-card.casual {
+  background: #eeedfe;
+  border-left: 3px solid #534ab7;
+}
+.ci-pinned-card.importante {
+  background: #faeeda;
+  border-left: 3px solid #ba7517;
+}
+
+.ci-pinned-card-main { flex: 1; min-width: 0; }
+.ci-pinned-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.ci-pinned-author {
+  font-size: 11px;
+  font-weight: 600;
+}
+.ci-pinned-card.casual .ci-pinned-author { color: #3c3489; }
+.ci-pinned-card.importante .ci-pinned-author { color: #633806; }
+
+.ci-pinned-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: #fac775;
+  color: #633806;
+}
 
 .ci-pinned-text {
-  font-size: 13px;
-  font-weight: 600;
-  color: #92400e;
-  margin-bottom: 6px;
+  font-size: 12px;
   line-height: 1.4;
+  word-break: break-word;
 }
+.ci-pinned-card.casual .ci-pinned-text { color: #26215c; }
+.ci-pinned-card.importante .ci-pinned-text { color: #412402; }
 
 .ci-pinned-confirmations {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
   align-items: center;
+  margin-top: 6px;
 }
 
 .ci-pinned-chip {
@@ -1199,44 +1266,103 @@
   font-size: 10px;
   font-weight: 600;
 }
-
-.ci-pinned-chip.confirmed {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.ci-pinned-chip.pending {
-  background: #fef3c7;
-  color: #92400e;
-  opacity: .7;
-}
-
+.ci-pinned-chip.confirmed { background: #d1fae5; color: #065f46; }
+.ci-pinned-chip.pending   { background: #fef3c7; color: #92400e; opacity: .7; }
 .ci-pinned-chip i { font-size: 9px; }
+.ci-pinned-frac { font-size: 10px; color: #854f0b; margin-left: 4px; }
+
+.ci-pinned-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
 
 .ci-pinned-confirm-btn {
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1.5px solid #f59e0b;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1.5px solid #ba7517;
   background: #fff;
   color: #b45309;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  flex-shrink: 0;
   transition: all .15s;
   font-family: 'DM Sans', sans-serif;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
-.ci-pinned-confirm-btn:hover { background: #f59e0b; color: #fff; }
+.ci-pinned-confirm-btn:hover { background: #ba7517; color: #fff; }
 .ci-pinned-confirm-btn.confirmed {
   background: #d1fae5;
   border-color: #6ee7b7;
   color: #065f46;
   cursor: default;
 }
+
+/* Selector de tipo de nota en el input */
+.ci-nota-type-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  flex-wrap: wrap;
+}
+.ci-nota-type-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ci-muted, #9BA3C0);
+}
+.ci-nota-type-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 8px;
+  border: 1.5px solid var(--ci-border, #e4e9f5);
+  background: #fff;
+  color: var(--ci-muted, #9BA3C0);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.ci-nota-type-btn i { font-size: 11px; }
+.ci-nota-type-btn.active[data-tipo="casual"] {
+  border-color: #534ab7;
+  background: #eeedfe;
+  color: #3c3489;
+}
+.ci-nota-type-btn.active[data-tipo="importante"] {
+  border-color: #ba7517;
+  background: #faeeda;
+  color: #633806;
+}
+.ci-nota-type-hint {
+  font-size: 10px;
+  color: var(--ci-muted, #9BA3C0);
+  margin-left: auto;
+}
+.ci-nota-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 8px;
+  border: 1.5px solid var(--ci-border, #e4e9f5);
+  background: #fff;
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.ci-nota-cancel-btn:hover { background: #fee2e2; border-color: #fecaca; }
+.ci-nota-cancel-btn i { font-size: 11px; }
 
 /* Modo nota activo en el input */
 .ci-input-box.nota-mode {
@@ -2121,16 +2247,15 @@
   }
 }
 
-/* Botón eliminar en banner pinned */
+/* Botón eliminar en tarjeta de nota */
 .ci-pinned-delete-btn {
   background: transparent;
   border: 1px solid #fee2e2;
   color: #ef4444;
-  padding: 6px 10px;
-  border-radius: 8px;
+  padding: 5px 8px;
+  border-radius: 7px;
   cursor: pointer;
-  font-size: 12px;
-  margin-left: 6px;
+  font-size: 11px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

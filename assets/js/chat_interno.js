@@ -381,42 +381,48 @@ async function ciConnectSocket() {
     }
   });
 
-  // Nota anclada recibida
+  // Nota anclada recibida (de otro usuario)
   ciSocket.on('internal_pinned_note', (nota) => {
-    if (nota.room_id === ciActiveChat && nota.from_id !== ciCurrentUser.id) {
-      ciMostrarNota(nota);
+    if (nota.from_id === ciCurrentUser.id) return;  // la mía ya la agregué local
+    // Agregar al stack si pertenece al chat abierto
+    if (_ciActiveRoomMatchesNota(nota)) {
+      ciAddNotaToStack(ciActiveChat, nota);
+    } else {
+      // Guardar en su sala aunque no esté abierta (para verla al entrar)
+      const key = nota.room_id;
+      if (!ciAllPinnedNotas[key]) ciAllPinnedNotas[key] = [];
+      if (!ciAllPinnedNotas[key].some(n => _ciNotaId(n) === _ciNotaId(nota))) {
+        ciAllPinnedNotas[key].unshift(nota);
+      }
     }
   });
 
   // Confirmación de nota recibida
   ciSocket.on('internal_note_confirmed', (data) => {
-    if (!ciActiveNota || ciActiveNota.id !== data.nota_id) return;
-    if (!ciActiveNota.confirmations.includes(data.user_id)) {
-      ciActiveNota.confirmations.push(data.user_id);
+    // Buscar la nota en cualquier sala del cache por id
+    let target = null;
+    Object.keys(ciAllPinnedNotas).forEach(key => {
+      (ciAllPinnedNotas[key] || []).forEach(n => {
+        if (_ciNotaId(n) === data.nota_id) target = n;
+      });
+    });
+    if (!target) return;
+    if (!target.confirmations) target.confirmations = [];
+    if (!target.confirmations.includes(data.user_id)) {
+      target.confirmations.push(data.user_id);
     }
-    ciRenderNotaConfirmations(ciActiveNota);
-    ciCheckNotaResuelta();
+    ciRenderPinnedStack(ciActiveChat);
+    ciCheckNotaResuelta(target);
   });
 
   // Nota resuelta (todos confirmaron)
   ciSocket.on('internal_note_resolved', (data) => {
-    if (ciActiveNota?.id === data.nota_id) ciOcultarNota();
+    ciRemoveNotaFromStack(data.nota_id);
   });
 
   // Nota eliminada por otro usuario (creador o admin)
   ciSocket.on('internal_nota_deleted', (data) => {
-    const notaId = data.nota_id;
-    const roomId = data.room_id;
-    // Limpiar de cache
-    if (roomId && ciAllPinnedNotas[roomId]?.nota_id === notaId) {
-      delete ciAllPinnedNotas[roomId];
-    }
-    // Si está activa en pantalla, ocultarla
-    if (ciActiveNota?.nota_id === notaId) {
-      ciActiveNota = null;
-      const banner = document.getElementById('ci-pinned-banner');
-      if (banner) banner.style.display = 'none';
-    }
+    ciRemoveNotaFromStack(data.nota_id);
   });
 
   // Votación eliminada por otro usuario (creador o admin)
@@ -927,10 +933,17 @@ function ciHandleKey(e) {
     return;
   }
   // Navegación en popup de menciones
-  if (document.getElementById('ci-mention-popup').classList.contains('open')) {
+  const mentionOpen = document.getElementById('ci-mention-popup').classList.contains('open');
+  if (mentionOpen) {
     if (e.key === 'ArrowDown') { e.preventDefault(); ciMentionNav(1); }
     if (e.key === 'ArrowUp')   { e.preventDefault(); ciMentionNav(-1); }
     if (e.key === 'Escape')    { ciCloseMentionPopup(); }
+    return;
+  }
+  // Escape fuera del popup → salir del modo nota si está activo
+  if (e.key === 'Escape' && ciNotaMode) {
+    e.preventDefault();
+    ciSalirModoNota();
   }
 }
 
@@ -1876,7 +1889,7 @@ function ciEnviarVotacion() {
   const opciones = Array.from(document.querySelectorAll('#ci-vot-opciones input'))
     .map(inp => inp.value.trim()).filter(Boolean);
   if (opciones.length < 2) {
-    alert('Agrega al menos 2 opciones');
+    showToast('Agrega al menos 2 opciones', 'warning');
     if (saveBtn) saveBtn.disabled = false;
     return;
   }
@@ -2312,8 +2325,8 @@ function ciEnviarProgramado() {
   const sendAt = ciPdpGetValue();
 
   if (!texto) { document.getElementById('ci-prog-texto').focus(); return; }
-  if (!sendAt) { alert('Selecciona la fecha y hora de envío'); return; }
-  if (new Date(sendAt) <= new Date()) { alert('La fecha/hora debe ser en el futuro'); return; }
+  if (!sendAt) { showToast('Selecciona la fecha y hora de envío', 'warning'); return; }
+  if (new Date(sendAt) <= new Date()) { showToast('La fecha/hora debe ser en el futuro', 'warning'); return; }
 
   const prog = {
     id:         'prog_' + Date.now(),
@@ -2583,7 +2596,7 @@ function ciEnviarTarea() {
   });
 
   if (!responsables.length) {
-    alert('Selecciona al menos un responsable');
+    showToast('Selecciona al menos un responsable', 'warning');
     if (saveBtn) saveBtn.disabled = false;
     return;
   }
@@ -2707,35 +2720,78 @@ function ciCompletarTarea(tareaId) {
 // ═══════════════════════════════════════════════
 
 let ciNotaMode    = false;  // true = próximo envío es nota anclada
-let ciActiveNota     = null; // nota del chat activo
-let ciAllPinnedNotas = {};   // roomId → nota
+let ciActiveNota     = null; // (compat) última nota interactuada
+let ciAllPinnedNotas = {};   // roomId → [notas]  (array por sala)
+let ciPinnedExpanded = false; // si la pila está expandida (Ver todas)
+const CI_PINNED_VISIBLE = 4;  // notas visibles antes de "Ver todas"
 
 function ciToggleNotaMode() {
   ciNotaMode = !ciNotaMode;
+  _ciApplyNotaMode();
+}
+
+// Sale del modo nota (cancelar). Limpia el input si tenía texto de nota.
+function ciSalirModoNota() {
+  if (!ciNotaMode) return;
+  ciNotaMode = false;
+  _ciApplyNotaMode();
+  // Limpiar el texto que se hubiera escrito para la nota
+  const input = document.getElementById('ci-input');
+  if (input) { input.value = ''; input.focus(); }
+}
+
+// Aplica el estado visual del modo nota (entrar o salir)
+function _ciApplyNotaMode() {
   const btn      = document.getElementById('ci-nota-toggle');
   const inputBox = document.getElementById('ci-input-box');
   const input    = document.getElementById('ci-input');
+  const typeRow  = document.getElementById('ci-nota-type-row');
 
-  btn.classList.toggle('active', ciNotaMode);
-  inputBox.classList.toggle('nota-mode', ciNotaMode);
-  input.placeholder = ciNotaMode
+  if (btn) btn.classList.toggle('active', ciNotaMode);
+  if (inputBox) inputBox.classList.toggle('nota-mode', ciNotaMode);
+  if (input) input.placeholder = ciNotaMode
     ? '📌 Escribe la nota anclada...'
     : 'Escribe un mensaje... usa @ para mencionar';
+
+  // Mostrar/ocultar el selector de tipo (Importante / Casual)
+  if (typeRow) typeRow.style.display = ciNotaMode ? 'flex' : 'none';
+}
+
+// Tipo de nota seleccionado al crear ("casual" por defecto)
+let ciNotaTipo = 'casual';
+function ciSetNotaTipo(tipo) {
+  ciNotaTipo = (tipo === 'importante') ? 'importante' : 'casual';
+  document.querySelectorAll('.ci-nota-type-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tipo === ciNotaTipo);
+  });
+  const hint = document.getElementById('ci-nota-type-hint');
+  if (hint) {
+    hint.textContent = (ciNotaTipo === 'importante')
+      ? 'Requiere confirmación de lectura'
+      : 'Sin confirmación · expira en 24h';
+  }
 }
 
 function ciEnviarNota(text) {
   const roomId   = ciActiveChat;
-  const members  = ciGetRoomMembers(roomId);
   const isPrivadoN = !_ciIsSala(roomId) && roomId !== 'general';
   const notaRoomId = isPrivadoN
     ? 'private:' + [ciCurrentUser.id, roomId].sort().join(':')
     : roomId;
 
+  const tipo = ciNotaTipo;
+  // Solo las importantes requieren confirmación → llevan members.
+  // Las casuales no piden confirmación → members vacío.
+  const members = (tipo === 'importante') ? ciGetRoomMembers(roomId) : [];
+
+  const notaIdUnico = 'nota_' + Date.now();
   const nota = {
-    id:            'nota_' + Date.now(),
+    id:            notaIdUnico,
+    nota_id:       notaIdUnico,
     room_id:       notaRoomId,
     company_id:    ciCurrentUser.company_id,
     text:          text,
+    tipo:          tipo,
     from_id:       ciCurrentUser.id,
     from_name:     ciCurrentUser.name,
     members:       members,
@@ -2746,8 +2802,11 @@ function ciEnviarNota(text) {
   // Emitir vía socket
   ciSocket?.emit('internal_pinned_note', nota);
 
-  // Mostrar localmente
-  ciMostrarNota(nota);
+  // Agregar localmente al array de la sala y re-renderizar
+  ciAddNotaToStack(ciActiveChat, nota);
+
+  // Resetear el tipo a casual para la próxima
+  ciSetNotaTipo('casual');
 
   // Persistir en backend
   const notaEndpoint = isPrivadoN
@@ -2758,7 +2817,6 @@ function ciEnviarNota(text) {
 
 function ciGetRoomMembers(roomId) {
   if (roomId === 'general') {
-    // Usar todos los participantes habilitados, no solo los online
     return ciParticipants.filter(p => p.enabled).map(p => p.user_id);
   }
   const sala = ciSalas.find(s => s.id === roomId);
@@ -2767,136 +2825,209 @@ function ciGetRoomMembers(roomId) {
   return [ciCurrentUser.id, roomId];
 }
 
-function ciMostrarNota(nota) {
+// Normaliza el id de la nota (algunas vienen con id, otras con nota_id)
+function _ciNotaId(nota) {
+  return nota.nota_id || nota.id;
+}
+
+// Agrega una nota al array de su sala (evita duplicados por id)
+function ciAddNotaToStack(roomKey, nota) {
+  // roomKey puede ser ciActiveChat (sala/privado-userId); normalizamos al room_id real de la nota
+  const key = _ciRoomKeyForNota(nota) || roomKey;
+  if (!ciAllPinnedNotas[key]) ciAllPinnedNotas[key] = [];
+  const nid = _ciNotaId(nota);
+  // Evitar duplicado
+  if (!ciAllPinnedNotas[key].some(n => _ciNotaId(n) === nid)) {
+    ciAllPinnedNotas[key].unshift(nota); // más reciente primero
+  }
   ciActiveNota = nota;
-  ciAllPinnedNotas[nota.room_id] = nota;
-
-  const banner   = document.getElementById('ci-pinned-banner');
-  const textEl   = document.getElementById('ci-pinned-text');
-  const confsEl  = document.getElementById('ci-pinned-confirmations');
-  const confirmBtn = document.getElementById('ci-pinned-confirm-btn');
-
-  textEl.textContent = nota.text;
-  banner.style.display = 'flex';
-
-  // Renderizar chips de confirmación
-  ciRenderNotaConfirmations(nota);
-
-  // El remitente no necesita confirmar la suya propia
-  const yaConfirme = nota.confirmations.includes(ciCurrentUser.id);
-  const soySender  = nota.from_id === ciCurrentUser.id;
-
-  if (soySender || yaConfirme) {
-    confirmBtn.classList.add('confirmed');
-    confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirmado';
-    confirmBtn.disabled = true;
-  } else {
-    confirmBtn.classList.remove('confirmed');
-    confirmBtn.innerHTML = '<i class="fas fa-check"></i> Visto bueno';
-    confirmBtn.disabled = false;
-  }
-
-  // Botón eliminar visible solo si es creador o admin
-  const deleteBtn = document.getElementById('ci-pinned-delete-btn');
-  if (deleteBtn) {
-    deleteBtn.style.display = (soySender || ciIsAdmin) ? 'inline-flex' : 'none';
-  }
+  if (_ciActiveRoomMatchesNota(nota)) ciRenderPinnedStack(ciActiveChat);
 }
 
-function ciRenderNotaConfirmations(nota) {
-  const confsEl = document.getElementById('ci-pinned-confirmations');
-  if (!confsEl) return;
-
-  const isPrivado = nota.members.length === 2;
-  const pendientes = nota.members.filter(id => !nota.confirmations.includes(id) && id !== nota.from_id);
-  const confirmados = nota.confirmations;
-
-  let html = '';
-
-  confirmados.forEach(id => {
-    const user = ciOnlineUsers[id] || {};
-    const part = ciParticipants.find(p => p.user_id === id) || {};
-    const name = user.name || part.name || id;
-    html += `<span class="ci-pinned-chip confirmed"><i class="fas fa-check"></i>${ciInitials(name)}</span>`;
-  });
-
-  pendientes.forEach(id => {
-    const user = ciOnlineUsers[id] || {};
-    const part = ciParticipants.find(p => p.user_id === id) || {};
-    const name = user.name || part.name || id;
-    html += `<span class="ci-pinned-chip pending"><i class="fas fa-clock"></i>${ciInitials(name)}</span>`;
-  });
-
-  const total    = nota.members.filter(id => id !== nota.from_id).length;
-  const confirmed = confirmados.length;
-  html += `<span style="font-size:10px;color:#92400e;margin-left:4px">${confirmed}/${total}</span>`;
-
-  confsEl.innerHTML = html;
+// Determina la clave de almacenamiento local para una nota (la sala activa)
+function _ciRoomKeyForNota(nota) {
+  // Si la nota es de un privado (room_id 'private:a:b'), la guardamos bajo ciActiveChat
+  // para que coincida con cómo el frontend identifica el chat abierto.
+  if (nota.room_id && nota.room_id.startsWith('private:')) {
+    return ciActiveChat; // el privado abierto
+  }
+  return nota.room_id;
 }
 
-function ciConfirmarNota() {
-  if (!ciActiveNota) return;
-  if (ciActiveNota.confirmations.includes(ciCurrentUser.id)) return;
+// ¿La nota pertenece al chat actualmente abierto?
+function _ciActiveRoomMatchesNota(nota) {
+  if (!nota.room_id) return false;
+  if (nota.room_id.startsWith('private:')) {
+    // private:a:b debe contener mi id y el del chat abierto
+    const expected = 'private:' + [ciCurrentUser.id, ciActiveChat].sort().join(':');
+    return nota.room_id === expected;
+  }
+  return nota.room_id === ciActiveChat;
+}
 
-  ciActiveNota.confirmations.push(ciCurrentUser.id);
+// Render principal de la pila de notas para la sala activa
+function ciRenderPinnedStack(roomKey) {
+  const stack  = document.getElementById('ci-pinned-stack');
+  const listEl = document.getElementById('ci-pinned-list');
+  const countEl = document.getElementById('ci-pinned-count');
+  const toggleAll = document.getElementById('ci-pinned-toggle-all');
+  if (!stack || !listEl) return;
 
-  // Actualizar UI
-  ciRenderNotaConfirmations(ciActiveNota);
+  const notas = ciAllPinnedNotas[roomKey] || [];
+  if (notas.length === 0) {
+    stack.style.display = 'none';
+    listEl.innerHTML = '';
+    return;
+  }
 
-  const confirmBtn = document.getElementById('ci-pinned-confirm-btn');
-  confirmBtn.classList.add('confirmed');
-  confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirmado';
-  confirmBtn.disabled = true;
+  stack.style.display = 'block';
+  if (countEl) countEl.textContent = notas.length;
+
+  // Mostrar máximo CI_PINNED_VISIBLE salvo que esté expandido
+  const visibles = ciPinnedExpanded ? notas : notas.slice(0, CI_PINNED_VISIBLE);
+
+  if (toggleAll) {
+    if (notas.length > CI_PINNED_VISIBLE) {
+      toggleAll.style.display = 'inline';
+      toggleAll.textContent = ciPinnedExpanded ? 'Ver menos' : `Ver todas (${notas.length})`;
+    } else {
+      toggleAll.style.display = 'none';
+    }
+  }
+
+  listEl.innerHTML = visibles.map(nota => _ciRenderNotaCard(nota)).join('');
+}
+
+// Render de una tarjeta de nota individual
+function _ciRenderNotaCard(nota) {
+  const nid       = _ciNotaId(nota);
+  const esImportante = nota.tipo === 'importante';
+  const soySender = nota.from_id === ciCurrentUser.id;
+  const yaConfirme = (nota.confirmations || []).includes(ciCurrentUser.id);
+  const puedeBorrar = soySender || ciIsAdmin;
+
+  // Confirmaciones (solo importantes)
+  let confsHtml = '';
+  let confirmBtnHtml = '';
+  if (esImportante) {
+    const members = nota.members || [];
+    const confirmations = nota.confirmations || [];
+    const total = members.filter(id => id !== nota.from_id).length;
+    const confirmed = confirmations.filter(id => id !== nota.from_id).length;
+
+    let chips = '';
+    confirmations.filter(id => id !== nota.from_id).forEach(id => {
+      const part = ciParticipants.find(p => p.user_id === id) || ciOnlineUsers[id] || {};
+      chips += `<span class="ci-pinned-chip confirmed"><i class="fas fa-check"></i>${ciInitials(part.name || id)}</span>`;
+    });
+    members.filter(id => !confirmations.includes(id) && id !== nota.from_id).forEach(id => {
+      const part = ciParticipants.find(p => p.user_id === id) || ciOnlineUsers[id] || {};
+      chips += `<span class="ci-pinned-chip pending"><i class="fas fa-clock"></i>${ciInitials(part.name || id)}</span>`;
+    });
+    confsHtml = `<div class="ci-pinned-confirmations">${chips}<span class="ci-pinned-frac">${confirmed}/${total}</span></div>`;
+
+    if (!soySender && !yaConfirme) {
+      confirmBtnHtml = `<button class="ci-pinned-confirm-btn" onclick="ciConfirmarNota('${nid}')"><i class="fas fa-check"></i> Visto bueno</button>`;
+    } else {
+      confirmBtnHtml = `<button class="ci-pinned-confirm-btn confirmed" disabled><i class="fas fa-check"></i> Confirmado</button>`;
+    }
+  }
+
+  const deleteBtn = puedeBorrar
+    ? `<button class="ci-pinned-delete-btn" onclick="ciEliminarNota('${nid}')" title="Eliminar nota"><i class="fas fa-trash"></i></button>`
+    : '';
+
+  const tipoClass = esImportante ? 'importante' : 'casual';
+
+  return `
+    <div class="ci-pinned-card ${tipoClass}" id="ci-pinned-card-${nid}">
+      <div class="ci-pinned-card-main">
+        <div class="ci-pinned-card-head">
+          <span class="ci-pinned-author">${escapeHtml(nota.from_name || 'Usuario')}</span>
+          ${esImportante ? '<span class="ci-pinned-badge">Importante</span>' : ''}
+        </div>
+        <div class="ci-pinned-text">${escapeHtml(nota.text || '')}</div>
+        ${confsHtml}
+      </div>
+      <div class="ci-pinned-card-actions">
+        ${confirmBtnHtml}
+        ${deleteBtn}
+      </div>
+    </div>
+  `;
+}
+
+function ciTogglePinnedAll() {
+  ciPinnedExpanded = !ciPinnedExpanded;
+  ciRenderPinnedStack(ciActiveChat);
+}
+
+// Mantener compatibilidad: ciMostrarNota ahora agrega al stack
+function ciMostrarNota(nota) {
+  ciAddNotaToStack(ciActiveChat, nota);
+}
+
+function ciConfirmarNota(notaId) {
+  // Buscar la nota en el stack de la sala activa
+  const notas = ciAllPinnedNotas[ciActiveChat] || [];
+  const nota  = notas.find(n => _ciNotaId(n) === notaId);
+  if (!nota) return;
+  if ((nota.confirmations || []).includes(ciCurrentUser.id)) return;
+
+  if (!nota.confirmations) nota.confirmations = [];
+  nota.confirmations.push(ciCurrentUser.id);
+  ciActiveNota = nota;
+
+  // Re-render
+  ciRenderPinnedStack(ciActiveChat);
 
   // Emitir confirmación
   ciSocket?.emit('internal_note_confirmed', {
-    nota_id:    ciActiveNota.id,
-    room_id:    ciActiveNota.room_id,
+    nota_id:    _ciNotaId(nota),
+    room_id:    nota.room_id,
     user_id:    ciCurrentUser.id,
     user_name:  ciCurrentUser.name,
     company_id: ciCurrentUser.company_id,
-    confirmations: ciActiveNota.confirmations
+    confirmations: nota.confirmations
   });
 
-  // Persistir en backend
-  apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/rooms/${ciActiveNota.room_id}/pinned/${ciActiveNota.id}/confirm`, {
+  // Persistir
+  apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/rooms/${nota.room_id}/pinned/${_ciNotaId(nota)}/confirm`, {
     method: 'PUT',
     body: JSON.stringify({ user_id: ciCurrentUser.id })
   }).catch(() => {});
 
-  // Verificar si todos confirmaron
-  ciCheckNotaResuelta();
+  // Verificar si todos confirmaron → quitar del stack
+  ciCheckNotaResuelta(nota);
 }
 
-function ciCheckNotaResuelta() {
-  if (!ciActiveNota) return;
-  const pendientes = ciActiveNota.members.filter(
-    id => !ciActiveNota.confirmations.includes(id) && id !== ciActiveNota.from_id
+function ciCheckNotaResuelta(nota) {
+  if (!nota || nota.tipo !== 'importante') return;
+  const members = nota.members || [];
+  const pendientes = members.filter(
+    id => !(nota.confirmations || []).includes(id) && id !== nota.from_id
   );
-  if (pendientes.length === 0) {
-    // Todos confirmaron — desaparecer con animación
+  if (members.length > 0 && pendientes.length === 0) {
+    // Todos confirmaron — quitar del stack tras una breve pausa
     setTimeout(() => {
-      const banner = document.getElementById('ci-pinned-banner');
-      if (banner) {
-        banner.style.transition = 'opacity .4s, transform .4s';
-        banner.style.opacity    = '0';
-        banner.style.transform  = 'translateY(-10px)';
-        setTimeout(() => {
-          banner.style.display = 'none';
-          banner.style.opacity = '';
-          banner.style.transform = '';
-        }, 400);
-      }
-      ciActiveNota = null;
-    }, 600);
+      ciRemoveNotaFromStack(_ciNotaId(nota));
+    }, 800);
   }
 }
 
+// Quita una nota del stack por id y re-renderiza
+function ciRemoveNotaFromStack(notaId) {
+  Object.keys(ciAllPinnedNotas).forEach(key => {
+    ciAllPinnedNotas[key] = (ciAllPinnedNotas[key] || []).filter(n => _ciNotaId(n) !== notaId);
+  });
+  ciRenderPinnedStack(ciActiveChat);
+}
+
 function ciRestorePinnedBanners(roomId) {
-  // Nota
-  const nota = ciAllPinnedNotas[roomId];
-  if (nota) ciMostrarNota(nota);
-  else ciOcultarNota(false);
+  // Notas (array): re-render inmediato desde cache, luego refrescar del backend
+  ciPinnedExpanded = false;
+  ciRenderPinnedStack(roomId);
+  ciLoadPinnedNotes(roomId);
 
   // Votación
   const vot = ciAllPinnedVots[roomId];
@@ -2904,11 +3035,40 @@ function ciRestorePinnedBanners(roomId) {
   else ciUnpinVotacion(false);
 }
 
-function ciOcultarNota(clearStorage = true) {
-  const banner = document.getElementById('ci-pinned-banner');
-  if (banner) banner.style.display = 'none';
-  if (clearStorage && ciActiveNota) delete ciAllPinnedNotas[ciActiveNota.room_id];
-  ciActiveNota = null;
+// Carga las notas ancladas de una sala/chat desde el backend
+function ciLoadPinnedNotes(roomId) {
+  if (!ciCurrentUser) return;
+  const isPrivado = !_ciIsSala(roomId) && roomId !== 'general';
+  // En privados el backend usa la ruta de sala con el room_id 'private:a:b'.
+  // Pero el endpoint GET /pinned es por <room_id> de sala; para privados las
+  // notas se guardan con room_id 'private:...'. Usamos el mismo endpoint con
+  // el identificador correcto.
+  const backendRoom = isPrivado
+    ? 'private:' + [ciCurrentUser.id, roomId].sort().join(':')
+    : roomId;
+
+  apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/rooms/${encodeURIComponent(backendRoom)}/pinned`, {
+    method: 'GET'
+  }).then(res => {
+    if (res.ok && res.data && Array.isArray(res.data.notes)) {
+      // Normalizar y guardar bajo la clave del chat abierto (roomId)
+      ciAllPinnedNotas[roomId] = res.data.notes.map(n => ({
+        ...n,
+        id: n.nota_id || n.id || n._id,
+        nota_id: n.nota_id || n.id || n._id,
+        confirmations: n.confirmations || [],
+        members: n.members || [],
+        tipo: n.tipo || 'casual',
+      }));
+      // Solo re-render si seguimos en el mismo chat
+      if (ciActiveChat === roomId) ciRenderPinnedStack(roomId);
+    }
+  }).catch(() => {});
+}
+
+function ciOcultarNota() {
+  const stack = document.getElementById('ci-pinned-stack');
+  if (stack) stack.style.display = 'none';
 }
 
 // ═══════════════════════════════════════════════
@@ -3096,7 +3256,7 @@ function ciCrearPrivado() {
 
   const sel = document.querySelector('input[name="ci-privado-persona"]:checked');
   if (!sel) {
-    alert('Selecciona una persona');
+    showToast('Selecciona una persona', 'warning');
     if (saveBtn) saveBtn.disabled = false;
     return;
   }
@@ -3301,8 +3461,10 @@ async function ciEliminarSala() {
 //  ELIMINAR NOTA Y VOTACIÓN (solo creador o admin)
 // ═══════════════════════════════════════════════
 
-async function ciEliminarNota() {
-  const nota = ciActiveNota;
+async function ciEliminarNota(notaId) {
+  // Buscar la nota en el stack de la sala activa
+  const notas = ciAllPinnedNotas[ciActiveChat] || [];
+  const nota  = notas.find(n => _ciNotaId(n) === notaId);
   if (!nota) return;
 
   // Validación cliente (backend valida también)
@@ -3317,33 +3479,28 @@ async function ciEliminarNota() {
   });
   if (!ok) return;
 
-  try {
-    const res = await apiCall(
-      `/api/internal-chat/${ciCurrentUser.company_id}/notas/${nota.nota_id}`,
-      { method: 'DELETE' }
-    );
-    if (!res.ok) {
-      alert(res.data?.error || 'No se pudo eliminar la nota');
-      return;
-    }
-  } catch (e) {
-    console.warn('Error eliminando nota:', e.message);
-    return;
-  }
-
-  // Limpiar estado local
-  delete ciAllPinnedNotas[nota.room_id];
-  ciActiveNota = null;
-  const banner = document.getElementById('ci-pinned-banner');
-  if (banner) banner.style.display = 'none';
+  // Quitar localmente del stack y re-renderizar
+  ciRemoveNotaFromStack(notaId);
 
   // Notificar a los demás
   ciSocket?.emit('internal_nota_deleted', {
-    nota_id:    nota.nota_id,
+    nota_id:    notaId,
     room_id:    nota.room_id,
-    chat_type:  nota.chat_type || (_ciIsSala(nota.room_id) ? 'sala' : (nota.room_id?.startsWith('private:') ? 'private' : 'general')),
     company_id: ciCurrentUser.company_id
   });
+
+  // Persistir borrado
+  try {
+    const res = await apiCall(
+      `/api/internal-chat/${ciCurrentUser.company_id}/notas/${notaId}`,
+      { method: 'DELETE' }
+    );
+    if (!res.ok) {
+      showToast(res.data?.error || 'No se pudo eliminar la nota', 'error');
+    }
+  } catch (e) {
+    console.warn('Error eliminando nota:', e.message);
+  }
 }
 
 async function ciEliminarVotacion(votId) {
@@ -3368,7 +3525,7 @@ async function ciEliminarVotacion(votId) {
       { method: 'DELETE' }
     );
     if (!res.ok) {
-      alert(res.data?.error || 'No se pudo eliminar la votación');
+      showToast(res.data?.error || 'No se pudo eliminar la votación', 'error');
       return;
     }
   } catch (e) {
@@ -3694,7 +3851,7 @@ function ciMenuAgregar() {
 
 function ciMenuArchivos() {
   ciCloseMenu();
-  alert('Próximamente: visualizador de archivos compartidos.');
+  showToast('Próximamente: visualizador de archivos compartidos', 'info');
 }
 
 function ciCloseMenu() {

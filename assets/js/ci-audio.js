@@ -152,22 +152,26 @@
   }
 
   function ciInitAudio() {
-    if (_inited) return true;
     const btn = document.getElementById('ci-mic-btn');
     if (!btn) {
       console.warn('ci-audio: botón #ci-mic-btn no encontrado');
       return false;
     }
 
-    // Mantener presionado para grabar (mouse y touch)
-    btn.addEventListener('mousedown', (e) => { e.preventDefault(); _startRecording(); });
-    btn.addEventListener('mouseup',   (e) => { e.preventDefault(); _stopRecording(); });
-    btn.addEventListener('mouseleave', () => { if (_recording) _stopRecording(); });
-    btn.addEventListener('touchstart', (e) => { e.preventDefault(); _startRecording(); }, { passive: false });
-    btn.addEventListener('touchend',   (e) => { e.preventDefault(); _stopRecording(); }, { passive: false });
+    // Idempotente por nodo: al navegar (SPA) el router crea un botón nuevo
+    // sin listeners. Un flag global bloquearía re-engancharlos. Marcamos el
+    // elemento con data-ci-audio-attached.
+    if (btn.dataset.ciAudioAttached !== '1') {
+      // Mantener presionado para grabar (mouse y touch)
+      btn.addEventListener('mousedown', (e) => { e.preventDefault(); _startRecording(); });
+      btn.addEventListener('mouseup',   (e) => { e.preventDefault(); _stopRecording(); });
+      btn.addEventListener('mouseleave', () => { if (_recording) _stopRecording(); });
+      btn.addEventListener('touchstart', (e) => { e.preventDefault(); _startRecording(); }, { passive: false });
+      btn.addEventListener('touchend',   (e) => { e.preventDefault(); _stopRecording(); }, { passive: false });
+      btn.dataset.ciAudioAttached = '1';
+    }
 
     _inited = true;
-    console.log('✅ ci-audio.js inicializado');
     return true;
   }
 

@@ -107,19 +107,17 @@
       </div>
     </div>
 
-    <!-- Nota anclada -->
-    <div class="ci-pinned-banner" id="ci-pinned-banner" style="display:none">
-      <div class="ci-pinned-icon"><i class="fas fa-thumbtack"></i></div>
-      <div class="ci-pinned-content">
-        <div class="ci-pinned-text" id="ci-pinned-text"></div>
-        <div class="ci-pinned-confirmations" id="ci-pinned-confirmations"></div>
+    <!-- Notas ancladas (múltiples) -->
+    <div class="ci-pinned-stack" id="ci-pinned-stack" style="display:none">
+      <div class="ci-pinned-stack-header">
+        <div class="ci-pinned-stack-title">
+          <i class="fas fa-thumbtack"></i>
+          <span>Notas ancladas</span>
+          <span class="ci-pinned-count" id="ci-pinned-count">0</span>
+        </div>
+        <span class="ci-pinned-toggle-all" id="ci-pinned-toggle-all" onclick="ciTogglePinnedAll()" style="display:none">Ver todas</span>
       </div>
-      <button class="ci-pinned-confirm-btn" id="ci-pinned-confirm-btn" onclick="ciConfirmarNota()">
-        <i class="fas fa-check"></i> Visto bueno
-      </button>
-      <button class="ci-pinned-delete-btn" id="ci-pinned-delete-btn" onclick="ciEliminarNota()" title="Eliminar nota" style="display:none">
-        <i class="fas fa-trash"></i>
-      </button>
+      <div class="ci-pinned-list" id="ci-pinned-list"></div>
     </div>
 
     <!-- Wrapper feed (position:relative para anclar la votación) -->
@@ -171,6 +169,21 @@
 
       <!-- Preview de adjuntos pendientes (antes de enviar) -->
       <div class="ci-attach-preview" id="ci-attach-preview" style="display:none"></div>
+
+      <!-- Selector de tipo de nota (visible solo en modo nota) -->
+      <div class="ci-nota-type-row" id="ci-nota-type-row" style="display:none">
+        <span class="ci-nota-type-label">Tipo de nota:</span>
+        <button type="button" class="ci-nota-type-btn active" data-tipo="casual" onclick="ciSetNotaTipo('casual')">
+          <i class="fas fa-sticky-note"></i> Casual
+        </button>
+        <button type="button" class="ci-nota-type-btn" data-tipo="importante" onclick="ciSetNotaTipo('importante')">
+          <i class="fas fa-exclamation-circle"></i> Importante
+        </button>
+        <span class="ci-nota-type-hint" id="ci-nota-type-hint">Sin confirmación · expira en 24h</span>
+        <button type="button" class="ci-nota-cancel-btn" onclick="ciSalirModoNota()" title="Cancelar nota (Esc)">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+      </div>
 
       <div class="ci-input-box" id="ci-input-box">
 

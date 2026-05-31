@@ -319,11 +319,6 @@
 
   // ── Init ─────────────────────────────────────────────────────────────────
   function ciInitAttach() {
-    if (_inited) {
-      _initDragAndDrop();  // por si el DOM se rehizo
-      return true;
-    }
-
     const btn   = document.getElementById('ci-attach-btn');
     const input = document.getElementById('ci-attach-input');
     if (!btn || !input) {
@@ -331,23 +326,34 @@
       return false;
     }
 
-    btn.addEventListener('click', e => {
-      e.preventDefault();
-      input.click();
-    });
+    // Re-enganchar listeners SOLO si este elemento aún no los tiene.
+    // Al navegar entre páginas (SPA), el router reemplaza el HTML y crea
+    // botones nuevos sin listeners; un flag global bloquearía re-enganchar.
+    // Marcamos el elemento con data-ci-attached para hacerlo idempotente por nodo.
+    if (btn.dataset.ciAttached !== '1') {
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        const inp = document.getElementById('ci-attach-input');
+        if (inp) inp.click();
+      });
+      btn.dataset.ciAttached = '1';
+    }
 
-    input.addEventListener('change', e => {
-      if (e.target.files && e.target.files.length) {
-        _addFiles(e.target.files);
-      }
-      // Reset para poder seleccionar el mismo archivo otra vez si lo quitan
-      e.target.value = '';
-    });
+    if (input.dataset.ciAttached !== '1') {
+      input.addEventListener('change', e => {
+        if (e.target.files && e.target.files.length) {
+          _addFiles(e.target.files);
+        }
+        // Reset para poder seleccionar el mismo archivo otra vez si lo quitan
+        e.target.value = '';
+      });
+      input.dataset.ciAttached = '1';
+    }
 
+    // El drag&drop apunta a #ci-feed-wrapper, que también se rehace al navegar
     _initDragAndDrop();
 
     _inited = true;
-    console.log('✅ ci-attach.js inicializado');
     return true;
   }
 

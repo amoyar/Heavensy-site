@@ -103,16 +103,15 @@
   }
 
   function ciInitReply() {
-    if (_inited) return true;
     const cancelBtn = document.getElementById('ci-reply-cancel');
-    if (cancelBtn) {
+    if (cancelBtn && cancelBtn.dataset.ciReplyAttached !== '1') {
       cancelBtn.addEventListener('click', e => {
         e.preventDefault();
         ciClearReply();
       });
+      cancelBtn.dataset.ciReplyAttached = '1';
     }
     _inited = true;
-    console.log('✅ ci-reply.js inicializado');
     return true;
   }
 
