@@ -26,9 +26,65 @@ const CI_ROOM_PREFIX   = 'chat_interno:';
 const CI_TYPING_DELAY  = 2500; // ms sin escribir para emitir stop
 
 // ── INIT ──
-// ── IDENTIDAD: parsea el token y setea ciCurrentUser (idempotente) ──
+// ── RESET: limpia el estado del chat al cambiar de empresa ──
+// Desconecta el socket viejo y vacía salas, mensajes, privados, notas,
+// votaciones y presencia, para no mezclar datos entre empresas.
+function ciResetEstadoChat() {
+  // Desconectar socket de la empresa anterior
+  try {
+    if (ciSocket) {
+      ciSocket.removeAllListeners && ciSocket.removeAllListeners();
+      ciSocket.disconnect();
+    }
+  } catch (e) {}
+  ciSocket = null;
+  _ciAuthRetried = false;
+  _ciBackgroundReady = false;
+
+  // Vaciar estado por-empresa
+  ciActiveChat   = 'general';
+  ciParticipants = [];
+  ciSalas        = [];
+  ciOnlineUsers  = {};
+  ciMessages     = { general: [] };
+  ciUnread       = { general: 0 };
+  ciTypingUsers  = {};
+  ciTypingTimers = {};
+  ciAllPinnedVots  = {};
+  ciPinnedVotacion = null;
+  ciAllPinnedNotas = {};
+  ciActiveNota     = null;
+  ciTotalUnread    = 0;
+
+  // Limpiar el feed y las listas visibles del DOM (si están montadas)
+  const feed = document.getElementById('ci-feed');
+  if (feed) feed.innerHTML = '';
+  const chatList = document.getElementById('ci-chat-list');
+  if (chatList) chatList.innerHTML = '';
+
+  // Resetear el header del chat al estado por defecto (general), para que no
+  // quede mostrando la sala/usuario de la empresa anterior.
+  const hAvatar = document.getElementById('ci-header-avatar');
+  if (hAvatar) { hAvatar.innerHTML = '<i class="fas fa-hashtag"></i>'; hAvatar.style.background = ''; }
+  const hName = document.getElementById('ci-header-name');
+  if (hName) hName.textContent = 'general';
+  const hSub = document.getElementById('ci-header-sub');
+  if (hSub) hSub.textContent = 'Sala principal del equipo';
+
+  // Ocultar paneles que puedan haber quedado de la empresa anterior
+  const stack = document.getElementById('ci-pinned-stack');
+  if (stack) stack.style.display = 'none';
+  const onlineList = document.getElementById('ci-online-list');
+  if (onlineList) onlineList.innerHTML = '';
+  const onlineCount = document.getElementById('ci-online-count');
+  if (onlineCount) onlineCount.textContent = '0';
+}
+
+// ── IDENTIDAD: parsea el token y setea ciCurrentUser ──
+// Detecta cambio de empresa: si el token trae otro company_id que el actual,
+// re-setea la identidad (no es no-op). Esto evita seguir mostrando los chats
+// de la empresa anterior tras un switch-company.
 function _ciSetupIdentity() {
-  if (ciCurrentUser) return true;  // ya seteado
   const token = localStorage.getItem('token');
   if (!token) return false;
   let payload;
@@ -37,6 +93,16 @@ function _ciSetupIdentity() {
   } catch (e) {
     console.error('ci: token inválido', e);
     return false;
+  }
+
+  const nuevoCompanyId = payload.company_id || '';
+  // Si ya hay identidad y es de la MISMA empresa, no hay nada que hacer
+  if (ciCurrentUser && ciCurrentUser.company_id === nuevoCompanyId) {
+    return true;
+  }
+  // Si había identidad de OTRA empresa, limpiar el estado antes de re-setear
+  if (ciCurrentUser && ciCurrentUser.company_id !== nuevoCompanyId) {
+    ciResetEstadoChat();
   }
 
   const rawRole = payload.role
@@ -65,8 +131,10 @@ function _ciSetupIdentity() {
 // reciba mensajes y vea el badge de no leídos esté en la página que esté.
 let _ciBackgroundReady = false;
 async function ciInitBackground() {
-  if (_ciBackgroundReady) return;
+  // _ciSetupIdentity primero: detecta cambio de empresa y, si lo hay, resetea
+  // el estado (lo que pone _ciBackgroundReady en false para re-ejecutar todo).
   if (!_ciSetupIdentity()) return;  // sin token, no hay nada que conectar
+  if (_ciBackgroundReady) return;
 
   try {
     // Cargar participantes (necesario para unirse a rooms privados de todos
@@ -2312,12 +2380,130 @@ function ciPdpGetValue() {
 
 function ciAbrirProgramado() {
   document.getElementById('ci-prog-texto').value = '';
+  // Ocultar el aviso de confirmación de una vez anterior
+  const aviso = document.getElementById('ci-prog-aviso');
+  if (aviso) aviso.style.display = 'none';
   ciPdpInit();
   document.getElementById('ci-modal-programado').classList.add('open');
+  // Cargar los programados pendientes de la sala actual
+  ciLoadProgramadosPendientes();
 }
 
 function ciCerrarProgramado() {
   document.getElementById('ci-modal-programado').classList.remove('open');
+}
+
+// Carga y muestra los mensajes programados pendientes de la sala/chat actual
+function ciLoadProgramadosPendientes() {
+  const cont = document.getElementById('ci-prog-pendientes');
+  const list = document.getElementById('ci-prog-pendientes-list');
+  if (!cont || !list || !ciCurrentUser) return;
+
+  const roomId = ciActiveChat;
+  const isPrivado = !_ciIsSala(roomId) && roomId !== 'general';
+  const backendRoom = isPrivado
+    ? 'private:' + [ciCurrentUser.id, roomId].sort().join(':')
+    : roomId;
+
+  // Título según la sala
+  const titleEl = document.getElementById('ci-prog-pendientes-title');
+  if (titleEl) {
+    let salaNombre = 'este chat';
+    if (roomId === 'general') salaNombre = 'general';
+    else if (isPrivado) salaNombre = 'este privado';
+    else { const s = ciSalas.find(x => x.id === roomId); if (s) salaNombre = s.name; }
+    titleEl.textContent = `Programados en ${salaNombre}`;
+  }
+
+  apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/rooms/${encodeURIComponent(backendRoom)}/programados`, {
+    method: 'GET'
+  }).then(res => {
+    const progs = (res.ok && Array.isArray(res.data?.programados)) ? res.data.programados : [];
+    _ciRenderProgramadosPendientes(progs);
+  }).catch(() => {
+    _ciRenderProgramadosPendientes([]);
+  });
+}
+
+function _ciRenderProgramadosPendientes(progs) {
+  const cont   = document.getElementById('ci-prog-pendientes');
+  const list   = document.getElementById('ci-prog-pendientes-list');
+  const countEl = document.getElementById('ci-prog-pendientes-count');
+  if (!cont || !list) return;
+
+  if (!progs || progs.length === 0) {
+    cont.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+
+  cont.style.display = 'block';
+  if (countEl) countEl.textContent = progs.length;
+
+  list.innerHTML = progs.map(p => {
+    const d       = new Date(p.send_at);
+    const dateStr = d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+    const timeStr = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    const rel     = _ciTiempoRelativo(d);
+    const puedeCancelar = p.from_id === ciCurrentUser.id || ciIsAdmin;
+
+    const cancelBtn = puedeCancelar
+      ? `<button class="ci-prog-cancel-btn" onclick="ciCancelarProgramado('${p.id}')"><i class="fas fa-trash"></i> Cancelar</button>`
+      : '';
+
+    return `
+      <div class="ci-prog-pend-item" id="ci-prog-pend-${p.id}">
+        <div class="ci-prog-pend-main">
+          <div class="ci-prog-pend-text">${escapeHtml(p.texto || '')}</div>
+          <div class="ci-prog-pend-time">
+            <i class="fas fa-calendar-alt"></i>${dateStr} · ${timeStr}
+            ${rel ? `<span class="ci-prog-pend-rel">· ${rel}</span>` : ''}
+          </div>
+        </div>
+        ${cancelBtn}
+      </div>
+    `;
+  }).join('');
+}
+
+// Devuelve un texto relativo ("en 14 h", "en 3 días") o '' si ya pasó o es inválida
+function _ciTiempoRelativo(date) {
+  const diff = date.getTime() - Date.now();
+  if (isNaN(diff) || diff <= 0) return '';
+  const mins = Math.round(diff / 60000);
+  if (mins < 60) return `en ${mins} min`;
+  const horas = Math.round(mins / 60);
+  if (horas < 24) return `en ${horas} h`;
+  const dias = Math.round(horas / 24);
+  return `en ${dias} día${dias !== 1 ? 's' : ''}`;
+}
+
+async function ciCancelarProgramado(progId) {
+  const ok = await ciConfirmar({
+    titulo:    'Cancelar mensaje programado',
+    mensaje:   '¿Cancelar este mensaje? No se enviará.',
+    confirmar: 'Cancelar envío',
+    cancelar:  'Volver',
+    peligro:   true
+  });
+  if (!ok) return;
+
+  try {
+    const res = await apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/programados/${progId}`, {
+      method: 'DELETE'
+    });
+    if (res.ok) {
+      // Quitar del DOM y recargar la lista
+      const el = document.getElementById(`ci-prog-pend-${progId}`);
+      if (el) el.remove();
+      ciLoadProgramadosPendientes();
+      showToast('Mensaje programado cancelado', 'success');
+    } else {
+      showToast(res.data?.error || 'No se pudo cancelar', 'error');
+    }
+  } catch (e) {
+    showToast('Error al cancelar', 'error');
+  }
 }
 
 function ciEnviarProgramado() {
@@ -2328,10 +2514,18 @@ function ciEnviarProgramado() {
   if (!sendAt) { showToast('Selecciona la fecha y hora de envío', 'warning'); return; }
   if (new Date(sendAt) <= new Date()) { showToast('La fecha/hora debe ser en el futuro', 'warning'); return; }
 
+  // En privados el room_id debe ser 'private:a:b' (igual que al listar y al
+  // enviar), no el userId suelto. Así el GET de pendientes lo encuentra y el
+  // scheduler lo despacha al room correcto.
+  const isPrivadoP = !_ciIsSala(ciActiveChat) && ciActiveChat !== 'general';
+  const progRoomId = isPrivadoP
+    ? 'private:' + [ciCurrentUser.id, ciActiveChat].sort().join(':')
+    : ciActiveChat;
+
   const prog = {
     id:         'prog_' + Date.now(),
     type:       'programado',
-    room_id:    ciActiveChat,
+    room_id:    progRoomId,
     company_id: ciCurrentUser.company_id,
     from_id:    ciCurrentUser.id,
     from_name:  ciCurrentUser.name,
@@ -2341,48 +2535,35 @@ function ciEnviarProgramado() {
     timestamp:  new Date().toISOString()
   };
 
-  // Mostrar confirmación en el feed
-  ciRenderProgramadoCard(prog, true);
-  ciCerrarProgramado();
-
-  apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/rooms/${ciActiveChat}/programado`, {
+  // Persistir en backend, luego refrescar la lista de pendientes del modal.
+  // La ruta lleva el progRoomId (con private: si corresponde) para que el
+  // _deny_if_no_room_access valide bien y el room quede consistente.
+  apiCall(`/api/internal-chat/${ciCurrentUser.company_id}/rooms/${encodeURIComponent(progRoomId)}/programado`, {
     method: 'POST', body: JSON.stringify(prog)
+  }).then(() => {
+    ciLoadProgramadosPendientes();
   }).catch(() => {});
+
+  // Limpiar el campo de texto para poder programar otro, sin cerrar el modal
+  document.getElementById('ci-prog-texto').value = '';
+
+  // Aviso de confirmación DENTRO del modal (más visible que el toast)
+  const d = new Date(sendAt);
+  const dStr = d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+  const tStr = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  ciMostrarAvisoProgramado(`Mensaje programado para el ${dStr} · ${tStr}`);
 }
 
-function ciRenderProgramadoCard(p, own) {
-  const feed = document.getElementById('ci-feed');
-  const empty = feed.querySelector('.ci-empty');
-  if (empty) empty.remove();
-
-  const sendDate = new Date(p.send_at);
-  const dateStr  = sendDate.toLocaleDateString('es-CL', { day: 'numeric', month: 'long' });
-  const timeStr  = sendDate.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-
-  const div = document.createElement('div');
-  div.className = `ci-msg${own ? ' own' : ''}`;
-  div.innerHTML = `
-    <div class="ci-msg-avatar">${ciInitials(p.from_name)}</div>
-    <div class="ci-msg-body">
-      <div class="ci-msg-meta">
-        <span class="ci-msg-author${own ? ' me' : ''}">${escapeHtml(p.from_name)}</span>
-        <span class="ci-msg-time">${ciFormatTime(p.timestamp)}</span>
-      </div>
-      <div class="ci-card-programado">
-        <div class="ci-card-header">
-          <div class="ci-card-icon" style="background:rgba(14,165,233,.1);color:#0ea5e9"><i class="fas fa-clock"></i></div>
-          <div>
-            <div class="ci-card-title">Mensaje programado</div>
-            <div class="ci-card-meta">Se enviará el ${dateStr} a las ${timeStr}</div>
-          </div>
-        </div>
-        <div class="ci-card-prog-text">${escapeHtml(p.texto)}</div>
-        <div class="ci-card-prog-time"><i class="fas fa-calendar-alt"></i>${dateStr} · ${timeStr}</div>
-      </div>
-    </div>
-  `;
-  feed.appendChild(div);
-  ciScrollBottom();
+// Muestra el aviso verde de confirmación dentro del modal por unos segundos
+let _ciAvisoTimer = null;
+function ciMostrarAvisoProgramado(texto) {
+  const aviso = document.getElementById('ci-prog-aviso');
+  const txt   = document.getElementById('ci-prog-aviso-text');
+  if (!aviso) return;
+  if (txt) txt.textContent = texto;
+  aviso.style.display = 'flex';
+  clearTimeout(_ciAvisoTimer);
+  _ciAvisoTimer = setTimeout(() => { aviso.style.display = 'none'; }, 4000);
 }
 
 // ═══════════════════════════════════════════════

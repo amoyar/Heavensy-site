@@ -289,32 +289,53 @@
       <button class="ci-modal-close" onclick="ciCerrarProgramado()"><i class="fas fa-times"></i></button>
     </div>
     <div class="ci-modal-body">
+      <!-- Aviso de confirmación al programar (dentro del modal) -->
+      <div class="ci-prog-aviso" id="ci-prog-aviso" style="display:none">
+        <i class="fas fa-check-circle"></i>
+        <span id="ci-prog-aviso-text">Mensaje programado</span>
+      </div>
+
       <div style="margin-bottom:14px">
         <label class="ci-form-label">Mensaje</label>
         <textarea id="ci-prog-texto" class="ci-form-input" rows="3" placeholder="Escribe el mensaje que se enviará..." style="resize:none"></textarea>
       </div>
       <label class="ci-form-label" style="margin-bottom:8px;display:block">Fecha y hora de envío</label>
-      <div class="ci-dp-popup ci-pdp-inline-fixed">
-        <div class="ci-dp-cal-header">
-          <button onclick="ciPdpPrevMonth()"><i class="fas fa-chevron-left"></i></button>
-          <span id="ci-pdp-month-label"></span>
-          <button onclick="ciPdpNextMonth()"><i class="fas fa-chevron-right"></i></button>
+
+      <!-- Calendario + hora lado a lado -->
+      <div class="ci-prog-fecha-row">
+        <div class="ci-dp-popup ci-pdp-inline-fixed ci-prog-cal">
+          <div class="ci-dp-cal-header">
+            <button onclick="ciPdpPrevMonth()"><i class="fas fa-chevron-left"></i></button>
+            <span id="ci-pdp-month-label"></span>
+            <button onclick="ciPdpNextMonth()"><i class="fas fa-chevron-right"></i></button>
+          </div>
+          <div class="ci-dp-weekdays">
+            <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sa</span><span>Do</span>
+          </div>
+          <div class="ci-dp-days" id="ci-pdp-days"></div>
         </div>
-        <div class="ci-dp-weekdays">
-          <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sa</span><span>Do</span>
+        <div class="ci-prog-hora-box">
+          <div class="ci-prog-hora-label"><i class="fas fa-clock"></i> Hora</div>
+          <div class="ci-prog-hora-selects">
+            <select id="ci-pdp-hour" class="ci-dp-time-sel" onchange="ciPdpUpdateDisplay()"></select>
+            <span class="ci-prog-hora-sep">:</span>
+            <select id="ci-pdp-min" class="ci-dp-time-sel" onchange="ciPdpUpdateDisplay()"></select>
+          </div>
         </div>
-        <div class="ci-dp-days" id="ci-pdp-days"></div>
-        <div class="ci-dp-time">
-          <i class="fas fa-clock" style="color:#8e84fa;font-size:12px"></i>
-          <span>Hora:</span>
-          <select id="ci-pdp-hour" class="ci-dp-time-sel" onchange="ciPdpUpdateDisplay()"></select>
-          <span style="font-weight:700;color:#9ba3c0">:</span>
-          <select id="ci-pdp-min" class="ci-dp-time-sel" onchange="ciPdpUpdateDisplay()"></select>
+      </div>
+
+      <!-- Lista de programados pendientes de la sala actual -->
+      <div class="ci-prog-pendientes" id="ci-prog-pendientes" style="display:none">
+        <div class="ci-prog-pendientes-header">
+          <i class="fas fa-calendar-alt"></i>
+          <span id="ci-prog-pendientes-title">Programados pendientes</span>
+          <span class="ci-prog-pendientes-count" id="ci-prog-pendientes-count">0</span>
         </div>
+        <div class="ci-prog-pendientes-list" id="ci-prog-pendientes-list"></div>
       </div>
     </div>
     <div class="ci-modal-footer">
-      <button onclick="ciCerrarProgramado()" style="padding:9px 16px;border-radius:10px;border:1px solid #e4e9f5;background:#fff;color:#9BA3C0;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Cancelar</button>
+      <button onclick="ciCerrarProgramado()" style="padding:9px 16px;border-radius:10px;border:1px solid #e4e9f5;background:#fff;color:#9BA3C0;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Cerrar</button>
       <button class="ci-modal-save" onclick="ciEnviarProgramado()"><i class="fas fa-clock" style="margin-right:6px"></i>Programar</button>
     </div>
   </div>

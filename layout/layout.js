@@ -309,6 +309,9 @@ async function _switchSidebarCompany(companyId, companyName) {
       cargarEmpresasYConversaciones();
     } else if (page === 'seguimiento' && typeof segInit === 'function') {
       segInit();
+    } else if (page === 'chat_interno' && typeof initChat_internoPage === 'function') {
+      // El chat re-detecta el cambio de empresa por el token y limpia su estado
+      initChat_internoPage();
     } else if (typeof loadPage === 'function') {
       loadPage(page);
     } else {

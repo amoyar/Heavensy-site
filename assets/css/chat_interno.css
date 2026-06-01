@@ -192,7 +192,154 @@
 .ci-dp-btn-ok:hover { opacity: .88; }
 
 /* ── MODAL PROGRAMADO (inline calendar) ── */
-.ci-prog-modal { width: 320px; }
+.ci-prog-modal { width: 400px; }
+
+/* Aviso de confirmación dentro del modal de programado */
+.ci-prog-aviso {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #E1F5EE;
+  border: 0.5px solid #5DCAA5;
+  border-radius: 8px;
+  padding: 8px 11px;
+  margin-bottom: 14px;
+  animation: ci-pin-in .2s ease;
+}
+.ci-prog-aviso i { color: #0F6E56; font-size: 15px; }
+.ci-prog-aviso span { font-size: 12px; color: #085041; font-weight: 600; }
+
+/* Calendario + hora lado a lado */
+.ci-prog-fecha-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+.ci-prog-cal {
+  flex: 1;
+  border: 0.5px solid var(--ci-border, #e4e9f5) !important;
+  border-radius: 8px !important;
+  padding: 8px 10px !important;
+  width: auto !important;
+  margin: 0 !important;
+}
+/* Calendario compacto: días y header más chicos */
+.ci-prog-cal .ci-dp-cal-header { margin-bottom: 6px; }
+.ci-prog-cal .ci-dp-cal-header span { font-size: 12px; }
+.ci-prog-cal .ci-dp-cal-header button { padding: 3px 7px; }
+.ci-prog-cal .ci-dp-weekdays span { font-size: 9px; padding: 2px 0; }
+.ci-prog-cal .ci-dp-days { gap: 2px; }
+.ci-prog-cal .ci-dp-day {
+  font-size: 10px;
+  padding: 3px 0;
+  min-height: 22px;
+}
+
+/* Caja de hora al costado (arriba) */
+.ci-prog-hora-box {
+  min-width: 92px;
+  border: 0.5px solid var(--ci-border, #e4e9f5);
+  border-radius: 8px;
+  padding: 8px;
+}
+.ci-prog-hora-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--ci-purple, #8e84fa);
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+.ci-prog-hora-label i { font-size: 12px; }
+.ci-prog-hora-selects {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.ci-prog-hora-sep { font-weight: 700; color: var(--ci-muted, #9ba3c0); font-size: 14px; }
+
+/* Lista de programados pendientes dentro del modal */
+.ci-prog-pendientes {
+  border-top: 1px solid var(--ci-border, #e4e9f5);
+  margin: 14px -16px 0;
+  padding: 14px 16px 0;
+}
+.ci-prog-pendientes-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ci-text, #383838);
+}
+.ci-prog-pendientes-header i { color: #378ADD; font-size: 13px; }
+.ci-prog-pendientes-count {
+  background: #E6F1FB;
+  color: #0C447C;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 9px;
+}
+.ci-prog-pendientes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.ci-prog-pend-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0.5px solid var(--ci-border, #e4e9f5);
+  border-left: 3px solid #378ADD;
+  border-radius: 0 8px 8px 0;
+  padding: 9px 11px;
+}
+.ci-prog-pend-main { flex: 1; min-width: 0; }
+.ci-prog-pend-text {
+  font-size: 12px;
+  color: var(--ci-text, #383838);
+  line-height: 1.4;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+.ci-prog-pend-time {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #185FA5;
+  font-weight: 600;
+}
+.ci-prog-pend-time i { font-size: 11px; }
+.ci-prog-pend-rel { color: var(--ci-muted, #9BA3C0); font-weight: 400; }
+.ci-prog-cancel-btn {
+  padding: 3px 9px;
+  font-size: 10px;
+  border: 0.5px solid #F7C1C1;
+  border-radius: 7px;
+  background: #fff;
+  color: #A32D2D;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background .15s;
+}
+.ci-prog-cancel-btn:hover { background: #FCEBEB; }
+.ci-prog-cancel-btn i { font-size: 10px; }
 
 /* Usa las mismas clases del popup pero estático */
 .ci-pdp-inline-fixed {
