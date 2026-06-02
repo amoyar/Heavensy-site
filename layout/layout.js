@@ -309,9 +309,13 @@ async function _switchSidebarCompany(companyId, companyName) {
       cargarEmpresasYConversaciones();
     } else if (page === 'seguimiento' && typeof segInit === 'function') {
       segInit();
-    } else if (page === 'chat_interno' && typeof initChat_internoPage === 'function') {
-      // El chat re-detecta el cambio de empresa por el token y limpia su estado
-      initChat_internoPage();
+    } else if (page === 'chat_interno') {
+      // Recarga explícita del chat con la nueva empresa (resetea + recarga todo)
+      if (typeof ciReloadForCompanySwitch === 'function') {
+        ciReloadForCompanySwitch();
+      } else if (typeof initChat_internoPage === 'function') {
+        initChat_internoPage();
+      }
     } else if (typeof loadPage === 'function') {
       loadPage(page);
     } else {

@@ -56,11 +56,15 @@ function ciResetEstadoChat() {
   ciActiveNota     = null;
   ciTotalUnread    = 0;
 
-  // Limpiar el feed y las listas visibles del DOM (si están montadas)
+  // Limpiar el feed (mensajes visibles)
   const feed = document.getElementById('ci-feed');
   if (feed) feed.innerHTML = '';
-  const chatList = document.getElementById('ci-chat-list');
-  if (chatList) chatList.innerHTML = '';
+  // Limpiar SOLO las listas de salas y privados (no el contenedor padre
+  // ci-chat-list, que envuelve también el item del general y estos divs).
+  const salasList = document.getElementById('ci-salas-list');
+  if (salasList) salasList.innerHTML = '';
+  const privadosList = document.getElementById('ci-privados-list');
+  if (privadosList) privadosList.innerHTML = '';
 
   // Resetear el header del chat al estado por defecto (general), para que no
   // quede mostrando la sala/usuario de la empresa anterior.
@@ -158,6 +162,39 @@ async function ciInitBackground() {
   }
 }
 window.ciInitBackground = ciInitBackground;
+
+// Recarga el chat tras un cambio de empresa: resetea el estado y vuelve a
+// cargar participantes, historial, salas y privados de la NUEVA empresa.
+// El layout la llama directamente al hacer switch-company estando en el chat.
+async function ciReloadForCompanySwitch() {
+  // _ciSetupIdentity detecta el cambio de company_id y dispara ciResetEstadoChat.
+  // Forzamos el reset aquí también por si la identidad ya estaba actualizada.
+  const token = localStorage.getItem('token');
+  let nuevoCompany = '';
+  try { nuevoCompany = JSON.parse(atob(token.split('.')[1])).company_id || ''; } catch {}
+
+  if (ciCurrentUser && ciCurrentUser.company_id !== nuevoCompany) {
+    ciResetEstadoChat();
+  }
+  // Re-setear identidad a la nueva empresa
+  if (!_ciSetupIdentity()) return;
+
+  try {
+    // Reconstruir todo el estado de la nueva empresa
+    await ciInitBackground();          // participantes + no leídos + socket
+    await ciConnectSocket();           // asegurar socket conectado
+    await ciLoadHistory('general');    // historial del general
+    await ciLoadSalas();               // salas (renderiza la lista)
+    await _ciRestorePrivados();        // privados (renderiza la lista)
+    _ciJoinAllPrivateRooms();
+    ciLoadCompanyName();               // nombre de empresa en el header del panel
+    // Abrir el general por defecto
+    if (typeof ciOpenGeneral === 'function') ciOpenGeneral();
+  } catch (e) {
+    console.error('ci: error recargando tras cambio de empresa:', e);
+  }
+}
+window.ciReloadForCompanySwitch = ciReloadForCompanySwitch;
 
 // Carga los no leídos persistidos desde el backend y actualiza ciUnread + badges.
 // Se llama al iniciar para que el contador sobreviva a refresh, logout y reconexión.
