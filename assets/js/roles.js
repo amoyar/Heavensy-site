@@ -1,11 +1,17 @@
 // ═══════════════════════════════════════════════
 //  ROLES Y PERMISOS — HEAVENSY
 // ═══════════════════════════════════════════════
+// ── BITÁCORA ──
+// 2026-06-03 | UI: labels PLAN/ROL en el panel SA; chevron de colapso como
+//              botón circular clickeable; lista de Roles de Empresa envuelta
+//              en card contenedora con header violeta colapsable.
 
 // ── CATASTRO COMPLETO DE SECCIONES ────────────────────────────────────────────
-const ROL_CATALOGO = [
+// Valor inicial; en initRolesPage() se reemplaza con los módulos de la BD
+// (GET /api/system-roles/modules) vía rolHidratarModelo().
+let ROL_CATALOGO = [
   {
-    id: 'conversaciones', label: 'Conversaciones', icon: 'fa-comments', color: '#8e84fa',
+    id: 'conversaciones', label: 'Conversaciones', icon: 'fa-comments', color: '#8b5cf6',
     acciones: [
       // Chat principal
       { id: 'ver',               label: 'Ver conversaciones' },
@@ -26,29 +32,25 @@ const ROL_CATALOGO = [
     ]
   },
   {
-    id: 'agenda', label: 'Agenda', icon: 'fa-calendar-alt', color: '#0ea5e9',
+    id: 'agenda', label: 'Agenda', icon: 'fa-calendar-alt', color: '#3b82f6',
     acciones: [
-      { id: 'ver',       label: 'Ver citas propias' },
-      { id: 'ver_todas', label: 'Ver citas de todos' },
-      { id: 'crear',     label: 'Crear cita' },
-      { id: 'editar',    label: 'Editar cita' },
-      { id: 'cancelar',  label: 'Cancelar cita' },
+      { id: 'ver',             label: 'Ver disponibilidad propia' },
+      { id: 'ver_todas',       label: 'Ver disponibilidad de todos' },
+      { id: 'gestion_manual',  label: 'Gestión manual de reservas' },
     ]
   },
   {
     id: 'embudos', label: 'Embudos', icon: 'fa-filter', color: '#f59e0b',
     acciones: [
-      { id: 'ver',     label: 'Ver embudos' },
-      { id: 'crear',   label: 'Crear embudo' },
-      { id: 'editar',  label: 'Editar embudo' },
-      { id: 'mover',   label: 'Mover contactos' },
-      { id: 'eliminar',label: 'Eliminar embudo' },
-      { id: 'masivos',        label: 'Enviar mensajes masivos' },
+      { id: 'ver',              label: 'Ver embudos' },
+      { id: 'editar',           label: 'Editar embudo' },
+      { id: 'mover',            label: 'Mover contactos' },
+      { id: 'masivos',          label: 'Mensajes masivos/mes', type: 'number' },
       { id: 'seleccionar_card', label: 'Seleccionar card y enviar mensajes' },
     ]
   },
   {
-    id: 'chat_interno', label: 'Chat Interno', icon: 'fa-comments', color: '#6366f1',
+    id: 'chat_interno', label: 'Chat Interno', icon: 'fa-comments', color: '#0891b2',
     acciones: [
       { id: 'acceder',          label: 'Acceder al chat' },
       { id: 'crear_salas',      label: 'Crear salas' },
@@ -60,10 +62,10 @@ const ROL_CATALOGO = [
     ]
   },
   {
-    id: 'seguimiento', label: 'Seguimiento', icon: 'fa-clipboard-list', color: '#14b8a6',
+    id: 'seguimiento', label: 'Seguimiento', icon: 'fa-clipboard-list', color: '#06b6d4',
     acciones: [
       { id: 'ver',              label: 'Ver seguimientos' },
-      { id: 'crear',            label: 'Crear seguimiento' },
+      { id: 'crear',            label: 'Seguimientos/mes', type: 'number' },
       { id: 'linea_tiempo',     label: 'Línea de tiempo con IA' },
       { id: 'evolucion',        label: 'Evolución de progreso' },
       { id: 'notas_sesion',     label: 'Notas de sesión' },
@@ -76,19 +78,19 @@ const ROL_CATALOGO = [
     ]
   },
   {
-    id: 'usuarios', label: 'Usuarios', icon: 'fa-users', color: '#8b5cf6',
+    id: 'usuarios', label: 'Usuarios', icon: 'fa-users', color: '#7c3aed',
     acciones: [
       { id: 'ver',      label: 'Ver usuarios' },
-      { id: 'crear',    label: 'Crear usuario' },
+      { id: 'crear',    label: 'Crear usuario', type: 'number' },
       { id: 'editar',   label: 'Editar usuario' },
       { id: 'eliminar', label: 'Eliminar usuario' },
     ]
   },
   {
-    id: 'roles', label: 'Roles y Permisos', icon: 'fa-shield-alt', color: '#8e84fa',
+    id: 'roles', label: 'Roles y Permisos', icon: 'fa-shield-alt', color: '#4f46e5',
     acciones: [
       { id: 'ver',     label: 'Ver roles' },
-      { id: 'crear',   label: 'Crear rol' },
+      { id: 'crear',   label: 'Crear rol', type: 'number' },
       { id: 'editar',  label: 'Editar permisos' },
       { id: 'asignar', label: 'Asignar rol a usuario' },
     ]
@@ -100,6 +102,9 @@ const ROL_CATALOGO = [
       { id: 'editar_empresa',   label: 'Editar configuración de la empresa' },
       { id: 'editar_propia',    label: 'Editar configuración profesional propia' },
       { id: 'editar_usuarios',  label: 'Editar configuración de usuarios de la empresa' },
+      { id: 'archivos_50mb',    label: 'Videos / Imágenes 50mb' },
+      { id: 'imagenes_5mb',     label: 'Imágenes 5mb' },
+      { id: 'capacidad_equipo', label: 'Capacidad del equipo', type: 'number' },
     ]
   },
   {
@@ -115,38 +120,42 @@ const ROL_CATALOGO = [
     ]
   },
   {
-    id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie', color: '#6366f1',
+    id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie', color: '#1d4ed8',
     acciones: [
       { id: 'ver_metricas', label: 'Ver métricas' },
     ]
   },
   {
-    id: 'empresas', label: 'Empresas', icon: 'fa-building', color: '#0ea5e9',
+    id: 'empresas', label: 'Empresas', icon: 'fa-building', color: '#0284c7',
     acciones: [
-      { id: 'ver',      label: 'Ver empresas' },
-      { id: 'crear',    label: 'Crear empresas' },
-      { id: 'gestionar',label: 'Gestionar empresas' },
+      { id: 'ver',             label: 'Ver empresas' },
+      { id: 'crear',           label: 'Crear empresas', type: 'number' },
+      { id: 'gestionar',       label: 'Gestionar empresas' },
+      { id: 'cantidad_rubros', label: 'Cantidad de rubros', type: 'number' },
     ]
   },
   {
-    id: 'pagina_publica', label: 'Página Pública', icon: 'fa-globe', color: '#0ea5e9',
+    id: 'pagina_publica', label: 'Página Pública', icon: 'fa-globe', color: '#0d9488',
     acciones: [
       { id: 'visualizar', label: 'Visualizar' },
     ]
   },
   {
-    id: 'mi_perfil', label: 'Mi Perfil Personal', icon: 'fa-user-circle', color: '#8e84fa',
+    id: 'mi_perfil', label: 'Mi Perfil Personal', icon: 'fa-user-circle', color: '#5b21b6',
     acciones: [
       { id: 'visualizar', label: 'Visualizar' },
       { id: 'editar',     label: 'Editar' },
     ]
   },
   {
-    id: 'ia', label: 'Inteligencia Artificial', icon: 'fa-robot', color: '#7c3aed',
+    id: 'ia', label: 'Inteligencia Artificial', icon: 'fa-robot', color: '#2563eb',
     acciones: [
-      { id: 'usar',       label: 'Usar IA' },
-      { id: 'configurar', label: 'Configurar IA' },
-      { id: 'ver_logs',   label: 'Ver logs de IA' },
+      { id: 'usar',                 label: 'Usar IA' },
+      { id: 'configurar',           label: 'Configurar IA' },
+      { id: 'ver_logs',             label: 'Ver logs de IA' },
+      { id: 'asistente_programada', label: 'Asistente programada' },
+      { id: 'asistente_personal',   label: 'Asistente personalizada' },
+      { id: 'cantidad_mensajes',    label: 'Cantidad de mensajes', type: 'number' },
     ]
   },
 ];
@@ -158,7 +167,8 @@ const ROL_COLORS = [
 ];
 
 // ── PLANES ────────────────────────────────────────────────────────────────────
-const ROL_PLANES = [
+// Valor inicial; se reemplaza con los planes de la BD (GET /api/system-roles/plans).
+let ROL_PLANES = [
   { id: 'gratis',          label: 'Gratis',              color: '#9ca3af' },
   { id: 'automate',        label: 'Automate Pro',        color: '#3b82f6' },
   { id: 'secretaria',      label: 'Secretar IA Premium', color: '#8b5cf6' },
@@ -170,6 +180,7 @@ const ROL_PLANES = [
 let rolPlanConfig = null;
 
 function rolPlanConfigDefault() {
+  // Generar estructura base (todo false)
   const cfg = {};
   ROL_CATALOGO.forEach(mod => {
     cfg[mod.id] = {};
@@ -181,29 +192,104 @@ function rolPlanConfigDefault() {
       });
     });
   });
+
+  // ── PLAN GRATIS — configuración definida ──────────────────────────────────────
+  const G = 'gratis', A = 'ADMIN_ROL';
+  // Conversaciones
+  cfg.conversaciones[G][A] = {ver:true,responder:true,toggle_ia:false,respuestas_rapidas:true,adjuntar:true,grabar_audio:true,cliente_vip:false,tags:true,notas:true,embudos:false,seguimiento:false,agenda:false,calendario:false};
+  // Chat interno
+  cfg.chat_interno[G][A] = {acceder:true,crear_salas:true,administrar_salas:true,asignar_tareas:false,crear_votacion:false,programar_mensajes:false,crear_notas:false};
+  // Usuarios
+  cfg.usuarios[G][A] = {ver:true,crear:false,editar:false,eliminar:false};
+  // Roles
+  cfg.roles[G][A] = {ver:true,crear:false,editar:false,asignar:false};
+  // Configuración
+  cfg.configuracion[G][A] = {ver:true,editar_empresa:true,editar_propia:false,editar_usuarios:false};
+  // Dashboard
+  cfg.dashboard[G][A] = {ver_metricas:true};
+  // Empresas
+  cfg.empresas[G][A] = {ver:true,crear:false,gestionar:false};
+  // Página pública
+  cfg.pagina_publica[G][A] = {visualizar:true};
+  // Mi perfil
+  cfg.mi_perfil[G][A] = {visualizar:true,editar:true};
+
+  // Roles activos por plan
+  cfg._rolesActivos = {
+    gratis:         {ADMIN_ROL:true, OPERADOR_ROL:false, SUPERVISOR_ROL:false, PROFESIONAL_ROL:false, ASISTENTE_ROL:false},
+    automate:       {ADMIN_ROL:true, OPERADOR_ROL:true,  SUPERVISOR_ROL:true,  PROFESIONAL_ROL:true,  ASISTENTE_ROL:true},
+    secretaria:     {ADMIN_ROL:true, OPERADOR_ROL:true,  SUPERVISOR_ROL:true,  PROFESIONAL_ROL:true,  ASISTENTE_ROL:true},
+    enterprise:     {ADMIN_ROL:true, OPERADOR_ROL:true,  SUPERVISOR_ROL:true,  PROFESIONAL_ROL:true,  ASISTENTE_ROL:true},
+    enterprise_full:{ADMIN_ROL:true, OPERADOR_ROL:true,  SUPERVISOR_ROL:true,  PROFESIONAL_ROL:true,  ASISTENTE_ROL:true},
+  };
+
+  // Secciones activas por plan+rol
+  cfg._seccionesActivas = {};
+  const todasActivas = {conversaciones:true,agenda:true,embudos:true,chat_interno:true,seguimiento:true,usuarios:true,roles:true,configuracion:true,calendario:true,dashboard:true,empresas:true,pagina_publica:true,mi_perfil:true,ia:true};
+  const gratisAdmin  = {conversaciones:true,agenda:false,embudos:false,chat_interno:true,seguimiento:false,usuarios:true,roles:true,configuracion:true,calendario:false,dashboard:true,empresas:true,pagina_publica:true,mi_perfil:true,ia:false};
+  ROL_PLANES.forEach(plan => {
+    cfg._seccionesActivas[plan.id] = {};
+    ROL_DEFAULTS.forEach(rol => {
+      cfg._seccionesActivas[plan.id][rol.role_id] = (plan.id === 'gratis' && rol.role_id === 'ADMIN_ROL')
+        ? Object.assign({}, gratisAdmin)
+        : Object.assign({}, todasActivas);
+    });
+  });
+
   return cfg;
 }
 
 async function rolCargarPlanConfig() {
   try {
     const res = await apiCall('/api/system-roles/plan-config').catch(() => null);
-    if (res?.ok && res?.data?.config) {
-      rolPlanConfig = res.data.config;
+    // apiCall envuelve en .data el JSON del backend, que a su vez trae .data.config
+    if (res?.ok && res?.data?.data?.config) {
+      rolPlanConfig = res.data.data.config;
     } else {
-      rolPlanConfig = rolPlanConfigDefault();
+      // Fallback: cargar desde localStorage si existe
+      const local = localStorage.getItem('heavensy_plan_config');
+      rolPlanConfig = local ? JSON.parse(local) : rolPlanConfigDefault();
     }
-  } catch { rolPlanConfig = rolPlanConfigDefault(); }
+  } catch {
+    const local = localStorage.getItem('heavensy_plan_config');
+    rolPlanConfig = local ? JSON.parse(local) : rolPlanConfigDefault();
+  }
 }
 
-async function rolGuardarPlanConfig() {
+async function rolGuardarPlanConfig(btn) {
+  // Feedback en el propio botón (no dependemos de showToast)
+  const original = btn ? btn.innerHTML : null;
+  const setBtn = (html, bg) => {
+    if (!btn) return;
+    btn.innerHTML = html;
+    if (bg !== undefined) btn.style.background = bg;
+  };
+  const resetBtn = () => {
+    if (!btn) return;
+    setTimeout(() => { btn.innerHTML = original; btn.style.background = ''; btn.disabled = false; }, 2000);
+  };
+
+  if (btn) btn.disabled = true;
+  setBtn('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+
   try {
     const res = await apiCall('/api/system-roles/plan-config', {
       method: 'PUT',
       body: JSON.stringify({ config: rolPlanConfig })
     });
-    if (res?.ok) showToast('Planes guardados', 'ok');
-    else showToast('Error al guardar', 'error');
-  } catch { showToast('Error al guardar', 'error'); }
+    if (res?.ok) {
+      setBtn('<i class="fas fa-check"></i> Planes guardados', '#10b981');
+    } else {
+      const msg = res?.data?.error || 'Error al guardar';
+      console.error('Error guardando plan-config:', res);
+      setBtn('<i class="fas fa-times"></i> ' + msg, '#ef4444');
+    }
+  } catch (e) {
+    console.error('Excepción guardando plan-config:', e);
+    setBtn('<i class="fas fa-times"></i> Error de conexión', '#ef4444');
+  } finally {
+    resetBtn();
+  }
 }
 
 function rolTogglePlanPerm(modId, planId, roleId, accId, checked) {
@@ -215,6 +301,161 @@ function rolTogglePlanPerm(modId, planId, roleId, accId, checked) {
   // Sincronizar con la franja del rol normal
   const viewChk = document.getElementById('rol-view-chk-' + modId + '-' + planId + '-' + roleId + '-' + accId);
   if (viewChk) viewChk.checked = checked;
+}
+
+function rolGlobalSwitchPlan(planId, btn) {
+  document.querySelectorAll('.rol-sa-global-plan-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  // Cambiar plan directamente por ID en cada módulo
+  ROL_CATALOGO.forEach(mod => {
+    const modEl = document.getElementById('rol-mod-' + mod.id);
+    if (!modEl) return;
+    modEl.querySelectorAll('.rol-plan-panel').forEach(p => p.classList.remove('active'));
+    const planPanel = document.getElementById('rol-pp-' + mod.id + '-' + planId);
+    if (planPanel) planPanel.classList.add('active');
+    // Actualizar toggle de sección según plan+rol activo
+    const activeRoleWrap2 = document.querySelector('.rol-sa-global-role-wrap.active');
+    const activeRoleId = activeRoleWrap2 ? activeRoleWrap2.dataset.roleId : ROL_DEFAULTS[0].role_id;
+    const secChk = document.getElementById('sec-chk-' + mod.id);
+    if (secChk) {
+      const secActiva = (rolPlanConfig?._seccionesActivas?.[planId]?.[activeRoleId]?.[mod.id]) !== false;
+      secChk.checked = secActiva;
+      modEl.classList.toggle('rol-seccion-off', !secActiva);
+    }
+  });
+  // Actualizar toggles de roles en panel global
+  document.querySelectorAll('.rol-sa-global-role-wrap').forEach(wrap => {
+    const roleId = wrap.dataset.roleId;
+    const isActivo = (rolPlanConfig?._rolesActivos?.[planId]?.[roleId]) !== false;
+    const chk = wrap.querySelector('input[type="checkbox"]');
+    if (chk) chk.checked = isActivo;
+  });
+  // Mostrar panel del rol activo y actualizar estado de permisos
+  const activeRoleWrap = document.querySelector('.rol-sa-global-role-wrap.active');
+  if (activeRoleWrap) {
+    const roleId = activeRoleWrap.dataset.roleId;
+    ROL_CATALOGO.forEach(mod => {
+      const planPanel = document.getElementById('rol-pp-' + mod.id + '-' + planId);
+      if (!planPanel) return;
+      planPanel.querySelectorAll('.rol-role-panel').forEach(p => p.classList.remove('active'));
+      const rp = document.getElementById('rol-rp-' + mod.id + '-' + planId + '-' + roleId);
+      if (rp) rp.classList.add('active');
+    });
+    const activo = (rolPlanConfig?._rolesActivos?.[planId]?.[roleId]) !== false;
+    rolUpdatePermissionsState(planId, roleId, activo);
+  }
+}
+
+function rolGlobalSwitchRole(wrap, roleId) {
+  document.querySelectorAll('.rol-sa-global-role-wrap').forEach(w => {
+    w.classList.remove('active');
+    w.querySelector('.rol-role-tab')?.classList.remove('active');
+  });
+  if (wrap) {
+    wrap.classList.add('active');
+    wrap.querySelector('.rol-role-tab')?.classList.add('active');
+  }
+  const activePlanTab = document.querySelector('.rol-sa-global-plan-tab.active');
+  const planId = activePlanTab ? activePlanTab.dataset.planId : ROL_PLANES[0].id;
+  // Cambiar panel de rol activo en todas las secciones
+  ROL_CATALOGO.forEach(mod => {
+    const planPanel = document.getElementById('rol-pp-' + mod.id + '-' + planId);
+    if (!planPanel) return;
+    planPanel.querySelectorAll('.rol-role-panel').forEach(p => p.classList.remove('active'));
+    const rp = document.getElementById('rol-rp-' + mod.id + '-' + planId + '-' + roleId);
+    if (rp) {
+      rp.classList.add('active');
+      // Refrescar checkboxes desde rolPlanConfig para este rol+plan+mod
+      const perms = (rolPlanConfig || {})[mod.id]?.[planId]?.[roleId] || {};
+      mod.acciones.forEach(acc => {
+        const chk = document.getElementById('plan-chk-' + mod.id + '-' + planId + '-' + roleId + '-' + acc.id);
+        if (chk) chk.checked = !!perms[acc.id];
+        const numInp = document.getElementById('plan-num-' + mod.id + '-' + planId + '-' + roleId + '-' + acc.id);
+        if (numInp) numInp.value = perms['_num_' + acc.id] ?? '';
+      });
+      // Límite de creación
+      const limitInp = document.getElementById('plan-limit-' + mod.id + '-' + planId + '-' + roleId);
+      if (limitInp) limitInp.value = perms._limit ?? '';
+    }
+  });
+  // Actualizar toggle de sección para cada módulo según plan+rol
+  ROL_CATALOGO.forEach(mod => {
+    const secChk = document.getElementById('sec-chk-' + mod.id);
+    if (secChk) {
+      const secActiva = (rolPlanConfig?._seccionesActivas?.[planId]?.[roleId]?.[mod.id]) !== false;
+      secChk.checked = secActiva;
+      const modEl = document.getElementById('rol-mod-' + mod.id);
+      if (modEl) modEl.classList.toggle('rol-seccion-off', !secActiva);
+    }
+  });
+  // Bloquear permisos si el rol está desactivado para este plan
+  const activo = (rolPlanConfig?._rolesActivos?.[planId]?.[roleId]) !== false;
+  rolUpdatePermissionsState(planId, roleId, activo);
+}
+
+function rolGlobalToggleRol(roleId, activo) {
+  const activePlanTab = document.querySelector('.rol-sa-global-plan-tab.active');
+  const planId = activePlanTab ? activePlanTab.dataset.planId : ROL_PLANES[0].id;
+  rolToggleRolActivo(planId, roleId, activo);
+  // Si el rol seleccionado actualmente es este, actualizar estado de permisos
+  const activeRoleWrap = document.querySelector('.rol-sa-global-role-wrap.active');
+  if (activeRoleWrap && activeRoleWrap.dataset.roleId === roleId) {
+    rolUpdatePermissionsState(planId, roleId, activo);
+  }
+}
+
+function rolUpdatePermissionsState(planId, roleId, activo) {
+  ROL_CATALOGO.forEach(mod => {
+    const panel = document.getElementById('rol-rp-' + mod.id + '-' + planId + '-' + roleId);
+    if (!panel) return;
+    panel.querySelectorAll('input[type="checkbox"]:not(.rol-role-tab-toggle input)').forEach(chk => {
+      chk.disabled = !activo;
+    });
+    panel.querySelectorAll('.rol-limit-input').forEach(inp => {
+      inp.disabled = !activo;
+    });
+    panel.style.opacity = activo ? '1' : '0.4';
+    panel.style.pointerEvents = activo ? '' : 'none';
+    // Mantener el toggle del rol clickeable
+    const rolToggle = document.querySelector('.rol-sa-global-role-wrap[data-role-id="' + roleId + '"] input');
+    if (rolToggle) { rolToggle.disabled = false; rolToggle.closest('label').style.pointerEvents = ''; }
+  });
+}
+
+function rolToggleSeccionActivaPlan(modId, activo) {
+  const activePlanTab = document.querySelector('.rol-sa-global-plan-tab.active');
+  const planId = activePlanTab ? activePlanTab.dataset.planId : ROL_PLANES[0].id;
+  const activeRoleWrap = document.querySelector('.rol-sa-global-role-wrap.active');
+  const roleId = activeRoleWrap ? activeRoleWrap.dataset.roleId : ROL_DEFAULTS[0].role_id;
+  if (!rolPlanConfig._seccionesActivas) rolPlanConfig._seccionesActivas = {};
+  if (!rolPlanConfig._seccionesActivas[planId]) rolPlanConfig._seccionesActivas[planId] = {};
+  if (!rolPlanConfig._seccionesActivas[planId][roleId]) rolPlanConfig._seccionesActivas[planId][roleId] = {};
+  rolPlanConfig._seccionesActivas[planId][roleId][modId] = activo;
+  const modEl = document.getElementById('rol-mod-' + modId);
+  if (modEl) modEl.classList.toggle('rol-seccion-off', !activo);
+}
+
+function rolToggleSeccionActiva(planId, modId, activo) {
+  if (!rolPlanConfig) rolPlanConfig = rolPlanConfigDefault();
+  if (!rolPlanConfig._seccionesActivas) rolPlanConfig._seccionesActivas = {};
+  if (!rolPlanConfig._seccionesActivas[planId]) rolPlanConfig._seccionesActivas[planId] = {};
+  rolPlanConfig._seccionesActivas[planId][modId] = activo;
+}
+
+function rolToggleRolActivo(planId, roleId, activo) {
+  if (!rolPlanConfig) rolPlanConfig = rolPlanConfigDefault();
+  if (!rolPlanConfig._rolesActivos) rolPlanConfig._rolesActivos = {};
+  if (!rolPlanConfig._rolesActivos[planId]) rolPlanConfig._rolesActivos[planId] = {};
+  // Solo guarda el estado — no afecta permisos ni secciones
+  rolPlanConfig._rolesActivos[planId][roleId] = activo;
+}
+
+function rolSaveNumPerm(modId, planId, roleId, accId, value) {
+  if (!rolPlanConfig) rolPlanConfig = rolPlanConfigDefault();
+  if (!rolPlanConfig[modId]) rolPlanConfig[modId] = {};
+  if (!rolPlanConfig[modId][planId]) rolPlanConfig[modId][planId] = {};
+  if (!rolPlanConfig[modId][planId][roleId]) rolPlanConfig[modId][planId][roleId] = {};
+  rolPlanConfig[modId][planId][roleId]['_num_' + accId] = value === '' ? null : parseInt(value, 10);
 }
 
 function rolSavePlanLimit(modId, planId, roleId, value) {
@@ -235,6 +476,14 @@ function rolSwitchPlanTab(btn, modId, planId) {
   modulo.querySelectorAll('.rol-plan-tab').forEach(t => t.classList.remove('active'));
   modulo.querySelectorAll('.rol-plan-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
+  // Actualizar toggle de sección según el plan seleccionado
+  const secChk = document.getElementById('sec-chk-' + modId);
+  if (secChk) {
+    const secActiva = (rolPlanConfig?._seccionesActivas?.[planId]?.[modId]) !== false;
+    secChk.checked = secActiva;
+    const modEl = document.getElementById('rol-mod-' + modId);
+    if (modEl) modEl.classList.toggle('rol-seccion-off', !secActiva);
+  }
   const panel = document.getElementById(`rol-pp-${modId}-${planId}`);
   if (panel) panel.classList.add('active');
 }
@@ -249,30 +498,47 @@ function rolSwitchStripTab(btn, roleId, modId, planId) {
   if (panel) panel.classList.add('active');
 }
 
-function rolSwitchRoleTab(btn, modId, planId, roleId) {
+function rolSwitchRoleTab(wrap, modId, planId, roleId) {
   const panel = document.getElementById(`rol-pp-${modId}-${planId}`);
   if (!panel) return;
+  panel.querySelectorAll('.rol-role-tab-wrap').forEach(t => t.classList.remove('active'));
   panel.querySelectorAll('.rol-role-tab').forEach(t => t.classList.remove('active'));
   panel.querySelectorAll('.rol-role-panel').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
+  if (wrap) {
+    wrap.classList.add('active');
+    const btn = wrap.querySelector('.rol-role-tab');
+    if (btn) btn.classList.add('active');
+  }
   const rp = document.getElementById(`rol-rp-${modId}-${planId}-${roleId}`);
   if (rp) rp.classList.add('active');
 }
 
-function rolTogglePlanModulo(modId, planId, roleId, activar, btn) {
+function rolTogglePlanModuloActivo(modId, planId, btn) {
+  const panel = document.getElementById('rol-pp-' + modId + '-' + planId);
+  if (!panel) return;
+  const activeTab = panel.querySelector('.rol-role-tab.active');
+  if (!activeTab) return;
+  const roleId = activeTab.dataset.roleId;
+  rolTogglePlanModulo(modId, planId, roleId, btn);
+}
+
+function rolTogglePlanModulo(modId, planId, roleId, btn) {
   if (!rolPlanConfig) rolPlanConfig = rolPlanConfigDefault();
   const mod = ROL_CATALOGO.find(m => m.id === modId);
   if (!mod) return;
   if (!rolPlanConfig[modId]) rolPlanConfig[modId] = {};
   if (!rolPlanConfig[modId][planId]) rolPlanConfig[modId][planId] = {};
   if (!rolPlanConfig[modId][planId][roleId]) rolPlanConfig[modId][planId][roleId] = {};
+  const activar = btn.dataset.activar === 'true';
   mod.acciones.forEach(acc => {
     rolPlanConfig[modId][planId][roleId][acc.id] = activar;
-    const chk = document.getElementById(`plan-chk-${modId}-${planId}-${roleId}-${acc.id}`);
+    const chk = document.getElementById('plan-chk-' + modId + '-' + planId + '-' + roleId + '-' + acc.id);
     if (chk) chk.checked = activar;
+    const viewChk = document.getElementById('rol-view-chk-' + modId + '-' + planId + '-' + roleId + '-' + acc.id);
+    if (viewChk) viewChk.checked = activar;
   });
-  if (btn) btn.textContent = activar ? 'Desactivar todo' : 'Activar todo';
-  btn?.setAttribute('onclick', `rolTogglePlanModulo('${modId}','${planId}','${roleId}',${!activar},this)`);
+  btn.dataset.activar = (!activar).toString();
+  btn.textContent = activar ? 'Desactivar todo' : 'Activar todo';
 }
 
 // ── ROL HEAVENSY SUPERADMIN (solo visible para superadmins) ───────────────────
@@ -323,7 +589,48 @@ async function initRolesPage() {
     }
   } catch (e) {}
 
+  // Hidratar catálogo de módulos y planes desde la BD (con fallback al hardcode)
+  await rolHidratarModelo();
+
   await Promise.all([rolCargarRoles(), rolCargarUsuarios(), rolCargarPlanConfig()]);
+}
+
+// Carga módulos y planes desde la BD y reemplaza los arrays locales.
+// apiCall envuelve el JSON del backend en .data, y el backend responde
+// { ok, data: { modules/plans } } → el dato real está en res.data.data.*
+async function rolHidratarModelo() {
+  try {
+    const [resMods, resPlans] = await Promise.all([
+      apiCall('/api/system-roles/modules'),
+      apiCall('/api/system-roles/plans'),
+    ]);
+
+    const mods = resMods?.data?.data?.modules;
+    if (Array.isArray(mods) && mods.length) {
+      ROL_CATALOGO = mods.map(m => ({
+        id: m.module_id,
+        label: m.label,
+        icon: m.icon,
+        color: m.color,
+        acciones: m.acciones || [],
+      }));
+    } else {
+      console.error('No se pudieron cargar los módulos desde la BD');
+    }
+
+    const plans = resPlans?.data?.data?.plans;
+    if (Array.isArray(plans) && plans.length) {
+      ROL_PLANES = plans.map(p => ({
+        id: p.plan_id,
+        label: p.label,
+        color: p.color,
+      }));
+    } else {
+      console.error('No se pudieron cargar los planes desde la BD');
+    }
+  } catch (e) {
+    console.error('Error al cargar el modelo de permisos desde la BD:', e);
+  }
 }
 
 // ── TABS ───────────────────────────────────────────────────────────────────────
@@ -475,8 +782,13 @@ async function rolCargarRoles() {
       }
     }
 
-    // Excluir Visualizador
-    rolRoles = roles.filter(r => (r.role_id || r.id) !== 'VIEWER_ROL');
+    // Excluir Visualizador y el Super Admin Heavensy (este se pinta en su propio bloque)
+    rolRoles = roles.filter(r => {
+      const rid = r.role_id || r.id;
+      return rid !== 'VIEWER_ROL'
+        && rid !== 'HEAVENSY_SUPERADMIN_ROL'
+        && !r.is_heavensy;
+    });
     rolRenderLista();
   } catch (e) {
     console.error('Error cargando roles:', e);
@@ -493,17 +805,41 @@ function rolRenderLista() {
     return;
   }
 
-  let html = `
-    <div class="hvy-only" style="flex-direction:column;width:100%">
-      <div class="rol-sa-separador">
-        <span><i class="fas fa-lock"></i> Solo equipo Heavensy</span>
-      </div>
-      ${_rolAcordCard(ROL_HEAVENSY_SA)}
-    </div>
-  `;
+  let html = '';
 
-  html += `<div class="rol-sa-separador"><span><i class="fas fa-briefcase"></i> Roles de empresa</span></div>`;
-  html += rolRoles.map(r => _rolAcordCard(r)).join('');
+  // Bloque Super Admin Heavensy: SOLO visible para el equipo Heavensy
+  if (rolEsSuperAdmin()) {
+    html += `
+      <div class="hvy-only" style="flex-direction:column;width:100%">
+        <div class="rol-sa-separador">
+          <span><i class="fas fa-lock"></i> Solo equipo Heavensy</span>
+        </div>
+        ${_rolAcordCard(ROL_HEAVENSY_SA)}
+      </div>
+    `;
+  }
+
+  html += `
+    <div class="rol-acord-card open" id="rol-acord-EMPRESA_ROLES">
+      <div class="rol-acord-header" onclick="rolToggleAcord('EMPRESA_ROLES')">
+        <div class="rol-card-avatar" style="background:rgba(255,255,255,0.2);color:#fff"><i class="fas fa-briefcase"></i></div>
+        <div class="rol-card-info">
+          <div class="rol-card-name" style="color:#fff">Roles de Empresa</div>
+          <div class="rol-card-meta" style="color:rgba(255,255,255,0.9)">
+            Plantillas de los roles del sistema y sus permisos.
+          </div>
+        </div>
+        <button class="rol-acord-chev-btn" title="Mostrar / ocultar"
+          onclick="event.stopPropagation();rolToggleAcord('EMPRESA_ROLES')">
+          <i class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+      <div class="rol-acord-body" id="rol-body-EMPRESA_ROLES">
+        <div class="rol-acord-body-inner">
+          ${rolRoles.map(r => _rolAcordCard(r)).join('')}
+        </div>
+      </div>
+    </div>`;
 
   el.innerHTML = html;
 }
@@ -516,18 +852,33 @@ function _rolHeavensySACard(rol) {
     const tabsHtml = ROL_PLANES.map((plan, i) => `
       <button class="rol-plan-tab${i === 0 ? ' active' : ''}"
         style="--plan-color:${plan.color}"
+        data-plan-id="${plan.id}"
         onclick="rolSwitchPlanTab(this,'${mod.id}','${plan.id}')">
         <span class="rol-plan-tab-dot"></span>
         ${escapeHtml(plan.label)}
       </button>`).join('');
 
     const panelsHtml = ROL_PLANES.map((plan, i) => {
-      const roleTabsHtml = ROL_DEFAULTS.map((rol, j) => `
-        <button class="rol-role-tab${j === 0 ? ' active' : ''}"
-          onclick="rolSwitchRoleTab(this,'${mod.id}','${plan.id}','${rol.role_id}')"
-          style="--role-color:${rol.color}">
-          ${escapeHtml(rol.role_name)}
-        </button>`).join('');
+      // allOn del primer rol para el estado inicial del botón
+      const firstRolePerms = cfg[mod.id]?.[plan.id]?.[ROL_DEFAULTS[0]?.role_id] || {};
+      const allOnFirst = mod.acciones.every(a => firstRolePerms[a.id]);
+
+      const roleTabsHtml = ROL_DEFAULTS.map((rol, j) => {
+        const isRolActivo = (rolPlanConfig?._rolesActivos?.[plan.id]?.[rol.role_id]) !== false;
+        return `<div class="rol-role-tab-wrap${j === 0 ? ' active' : ''}" data-role-id="${rol.role_id}" style="--role-color:${rol.color}">
+          <button class="rol-role-tab${j === 0 ? ' active' : ''}"
+            data-role-id="${rol.role_id}"
+            onclick="rolSwitchRoleTab(this.closest('.rol-role-tab-wrap'),'${mod.id}','${plan.id}','${rol.role_id}')"
+            style="--role-color:${rol.color}">
+            ${escapeHtml(rol.role_name)}
+          </button>
+          <label class="rol-role-tab-toggle" onclick="event.stopPropagation()">
+            <input type="checkbox" ${isRolActivo ? 'checked' : ''}
+              onchange="rolToggleRolActivo('${plan.id}','${rol.role_id}',this.checked)">
+            <span class="rol-role-tab-slider"></span>
+          </label>
+        </div>`;
+      }).join('');
 
       const rolePanelsHtml = ROL_DEFAULTS.map((rol, j) => {
         const rolePerms = cfg[mod.id]?.[plan.id]?.[rol.role_id] || {};
@@ -543,14 +894,25 @@ function _rolHeavensySACard(rol) {
             </label>
           </div>`).join('');
 
+        const isActivo  = (rolPlanConfig?._rolesActivos?.[plan.id]?.[rol.role_id]) !== false;
         const limitVal = cfg[mod.id]?.[plan.id]?.[rol.role_id]?._limit ?? '';
         const togglesHtml = mod.acciones.map(acc => {
-          const limitInput = acc.id === 'crear'
-            ? `<input type="number" min="0" class="rol-limit-input"
-                id="plan-limit-${mod.id}-${plan.id}-${rol.role_id}"
-                value="${limitVal}" placeholder="∞"
-                onchange="rolSavePlanLimit('${mod.id}','${plan.id}','${rol.role_id}',this.value)">`
-            : '';
+          // Acción tipo número: solo campo numérico, sin toggle
+          if (acc.type === 'number') {
+            const numVal = cfg[mod.id]?.[plan.id]?.[rol.role_id]?.['_num_' + acc.id] ?? '';
+            return `<div class="rol-toggle-row">
+              <span class="rol-toggle-label">${escapeHtml(acc.label)}</span>
+              <div class="rol-num-wrap">
+                <input type="number" class="rol-limit-input rol-limit-input--wide"
+                  id="plan-num-${mod.id}-${plan.id}-${rol.role_id}-${acc.id}"
+                  value="${numVal}" placeholder="∞" min="0"
+                  onchange="rolSaveNumPerm('${mod.id}','${plan.id}','${rol.role_id}','${acc.id}',this.value)">
+                <button class="rol-num-inf-btn" type="button" title="Sin límite"
+                  onclick="this.previousElementSibling.value='';rolSaveNumPerm('${mod.id}','${plan.id}','${rol.role_id}','${acc.id}','')">∞</button>
+              </div>
+            </div>`;
+          }
+          const limitInput = '';
           return `<div class="rol-toggle-row">
             <span class="rol-toggle-label">${escapeHtml(acc.label)}</span>
             ${limitInput}
@@ -562,31 +924,30 @@ function _rolHeavensySACard(rol) {
             </label>
           </div>`;
         }).join('');
-        return `<div class="rol-role-panel${j === 0 ? ' active' : ''}" id="rol-rp-${mod.id}-${plan.id}-${rol.role_id}">
-          <div class="rol-role-panel-actions">
-            <button class="rol-modulo-toggle-all"
-              onclick="rolTogglePlanModulo('${mod.id}','${plan.id}','${rol.role_id}',${!allOn},this)">
-              ${allOn ? 'Desactivar todo' : 'Activar todo'}
-            </button>
-          </div>
+        return `<div class="rol-role-panel${j === 0 ? ' active' : ''}${!isActivo ? ' rol-inactivo' : ''}" id="rol-rp-${mod.id}-${plan.id}-${rol.role_id}">
           <div class="rol-modulo-body" data-mod-id="${mod.id}">${togglesHtml}</div>
         </div>`;
       }).join('');
 
       return `<div class="rol-plan-panel${i === 0 ? ' active' : ''}" id="rol-pp-${mod.id}-${plan.id}">
-        <div class="rol-role-tabs-bar">${roleTabsHtml}</div>
         ${rolePanelsHtml}
       </div>`;
     }).join('');
 
-    return `<div class="rol-modulo">
+    const secActivaDefault = (rolPlanConfig?._seccionesActivas?.[ROL_PLANES[0].id]?.[ROL_DEFAULTS[0].role_id]?.[mod.id]) !== false;
+    return `<div class="rol-modulo${!secActivaDefault ? ' rol-seccion-off' : ''}" id="rol-mod-${mod.id}">
       <div class="rol-modulo-header">
         <div class="rol-modulo-icon" style="background:${mod.color}">
           <i class="fas ${mod.icon}"></i>
         </div>
         <span class="rol-modulo-name">${escapeHtml(mod.label)}</span>
+        <label class="rol-seccion-toggle" onclick="event.stopPropagation()" title="Activar/desactivar sección en este plan"
+          style="--sec-color:${mod.color}">
+          <input type="checkbox" id="sec-chk-${mod.id}" ${secActivaDefault ? 'checked' : ''}
+            onchange="rolToggleSeccionActivaPlan('${mod.id}',this.checked)">
+          <span class="rol-role-tab-slider"></span>
+        </label>
       </div>
-      <div class="rol-plan-tabs-bar">${tabsHtml}</div>
       ${panelsHtml}
     </div>`;
   }).join('');
@@ -603,13 +964,51 @@ function _rolHeavensySACard(rol) {
           </div>
         </div>
         <div class="rol-acord-actions" onclick="event.stopPropagation()">
-          <button class="rol-btn-save rol-btn-sa-save" onclick="rolGuardarPlanConfig()">
+          <button class="rol-btn-save rol-btn-sa-save" onclick="rolGuardarPlanConfig(this)">
             <i class="fas fa-save"></i> Guardar planes
           </button>
         </div>
-        <i class="fas fa-chevron-down rol-acord-chev" id="rol-chev-${id}"></i>
+        <button class="rol-acord-chev-btn" title="Mostrar / ocultar"
+          onclick="event.stopPropagation();rolToggleAcord('${id}')">
+          <i class="fas fa-chevron-down"></i>
+        </button>
       </div>
       <div class="rol-acord-body" id="rol-body-${id}">
+        <div class="rol-sa-global-panel">
+          <div class="rol-sa-row-label"><i class="fas fa-crown"></i> Plan</div>
+          <div class="rol-plan-tabs-bar">
+            ${ROL_PLANES.map((plan, i) => `
+              <button class="rol-plan-tab rol-sa-global-plan-tab${i === 0 ? ' active' : ''}"
+                style="--plan-color:${plan.color}" data-plan-id="${plan.id}"
+                onclick="rolGlobalSwitchPlan('${plan.id}',this)">
+                <span class="rol-plan-tab-dot"></span>
+                ${escapeHtml(plan.label)}
+              </button>`).join('')}
+          </div>
+          <div class="rol-sa-row-label"><i class="fas fa-users"></i> Rol</div>
+          <div class="rol-role-tabs-bar">
+            <div class="rol-role-tabs-scroll">
+              ${ROL_DEFAULTS.map((rol, j) => {
+                const isActivo = (rolPlanConfig?._rolesActivos?.[ROL_PLANES[0].id]?.[rol.role_id]) !== false;
+                return `<div class="rol-role-tab-wrap rol-sa-global-role-wrap${j === 0 ? ' active' : ''}"
+                  data-role-id="${rol.role_id}" style="--role-color:${rol.color};cursor:pointer"
+                  onclick="rolGlobalSwitchRole(this,'${rol.role_id}')">
+                  <button class="rol-role-tab${j === 0 ? ' active' : ''}"
+                    data-role-id="${rol.role_id}" style="--role-color:${rol.color};pointer-events:none">
+                    ${escapeHtml(rol.role_name)}
+                  </button>
+                  <label class="rol-role-tab-toggle" onclick="event.stopPropagation();rolGlobalSwitchRole(this.closest('.rol-sa-global-role-wrap'),'${rol.role_id}')">
+                    <input type="checkbox" ${isActivo ? 'checked' : ''}
+                      data-role-id="${rol.role_id}"
+                      onclick="event.stopPropagation()"
+                      onchange="rolGlobalToggleRol('${rol.role_id}',this.checked)">
+                    <span class="rol-role-tab-slider"></span>
+                  </label>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
         ${modulosHtml}
       </div>
     </div>`;

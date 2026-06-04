@@ -1,246 +1,282 @@
-<!-- MENSAJES / WEBHOOK TESTING PAGE -->
-<div class="container mx-auto">
-  <!-- Header -->
-  <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-      <i class="fas fa-paper-plane text-green-600"></i>
-      Mensajes WhatsApp
-    </h1>
-    <p class="text-gray-600 mt-1">Testeo de webhook y envío de mensajes</p>
+<!-- MENSAJES + MONITOR -->
+<div id="mensajesRoot" style="display:flex;flex-direction:column;height:100%;background:#f8fafc;">
+
+  <!-- ── BARRA DE TABS ── -->
+  <div style="display:flex;align-items:center;border-bottom:1px solid #e5e7eb;background:#fff;padding:0 20px;flex-shrink:0;">
+    <button class="msg-tab active" id="msg-tab-mensajes" onclick="msgSwitchTab('mensajes',this)">
+      <i class="fas fa-paper-plane"></i> Mensajes
+    </button>
+    <button class="msg-tab" id="msg-tab-monitor" onclick="msgSwitchTab('monitor',this)">
+      <i class="fas fa-chart-line"></i> Monitor
+    </button>
   </div>
 
-  <!-- Stats Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-    <div class="bg-white rounded-lg shadow p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-gray-600">Estado del Webhook</p>
-          <p class="text-2xl font-bold" id="webhookStatus">Verificando...</p>
-        </div>
-        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-          <i class="fas fa-server text-blue-600 text-xl"></i>
-        </div>
-      </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-gray-600">Mensajes Enviados</p>
-          <p class="text-2xl font-bold text-green-700" id="messagesSent">0</p>
-        </div>
-        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-          <i class="fas fa-check-circle text-green-600 text-xl"></i>
-        </div>
-      </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow p-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm text-gray-600">Última Respuesta</p>
-          <p class="text-sm font-semibold" id="lastResponse">-</p>
-        </div>
-        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-          <i class="fas fa-clock text-purple-600 text-xl"></i>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- ── PANEL 1: MENSAJES ── -->
+  <div class="msg-panel active" id="msg-panel-mensajes">
+    <div class="container mx-auto">
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    
-    <!-- Configuración del Webhook -->
-    <div class="bg-white rounded-lg shadow">
-      <div class="px-6 py-4 border-b bg-gradient-to-r from-blue-50 to-blue-100">
-        <h3 class="text-lg font-semibold flex items-center gap-2">
-          <i class="fas fa-cog text-blue-600"></i>
-          Configuración WhatsApp
-        </h3>
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <i class="fas fa-paper-plane text-green-600"></i>
+          Mensajes WhatsApp
+        </h1>
+        <p class="text-gray-600 mt-1">Testeo de webhook y envío de mensajes</p>
       </div>
-      
-      <div class="p-6 space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            Phone Number ID *
-          </label>
-          <input 
-            id="phoneNumberId" 
-            type="text" 
-            class="w-full border rounded-lg px-3 py-2 text-sm"
-            placeholder="814189351782625"
-            value="814189351782625"
-          />
-          <p class="text-xs text-gray-500 mt-1">ID del número de WhatsApp Business</p>
-        </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            Access Token *
-          </label>
-          <div class="relative">
-            <input 
-              id="accessToken" 
-              type="password" 
-              class="w-full border rounded-lg px-3 py-2 text-sm pr-10"
-              placeholder="EAAxxxxxxxxxx"
-            />
-            <button 
-              onclick="toggleTokenVisibility('accessToken')"
-              class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <i class="fas fa-eye"></i>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">Estado del Webhook</p>
+              <p class="text-2xl font-bold" id="webhookStatus">Verificando...</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <i class="fas fa-server text-blue-600 text-xl"></i>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">Mensajes Enviados</p>
+              <p class="text-2xl font-bold text-green-700" id="messagesSent">0</p>
+            </div>
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <i class="fas fa-check-circle text-green-600 text-xl"></i>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-gray-600">Última Respuesta</p>
+              <p class="text-sm font-semibold" id="lastResponse">-</p>
+            </div>
+            <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+              <i class="fas fa-clock text-purple-600 text-xl"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-lg shadow">
+          <div class="px-6 py-4 border-b bg-gradient-to-r from-blue-50 to-blue-100">
+            <h3 class="text-lg font-semibold flex items-center gap-2">
+              <i class="fas fa-cog text-blue-600"></i>
+              Configuración WhatsApp
+            </h3>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number ID *</label>
+              <input id="phoneNumberId" type="text" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="814189351782625" value="814189351782625"/>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Access Token *</label>
+              <div class="relative">
+                <input id="accessToken" type="password" class="w-full border rounded-lg px-3 py-2 text-sm pr-10" placeholder="EAAxxxxxxxxxx"/>
+                <button onclick="toggleTokenVisibility('accessToken')" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Verify Token</label>
+              <input id="verifyToken" type="text" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="tu_verify_token"/>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Webhook URL</label>
+              <input id="webhookUrl" type="text" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50" value="https://heavensy-api-webhook-v2.onrender.com" readonly/>
+            </div>
+            <button onclick="testWebhookHealth()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+              <i class="fas fa-heartbeat"></i> Verificar Estado del Webhook
             </button>
           </div>
-          <p class="text-xs text-gray-500 mt-1">Token de acceso de Meta WhatsApp API</p>
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            Verify Token
-          </label>
-          <input 
-            id="verifyToken" 
-            type="text" 
-            class="w-full border rounded-lg px-3 py-2 text-sm"
-            placeholder="tu_verify_token"
-          />
-          <p class="text-xs text-gray-500 mt-1">Token de verificación del webhook</p>
+        <div class="bg-white rounded-lg shadow">
+          <div class="px-6 py-4 border-b bg-gradient-to-r from-green-50 to-green-100">
+            <h3 class="text-lg font-semibold flex items-center gap-2">
+              <i class="fas fa-comment-dots text-green-600"></i>
+              Enviar Mensaje de Prueba
+            </h3>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Número de Destino *</label>
+              <input id="destinationNumber" type="text" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="+56912345678"/>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Mensaje *</label>
+              <textarea id="messageText" rows="6" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Escribe tu mensaje aquí...">Hola, este es un mensaje de prueba desde Heavensy Admin Panel 🚀</textarea>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="sendTestMessage()" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+                <i class="fas fa-paper-plane"></i> Enviar Mensaje
+              </button>
+              <button onclick="testAIReply()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+                <i class="fas fa-robot"></i> Test IA Reply
+              </button>
+            </div>
+          </div>
         </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            Webhook URL
-          </label>
-          <input 
-            id="webhookUrl" 
-            type="text" 
-            class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50"
-            value="https://heavensy-api-webhook-v2.onrender.com"
-            readonly
-          />
-        </div>
-
-        <button 
-          onclick="testWebhookHealth()"
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
-        >
-          <i class="fas fa-heartbeat"></i>
-          Verificar Estado del Webhook
-        </button>
       </div>
-    </div>
 
-    <!-- Enviar Mensaje de Prueba -->
-    <div class="bg-white rounded-lg shadow">
-      <div class="px-6 py-4 border-b bg-gradient-to-r from-green-50 to-green-100">
-        <h3 class="text-lg font-semibold flex items-center gap-2">
-          <i class="fas fa-comment-dots text-green-600"></i>
-          Enviar Mensaje de Prueba
-        </h3>
-      </div>
-      
-      <div class="p-6 space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            Número de Destino *
-          </label>
-          <input 
-            id="destinationNumber" 
-            type="text" 
-            class="w-full border rounded-lg px-3 py-2 text-sm"
-            placeholder="+56912345678"
-          />
-          <p class="text-xs text-gray-500 mt-1">Número en formato internacional (con +)</p>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            Mensaje *
-          </label>
-          <textarea 
-            id="messageText" 
-            rows="6"
-            class="w-full border rounded-lg px-3 py-2 text-sm"
-            placeholder="Escribe tu mensaje aquí..."
-          >Hola, este es un mensaje de prueba desde Heavensy Admin Panel 🚀</textarea>
-          <p class="text-xs text-gray-500 mt-1">El mensaje se enviará directamente a WhatsApp</p>
-        </div>
-
-        <div class="flex gap-2">
-          <button 
-            onclick="sendTestMessage()"
-            class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
-          >
-            <i class="fas fa-paper-plane"></i>
-            Enviar Mensaje
+      <div class="bg-white rounded-lg shadow mt-6">
+        <div class="px-6 py-4 border-b flex justify-between items-center">
+          <h3 class="text-lg font-semibold flex items-center gap-2">
+            <i class="fas fa-history text-gray-600"></i> Historial de Mensajes
+          </h3>
+          <button onclick="clearMessageHistory()" class="text-sm text-red-600 hover:text-red-700">
+            <i class="fas fa-trash"></i> Limpiar
           </button>
-          
-          <button 
-            onclick="testAIReply()"
-            class="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
-          >
-            <i class="fas fa-robot"></i>
-            Test IA Reply
+        </div>
+        <div id="messageHistory" class="p-6 space-y-3 max-h-96 overflow-y-auto">
+          <div class="text-center text-gray-500 py-8">
+            <i class="fas fa-inbox text-4xl mb-3"></i>
+            <p>No hay mensajes enviados aún</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /msg-panel-mensajes -->
+
+  <!-- ── PANEL 2: MONITOR ── -->
+  <div class="msg-panel" id="msg-panel-monitor">
+    <style>
+      .message-item { animation: slideIn 0.3s ease-out; }
+      @keyframes slideIn { from { opacity:0; transform:translateX(-20px); } to { opacity:1; transform:translateX(0); } }
+      .pulse-dot { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+      @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+    </style>
+    <div class="container mx-auto">
+      <div class="mb-6 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-chart-line text-blue-600"></i> Monitor en Tiempo Real
+          </h1>
+          <p class="text-gray-600 mt-1">Monitoreo de mensajes y eventos del sistema</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div id="mon-connectionStatus" class="flex items-center space-x-2">
+            <span class="pulse-dot h-3 w-3 rounded-full bg-yellow-500"></span>
+            <span class="text-sm text-gray-600">Conectando...</span>
+          </div>
+          <button id="soundToggle" onclick="toggleSound()" class="p-2 rounded-lg hover:bg-gray-100" title="Toggle sonido">
+            <i class="fas fa-volume-up text-gray-600"></i>
           </button>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Historial de Mensajes -->
-  <div class="bg-white rounded-lg shadow mt-6">
-    <div class="px-6 py-4 border-b flex justify-between items-center">
-      <h3 class="text-lg font-semibold flex items-center gap-2">
-        <i class="fas fa-history text-gray-600"></i>
-        Historial de Mensajes
-      </h3>
-      <button 
-        onclick="clearMessageHistory()"
-        class="text-sm text-red-600 hover:text-red-700"
-      >
-        <i class="fas fa-trash"></i> Limpiar
-      </button>
-    </div>
-    
-    <div id="messageHistory" class="p-6 space-y-3 max-h-96 overflow-y-auto">
-      <div class="text-center text-gray-500 py-8">
-        <i class="fas fa-inbox text-4xl mb-3"></i>
-        <p>No hay mensajes enviados aún</p>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div><p class="text-sm text-gray-600">Conversaciones Activas</p><p class="text-2xl font-bold text-gray-900" id="activeConversations">0</p></div>
+            <div class="bg-blue-100 rounded-full p-3"><i class="fas fa-comments text-blue-600 text-xl"></i></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div><p class="text-sm text-gray-600">Mensajes Hoy</p><p class="text-2xl font-bold text-gray-900" id="messagesToday">0</p></div>
+            <div class="bg-green-100 rounded-full p-3"><i class="fas fa-envelope text-green-600 text-xl"></i></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div><p class="text-sm text-gray-600">Bloqueados</p><p class="text-2xl font-bold text-gray-900" id="blockedMessages">0</p></div>
+            <div class="bg-red-100 rounded-full p-3"><i class="fas fa-ban text-red-600 text-xl"></i></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between">
+            <div><p class="text-sm text-gray-600">Usuarios Online</p><p class="text-2xl font-bold text-gray-900" id="onlineUsers">0</p></div>
+            <div class="bg-purple-100 rounded-full p-3"><i class="fas fa-users text-purple-600 text-xl"></i></div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Documentación Rápida -->
-  <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
-    <h3 class="text-lg font-semibold text-blue-900 mb-3 flex items-center gap-2">
-      <i class="fas fa-book"></i>
-      Guía Rápida
-    </h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
-      <div>
-        <h4 class="font-semibold mb-2">📱 Configuración:</h4>
-        <ul class="space-y-1 list-disc list-inside">
-          <li>Obtén el Phone Number ID desde Meta Business</li>
-          <li>Genera un Access Token en Meta Developers</li>
-          <li>Configura el Verify Token en tu webhook</li>
-        </ul>
-      </div>
-      <div>
-        <h4 class="font-semibold mb-2">✉️ Envío de Mensajes:</h4>
-        <ul class="space-y-1 list-disc list-inside">
-          <li>El número debe estar en formato internacional</li>
-          <li>Usa el formato: +[código país][número]</li>
-          <li>Ejemplo: +56912345678</li>
-        </ul>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2">
+          <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <div class="flex flex-col space-y-3">
+                <div class="flex items-center justify-between">
+                  <h2 class="text-lg font-semibold text-gray-900"><i class="fas fa-stream text-blue-600"></i> Mensajes en Vivo</h2>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <select id="companyFilter" onchange="handleCompanyChange()" class="text-sm border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="">Seleccionar empresa</option>
+                  </select>
+                  <select id="userFilter" onchange="handleUserFilterChange()" class="text-sm border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="">Todos los usuarios</option>
+                  </select>
+                  <button onclick="reloadMessageHistory()" class="text-sm px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center space-x-1">
+                    <i class="fas fa-sync-alt"></i><span>Refrescar</span>
+                  </button>
+                  <button onclick="clearMessagesAndReload()" class="text-sm px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center space-x-1">
+                    <i class="fas fa-trash"></i><span>Limpiar</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div id="messagesContainer" class="h-[600px] overflow-y-auto p-4 space-y-3">
+              <div class="text-center text-gray-500 py-20">
+                <i class="fas fa-inbox text-4xl mb-4"></i><p>Cargando mensajes...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-900"><i class="fas fa-terminal text-gray-600"></i> Logs del Sistema</h2>
+            </div>
+            <div id="logsContainer" class="h-64 overflow-y-auto p-4 bg-gray-900 text-gray-100 font-mono text-xs">
+              <div class="text-green-400">[INFO] Monitor iniciado</div>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-900"><i class="fas fa-user-slash text-red-600"></i> Usuarios Bloqueados</h2>
+            </div>
+            <div id="blockedUsersContainer" class="max-h-64 overflow-y-auto p-4">
+              <p class="text-sm text-gray-500 text-center py-4">Sin usuarios bloqueados</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-900"><i class="fas fa-plug text-green-600"></i> Conexiones Activas</h2>
+            </div>
+            <div id="connectionsContainer" class="max-h-48 overflow-y-auto p-4">
+              <p class="text-sm text-gray-500 text-center py-4">Cargando...</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="mt-4 p-3 bg-white rounded border border-blue-300">
-      <p class="text-sm text-blue-900">
-        <i class="fas fa-info-circle"></i>
-        <strong>Nota:</strong> Los mensajes se envían directamente a WhatsApp Business API. 
-        Asegúrate de que el número de destino esté registrado en tu cuenta de WhatsApp Business.
-      </p>
-    </div>
-  </div>
-</div>
+
+    <audio id="notificationSound" preload="auto">
+      <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuHzfDTgjMGHWm98OScTgwOVKzn77BgGgU7ldv0ynMpBSh+yPDckT8KE2K56+mmUxQKRKfi8r1xIQUohszw1IU0Bh1qvfDinE4ODlWr6O+wYBoFO5Xb9MpzKQUofsjw3JI/ChNiuevpplMUCkSn4vK9cSEFKIXM8dSFNAYdabzw45xODg5VrOjwsGAaBTuV2/XKcykFKH3J8N+SPwoPYrjp66ZTFApEpu/tw3EhBSiDzPHVgzQGHWm78OScTwwPVKvo8K9gGgU7ldr1y3IoByh9yO/gkT8JDmG56eqnUxMJQ6fs8MNxIQQohM3x1oI0Bx1pu+/knE4ODlSs6fCvYRoEPJXa9cxzKAcocsjv4JI+CQ5huerrp1ITCUM=" type="audio/wav">
+    </audio>
+  </div><!-- /msg-panel-monitor -->
+
+</div><!-- /mensajesRoot -->
+
+<style>
+.msg-tab {
+  display: flex; align-items: center; gap: 7px;
+  padding: 12px 16px; font-size: 13px; font-weight: 600;
+  color: #9ba3c0; border: none; background: transparent;
+  cursor: pointer; border-bottom: 2px solid transparent;
+  margin-bottom: -1px; transition: color .15s, border-color .15s;
+  font-family: inherit; white-space: nowrap;
+}
+.msg-tab:hover { color: #7D84C1; }
+.msg-tab.active { color: #8e84fa; border-bottom-color: #8e84fa; }
+.msg-tab i { font-size: 12px; }
+.msg-panel { display: none; flex: 1; overflow-y: auto; padding: 20px 24px; }
+.msg-panel.active { display: block; }
+</style>

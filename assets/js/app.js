@@ -1,6 +1,11 @@
 // ============================================
 // APP BASE – HEAVENSY ADMIN
 // ============================================
+// ── BITÁCORA ──
+// 2026-06-03 | Logout también desconecta el socket del monitor si existe
+//              (la logout() duplicada de monitor.js fue eliminada: pisaba esta).
+// 2026-06-03 | Fix logout: redirección inmediata (sin ventana de 300ms) y flag
+//              _loggingOut para que un refresh en vuelo no reviva la sesión.
 
 const API_BASE_URL = 'https://heavensy-api-backend-v2.onrender.com';
 
@@ -114,7 +119,11 @@ loadCompanyConfig();
 // a la vez, solo se hace UN refresh y las demás esperan su resultado.
 let _refreshPromise = null;
 
+// true mientras se cierra sesión: bloquea que un refresh en vuelo la reviva
+let _loggingOut = false;
+
 async function _tryRefreshToken() {
+  if (_loggingOut) return false;
   // Si ya hay un refresh en curso, reutilizar esa promesa (evita refrescos múltiples)
   if (_refreshPromise) return _refreshPromise;
 
@@ -141,6 +150,7 @@ async function _tryRefreshToken() {
       if (!res.ok) return false;
       const data = await res.json();
       if (data && data.access_token) {
+        if (_loggingOut) return false; // no revivir la sesión durante el logout
         localStorage.setItem('token', data.access_token);
         return true;
       }
@@ -318,9 +328,12 @@ function showAlert(msg, type = 'info') { alert(msg); }
 // ============================================
 
 function logout() {
+  _loggingOut = true;
+  // Desconectar sockets si existen (ej: monitor), sin reventar si no están
+  try { if (typeof socket !== 'undefined' && socket && socket.disconnect) socket.disconnect(); } catch {}
   window._companyConfig = null;
   localStorage.clear();
   sessionStorage.clear();
-  showToast('Sesión cerrada', 'info');
-  setTimeout(() => window.location.replace('pages/portada.html'), 300);
+  // Redirección INMEDIATA: sin ventana de tiempo para que un apiCall interfiera
+  window.location.replace('pages/portada.html');
 }

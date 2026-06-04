@@ -52,9 +52,110 @@ async function initCompaniesPage() {
   }
 
   _cpUpdateViewBtn();
+  await cpHidratarPlanes();
   await fetchCompanies();
   window.addEventListener('hashchange', _cpRestoreMode, { once: true });
 }
+
+// Carga los planes desde la BD, actualiza PLANES_LISTA y puebla el
+// dropdown estilo Heavensy del wizard (w-plan-drop).
+async function cpHidratarPlanes() {
+  try {
+    const res = await apiCall('/api/system-roles/plans');
+    // apiCall envuelve el JSON del backend en .data → el dato está en res.data.data.plans
+    const plans = res?.data?.data?.plans;
+    if (Array.isArray(plans) && plans.length) {
+      PLANES_LISTA = plans.map(p => ({ id: p.plan_id, label: p.label }));
+    } else {
+      console.error('No se pudieron cargar los planes desde la BD');
+    }
+  } catch (e) {
+    console.error('Error cargando planes desde la BD:', e);
+  }
+
+  // Poblar el dropdown con PLANES_LISTA (de BD o el valor inicial)
+  const drop = document.getElementById('w-plan-drop');
+  if (drop) {
+    drop.innerHTML = PLANES_LISTA.map(p =>
+      `<div class="exc-custom-option" data-value="${p.id}" onclick="cpPlanSelect('${p.id}')">${p.label}</div>`
+    ).join('');
+  }
+}
+
+// ── Dropdown de plan estilo Heavensy (autocontenido en este módulo) ──
+
+function cpPlanToggleDrop(ev) {
+  if (ev) ev.stopPropagation();
+  const drop    = document.getElementById('w-plan-drop');
+  const trigger = document.getElementById('w-plan-trigger');
+  if (!drop || !trigger) return;
+  const isOpen = drop.classList.contains('open');
+  cpPlanCloseDrop();
+  if (!isOpen) {
+    const rect = trigger.getBoundingClientRect();
+    drop.style.left  = rect.left + 'px';
+    drop.style.top   = (rect.bottom + 4) + 'px';
+    drop.style.width = rect.width + 'px';
+    drop.classList.add('open');
+    trigger.classList.add('open');
+    const reposition = () => {
+      if (!drop.classList.contains('open')) {
+        window.removeEventListener('scroll', reposition, true);
+        window.removeEventListener('resize', reposition);
+        return;
+      }
+      const r = trigger.getBoundingClientRect();
+      drop.style.left  = r.left + 'px';
+      drop.style.top   = (r.bottom + 4) + 'px';
+      drop.style.width = r.width + 'px';
+    };
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition);
+  }
+}
+
+function cpPlanCloseDrop() {
+  const drop    = document.getElementById('w-plan-drop');
+  const trigger = document.getElementById('w-plan-trigger');
+  if (drop)    drop.classList.remove('open');
+  if (trigger) trigger.classList.remove('open');
+}
+
+// Selecciona un plan: actualiza el hidden (compatible con get/set), el label y el activo
+function cpPlanSelect(planId) {
+  cpPlanSetValue(planId);
+  cpPlanCloseDrop();
+}
+
+// Setea el valor del plan (usado también al cargar una empresa para editar)
+function cpPlanSetValue(planId) {
+  const hidden = document.getElementById('w-plan_id');
+  const label  = document.getElementById('w-plan-label');
+  const drop   = document.getElementById('w-plan-drop');
+  const plan   = PLANES_LISTA.find(p => p.id === planId);
+
+  if (hidden) hidden.value = plan ? plan.id : '';
+  if (label) {
+    if (plan) {
+      label.textContent = plan.label;
+      label.style.color = '#383838';
+    } else {
+      label.textContent = 'Seleccionar plan';
+      label.style.color = '#9BA3C0';
+    }
+  }
+  if (drop) {
+    drop.querySelectorAll('.exc-custom-option').forEach(o =>
+      o.classList.toggle('active', !!(plan && o.dataset.value === plan.id))
+    );
+  }
+}
+
+// Cerrar el dropdown al hacer click fuera
+document.addEventListener('click', (e) => {
+  const wrap = e.target.closest && e.target.closest('.exc-custom-select-wrap');
+  if (!wrap) cpPlanCloseDrop();
+});
 
 function cpViewAsCompany(companyId) {
   _cpViewMode = 'usuario';
@@ -135,7 +236,15 @@ function cpSwitchTab(tab, btn) {
         window.rolCurrentUser = { id: p.user_id || p.sub, company_id: p.company_id, role: p.role };
       }
     } catch(e) {}
-    if (typeof rolCargarRoles === 'function') rolCargarRoles();
+    if (typeof rolCargarPlanConfig === 'function') {
+      // Hidratar módulos/planes desde la BD ANTES de cargar config y roles.
+      const _hidratar = (typeof rolHidratarModelo === 'function')
+        ? rolHidratarModelo()
+        : Promise.resolve();
+      _hidratar.then(() => rolCargarPlanConfig()).then(() => {
+        if (typeof rolCargarRoles === 'function') rolCargarRoles();
+      });
+    }
   }
   if (tab === 'catastro') {
     if (typeof rolRenderCatalogo === 'function') rolRenderCatalogo();
@@ -229,7 +338,9 @@ function renderCompanies() {
   });
 }
 
-const PLANES_LISTA = [
+// Valor inicial; se reemplaza con los planes de la BD (GET /api/system-roles/plans)
+// en cpHidratarPlanes(), llamada desde initCompaniesPage().
+let PLANES_LISTA = [
   { id: 'gratis',          label: 'Gratis'              },
   { id: 'automate',        label: 'Automate Pro'        },
   { id: 'secretaria',      label: 'Secretar IA Premium' },
@@ -372,6 +483,14 @@ async function openWizard(companyId = null) {
   _selectedRubro    = 'salud';
   _rubroConfig      = null;
 
+  // Asegurar que el dropdown de plan tenga opciones (por si el init no las pobló)
+  const planDrop = document.getElementById('w-plan-drop');
+  if (planDrop && planDrop.children.length === 0) {
+    await cpHidratarPlanes();
+  }
+  // Resetear selección de plan (en edición, loadCompanyIntoWizard la setea después)
+  cpPlanSetValue('');
+
   // Limpiar formulario
   clearWizardForm();
 
@@ -435,7 +554,7 @@ async function loadCompanyIntoWizard(companyId) {
   set('w-contact_phone',    company.contact_phone);
   set('w-address',          company.address);
   set('w-website',          company.website);
-  set('w-plan_id',          company.plan_id);
+  cpPlanSetValue(company.plan_id);
   setChk('w-active',        company.active !== false);
 
   // Paso 2: Rubro

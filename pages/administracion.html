@@ -1,0 +1,156 @@
+<!-- ADMINISTRACIÓN — Panel Enterprise -->
+<!-- Panel exclusivo para Administradores con plan Enterprise -->
+
+<div id="admRoot" class="adm-root">
+
+  <!-- ══════════════════════════════════════════
+       HEADER STATS — 4 contadores globales
+  ══════════════════════════════════════════ -->
+  <div class="adm-header-stats">
+    <div class="adm-stat-card">
+      <div class="adm-stat-icon" style="background:#e8f5e9;">
+        <i class="fas fa-circle" style="color:#10b981;font-size:10px;"></i>
+      </div>
+      <div class="adm-stat-body">
+        <span class="adm-stat-label">Online ahora</span>
+        <span class="adm-stat-value" id="adm-stat-online">0</span>
+      </div>
+    </div>
+    <div class="adm-stat-card">
+      <div class="adm-stat-icon" style="background:#ede9fe;">
+        <i class="fas fa-comments" style="color:#9961FF;"></i>
+      </div>
+      <div class="adm-stat-body">
+        <span class="adm-stat-label">Conversaciones activas</span>
+        <span class="adm-stat-value" id="adm-stat-conv">0</span>
+      </div>
+    </div>
+    <div class="adm-stat-card">
+      <div class="adm-stat-icon" style="background:#fef3c7;">
+        <i class="fas fa-list-check" style="color:#f59e0b;"></i>
+      </div>
+      <div class="adm-stat-body">
+        <span class="adm-stat-label">Tareas pendientes</span>
+        <span class="adm-stat-value" id="adm-stat-tareas">0</span>
+      </div>
+    </div>
+    <div class="adm-stat-card">
+      <div class="adm-stat-icon" style="background:#fee2e2;">
+        <i class="fas fa-clock" style="color:#ef4444;"></i>
+      </div>
+      <div class="adm-stat-body">
+        <span class="adm-stat-label">Seguimientos vencidos</span>
+        <span class="adm-stat-value" id="adm-stat-vencidos">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       CUERPO PRINCIPAL: grid miembros + panel lateral
+  ══════════════════════════════════════════ -->
+  <div class="adm-body">
+
+    <!-- ── Columna izquierda: tarjetas de equipo ── -->
+    <div class="adm-team-col">
+      <div class="adm-col-header">
+        <h2 class="adm-col-title">
+          <i class="fas fa-users" style="color:#9961FF;"></i>
+          Equipo
+        </h2>
+        <button class="adm-btn-refresh" onclick="adm_cargarEquipo()" title="Actualizar">
+          <i class="fas fa-rotate-right"></i>
+        </button>
+      </div>
+
+      <!-- Grid de tarjetas — llenado por JS -->
+      <div class="adm-team-grid" id="adm-team-grid">
+        <div class="adm-empty-state">
+          <i class="fas fa-spinner fa-spin"></i>
+          <span>Cargando equipo…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Panel lateral derecho ── -->
+    <div class="adm-side-panel">
+
+      <!-- Sección 1: Seguimientos vencidos -->
+      <div class="adm-side-section">
+        <div class="adm-side-section-header">
+          <i class="fas fa-clock" style="color:#ef4444;"></i>
+          <span>Seguimientos vencidos</span>
+          <span class="adm-badge-count" id="adm-badge-vencidos">0</span>
+        </div>
+        <div class="adm-side-list" id="adm-list-vencidos">
+          <div class="adm-side-empty">Sin seguimientos vencidos</div>
+        </div>
+      </div>
+
+      <!-- Sección 2: Clientes prioritarios -->
+      <div class="adm-side-section">
+        <div class="adm-side-section-header">
+          <i class="fas fa-star" style="color:#f59e0b;"></i>
+          <span>Clientes prioritarios</span>
+          <span class="adm-badge-count" id="adm-badge-prioritarios">0</span>
+        </div>
+        <div class="adm-side-list" id="adm-list-prioritarios">
+          <div class="adm-side-empty">Sin clientes prioritarios</div>
+        </div>
+      </div>
+
+      <!-- Sección 3: Cola de tareas sin asignar -->
+      <div class="adm-side-section">
+        <div class="adm-side-section-header">
+          <i class="fas fa-inbox" style="color:#5a79d4;"></i>
+          <span>Cola sin asignar</span>
+          <span class="adm-badge-count" id="adm-badge-sinasignar">0</span>
+        </div>
+        <div class="adm-side-list" id="adm-list-sinasignar">
+          <div class="adm-side-empty">No hay tareas sin asignar</div>
+        </div>
+      </div>
+
+    </div><!-- /adm-side-panel -->
+  </div><!-- /adm-body -->
+
+</div><!-- /admRoot -->
+
+<!-- ══════════════════════════════════════════
+     MODAL: Asignar tarea
+══════════════════════════════════════════ -->
+<div class="adm-modal-overlay" id="adm-modal-tarea" style="display:none;" onclick="adm_cerrarModal(event)">
+  <div class="adm-modal">
+    <div class="adm-modal-header">
+      <h3><i class="fas fa-plus-circle" style="color:#9961FF;"></i> Asignar tarea</h3>
+      <button class="adm-modal-close" onclick="adm_cerrarModalDirecto()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="adm-modal-body">
+      <div class="adm-form-group">
+        <label class="adm-label">Asignar a</label>
+        <select class="adm-select" id="adm-tarea-asignado">
+          <option value="">Seleccionar integrante…</option>
+        </select>
+      </div>
+      <div class="adm-form-group">
+        <label class="adm-label">Título de la tarea</label>
+        <input type="text" class="adm-input" id="adm-tarea-titulo" placeholder="Ej: Llamar a paciente para seguimiento">
+      </div>
+      <div class="adm-form-group">
+        <label class="adm-label">Descripción</label>
+        <textarea class="adm-textarea" id="adm-tarea-descripcion" rows="3" placeholder="Descripción detallada de la tarea…"></textarea>
+      </div>
+      <div class="adm-form-group">
+        <label class="adm-label">Fecha límite</label>
+        <input type="datetime-local" class="adm-input" id="adm-tarea-fecha">
+      </div>
+    </div>
+    <div class="adm-modal-footer">
+      <button class="adm-btn-secondary" onclick="adm_cerrarModalDirecto()">Cancelar</button>
+      <button class="adm-btn-primary" onclick="adm_guardarTarea()">
+        <i class="fas fa-check"></i> Asignar tarea
+      </button>
+    </div>
+  </div>
+</div>

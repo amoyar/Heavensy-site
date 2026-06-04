@@ -1,3 +1,7 @@
+/* ── BITÁCORA ──
+   2026-06-03 | Labels PLAN/ROL en panel SA; chevron como botón circular clickeable;
+                card contenedora violeta colapsable para Roles de Empresa.
+                Selectores .open precisados a hijo directo (cards anidadas). */
 /* ═══════════════════════════════════════════
    HEAVENSY — ROLES Y PERMISOS
    assets/css/roles.css
@@ -219,7 +223,7 @@
   transition: transform .2s, background .12s;
   flex-shrink: 0;
 }
-.rol-acord-card.open .rol-acord-chevron {
+.rol-acord-card.open > .rol-acord-header .rol-acord-chevron {
   transform: rotate(180deg);
   background: rgba(142,132,250,.1);
   color: var(--rol-purple);
@@ -231,7 +235,7 @@
   padding: 0 18px 18px;
   border-top: 1px solid var(--rol-border);
 }
-.rol-acord-card.open .rol-acord-body { display: block; }
+.rol-acord-card.open > .rol-acord-body { display: block; }
 
 .rol-acord-body-inner {
   padding-top: 16px;
@@ -304,6 +308,219 @@
   font-size: 13px;
   font-weight: 700;
   color: var(--rol-text);
+  flex: 1;
+}
+
+
+/* Cards de roles en panel global */
+.rol-sa-global-panel .rol-role-tabs-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: none;
+  overflow: visible;
+}
+.rol-sa-global-panel .rol-role-tabs-scroll {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+  overflow: visible;
+}
+.rol-sa-global-panel .rol-role-tab-wrap {
+  flex: 1;
+  min-width: 100px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1.5px solid #e5e7eb !important;
+  margin-bottom: 0;
+  transition: all .15s;
+}
+.rol-sa-global-panel .rol-role-tab-wrap:hover {
+  border-color: var(--role-color) !important;
+}
+.rol-sa-global-panel .rol-role-tab-wrap.active {
+  border-color: var(--role-color) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  border-bottom: 1.5px solid var(--role-color) !important;
+}
+.rol-sa-global-panel .rol-role-tab {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  border-bottom: none !important;
+}
+.rol-sa-global-panel .rol-role-tab.active {
+  color: var(--role-color);
+  border-bottom: none !important;
+  background: transparent;
+}
+
+/* Panel global SA */
+.rol-sa-global-panel {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+  border-bottom: 1px solid var(--rol-border);
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.rol-sa-global-panel .rol-plan-tabs-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: none;
+  border-bottom: 0.5px solid var(--rol-border);
+  overflow: visible;
+}
+.rol-sa-global-panel .rol-plan-tab {
+  flex: 1;
+  min-width: 100px;
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all .15s;
+  border-bottom: 1.5px solid #e5e7eb;
+}
+.rol-sa-global-panel .rol-plan-tab:hover {
+  border-color: var(--plan-color);
+  color: var(--plan-color);
+}
+.rol-sa-global-panel .rol-plan-tab.active {
+  background: #fff;
+  border-color: var(--plan-color);
+  color: var(--plan-color);
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+/* Toggle de sección en header del módulo */
+.rol-seccion-toggle {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.rol-seccion-toggle input { display: none; }
+.rol-seccion-toggle .rol-role-tab-slider { width: 30px; height: 16px; }
+.rol-seccion-toggle .rol-role-tab-slider::after { width: 12px; height: 12px; }
+.rol-seccion-toggle input:checked + .rol-role-tab-slider { background: var(--sec-color, #9961FF); }
+.rol-seccion-toggle input:checked + .rol-role-tab-slider::after { transform: translateX(14px); }
+
+/* Sección desactivada — todo en gris */
+.rol-modulo.rol-seccion-off .rol-plan-tabs-bar,
+.rol-modulo.rol-seccion-off .rol-role-tabs-bar,
+.rol-modulo.rol-seccion-off .rol-plan-panel { opacity: 0.35; pointer-events: none; }
+
+.rol-seccion-activa-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f0ebff;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.rol-seccion-activa-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7c3aed;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Tab de rol con toggle integrado */
+.rol-role-tab-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 8px;
+  border-right: 0.5px solid var(--rol-border);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.rol-role-tab-wrap:last-child { border-right: none; }
+
+.rol-role-tab-toggle {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.rol-role-tab-toggle input { display: none; }
+.rol-role-tab-slider {
+  width: 24px;
+  height: 13px;
+  background: #d1d5db;
+  border-radius: 10px;
+  position: relative;
+  transition: background .15s;
+  display: block;
+}
+.rol-role-tab-slider::after {
+  content: '';
+  position: absolute;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #fff;
+  top: 2px; left: 2px;
+  transition: transform .15s;
+}
+.rol-role-tab-toggle input:checked + .rol-role-tab-slider { background: #9961FF; }
+.rol-role-tab-toggle input:checked + .rol-role-tab-slider::after { transform: translateX(11px); }
+
+.rol-modulo-toggle-all--header {
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 1px solid #c4b5fd !important;
+  background: #f5f0ff !important;
+  padding: 4px 12px !important;
+  border-radius: 20px !important;
+  font-size: 11px !important;
+  color: #7c3aed !important;
+  transition: all .12s;
+}
+.rol-modulo-toggle-all--header:hover {
+  background: #ede9fe !important;
+  text-decoration: none !important;
+}
+
+.rol-role-activo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 8px;
+  border-bottom: 1px solid #e0e7ff;
+  margin-bottom: 8px;
+  width: 100%;
+}
+.rol-role-activo-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
   flex: 1;
 }
 
@@ -784,12 +1001,18 @@
 /* Tabs de roles dentro del plan */
 .rol-role-tabs-bar {
   display: flex;
+  align-items: center;
   background: #f0f2f8;
   border-bottom: 0.5px solid var(--rol-border);
+  overflow: visible;
+}
+.rol-role-tabs-scroll {
+  display: flex;
+  flex: 1;
   overflow-x: auto;
   scrollbar-width: none;
 }
-.rol-role-tabs-bar::-webkit-scrollbar { display: none; }
+.rol-role-tabs-scroll::-webkit-scrollbar { display: none; }
 
 .rol-role-tab {
   padding: 7px 16px;
@@ -808,7 +1031,14 @@
 .rol-role-tab:hover { color: var(--role-color, #8e84fa); }
 .rol-role-tab.active {
   color: var(--role-color, #8e84fa);
-  border-bottom-color: var(--role-color, #8e84fa);
+  background: #fff;
+  border-bottom-color: transparent;
+}
+.rol-role-tab-wrap.active {
+  border-bottom: 2px solid var(--role-color, #8e84fa);
+  background: #fff;
+}
+.rol-role-tab-wrap.active .rol-role-tab {
   background: #fff;
 }
 
@@ -949,8 +1179,8 @@
   font-weight: 500;
 }
 .rol-limit-input {
-  width: 64px;
-  padding: 4px 8px;
+  width: 44px;
+  padding: 3px 4px;
   border: 1px solid #e0e7ff;
   border-radius: 7px;
   font-size: 12px;
@@ -962,6 +1192,14 @@
   font-family: inherit;
 }
 .rol-limit-input:focus { border-color: #9961FF; background: #fff; }
+.rol-limit-input--wide { width: 72px; }
+.rol-num-wrap { display: flex; align-items: center; gap: 3px; }
+.rol-num-inf-btn {
+  background: none; border: 1px solid #e0e7ff; border-radius: 6px;
+  color: #9961FF; font-size: 13px; font-weight: 700; cursor: pointer;
+  padding: 2px 6px; line-height: 1; transition: all .12s;
+}
+.rol-num-inf-btn:hover { background: #f0ebff; border-color: #9961FF; }
 
 .rol-strip-limit-row {
   display: flex;
@@ -979,3 +1217,47 @@
   border-radius: 6px;
   padding: 2px 10px;
 }
+
+
+/* ── Labels de filas del panel SA (PLAN / ROL) ── */
+.rol-sa-row-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #9961FF;
+  margin: 14px 0 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.rol-sa-row-label:first-child { margin-top: 0; }
+
+/* ── Chevron como botón circular (SA y Roles de Empresa) ── */
+.rol-acord-chev-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.rol-acord-chev-btn:hover { background: rgba(255,255,255,0.32); }
+.rol-acord-chev-btn i { transition: transform .2s; font-size: 13px; }
+.rol-acord-card.open > .rol-acord-header .rol-acord-chev-btn i { transform: rotate(180deg); }
+
+/* ── Card contenedora: Roles de Empresa (mismo header violeta del SA) ── */
+#rol-acord-EMPRESA_ROLES > .rol-acord-header {
+  background: linear-gradient(135deg, #9961FF 0%, #5b8dee 100%);
+  border-radius: 10px 10px 0 0;
+}
+#rol-acord-EMPRESA_ROLES:not(.open) > .rol-acord-header { border-radius: 10px; }
+#rol-acord-EMPRESA_ROLES > .rol-acord-body { background: var(--rol-bg); }
+#rol-acord-EMPRESA_ROLES .rol-acord-body-inner > .rol-acord-card { margin-bottom: 12px; }
+#rol-acord-EMPRESA_ROLES .rol-acord-body-inner > .rol-acord-card:last-child { margin-bottom: 0; }

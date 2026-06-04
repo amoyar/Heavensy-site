@@ -2,6 +2,11 @@
 // MONITOR EN TIEMPO REAL - JAVASCRIPT
 // Integrado con socket_rooms existente
 // ============================================
+// ── BITÁCORA ──
+// 2026-06-03 | Eliminada logout() local: pisaba la logout() global de app.js
+//              (solo borraba 'token' y dejaba el refresh_token vivo, por lo que
+//              la sesión revivía al llegar a login.html). La desconexión del
+//              socket ahora la hace la logout global.
 
 let socket = null;
 let soundEnabled = true;
@@ -1062,15 +1067,6 @@ async function unblockUser(userId) {
 function showAlert(message) {
     // Podrías usar SweetAlert2 o un toast personalizado
     alert(message);
-}
-
-function logout() {
-    if (socket) {
-        addLog('INFO', 'Desconectando...');
-        socket.disconnect();
-    }
-    localStorage.removeItem('token');
-    window.location.href = 'login.html';
 }
 
 // ============================================

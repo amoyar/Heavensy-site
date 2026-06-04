@@ -191,12 +191,14 @@
           <div class="form-grid-2">
             <div class="form-group">
               <label>Plan de suscripción *</label>
-              <select id="w-plan_id">
-                <option value="">Seleccionar plan</option>
-                <option value="basic">Basic</option>
-                <option value="pro">Pro</option>
-                <option value="enterprise">Enterprise</option>
-              </select>
+              <input type="hidden" id="w-plan_id">
+              <div class="exc-custom-select-wrap">
+                <div class="exc-custom-select-trigger" id="w-plan-trigger" onclick="cpPlanToggleDrop(event)">
+                  <span id="w-plan-label" style="color:#9BA3C0">Seleccionar plan</span>
+                  <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M0 0l5 6 5-6z" fill="#9BA3C0"></path></svg>
+                </div>
+                <div class="exc-custom-dropdown" id="w-plan-drop"></div>
+              </div>
             </div>
             <div class="form-group form-check">
               <label class="check-label">
@@ -691,4 +693,3 @@
     </div>
   </div>
 </div>
-
