@@ -39,7 +39,14 @@
       </div>
 
       <!-- STATS -->
-      <div class="stats hvy-only" id="st-plans-bar">
+      <!-- BITÁCORA 2026-06-04: regla hvy-only/btn-icon-hvy fuera del sidebar (ojo,
+     Catastro y demás elementos exclusivos Heavensy se ocultan en vista empresa) -->
+<style>
+  body:not(.heavensy-mode) .hvy-only,
+  body:not(.heavensy-mode) .btn-icon-hvy { display: none !important; }
+</style>
+<!-- BITÁCORA 2026-06-04: stats visibles para todos (muestran las empresas del usuario) -->
+      <div class="stats" id="st-plans-bar">
         <div class="stat">
           <div class="stat-label">Total empresas</div>
           <div class="stat-val" id="st-total">0</div>

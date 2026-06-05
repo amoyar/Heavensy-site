@@ -3,6 +3,20 @@
 // Heavensy Admin
 // ============================================
 // ── BITÁCORA ──
+// 2026-06-04 | Fix raíz vista empresa: initCompaniesPage forzaba heavensy-mode
+//              incondicionalmente (línea heredada); ahora condicionado a
+//              IS_HEAVENSY. Era la causa de que los admins vieran filtros,
+//              ojo y Catastro pese a la regla hvy-only.
+// 2026-06-04 | Regla hvy-only global inyectada por JS en initCompaniesPage
+//              (el <style> del fragmento HTML no llegaba vía el router).
+// 2026-06-04 | Vista empresa: título "Empresa · nombre" (o "Mis empresas" si
+//              administra varias); el ojo y Catastro quedan ocultos por la
+//              regla hvy-only agregada en companies.html.
+// 2026-06-04 | Filtros (empresas y usuarios) convertidos a dropdowns Heavensy
+//              vía hvySelectifyAll (assets/js/hvy-select.js).
+// 2026-06-04 | Módulo Empresas multi-empresa por membresía: cada admin ve y
+//              administra TODAS sus empresas (el backend filtra por membresía).
+//              Stats y acciones (editar/eliminar) operan sobre las propias.
 // 2026-06-04 | La cadena de montaje del panel Roles también carga el plan de la
 //              empresa (rolCargarMiPlan) para la franja y candados upsell.
 // 2026-06-03 | Selector de plan del wizard como dropdown estilo Heavensy
@@ -46,10 +60,33 @@ let _cpRolesInited  = false;
 let _cpViewMode     = 'heavensy'; // 'heavensy' | 'usuario'
 
 async function initCompaniesPage() {
+  // Regla global del modo Heavensy: oculta hvy-only / btn-icon-hvy fuera del
+  // sidebar (ojo, Catastro, barra de filtros) cuando NO se está en vista Heavensy.
+  // Inyectada por JS para no depender de que el router preserve <style> del HTML.
+  if (!document.getElementById('hvy-mode-rules')) {
+    const st = document.createElement('style');
+    st.id = 'hvy-mode-rules';
+    st.textContent = 'body:not(.heavensy-mode) .hvy-only,' +
+                     'body:not(.heavensy-mode) .btn-icon-hvy{display:none !important;}';
+    document.head.appendChild(st);
+  }
+
+  // Filtros como dropdowns estilo Heavensy (el select oculto sigue siendo la fuente)
+  if (typeof hvySelectifyAll === 'function') {
+    hvySelectifyAll(['f-plan', 'f-status', 'f-template', 'u-f-role', 'u-f-status']);
+  }
+
   _cpUsersInited = false;
   _cpRolesInited  = false;
-  _cpViewMode = 'heavensy';
-  document.body.classList.add('heavensy-mode');
+  // El modo Heavensy SOLO para el equipo Heavensy. Antes se forzaba
+  // incondicionalmente (herencia de cuando el módulo era solo de Heavensy)
+  // y dejaba a los admins de empresa viendo el panel completo.
+  _cpViewMode = window.IS_HEAVENSY ? 'heavensy' : 'usuario';
+  if (window.IS_HEAVENSY) {
+    document.body.classList.add('heavensy-mode');
+  } else {
+    document.body.classList.remove('heavensy-mode');
+  }
 
   if (window.IS_HEAVENSY) {
     const titleEl = document.querySelector('.companies-title');
@@ -287,6 +324,16 @@ async function fetchCompanies() {
   _companiesFiltered = [..._companies];
   renderCompanies();
   updateStats();
+
+  // Vista empresa: título personalizado (igual que "ver como empresa")
+  if (!window.IS_HEAVENSY) {
+    const titleEl = document.querySelector('.companies-title');
+    if (titleEl) {
+      titleEl.textContent = _companies.length === 1
+        ? 'Empresa · ' + (_companies[0].name || _companies[0].company_id)
+        : 'Mis empresas';
+    }
+  }
 }
 
 function renderCompanies() {

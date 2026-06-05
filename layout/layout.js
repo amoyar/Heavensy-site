@@ -1,3 +1,8 @@
+// ── BITÁCORA ──
+// 2026-06-04 | _switchSidebarCompany re-ejecuta initHeavensyMode tras cambiar
+//              el token: los elementos hvy-only (Empresas, Mensajes) aparecen
+//              o desaparecen según la empresa activa, sin recargar.
+
 async function loadLayout() {
   console.log('🔵 Cargando layout...');
   try {
@@ -295,6 +300,9 @@ async function _switchSidebarCompany(companyId, companyName) {
 
     // Actualizar token y recargar
     localStorage.setItem('token', res.data.access_token);
+    // Recalcular modo Heavensy con la nueva empresa (muestra/oculta hvy-only)
+    if (typeof initHeavensyMode === 'function') initHeavensyMode();
+    if (typeof navUpdateEye === 'function') navUpdateEye();
     // Actualizar label
     const btnLabel = document.getElementById('sidebarCompanyBtnLabel');
     if (btnLabel) btnLabel.textContent = companyName;

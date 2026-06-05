@@ -2,6 +2,8 @@
 // APP BASE – HEAVENSY ADMIN
 // ============================================
 // ── BITÁCORA ──
+// 2026-06-04 | initHeavensyMode también REMUEVE el modo si la empresa del token
+//              ya no es Heavensy (necesario al cambiar de empresa sin recargar).
 // 2026-06-03 | Logout también desconecta el socket del monitor si existe
 //              (la logout() duplicada de monitor.js fue eliminada: pisaba esta).
 // 2026-06-03 | Fix logout: redirección inmediata (sin ventana de 300ms) y flag
@@ -40,10 +42,14 @@ function initHeavensyMode() {
     if (!token) return;
     const payload = JSON.parse(atob(token.split('.')[1]));
     window.IS_HEAVENSY = (payload.company_id === 'HEAVENSY_001');
+    const btn = document.getElementById('nav-view-toggle');
     if (window.IS_HEAVENSY) {
       document.body.classList.add('heavensy-mode');
-      const btn = document.getElementById('nav-view-toggle');
       if (btn) btn.style.display = 'inline-flex';
+    } else {
+      // Importante al cambiar de empresa sin recargar: salir del modo Heavensy
+      document.body.classList.remove('heavensy-mode');
+      if (btn) btn.style.display = 'none';
     }
   } catch {}
 }
