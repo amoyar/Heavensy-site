@@ -2,6 +2,13 @@
 // COMPANIES.JS — Módulo de Empresas
 // Heavensy Admin
 // ============================================
+// ── BITÁCORA ──
+// 2026-06-04 | La cadena de montaje del panel Roles también carga el plan de la
+//              empresa (rolCargarMiPlan) para la franja y candados upsell.
+// 2026-06-03 | Selector de plan del wizard como dropdown estilo Heavensy
+//              (cpPlan*), poblado desde la BD; PLANES_LISTA hidratada de BD;
+//              fix toggle 'active' con booleano forzado; encadena
+//              rolHidratarModelo al montar la pestaña Roles.
 
 console.log('✅ companies.js cargado');
 
@@ -241,7 +248,10 @@ function cpSwitchTab(tab, btn) {
       const _hidratar = (typeof rolHidratarModelo === 'function')
         ? rolHidratarModelo()
         : Promise.resolve();
-      _hidratar.then(() => rolCargarPlanConfig()).then(() => {
+      const _miPlan = (typeof rolCargarMiPlan === 'function')
+        ? rolCargarMiPlan()
+        : Promise.resolve();
+      Promise.all([_hidratar, _miPlan]).then(() => rolCargarPlanConfig()).then(() => {
         if (typeof rolCargarRoles === 'function') rolCargarRoles();
       });
     }

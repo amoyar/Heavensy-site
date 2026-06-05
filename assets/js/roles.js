@@ -2,6 +2,12 @@
 //  ROLES Y PERMISOS — HEAVENSY
 // ═══════════════════════════════════════════════
 // ── BITÁCORA ──
+// 2026-06-04 | Fix: rolCargarMiPlan autosuficiente (lee company_id del token si
+//              rolCurrentUser no está seteado; el panel se monta desde companies.js).
+// 2026-06-04 | Candado upsell (vista empresa): franja "Tu plan", tab del plan
+//              propio con badge y hints "Desde [plan]", tabs superiores con
+//              candado y banner upsell, badge "No incluido" si el rol no está
+//              en el plan. Init reordenado: plan+matriz cargan antes del render.
 // 2026-06-03 | UI: labels PLAN/ROL en el panel SA; chevron de colapso como
 //              botón circular clickeable; lista de Roles de Empresa envuelta
 //              en card contenedora con header violeta colapsable.
@@ -578,6 +584,7 @@ let rolSeleccionado = null; // selected role id
 let rolPendingPerms = {};   // unsaved permission changes
 let rolEditingId    = null; // rol being edited in modal
 let rolCurrentUser  = null;
+let rolMiPlanId     = null; // plan de la empresa actual (para candados upsell)
 
 // ── INIT ───────────────────────────────────────────────────────────────────────
 async function initRolesPage() {
@@ -592,7 +599,45 @@ async function initRolesPage() {
   // Hidratar catálogo de módulos y planes desde la BD (con fallback al hardcode)
   await rolHidratarModelo();
 
-  await Promise.all([rolCargarRoles(), rolCargarUsuarios(), rolCargarPlanConfig()]);
+  // Plan de la empresa y matriz primero: el render de roles depende de ambos
+  await Promise.all([rolCargarMiPlan(), rolCargarPlanConfig()]);
+  await Promise.all([rolCargarRoles(), rolCargarUsuarios()]);
+}
+
+// Carga el plan de la empresa actual (para la franja y los candados upsell)
+async function rolCargarMiPlan() {
+  try {
+    // Autosuficiente: si rolCurrentUser aún no está seteado (el panel se monta
+    // desde companies.js sin pasar por initRolesPage), leer el token directo.
+    let cid = rolCurrentUser?.company_id;
+    if (!cid) {
+      try {
+        const t = localStorage.getItem('token');
+        if (t) cid = JSON.parse(atob(t.split('.')[1])).company_id;
+      } catch {}
+    }
+    if (!cid) return;
+    const res  = await apiCall(`/api/companies/${cid}`);
+    const plan = res?.data?.company?.plan_id;
+    if (plan) {
+      rolMiPlanId = String(plan).trim().toLowerCase();
+    } else {
+      console.error('La empresa no tiene plan_id: candados de plan desactivados');
+    }
+  } catch (e) {
+    console.error('Error cargando el plan de la empresa:', e);
+  }
+}
+
+// ── Helpers de upsell ──
+function rolEsVistaEmpresa() { return !rolEsSuperAdmin(); }
+function rolPlanIndex(planId) { return ROL_PLANES.findIndex(p => p.id === planId); }
+// Primer plan (en orden comercial) que incluye la acción para el rol, o null
+function rolPlanMinimoPara(modId, roleId, accId) {
+  for (const p of ROL_PLANES) {
+    if (rolPlanConfig?.[modId]?.[p.id]?.[roleId]?.[accId] === true) return p;
+  }
+  return null;
 }
 
 // Carga módulos y planes desde la BD y reemplaza los arrays locales.
@@ -819,6 +864,17 @@ function rolRenderLista() {
     `;
   }
 
+  // Franja del plan (solo vista empresa)
+  if (rolEsVistaEmpresa() && rolMiPlanId) {
+    const _miPlan = ROL_PLANES.find(p => p.id === rolMiPlanId);
+    const _lbl    = _miPlan ? _miPlan.label : rolMiPlanId;
+    html += `
+      <div class="rol-plan-banner">
+        <span><i class="fas fa-crown"></i> Tu plan: <b>${escapeHtml(_lbl)}</b> — las opciones con <i class="fas fa-lock"></i> se activan al mejorar el plan</span>
+        <a class="rol-plan-banner-btn" href="pages/planes_heavensy_v6.html">Ver planes <i class="fas fa-arrow-right"></i></a>
+      </div>`;
+  }
+
   html += `
     <div class="rol-acord-card open" id="rol-acord-EMPRESA_ROLES">
       <div class="rol-acord-header" onclick="rolToggleAcord('EMPRESA_ROLES')">
@@ -1036,18 +1092,42 @@ function _rolAcordCard(rol) {
         </div>
         <div class="rol-modulo-plan-strip">
           <div class="rol-plan-strip-bar">
-            ${ROL_PLANES.map((plan, pi) => '<button class="rol-plan-strip-tab' + (pi===0?' active':'') + '" style="--plan-color:' + plan.color + '" onclick="rolSwitchStripTab(this,\'' + id + '\',\'' + mod.id + '\',\'' + plan.id + '\')"><span class="rol-plan-tab-dot"></span>' + escapeHtml(plan.label) + '</button>').join('')}
+            ${ROL_PLANES.map((plan, pi) => {
+              const _emp   = rolEsVistaEmpresa();
+              const _miIdx = rolPlanIndex(rolMiPlanId);
+              const _esMio = _emp && _miIdx >= 0 && plan.id === rolMiPlanId;
+              const _esSup = _emp && _miIdx >= 0 && pi > _miIdx;
+              const _act   = (_emp && _miIdx >= 0) ? _esMio : pi === 0;
+              const _lock  = _esSup ? '<i class="fas fa-lock rol-tab-lock"></i>' : '';
+              const _mybdg = _esMio ? '<span class="rol-tab-myplan">Tu plan</span>' : '';
+              return '<button class="rol-plan-strip-tab' + (_act?' active':'') + '" style="--plan-color:' + plan.color + '" onclick="rolSwitchStripTab(this,\'' + id + '\',\'' + mod.id + '\',\'' + plan.id + '\')">' + _lock + '<span class="rol-plan-tab-dot"></span>' + escapeHtml(plan.label) + _mybdg + '</button>';
+            }).join('')}
           </div>
           ${ROL_PLANES.map((plan, pi) => {
+            const _emp   = rolEsVistaEmpresa();
+            const _miIdx = rolPlanIndex(rolMiPlanId);
+            const _esMio = _emp && _miIdx >= 0 && plan.id === rolMiPlanId;
+            const _esSup = _emp && _miIdx >= 0 && pi > _miIdx;
+            const _act   = (_emp && _miIdx >= 0) ? _esMio : pi === 0;
             const planRolePerms = (rolPlanConfig||{})[mod.id]?.[plan.id]?.[id] || {};
             const stripLimit    = planRolePerms._limit !== undefined && planRolePerms._limit !== null ? planRolePerms._limit : '∞';
             const stripToggles  = mod.acciones.map(acc => {
               const badge = acc.id === 'crear'
                 ? '<span class="rol-limit-badge" id="rol-view-limit-' + mod.id + '-' + plan.id + '-' + id + '">' + stripLimit + '</span>'
                 : '';
-              return '<div class="rol-toggle-row rol-strip-row"><span class="rol-toggle-label">' + escapeHtml(acc.label) + '</span>' + badge + '<label class="rol-switch rol-switch-view"><input type="checkbox" id="rol-view-chk-' + mod.id + '-' + plan.id + '-' + id + '-' + acc.id + '" ' + (planRolePerms[acc.id]?'checked':'') + ' disabled><span class="rol-switch-slider"></span></label></div>';
+              let hint = '';
+              if (_esMio && planRolePerms[acc.id] !== true) {
+                const minPlan = rolPlanMinimoPara(mod.id, id, acc.id);
+                if (minPlan && rolPlanIndex(minPlan.id) > _miIdx) {
+                  hint = ' <span class="rol-hint-upgrade"><i class="fas fa-lock"></i> Desde ' + escapeHtml(minPlan.label) + '</span>';
+                }
+              }
+              return '<div class="rol-toggle-row rol-strip-row' + (hint ? ' rol-row-locked' : '') + '"><span class="rol-toggle-label">' + escapeHtml(acc.label) + hint + '</span>' + badge + '<label class="rol-switch rol-switch-view"><input type="checkbox" id="rol-view-chk-' + mod.id + '-' + plan.id + '-' + id + '-' + acc.id + '" ' + (planRolePerms[acc.id]?'checked':'') + ' disabled><span class="rol-switch-slider"></span></label></div>';
             }).join('');
-            return '<div class="rol-plan-strip-panel' + (pi===0?' active':'') + '" id="rol-strip-pp-' + id + '-' + mod.id + '-' + plan.id + '"><div class="rol-modulo-body">' + stripToggles + '</div></div>';
+            const upsell = _esSup
+              ? '<div class="rol-strip-upsell"><span><i class="fas fa-star"></i> Esto es lo que incluye <b>' + escapeHtml(plan.label) + '</b> para este rol</span><a class="rol-plan-banner-btn" href="pages/planes_heavensy_v6.html">Ver planes <i class="fas fa-arrow-right"></i></a></div>'
+              : '';
+            return '<div class="rol-plan-strip-panel' + (_act?' active':'') + '" id="rol-strip-pp-' + id + '-' + mod.id + '-' + plan.id + '"><div class="rol-modulo-body">' + upsell + stripToggles + '</div></div>';
           }).join('')}
         </div>
       </div>`;
@@ -1060,6 +1140,8 @@ function _rolAcordCard(rol) {
         <div class="rol-card-info">
           <div class="rol-card-name">${escapeHtml(name)}</div>
           <div class="rol-card-meta">
+            ${(rolEsVistaEmpresa() && rolMiPlanId && rolPlanConfig?._rolesActivos?.[rolMiPlanId]?.[id] === false)
+              ? '<span class="rol-badge rol-badge-noplan"><i class="fas fa-lock"></i> No incluido en tu plan</span>' : ''}
             ${desc ? `<span>${escapeHtml(desc)}</span>` : ''}
           </div>
         </div>
