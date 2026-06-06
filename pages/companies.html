@@ -17,6 +17,163 @@
     <button class="cp-main-tab hvy-only" id="cp-tab-catastro" onclick="cpSwitchTab('catastro', this)">
       <i class="fas fa-table"></i> Catastro
     </button>
+    <button class="cp-main-tab hvy-only" id="cp-tab-prompts" onclick="cpSwitchTab('prompts', this)">
+      <i class="fas fa-wand-magic-sparkles"></i> Prompts
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PANEL — PROMPTS (solo equipo Heavensy)
+  ══════════════════════════════════════════ -->
+  <div class="cp-panel" id="cp-panel-prompts">
+    <style>
+      .prompts-head{padding:18px 20px 4px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+      #prompts-add-sector-btn{white-space:nowrap;flex-shrink:0}
+      .prompts-title{font-size:1.3rem;font-weight:800;color:#2b3556;display:flex;align-items:center;gap:10px;margin:0}
+      .prompts-title i{color:#8e84fa}
+      .prompts-sub{font-size:12.5px;color:#7D84C1;margin:4px 0 0;line-height:1.5}
+      .prompts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding:14px 20px}
+      .sector-card{position:relative;border:1px solid #e7e9f2;border-radius:14px;padding:16px;background:#fff;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:6px}
+      .sector-card:hover{border-color:#c9c2ff;box-shadow:0 6px 18px rgba(142,132,250,.12);transform:translateY(-2px)}
+      .sector-ico{font-size:26px}
+      .sector-name{font-weight:700;color:#2b3556;font-size:14px}
+      .sector-count{font-size:11px;color:#9096b0}
+      .sector-card.sector-off{opacity:.5}
+      .sector-card.sector-off:hover{opacity:.7}
+      .sector-card-actions{position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:8px;z-index:2}
+      .sector-del{background:none;border:none;color:#c4c8d6;cursor:pointer;font-size:15px;line-height:1;padding:2px;transition:.12s}
+      .sector-del:hover{color:#ef4444}
+      .sector-check{width:22px;height:22px;border:none;background:none;padding:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#c4c8d6;transition:.15s;flex-shrink:0}
+      .sector-check:hover{color:#9aa0b5}
+      .sector-check.on{color:#22c55e}
+      .sector-check.on:hover{color:#16a34a}
+      .prompts-detail{padding:6px 20px 28px}
+      .prompts-back{background:none;border:none;color:#8e84fa;font-weight:700;font-size:12.5px;cursor:pointer;padding:8px 0 10px;display:flex;align-items:center;gap:6px}
+      .prof-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid #eef0f4;border-radius:10px;margin-bottom:8px;background:#fff}
+      .prof-row .pname{font-weight:600;color:#34405e;font-size:13px}
+      .prof-row .pedit{margin-left:auto}
+      .prompt-editor-ta{width:100%;border:1px solid #e7e9f2;border-radius:10px;padding:12px 14px;font-size:12.5px;font-family:inherit;color:#34405e;line-height:1.55;min-height:280px;resize:vertical;box-sizing:border-box}
+      .prompt-warn{font-size:11.5px;color:#b4690e;background:#fff7ed;border:1px solid #fde4c8;border-radius:8px;padding:8px 12px;margin-bottom:10px}
+      .sector-base{border:1px solid #e7e9f2;border-radius:12px;margin-bottom:16px;background:#fafbff;overflow:hidden}
+      .sector-base summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:12px 14px;font-size:13px;font-weight:700;color:#3b4a6b}
+      .sector-base summary::-webkit-details-marker{display:none}
+      .sector-base summary i{color:#8e84fa}
+      .sector-base-tag{margin-left:auto;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;border-radius:20px;background:#e8f7ee;color:#28a564}
+      .sector-base-body{padding:0 14px 14px}
+      .sector-base-hint{font-size:11.5px;color:#9096b0;margin:0 0 10px;line-height:1.5}
+      .sector-base-actions{margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+      .sector-base-mock{font-size:11px;color:#9096b0}
+      .prompts-detail-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 0 14px;flex-wrap:wrap}
+      .prompts-add-btn{white-space:nowrap}
+      .prompts-modal-overlay{position:fixed;inset:0;background:rgba(20,22,40,.45);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+      .prompts-modal{background:#fff;border-radius:16px;width:100%;max-width:640px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+      .prompts-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #eef0f4;font-weight:800;color:#2b3556}
+      .prompts-modal-head i{color:#8e84fa;margin-right:6px}
+      .prompts-modal-x{background:none;border:none;font-size:24px;color:#9096b0;cursor:pointer;line-height:1}
+      .prompts-modal-body{padding:18px 20px;overflow:auto}
+      .prompts-modal-body label{display:block;font-size:11px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.04em;margin:0 0 6px}
+      .prompts-modal-body input{width:100%;border:1px solid #e7e9f2;border-radius:10px;padding:11px 14px;font-size:13px;box-sizing:border-box;margin-bottom:12px;outline:none}
+      .prompts-modal-body input:focus{border-color:#8e84fa}
+      .pm-genbtn{margin-bottom:14px}
+      .pm-hint{font-size:11px;color:#9096b0;margin-top:10px;line-height:1.55}
+      .pm-hint i{color:#8e84fa}
+      .prompts-modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid #eef0f4}
+      .pm-genrow{display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap;margin-bottom:14px}
+      .pm-genbtn{margin:2px 0 14px}
+      .pm-style{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+      .pm-style-label{font-size:10.5px;font-weight:700;color:#9096b0;text-transform:uppercase;letter-spacing:.04em}
+      .pm-style-pill{border:1px solid #e0e3ee;background:#fff;color:#6b7280;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;transition:.12s}
+      .pm-style-pill:hover{border-color:#c9c2ff}
+      .pm-style-pill.active{background:#8e84fa;border-color:#8e84fa;color:#fff}
+      .sm-emoji-wrap{position:relative}
+      .sm-emoji-select{display:inline-flex;align-items:center;justify-content:space-between;gap:16px;min-width:96px;border:1px solid #e7e9f2;border-radius:10px;padding:9px 14px;background:#fff;cursor:pointer}
+      .sm-emoji-select:hover{border-color:#c9c2ff}
+      .sm-emoji-current{font-size:20px;line-height:1}
+      .sm-emoji-caret{font-size:11px;color:#9096b0}
+      .sm-emoji-pop{position:fixed;z-index:2000;background:#fff;border:1px solid #e7e9f2;border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.2);padding:10px;grid-template-columns:repeat(8,1fr);gap:4px;max-height:240px;overflow:auto;width:330px}
+      .sm-emoji{font-size:20px;text-align:center;padding:5px 0;border-radius:8px;cursor:pointer;transition:.1s}
+      .sm-emoji:hover{background:#f1efff}
+    </style>
+    <div class="prompts-head">
+      <div>
+        <h1 class="prompts-title"><i class="fas fa-wand-magic-sparkles"></i> <span id="prompts-title-text">Prompts</span></h1>
+        <p class="prompts-sub" id="prompts-desc">Plantillas de prompt por <b>sector</b> y <b>profesión</b>. Estas plantillas se aplican a las empresas según los profesionales que tengan configurados.</p>
+      </div>
+      <button class="btn-primary prompts-add-btn" id="prompts-add-sector-btn" onclick="promptsAddSector()">
+        <i class="fas fa-plus"></i> Agregar sector
+      </button>
+    </div>
+    <div class="prompts-grid" id="prompts-sectores"></div>
+    <div class="prompts-detail" id="prompts-detail" style="display:none"></div>
+
+    <!-- Modal: Agregar profesión (creador automático de prompt) -->
+    <div class="prompts-modal-overlay" id="prompts-modal" style="display:none" onclick="if(event.target===this)promptsCloseModal()">
+      <div class="prompts-modal">
+        <div class="prompts-modal-head">
+          <span><i class="fas fa-user-plus"></i>Agregar profesión</span>
+          <button class="prompts-modal-x" onclick="promptsCloseModal()">&times;</button>
+        </div>
+        <div class="prompts-modal-body">
+          <label>Oficio / profesión</label>
+          <input id="pm-oficio" placeholder="Ej: Tatuador/a, Gasfíter, Coach, Masajista..." />
+          <button class="btn-secondary pm-genbtn" id="pm-gen-btn" onclick="promptsRegenerate()">
+            <i class="fas fa-wand-magic-sparkles"></i> Crear prompt automáticamente
+          </button>
+          <label>Prompt de la profesión</label>
+          <textarea id="pm-prompt" class="prompt-editor-ta"></textarea>
+          <p class="pm-hint"><i class="fas fa-circle-info"></i> Se genera solo el prompt del oficio. No repite seguridad, agenda ni moderación (eso está en la base) ni los datos de la empresa (esos se leen de Configuración).</p>
+        </div>
+        <div class="prompts-modal-foot">
+          <button class="btn-secondary" onclick="promptsCloseModal()">Cancelar</button>
+          <button class="btn-primary" onclick="promptsSaveNew()"><i class="fas fa-save"></i> Guardar profesión</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Agregar sector -->
+    <div class="prompts-modal-overlay" id="sector-modal" style="display:none" onclick="if(event.target===this)sectorCloseModal()">
+      <div class="prompts-modal" style="max-width:460px">
+        <div class="prompts-modal-head">
+          <span><i class="fas fa-layer-group"></i>Agregar sector</span>
+          <button class="prompts-modal-x" onclick="sectorCloseModal()">&times;</button>
+        </div>
+        <div class="prompts-modal-body">
+          <label>Nombre del sector</label>
+          <input id="sm-nombre" placeholder="Ej: Gastronomía, Tecnología, Spa..." />
+          <label>Ícono (emoji)</label>
+          <div class="sm-emoji-wrap">
+            <button type="button" class="sm-emoji-select" onclick="sectorToggleEmoji(event)">
+              <span class="sm-emoji-current" id="sm-icono-display">🏷️</span>
+              <i class="fas fa-chevron-down sm-emoji-caret"></i>
+            </button>
+            <input type="hidden" id="sm-icono" value="" />
+            <div class="sm-emoji-pop" id="sm-emoji-pop" style="display:none"></div>
+          </div>
+          <p class="pm-hint"><i class="fas fa-circle-info"></i> El sector agrupa profesiones. Después podrás agregar profesiones dentro de él.</p>
+        </div>
+        <div class="prompts-modal-foot">
+          <button class="btn-secondary" onclick="sectorCloseModal()">Cancelar</button>
+          <button class="btn-primary" onclick="sectorSaveNew()"><i class="fas fa-save"></i> Guardar sector</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación de sector -->
+    <div class="prompts-modal-overlay" id="sector-del-modal" style="display:none" onclick="if(event.target===this)sectorCloseDelete()">
+      <div class="prompts-modal" style="max-width:420px">
+        <div class="prompts-modal-head">
+          <span><i class="fas fa-triangle-exclamation" style="color:#ef4444"></i>Eliminar sector</span>
+          <button class="prompts-modal-x" onclick="sectorCloseDelete()">&times;</button>
+        </div>
+        <div class="prompts-modal-body">
+          <p style="font-size:13px;color:#34405e;line-height:1.55;margin:0">¿Seguro que quieres eliminar el sector <b id="sector-del-name"></b> y todas sus profesiones? Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="prompts-modal-foot">
+          <button class="btn-secondary" onclick="sectorCloseDelete()">Cancelar</button>
+          <button class="btn-primary" style="background:#ef4444;border-color:#ef4444" onclick="sectorConfirmDelete()"><i class="fas fa-trash"></i> Eliminar</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ══════════════════════════════════════════
@@ -39,13 +196,12 @@
       </div>
 
       <!-- STATS -->
-      <!-- BITÁCORA 2026-06-04: regla hvy-only/btn-icon-hvy fuera del sidebar (ojo,
-     Catastro y demás elementos exclusivos Heavensy se ocultan en vista empresa) -->
+<!-- BITÁCORA 2026-06-04 (merge): regla hvy-only/btn-icon-hvy fuera del sidebar -->
 <style>
   body:not(.heavensy-mode) .hvy-only,
   body:not(.heavensy-mode) .btn-icon-hvy { display: none !important; }
 </style>
-<!-- BITÁCORA 2026-06-04: stats visibles para todos (muestran las empresas del usuario) -->
+      <!-- stats visibles para todos: muestran las empresas del usuario -->
       <div class="stats" id="st-plans-bar">
         <div class="stat">
           <div class="stat-label">Total empresas</div>
@@ -139,7 +295,7 @@
         <div class="step-line"></div>
         <div class="step" id="step-3" onclick="wGoStep(3)">
           <div class="step-num">4</div>
-          <div class="step-label">Bot</div>
+          <div class="step-label">Asistente IA</div>
         </div>
         <div class="step-line"></div>
         <div class="step" id="step-4" onclick="wGoStep(4)">
@@ -212,6 +368,89 @@
                 <input type="checkbox" id="w-active" checked />
                 Empresa activa
               </label>
+            </div>
+          </div>
+
+          <div class="form-section-title" style="margin-top:20px"><i class="fas fa-money-bill-wave"></i> Formas de pago</div>
+          <style>
+            .pay-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+            .pay-card{border:1px solid #e7e9f2;border-radius:12px;padding:11px 12px;background:#fff;transition:.15s}
+            .pay-card.selected{border-color:#8e84fa;background:#faf9ff}
+            .pay-card-head{display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:600;color:#34405e;font-size:13px}
+            .pay-card-head input{width:16px;height:16px;cursor:pointer;flex-shrink:0}
+            .pay-card-ico{font-size:18px}
+            .pay-card-name small{display:block;font-weight:400;color:#9096b0;font-size:10px;text-transform:none;letter-spacing:0}
+            .pay-card-body{display:none;margin-top:9px}
+            .pay-card-body input{width:100%;border:1px solid #e7e9f2;border-radius:8px;padding:8px 10px;font-size:12px;box-sizing:border-box}
+            .pay-card-body select{width:100%;border:1px solid #e7e9f2;border-radius:8px;padding:8px 10px;font-size:12px;box-sizing:border-box;background:#fff;color:#34405e}
+            .pay-fields{display:flex;flex-direction:column;gap:6px}
+          </style>
+          <div class="pay-cards">
+            <div class="pay-card" id="pay-card-transferencia">
+              <label class="pay-card-head">
+                <input type="checkbox" id="w-pay-transferencia" onchange="payToggle('transferencia')">
+                <span class="pay-card-ico">🏦</span>
+                <span class="pay-card-name">Transferencia</span>
+              </label>
+              <div class="pay-card-body" id="pay-body-transferencia">
+                <div class="pay-fields">
+                  <input id="w-pay-transferencia-banco" placeholder="Banco" />
+                  <select id="w-pay-transferencia-tipo">
+                    <option value="">Tipo de cuenta</option>
+                    <option value="Cuenta Corriente">Cuenta Corriente</option>
+                    <option value="Cuenta Vista">Cuenta Vista</option>
+                    <option value="Cuenta de Ahorro">Cuenta de Ahorro</option>
+                    <option value="Chequera Electrónica">Chequera Electrónica</option>
+                  </select>
+                  <input id="w-pay-transferencia-rut" placeholder="RUT de la cuenta" />
+                  <input id="w-pay-transferencia-numero" placeholder="N° de cuenta" />
+                  <input id="w-pay-transferencia-titular" placeholder="Nombre del titular" />
+                </div>
+              </div>
+            </div>
+            <div class="pay-card" id="pay-card-plataforma">
+              <label class="pay-card-head">
+                <input type="checkbox" id="w-pay-plataforma" onchange="payToggle('plataforma')">
+                <span class="pay-card-ico">💳</span>
+                <span class="pay-card-name">Plataforma de pago<small>crédito · débito · prepago</small></span>
+              </label>
+              <div class="pay-card-body" id="pay-body-plataforma">
+                <div class="pay-fields">
+                  <input id="w-pay-plataforma-banco" placeholder="Banco" />
+                  <select id="w-pay-plataforma-tipo">
+                    <option value="">Tipo de cuenta</option>
+                    <option value="Cuenta Corriente">Cuenta Corriente</option>
+                    <option value="Cuenta Vista">Cuenta Vista</option>
+                    <option value="Cuenta de Ahorro">Cuenta de Ahorro</option>
+                    <option value="Chequera Electrónica">Chequera Electrónica</option>
+                  </select>
+                  <input id="w-pay-plataforma-rut" placeholder="RUT de la cuenta" />
+                  <input id="w-pay-plataforma-numero" placeholder="N° de cuenta" />
+                  <input id="w-pay-plataforma-titular" placeholder="Nombre del titular" />
+                </div>
+              </div>
+            </div>
+            <div class="pay-card" id="pay-card-paypal">
+              <label class="pay-card-head">
+                <input type="checkbox" id="w-pay-paypal" onchange="payToggle('paypal')">
+                <span class="pay-card-ico">🅿️</span>
+                <span class="pay-card-name">PayPal</span>
+              </label>
+              <div class="pay-card-body" id="pay-body-paypal">
+                <div class="pay-fields">
+                  <input id="w-pay-paypal-banco" placeholder="Banco" />
+                  <select id="w-pay-paypal-tipo">
+                    <option value="">Tipo de cuenta</option>
+                    <option value="Cuenta Corriente">Cuenta Corriente</option>
+                    <option value="Cuenta Vista">Cuenta Vista</option>
+                    <option value="Cuenta de Ahorro">Cuenta de Ahorro</option>
+                    <option value="Chequera Electrónica">Chequera Electrónica</option>
+                  </select>
+                  <input id="w-pay-paypal-rut" placeholder="RUT de la cuenta" />
+                  <input id="w-pay-paypal-numero" placeholder="N° de cuenta" />
+                  <input id="w-pay-paypal-titular" placeholder="Nombre del titular" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -309,27 +548,163 @@
       <!-- PANEL 4: Bot -->
       <div class="wizard-panel" id="panel-3">
         <div class="panel-content">
-          <div class="form-section-title"><i class="fas fa-robot"></i> Configuración del Bot</div>
-          <div class="form-grid-2">
-            <div class="form-group">
-              <label>Nombre del bot</label>
-              <input id="w-bot_name" placeholder="Alicia" />
-            </div>
-            <div class="form-group">
-              <label>Máx. mensajes por sesión</label>
-              <input id="w-max_messages" type="number" placeholder="150" min="10" max="500" />
-            </div>
-            <div class="form-group form-full">
-              <label>Mensaje de bienvenida</label>
-              <textarea id="w-greeting_message" rows="3" placeholder="¡Hola! Soy el asistente virtual. ¿En qué puedo ayudarte?"></textarea>
-            </div>
-            <div class="form-group form-check">
-              <label class="check-label">
-                <input type="checkbox" id="w-bot_active" checked />
-                Bot activo
-              </label>
+
+          <style>
+            /* ── Constructor de Prompt IA (Paso 4) ── */
+            .prompt-rubro-tag{display:inline-block;background:#eef0ff;color:#6b63d6;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px;vertical-align:middle}
+            .prompt-block{margin-top:24px;border-top:1px solid #eef0f4;padding-top:18px}
+            .prompt-hint{font-size:12px;color:#7D84C1;margin-bottom:16px;line-height:1.5}
+            .prompt-layer{border:1px solid #e7e9f2;border-radius:12px;margin-bottom:12px;background:#fff;overflow:hidden}
+            .prompt-layer-head{display:flex;align-items:center;gap:8px;padding:11px 14px;font-size:12.5px;font-weight:700;color:#3b4a6b;background:#fafbff;border-bottom:1px solid #eef0f4}
+            .prompt-layer-head i{color:#8e84fa}
+            .prompt-tag{margin-left:auto;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;border-radius:20px}
+            .prompt-tag.lock{background:#f1f1f5;color:#9096b0}
+            .prompt-tag.edit{background:#e8f7ee;color:#28a564}
+            .prompt-tag.auto{background:#eef4ff;color:#3b7bd4}
+            .prompt-textarea{width:100%;border:none;padding:12px 14px;font-size:12.5px;font-family:inherit;color:#34405e;resize:vertical;line-height:1.55;outline:none;box-sizing:border-box}
+            .prompt-base-pre{margin:0;padding:12px 14px;font-size:11.5px;color:#6b7280;background:#fbfbfd;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto;border:none}
+            .prompt-locked summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:11px 14px;font-size:12.5px;font-weight:700;color:#3b4a6b;background:#fafbff}
+            .prompt-locked summary i{color:#9096b0}
+            .prompt-locked summary::-webkit-details-marker{display:none}
+            .prompt-services{padding:8px 14px}
+            .prompt-svc{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed #eef0f4;font-size:12.5px}
+            .prompt-svc:last-child{border-bottom:none}
+            .prompt-svc-name{font-weight:600;color:#34405e}
+            .prompt-svc-price{margin-left:auto;font-weight:700;color:#28a564}
+            .prompt-svc-desc{color:#9096b0;font-size:11px}
+            .prompt-svc-empty{color:#b0b4c8;font-size:12px;padding:10px 0;font-style:italic}
+            .cfg-sec{padding:8px 0}
+            .cfg-sec + .cfg-sec{border-top:1px dashed #eef0f4;margin-top:4px;padding-top:10px}
+            .cfg-sec-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#8e84fa;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+            .cfg-line{font-size:12px;color:#34405e;padding:2px 0}
+            .cfg-line .muted{color:#9096b0}
+            .cfg-svc-card{border:1px solid #eef0f4;border-radius:8px;padding:8px 10px;margin-bottom:6px;background:#fcfcff}
+            .cfg-svc-top{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:#34405e}
+            .cfg-svc-top .price{margin-left:auto;color:#28a564}
+            .cfg-svc-meta{font-size:11px;color:#9096b0;margin-top:4px;line-height:1.6}
+            .cfg-svc-meta b{color:#6b7280;font-weight:600}
+            .cfg-svc-desc{font-size:11px;color:#9096b0;margin-top:4px;line-height:1.5}
+            .cfg-prof{border:1px solid #eef0f4;border-radius:10px;padding:11px 12px;margin-bottom:8px;background:#fff}
+            .cfg-prof-head{font-size:13px;color:#34405e;margin-bottom:6px}
+            .cfg-prof-head i{color:#8e84fa;margin-right:4px}
+            .cfg-prof-head .muted{color:#9096b0}
+            .cfg-prof-meta{font-size:11px;color:#9096b0;line-height:1.6;margin-bottom:8px}
+            .cfg-prof-meta b{color:#6b7280;font-weight:600}
+            .cfg-svcs-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#8e84fa;margin:4px 0 6px}
+            .prompt-final-pre{margin-top:14px;padding:14px;border:1px solid #e7e9f2;border-radius:12px;background:#1e1e2e;color:#e8e8f0;font-size:11.5px;white-space:pre-wrap;word-break:break-word;max-height:340px;overflow:auto;line-height:1.55}
+            .greet-ta-wrap{position:relative}
+            .greet-emoji-btn{position:absolute;left:12px;bottom:10px;border:none;background:none;padding:0;cursor:pointer;color:#9096b0;font-size:17px;line-height:1}
+            .greet-emoji-btn:hover{color:#8e84fa}
+            .greet-emoji-pop{position:fixed;z-index:2000;background:#fff;border:1px solid #e7e9f2;border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.2);padding:10px;display:grid;grid-template-columns:repeat(8,1fr);gap:4px;width:300px}
+            .greet-emoji{font-size:19px;text-align:center;padding:5px 0;border-radius:8px;cursor:pointer}
+            .greet-emoji:hover{background:#f1efff}
+            .mdd{position:relative}
+            .mdd-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #e3e6f0;border-radius:10px;padding:10px 14px;background:#fff;cursor:pointer;font-size:13px;color:#34405e;transition:.15s}
+            .mdd-toggle:hover{border-color:#c9c2ff}
+            .mdd-toggle.open{border-color:#8e84fa;box-shadow:0 0 0 3px rgba(142,132,250,.12)}
+            .mdd-toggle > i{color:#9096b0;font-size:12px;transition:transform .2s}
+            .mdd-toggle.open > i{transform:rotate(180deg)}
+            .mdd-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:50;background:#fff;border:1px solid #eef0f4;border-radius:12px;box-shadow:0 12px 30px rgba(20,22,40,.12);padding:6px;max-height:280px;overflow:auto}
+            .mdd-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;font-size:13px;color:#34405e;cursor:pointer;transition:.1s}
+            .mdd-item:hover{background:#f4f2ff}
+            .mdd-item.selected{background:#8e84fa;color:#fff;font-weight:600}
+            .mdd-empty{padding:10px 12px;font-size:12px;color:#9096b0}
+            .ia-activate{display:inline-flex;align-items:center;gap:8px;border:1px solid #d7dbe8;background:#fff;color:#6b7280;font-size:13px;font-weight:600;padding:10px 20px;border-radius:10px;cursor:pointer;transition:.15s}
+            .ia-activate:hover{border-color:#c9c2ff}
+            .ia-activate i{font-size:14px}
+            .ia-activate.on{background:#22c55e;border-color:#22c55e;color:#fff}
+            .cosmo-btn{display:inline-flex;align-items:center;gap:8px;border:1px dashed #c9c2ff;background:#faf9ff;color:#7d5fe0;font-size:13px;font-weight:600;padding:10px 16px;border-radius:10px;cursor:pointer;transition:.15s;white-space:nowrap;max-width:260px}
+            .cosmo-btn:hover{border-color:#8e84fa;background:#f3f0ff}
+            .cosmo-btn i{font-size:14px;flex-shrink:0}
+            .cosmo-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+            .cosmo-btn.loaded{border-style:solid;border-color:#22c55e;color:#16a34a;background:#f0fdf4}
+          </style>
+
+          <div class="form-section-title"><i class="fas fa-wand-magic-sparkles"></i> Configuración del Asistente IA</div>
+
+          <div class="form-group" style="max-width:50%">
+            <label>Nombre</label>
+            <input id="w-bot_name" placeholder="Alicia" />
+          </div>
+
+          <div class="form-group form-full" style="margin-top:4px">
+            <label>Estilo de lenguaje</label>
+            <div class="pm-style" id="w-bot-style">
+              <button type="button" class="pm-style-pill" data-style="formal" onclick="botSetStyle('formal',this)">Formal</button>
+              <button type="button" class="pm-style-pill active" data-style="cercano" onclick="botSetStyle('cercano',this)">Cercano</button>
+              <button type="button" class="pm-style-pill" data-style="tecnico" onclick="botSetStyle('tecnico',this)">Técnico</button>
+              <button type="button" class="pm-style-pill" data-style="coloquial" onclick="botSetStyle('coloquial',this)">Coloquial</button>
             </div>
           </div>
+
+          <div class="form-group form-full">
+            <label>Idiomas que atiende</label>
+            <div class="pm-style" id="w-bot-langs">
+              <button type="button" class="pm-style-pill active" data-lang="Español" onclick="botToggleLang(this)">Español</button>
+              <button type="button" class="pm-style-pill" data-lang="Inglés" onclick="botToggleLang(this)">Inglés</button>
+              <button type="button" class="pm-style-pill" data-lang="Portugués" onclick="botToggleLang(this)">Portugués</button>
+            </div>
+          </div>
+
+          <div class="form-group" style="max-width:50%">
+            <label>Mensaje de bienvenida</label>
+            <div class="greet-ta-wrap">
+              <textarea id="w-greeting_message" rows="3" placeholder="¡Hola! Soy el asistente virtual. ¿En qué puedo ayudarte?"></textarea>
+              <button type="button" class="greet-emoji-btn" id="greet-emoji-btn" onclick="greetToggleEmoji(event)" title="Insertar emoji"><i class="fas fa-face-smile"></i></button>
+              <div class="greet-emoji-pop" id="greet-emoji-pop" style="display:none"></div>
+            </div>
+          </div>
+
+          <!-- ── CONSTRUCTOR DE PROMPT IA ── -->
+          <div class="prompt-block">
+            <div class="form-group" style="max-width:50%">
+              <label>Profesión <span id="w-bot-rubro-tag" class="prompt-rubro-tag">—</span></label>
+              <div class="mdd" id="prof-dd">
+                <button type="button" class="mdd-toggle" id="prof-dd-toggle" onclick="profDdToggle(event)">
+                  <span id="prof-dd-label">Selecciona...</span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="mdd-menu" id="prof-dd-menu" style="display:none"></div>
+                <input type="hidden" id="w-bot_profession" />
+              </div>
+            </div>
+
+            <!-- Capa EMPRESA (editable) -->
+            <div class="prompt-layer">
+              <div class="prompt-layer-head"><i class="fas fa-building"></i> Identidad de la empresa <span class="prompt-tag edit">editable</span></div>
+              <textarea id="w-bot_company_prompt" rows="5" class="prompt-textarea" placeholder="Quiénes somos, valores, personalidad, formación, cosmovisión..."></textarea>
+            </div>
+
+            <!-- Instrucciones para llegar (editable) -->
+            <div class="prompt-layer">
+              <div class="prompt-layer-head"><i class="fas fa-map-location-dot"></i> Instrucciones para llegar <span class="prompt-tag edit">editable</span></div>
+              <textarea id="w-bot_instrucciones_llegar" rows="3" class="prompt-textarea" placeholder="Cómo llegar: referencias, estacionamiento, piso/oficina, transporte cercano..."></textarea>
+            </div>
+
+            <!-- Base de conocimiento (editable) -->
+            <div class="prompt-layer">
+              <div class="prompt-layer-head"><i class="fas fa-brain"></i> Base de conocimiento <span class="prompt-tag edit">editable</span></div>
+              <textarea id="w-bot_conocimiento" rows="6" class="prompt-textarea" placeholder="Pega aquí el conocimiento, enfoque o material que quieras que el asistente use para responder con tu criterio..."></textarea>
+            </div>
+
+            <!-- Capa DATOS DE LA EMPRESA (automática: empresa → profesionales → servicios) -->
+            <div class="prompt-layer">
+              <div class="prompt-layer-head"><i class="fas fa-link"></i> Datos de la empresa <span class="prompt-tag auto">automático · desde Configuración</span></div>
+              <div id="w-bot_services_preview" class="prompt-services"></div>
+            </div>
+
+            <button type="button" class="btn-secondary" style="margin-top:6px" onclick="wBuildPromptPreview()">
+              <i class="fas fa-eye"></i> Vista previa del prompt final
+            </button>
+            <pre id="w-bot_prompt_final" class="prompt-final-pre" style="display:none"></pre>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid #eef0f4">
+            <button type="button" id="w-bot-activate-btn" class="ia-activate" onclick="botToggleActive()">
+              <i class="fas fa-wand-magic-sparkles"></i> <span id="w-bot-activate-text">Activar asistente IA</span>
+            </button>
+          </div>
+
         </div>
         <div class="nav-footer">
           <button class="btn-secondary" onclick="wGoStep(2)"><i class="fas fa-arrow-left"></i> Volver</button>

@@ -325,6 +325,7 @@
             </div>
           </div>
           <div class="form-group form-full"><label>Descripción <span style="color:#9ca3af;font-weight:400">(opcional)</span></label><input type="text" id="ses-desc" placeholder="Breve descripción"></div>
+          <div class="form-group form-full"><label>Espectro de atención</label><input type="text" id="ses-espectro" placeholder="Servicio dirigido a personas con x características."></div>
           <div class="form-group"><label>Color identificador</label>
             <div style="display:flex;align-items:center;gap:8px">
               <input type="color" id="ses-color" value="#9961FF" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="previewSesColor(this.value)">
@@ -455,6 +456,9 @@
           </div>
           <div class="form-group form-full"><label>Descripción <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
             <textarea id="prog-desc" rows="4" placeholder="Describe el programa…" style="resize:vertical;font-family:inherit;font-size:12px;border:0.5px solid #C9D9FF;border-radius:8px;padding:8px 11px;width:100%;color:#374151" oninput="sendDescPreview('prog',this.value)"></textarea>
+          </div>
+          <div class="form-group form-full"><label>Espectro de atención</label>
+            <textarea id="prog-espectro" rows="2" placeholder="Servicio dirigido a personas con x características." style="resize:vertical;font-family:inherit;font-size:12px;border:0.5px solid #C9D9FF;border-radius:8px;padding:8px 11px;width:100%;color:#374151"></textarea>
           </div>
           <div class="form-group form-full">
             <label id="prog-lbl-modulos">Módulos del programa <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
@@ -896,6 +900,7 @@
                   </div>
                 </div>
                 <div class="form-group form-full"><label>Descripción <span style="color:#9ca3af;font-weight:400">(opcional)</span></label><input type="text" id="jm-ses-desc" placeholder="Breve descripción"></div>
+                <div class="form-group form-full"><label>Espectro de atención</label><input type="text" id="jm-ses-espectro" placeholder="Servicio dirigido a personas con x características."></div>
                 <div class="form-group"><label>Color identificador</label>
                   <div style="display:flex;align-items:center;gap:8px">
                     <input type="color" id="jm-ses-color" value="#9961FF" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="jmPreviewSesColor(this.value)">
@@ -1025,6 +1030,9 @@
                 </div>
                 <div class="form-group form-full"><label>Descripción <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
                   <textarea id="jm-prog-desc" rows="3" placeholder="Describe el programa…" style="resize:vertical;font-family:inherit;font-size:12px;border:0.5px solid #C9D9FF;border-radius:8px;padding:8px 11px;width:100%;color:#374151" oninput="sendDescPreview('jm-prog',this.value)"></textarea>
+                </div>
+                <div class="form-group form-full"><label>Espectro de atención</label>
+                  <textarea id="jm-prog-espectro" rows="2" placeholder="Servicio dirigido a personas con x características." style="resize:vertical;font-family:inherit;font-size:12px;border:0.5px solid #C9D9FF;border-radius:8px;padding:8px 11px;width:100%;color:#374151"></textarea>
                 </div>
                 <div class="form-group form-full">
                   <label id="jm-prog-lbl-modulos">Módulos del programa <span style="color:#9ca3af;font-weight:400">(opcional)</span></label>
