@@ -1,4 +1,8 @@
 // ── BITÁCORA ──
+// [v2026.06.10-1] layout.js
+// 2026-06-10 | Selector de empresas: pinta desde caché y SIEMPRE refresca desde
+//              /api/auth/my-companies (lista dinámica: empresas nuevas, o todas
+//              si es Heavensy). Guard anti doble-binding en el dropdown.
 // 2026-06-04 | _switchSidebarCompany re-ejecuta initHeavensyMode tras cambiar
 //              el token: los elementos hvy-only (Empresas, Mensajes) aparecen
 //              o desaparecen según la empresa activa, sin recargar.
@@ -210,39 +214,38 @@ function loadSidebarCompanyName() {
 
     if (skeleton) skeleton.style.display = 'none';
 
-    // Obtener empresas del usuario
+    // Obtener empresas del usuario: pintar al tiro desde caché (sin parpadeo)
+    // y SIEMPRE refrescar desde la API (la lista puede cambiar: empresas nuevas,
+    // o todas las del sistema si el usuario es Heavensy).
     let userCompanies = [];
     try {
       const stored = localStorage.getItem('hs_user_companies');
       if (stored) userCompanies = JSON.parse(stored);
     } catch {}
 
-    if (userCompanies.length > 1) {
-      // Ya tenemos empresas → mostrar dropdown
-      if (btnLabel) btnLabel.textContent = companyName;
-      if (btn) { btn.classList.remove('hidden'); btn.style.display = 'flex'; }
-      _initSidebarCompanyDropdown(userCompanies, companyId);
-    } else if (userCompanies.length === 1) {
-      // Una empresa → solo nombre
-      if (label) { label.textContent = companyName; label.classList.remove('hidden'); label.style.display = 'block'; }
-    } else {
-      // Sin datos en localStorage → cargar desde API
-      apiCall('/api/auth/my-companies').then(function(res) {
-        if (res.ok && res.data && res.data.companies) {
-          userCompanies = res.data.companies;
-          localStorage.setItem('hs_user_companies', JSON.stringify(userCompanies));
-        }
-        if (userCompanies.length > 1) {
-          if (btnLabel) btnLabel.textContent = companyName;
-          if (btn) { btn.classList.remove('hidden'); btn.style.display = 'flex'; }
-          _initSidebarCompanyDropdown(userCompanies, companyId);
-        } else {
-          if (label) { label.textContent = companyName; label.classList.remove('hidden'); label.style.display = 'block'; }
-        }
-      }).catch(function() {
+    const pintar = (companies) => {
+      if (companies.length > 1) {
+        if (btnLabel) btnLabel.textContent = companyName;
+        if (btn) { btn.classList.remove('hidden'); btn.style.display = 'flex'; }
+        if (label) { label.style.display = 'none'; }
+        _initSidebarCompanyDropdown(companies, companyId);
+      } else {
+        if (btn) btn.style.display = 'none';
         if (label) { label.textContent = companyName; label.classList.remove('hidden'); label.style.display = 'block'; }
-      });
-    }
+      }
+    };
+
+    if (userCompanies.length) pintar(userCompanies);
+
+    apiCall('/api/auth/my-companies').then(function(res) {
+      if (res.ok && res.data && res.data.companies) {
+        userCompanies = res.data.companies;
+        localStorage.setItem('hs_user_companies', JSON.stringify(userCompanies));
+      }
+      pintar(userCompanies);
+    }).catch(function() {
+      if (!userCompanies.length) pintar([]);
+    });
   } catch(e) {
     console.error('loadSidebarCompanyName error:', e);
   }
@@ -255,7 +258,8 @@ function _initSidebarCompanyDropdown(companies, currentCompanyId) {
   const chevron  = document.getElementById('sidebarCompanyChevron');
   if (!btn || !dropdown || !list) return;
 
-  // Construir lista
+  // Construir lista (se reconstruye en cada llamada; los listeners de los
+  // items son nuevos porque los nodos son nuevos)
   list.innerHTML = '';
   companies.forEach(c => {
     const name    = c.company_name || c.company_id;
@@ -273,21 +277,24 @@ function _initSidebarCompanyDropdown(companies, currentCompanyId) {
     list.appendChild(item);
   });
 
-  // Toggle dropdown
-  btn.addEventListener('click', e => {
-    e.stopPropagation();
-    const open = dropdown.style.display === 'block';
-    dropdown.style.display = open ? 'none' : 'block';
-    chevron.style.transform = open ? '' : 'rotate(180deg)';
-  });
+  // Toggle dropdown (bind una sola vez, aunque la lista se reconstruya)
+  if (!btn.dataset.ddBound) {
+    btn.dataset.ddBound = '1';
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = dropdown.style.display === 'block';
+      dropdown.style.display = open ? 'none' : 'block';
+      chevron.style.transform = open ? '' : 'rotate(180deg)';
+    });
 
-  // Cerrar al hacer click fuera
-  document.addEventListener('click', e => {
-    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
-      dropdown.style.display = 'none';
-      chevron.style.transform = '';
-    }
-  });
+    // Cerrar al hacer click fuera
+    document.addEventListener('click', e => {
+      if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+        chevron.style.transform = '';
+      }
+    });
+  }
 }
 
 async function _switchSidebarCompany(companyId, companyName) {

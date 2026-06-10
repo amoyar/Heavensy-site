@@ -1,3 +1,33 @@
+<!--
+  ── BITÁCORA ──
+  [v2026.06.10-2] companies.html
+  2026-06-10 | Fix chips de categoría: el check del chip activo usaba doble escape
+               CSS (se veía "\2713" literal); ahora usa el carácter "✓" directo.
+               Chips más compactos (padding 2px 10px, fuente .76rem, gap 6px).
+  [v2026.06.10-1] companies.html
+  2026-06-10 | Paso 2 (Rubro): bloque de categorías ahora seleccionable (multi,
+               opcional) con estilo de chip activo. Paso 4 (Asistente IA): eliminado
+               el simulador mock (selector de profesión única, preview de servicios
+               y vista previa del prompt); se conservan las capas editables reales
+               (identidad, instrucciones para llegar, base de conocimiento).
+  [v2026.06.09-7] companies.html
+  2026-06-09 | Fase 6.4: nueva pestaña "Sectores" (CRUD de sectores + CRUD de
+               profesiones por nombre). Catastro movido al final. Panel
+               cp-panel-sectores + modal de profesión (prof-modal).
+  2026-06-09 | Fix estilo encabezado Sectores: descripción usa .prompts-sub (no
+               .prompts-desc inexistente) y botón usa .prompts-add-btn, para
+               igualar la tipografía/espaciado del resto de pestañas.
+  2026-06-09 | Modal de eliminar profesión (prof-del-modal) estilo Heavensy,
+               gemelo del de eliminar sector. Reemplaza el confirm() nativo.
+  2026-06-09 | Fase 6.5: encabezado de Prompts sin botón "Agregar sector"
+               (los sectores se crean en la pestaña Sectores); Prompts queda
+               solo para editar el texto de los prompts.
+  2026-06-09 | Preview del Paso 2 (Rubro): nuevo bloque "Categorías" (tp-cats) que
+               muestra las categorías del sector como chips.
+  2026-06-09 | Fase 6.3: Paso 2 del wizard (rubro-grid) se llena dinámicamente
+               con los sectores reales del catálogo; se quitaron las 6 tarjetas
+               de rubro hardcodeadas.
+-->
 <!-- COMPANIES PAGE — Heavensy -->
 <div id="companiesRoot" class="companies-root">
 
@@ -14,11 +44,14 @@
     <button class="cp-main-tab" id="cp-tab-roles" onclick="cpSwitchTab('roles', this)">
       <i class="fas fa-shield-alt"></i> Roles y Permisos
     </button>
-    <button class="cp-main-tab hvy-only" id="cp-tab-catastro" onclick="cpSwitchTab('catastro', this)">
-      <i class="fas fa-table"></i> Catastro
+    <button class="cp-main-tab hvy-only" id="cp-tab-sectores" onclick="cpSwitchTab('sectores', this)">
+      <i class="fas fa-layer-group"></i> Sectores
     </button>
     <button class="cp-main-tab hvy-only" id="cp-tab-prompts" onclick="cpSwitchTab('prompts', this)">
       <i class="fas fa-wand-magic-sparkles"></i> Prompts
+    </button>
+    <button class="cp-main-tab hvy-only" id="cp-tab-catastro" onclick="cpSwitchTab('catastro', this)">
+      <i class="fas fa-table"></i> Catastro
     </button>
   </div>
 
@@ -97,11 +130,8 @@
     <div class="prompts-head">
       <div>
         <h1 class="prompts-title"><i class="fas fa-wand-magic-sparkles"></i> <span id="prompts-title-text">Prompts</span></h1>
-        <p class="prompts-sub" id="prompts-desc">Plantillas de prompt por <b>sector</b> y <b>profesión</b>. Estas plantillas se aplican a las empresas según los profesionales que tengan configurados.</p>
+        <p class="prompts-sub" id="prompts-desc">Edita el texto de los prompts: la base de cada <b>sector</b> y el prompt de cada <b>profesión</b>. Los sectores y profesiones se crean en la pestaña <b>Sectores</b>.</p>
       </div>
-      <button class="btn-primary prompts-add-btn" id="prompts-add-sector-btn" onclick="promptsAddSector()">
-        <i class="fas fa-plus"></i> Agregar sector
-      </button>
     </div>
     <div class="prompts-grid" id="prompts-sectores"></div>
     <div class="prompts-detail" id="prompts-detail" style="display:none"></div>
@@ -177,6 +207,60 @@
   </div>
 
   <!-- ══════════════════════════════════════════
+       PANEL — SECTORES (solo equipo Heavensy)
+       CRUD de sectores + CRUD de profesiones (nombre).
+       Los prompts (texto) se editan en la pestaña Prompts.
+  ══════════════════════════════════════════ -->
+  <div class="cp-panel" id="cp-panel-sectores">
+    <div class="prompts-head">
+      <div>
+        <h1 class="prompts-title"><i class="fas fa-layer-group"></i> Sectores</h1>
+        <p class="prompts-sub" id="sectores-desc">Crea y administra los sectores y las profesiones de cada uno. El texto del prompt se edita en la pestaña <b>Prompts</b>; los servicios se gestionan aparte.</p>
+      </div>
+      <button class="btn-primary prompts-add-btn" id="sectores-add-btn" onclick="promptsAddSector()"><i class="fas fa-plus"></i> Agregar sector</button>
+    </div>
+
+    <div class="prompts-grid" id="sectores-grid"></div>
+    <div class="prompts-detail" id="sectores-detail" style="display:none"></div>
+
+    <!-- Modal: crear / editar nombre de profesión -->
+    <div class="prompts-modal-overlay" id="prof-modal" style="display:none" onclick="if(event.target===this)profCloseModal()">
+      <div class="prompts-modal" style="max-width:460px">
+        <div class="prompts-modal-head">
+          <span><i class="fas fa-user-tag"></i> <span id="prof-modal-title">Nueva profesión</span></span>
+          <button class="prompts-modal-x" onclick="profCloseModal()">&times;</button>
+        </div>
+        <div class="prompts-modal-body">
+          <label>Nombre de la profesión / oficio</label>
+          <input type="text" id="prof-modal-name" placeholder="Ej: Psicología, Kinesiología…">
+          <p style="font-size:12px;color:#9096b0;margin:4px 0 0">El texto del prompt de esta profesión se edita luego en la pestaña Prompts.</p>
+        </div>
+        <div class="prompts-modal-foot">
+          <button class="btn-secondary" onclick="profCloseModal()">Cancelar</button>
+          <button class="btn-primary" onclick="profSaveModal()"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: confirmar eliminar profesión -->
+    <div class="prompts-modal-overlay" id="prof-del-modal" style="display:none" onclick="if(event.target===this)profCloseDelete()">
+      <div class="prompts-modal" style="max-width:420px">
+        <div class="prompts-modal-head">
+          <span><i class="fas fa-triangle-exclamation" style="color:#ef4444"></i>Eliminar profesión</span>
+          <button class="prompts-modal-x" onclick="profCloseDelete()">&times;</button>
+        </div>
+        <div class="prompts-modal-body">
+          <p style="font-size:13px;color:#34405e;line-height:1.55;margin:0">¿Seguro que quieres eliminar la profesión <b id="prof-del-name"></b>? Su prompt también se eliminará. Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="prompts-modal-foot">
+          <button class="btn-secondary" onclick="profCloseDelete()">Cancelar</button>
+          <button class="btn-primary" style="background:#ef4444;border-color:#ef4444" onclick="profConfirmDelete()"><i class="fas fa-trash"></i> Eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
        PANEL 1 — EMPRESAS
   ══════════════════════════════════════════ -->
   <div class="cp-panel active" id="cp-panel-empresas">
@@ -200,6 +284,22 @@
 <style>
   body:not(.heavensy-mode) .hvy-only,
   body:not(.heavensy-mode) .btn-icon-hvy { display: none !important; }
+  /* Chips de categoría seleccionables (Paso 2 del wizard) */
+  .tp-cats { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tp-cat-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 10px; border-radius: 999px; cursor: pointer;
+    font-size: .76rem; font-weight: 600; line-height: 1.5;
+    background: #f3f1fb; color: #6b7280;
+    border: 1.5px solid transparent; transition: all .12s ease;
+    user-select: none;
+  }
+  .tp-cat-chip:hover { background: #ece8fb; color: #4b4670; }
+  .tp-cat-chip.active {
+    background: #ede4ff; color: #6b3fd4;
+    border-color: #9961FF;
+  }
+  .tp-cat-chip.active::before { content: "✓"; font-weight: 800; }
 </style>
       <!-- stats visibles para todos: muestran las empresas del usuario -->
       <div class="stats" id="st-plans-bar">
@@ -465,42 +565,15 @@
         <div class="panel-content">
           <div class="form-section-title"><i class="fas fa-th-large"></i> Rubro de la empresa</div>
           <p class="form-hint" style="margin-bottom:16px">Selecciona el tipo de negocio. Esto configura automáticamente los labels, módulos y disponibilidad.</p>
-          <div class="rubro-grid" id="rubro-grid">
-            <div class="rubro-card active" data-key="salud" onclick="selectRubro('salud',this)">
-              <div class="rubro-icon">🏥</div>
-              <div class="rubro-name">Salud</div>
-              <div class="rubro-desc">Terapeutas, clínicas, consultas</div>
-            </div>
-            <div class="rubro-card" data-key="cabanas" onclick="selectRubro('cabanas',this)">
-              <div class="rubro-icon">🏕️</div>
-              <div class="rubro-name">Cabañas</div>
-              <div class="rubro-desc">Alojamiento, turismo</div>
-            </div>
-            <div class="rubro-card" data-key="cowork" onclick="selectRubro('cowork',this)">
-              <div class="rubro-icon">💼</div>
-              <div class="rubro-name">Cowork</div>
-              <div class="rubro-desc">Salas, espacios de trabajo</div>
-            </div>
-            <div class="rubro-card" data-key="fitness" onclick="selectRubro('fitness',this)">
-              <div class="rubro-icon">💪</div>
-              <div class="rubro-name">Fitness</div>
-              <div class="rubro-desc">Instructores, clases, gym</div>
-            </div>
-            <div class="rubro-card" data-key="educacion" onclick="selectRubro('educacion',this)">
-              <div class="rubro-icon">📚</div>
-              <div class="rubro-name">Academia</div>
-              <div class="rubro-desc">Profesores, cursos, clases</div>
-            </div>
-            <div class="rubro-card" data-key="propiedades" onclick="selectRubro('propiedades',this)">
-              <div class="rubro-icon">🏠</div>
-              <div class="rubro-name">Propiedades</div>
-              <div class="rubro-desc">Arriendos, visitas, inmobiliaria</div>
-            </div>
-          </div>
+          <div class="rubro-grid" id="rubro-grid"></div>
           <div class="template-preview" id="template-preview">
             <div class="tp-header">
               <span class="tp-badge" id="tp-badge">Terapeuta · Sesión</span>
               <span class="tp-mode" id="tp-mode">Disponibilidad por hora</span>
+            </div>
+            <div class="tp-cats-block" id="tp-cats-block" style="margin-top:10px">
+              <div style="font-size:.72rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Categorías que ofrece la empresa <span style="font-weight:500;text-transform:none;letter-spacing:0;color:#9096b0">(opcional · puedes elegir varias o definirlas luego)</span></div>
+              <div class="tp-cats" id="tp-cats"></div>
             </div>
             <div class="tp-labels" id="tp-labels"></div>
             <div class="tp-modules" id="tp-modules"></div>
@@ -655,19 +728,9 @@
             </div>
           </div>
 
-          <!-- ── CONSTRUCTOR DE PROMPT IA ── -->
+          <!-- ── PERSONALIZACIÓN DEL ASISTENTE (capa empresa) ── -->
           <div class="prompt-block">
-            <div class="form-group" style="max-width:50%">
-              <label>Profesión <span id="w-bot-rubro-tag" class="prompt-rubro-tag">—</span></label>
-              <div class="mdd" id="prof-dd">
-                <button type="button" class="mdd-toggle" id="prof-dd-toggle" onclick="profDdToggle(event)">
-                  <span id="prof-dd-label">Selecciona...</span>
-                  <i class="fas fa-chevron-down"></i>
-                </button>
-                <div class="mdd-menu" id="prof-dd-menu" style="display:none"></div>
-                <input type="hidden" id="w-bot_profession" />
-              </div>
-            </div>
+            <p class="form-hint" style="margin-bottom:14px"><i class="fas fa-circle-info"></i> El texto base, de sector y de cada profesión se administra en la pestaña <b>Prompts</b>. Aquí defines solo lo propio de esta empresa.</p>
 
             <!-- Capa EMPRESA (editable) -->
             <div class="prompt-layer">
@@ -686,17 +749,6 @@
               <div class="prompt-layer-head"><i class="fas fa-brain"></i> Base de conocimiento <span class="prompt-tag edit">editable</span></div>
               <textarea id="w-bot_conocimiento" rows="6" class="prompt-textarea" placeholder="Pega aquí el conocimiento, enfoque o material que quieras que el asistente use para responder con tu criterio..."></textarea>
             </div>
-
-            <!-- Capa DATOS DE LA EMPRESA (automática: empresa → profesionales → servicios) -->
-            <div class="prompt-layer">
-              <div class="prompt-layer-head"><i class="fas fa-link"></i> Datos de la empresa <span class="prompt-tag auto">automático · desde Configuración</span></div>
-              <div id="w-bot_services_preview" class="prompt-services"></div>
-            </div>
-
-            <button type="button" class="btn-secondary" style="margin-top:6px" onclick="wBuildPromptPreview()">
-              <i class="fas fa-eye"></i> Vista previa del prompt final
-            </button>
-            <pre id="w-bot_prompt_final" class="prompt-final-pre" style="display:none"></pre>
           </div>
 
           <div style="display:flex;justify-content:flex-end;margin-top:24px;padding-top:16px;border-top:1px solid #eef0f4">

@@ -2,6 +2,11 @@
    companies.css
    Estilos del módulo de Empresas
    Heavensy Admin
+   ── BITÁCORA ──
+   [v2026.06.09-1] companies.css
+   2026-06-09 | Nuevo estilo .tp-cat-chip para los chips de categoría del
+                preview del wizard (pill con degradado morado, punto de color
+                y micro-animación al hover). Paleta de marca #9961FF.
 ============================================ */
 
 /* ── Root ────────────────────────────────── */
@@ -475,6 +480,41 @@
   color: #374151;
 }
 .tp-label-chip span { color: #9961FF; font-weight: 700; }
+/* Chips de categoría del sector (preview del wizard) */
+.tp-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.tp-cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: linear-gradient(135deg, #f4ecff 0%, #e9dcff 100%);
+  border: 1px solid #d9c7ff;
+  border-radius: 999px;
+  padding: 4px 12px 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b3fc4;
+  box-shadow: 0 1px 2px rgba(153, 97, 255, 0.12);
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+  cursor: default;
+}
+.tp-cat-chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #9961FF;
+  box-shadow: 0 0 0 2px rgba(153, 97, 255, 0.18);
+  flex: none;
+}
+.tp-cat-chip:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #ede1ff 0%, #ddc9ff 100%);
+  box-shadow: 0 3px 8px rgba(153, 97, 255, 0.22);
+}
 .tp-modules {
   display: flex;
   flex-wrap: wrap;

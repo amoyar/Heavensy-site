@@ -2,6 +2,12 @@
 // USERS.JS — Módulo de Usuarios
 // Heavensy Admin
 // ============================================
+// ── BITÁCORA ──
+// [v2026.06.09-1] users.js
+// 2026-06-09 | Aislamiento de empresas: el wizard de usuario nuevo sugiere la
+//              empresa según contexto (override / empresa del admin); el superadmin
+//              en vista plataforma NO pre-carga ninguna (antes colaba Heavensy como
+//              primaria). uAddEmpresa marca como principal la primera empresa.
 
 console.log('✅ users.js cargado');
 
@@ -279,13 +285,22 @@ async function openUserWizard(username = null) {
   if (username) {
     await loadUserIntoWizard(username);
   } else {
-    // Nueva empresa: agregar empresa activa por defecto
-    _wCompanies = [{
-      company_id:   _userCompanyId,
-      company_name: _getCompanyName(_userCompanyId),
-      roles:        [],
-      is_primary:   true,
-    }];
+    // Nuevo usuario: sugerir empresa según el CONTEXTO actual.
+    // - Con contexto (override) o admin de empresa → sugerir esa empresa.
+    // - Superadmin en vista plataforma (sin contexto) → NO pre-cargar: que elija
+    //   explícitamente, para no asignar Heavensy por defecto.
+    const hayContexto = !!window._cpOverrideCompanyId;
+    const esSuperadminSinContexto = window.IS_HEAVENSY && !hayContexto;
+    if (esSuperadminSinContexto || !_userCompanyId) {
+      _wCompanies = [];
+    } else {
+      _wCompanies = [{
+        company_id:   _userCompanyId,
+        company_name: _getCompanyName(_userCompanyId),
+        roles:        [],
+        is_primary:   true,
+      }];
+    }
     renderWizardEmpresas();
   }
 
@@ -482,7 +497,7 @@ function uAddEmpresa() {
     company_id:   unusedCompany.company_id,
     company_name: unusedCompany.name || unusedCompany.company_id,
     roles:        [],
-    is_primary:   false,
+    is_primary:   _wCompanies.length === 0,   // la primera empresa agregada es la principal
   });
   renderWizardEmpresas();
 }
