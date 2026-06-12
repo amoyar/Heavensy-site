@@ -2,6 +2,14 @@
 //  CONFIGURACIÓN — HEAVENSY
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
+// ── BITÁCORA ──
+// [v2026.06.11-1] configuracion.js
+// 2026-06-11 | Fase 3.1 — perfil público real: ppSaveConfig escribe ADEMÁS el
+//              borrador en backend (PUT /api/perfil-publico/borrador; el
+//              localStorage ep_* queda como caché del preview).
+//              actualizarPublicacion ya NO descarga un HTML estático: llama a
+//              POST /api/perfil-publico/publicar y muestra la URL pública
+//              (/p/<slug>). El modal de primera publicación se conserva.
 
 // ── HELPERS: construir filas de programas y servicios ──
 function _ppBuildProgRow(p, profileType) {
@@ -146,19 +154,19 @@ function ppSaveConfig() {
     ['--text-titulo','--titulo-bg','--text-lt','--text-franja','--navy'].forEach(v=>{
       const val=localStorage.getItem('ep_color_'+v); if(val) colores[v]=val;
     });
-    apiCall('/api/perfil-profesional/config',{
-      method:'PATCH',
-      body:JSON.stringify({
-        colores,
-        opacidad:    parseFloat(localStorage.getItem('ep_opacidad')||'55'),
-        slogan:      localStorage.getItem('ep_texto_slogan')||'',
-        frase:       localStorage.getItem('ep_texto_frase')||'',
-        direccion:   localStorage.getItem('ep_texto_direccion')||'',
-        nombre_empresa: localStorage.getItem('ep_nombre_empresa')||'',
-        fondo_color: localStorage.getItem('ep_fondo_color')||'',
-        portada_position: JSON.parse(localStorage.getItem('ep_portada_position')||'{"x":50,"y":50}'),
-      })
-    }).catch(()=>{});
+    const payload = {
+      colores,
+      opacidad:    parseFloat(localStorage.getItem('ep_opacidad')||'55'),
+      slogan:      localStorage.getItem('ep_texto_slogan')||'',
+      frase:       localStorage.getItem('ep_texto_frase')||'',
+      direccion:   localStorage.getItem('ep_texto_direccion')||'',
+      nombre_empresa: localStorage.getItem('ep_nombre_empresa')||'',
+      fondo_color: localStorage.getItem('ep_fondo_color')||'',
+      portada_position: JSON.parse(localStorage.getItem('ep_portada_position')||'{"x":50,"y":50}'),
+    };
+    apiCall('/api/perfil-profesional/config',{ method:'PATCH', body:JSON.stringify(payload) }).catch(()=>{});
+    // Fase 3.1: el mismo payload alimenta el BORRADOR de la página pública
+    apiCall('/api/perfil-publico/borrador',{ method:'PUT', body:JSON.stringify(payload) }).catch(()=>{});
   }, 800);
 }
 
@@ -580,7 +588,7 @@ function cfgIrAlPerfil() {
 }
 
 function actualizarPublicacion(btn) {
-  // Primera vez → modal de empresa creada (no descarga)
+  // Primera vez → modal de empresa creada (se conserva)
   if (!localStorage.getItem('empresa_publicada')) {
     localStorage.setItem('empresa_publicada', '1');
     var modal = document.getElementById('cfg-empresa-modal');
@@ -588,30 +596,29 @@ function actualizarPublicacion(btn) {
     return;
   }
   const orig = btn.innerHTML;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px"></i>Generando…';
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px"></i>Publicando…';
   btn.disabled = true;
-  setTimeout(() => {
-    try {
-      const iframe = document.getElementById('perfil-iframe');
-      let html = '<!DOCTYPE html>\n' + iframe.contentDocument.documentElement.outerHTML;
-      html = html.replace('var _EP_BAKED = false; /* EP_BAKED_FLAG */', 'var _EP_BAKED = true; /* EP_BAKED_FLAG */');
-      const blob = new Blob([html], {type:'text/html; charset=utf-8'});
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'perfil_profesional.html';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-      btn.innerHTML = '<i class="fas fa-check" style="margin-right:6px"></i>¡Descargado!';
-      btn.style.background = '#10b981';
-    } catch(err) {
-      btn.innerHTML = '<i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>Error al generar';
-      btn.style.background = '#ef4444';
-    }
-    setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.disabled = false; }, 2500);
-  }, 350);
+  // Fase 3.1: publicar = copiar el borrador al snapshot público (backend)
+  apiCall('/api/perfil-publico/publicar', { method: 'POST' })
+    .then(res => {
+      if (res && res.ok && res.data && res.data.slug) {
+        btn.innerHTML = '<i class="fas fa-check" style="margin-right:6px"></i>¡Publicado!';
+        btn.style.background = '#10b981';
+        if (typeof showToast === 'function')
+          showToast('Página publicada: /p/' + res.data.slug + ' ✅', 'success');
+      } else {
+        const msg = (res && res.data && res.data.error) || 'No se pudo publicar';
+        btn.innerHTML = '<i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>Error';
+        if (typeof showToast === 'function') showToast(msg, 'error');
+      }
+    })
+    .catch(() => {
+      btn.innerHTML = '<i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>Error';
+    })
+    .finally(() => {
+      setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.disabled = false; }, 2500);
+    });
 }
-
-// ── JM USER EDIT TABS ──
 function jmFeedback(btn, cb) {
   const orig = btn.innerHTML;
   btn.innerHTML = '<i class="fas fa-check" style="margin-right:5px"></i>Guardado';

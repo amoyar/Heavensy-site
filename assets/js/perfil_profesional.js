@@ -1,3 +1,13 @@
+// ── BITÁCORA ──
+// [v2026.06.11-1] perfil_profesional.js
+// 2026-06-11 | Fase 3.1 — página DUAL: nuevo modo EMPRESA PÚBLICA por slug
+//              (?empresa=<slug> o ruta /p/<slug>) que consume
+//              GET /api/public/empresa/<slug> sin token. El bloque que aplica
+//              la config visual se extrajo a _ppAplicarPerfil() y lo comparten
+//              el modo por resource_id y el modo empresa. "Hablemos" y
+//              "Agendar" enlazan a wa.me si el perfil publica whatsapp_publico.
+//              Modo preview (?cfg=1) y modo por resource_id: intactos.
+
 // ── MODO PREVIEW (solo desde configuración con ?cfg=1) ──
 (function() {
   if (window.self === window.top) return;
@@ -123,6 +133,81 @@ function _ppRenderCalendar(year, month){
   if(btns[1]) btns[1].onclick=()=>{ const dt=new Date(year,month+1,1); _ppRenderCalendar(dt.getFullYear(),dt.getMonth()); };
 }
 
+
+// ── Aplicador compartido de la config visual del perfil ──
+// Lo usan el modo por resource_id (pp_config) y el modo empresa pública
+// (snapshot publicado): mismos nombres de campo en ambas fuentes.
+function _ppAplicarPerfil(c){
+  if(!c) return;
+  const R=document.documentElement;
+  if(c.colores) Object.entries(c.colores).forEach(([k,v])=>R.style.setProperty(k,v));
+  if(c.portada_url){ const h=document.querySelector('.hero'); if(h){ h.style.backgroundImage=`url('${c.portada_url}')`;
+    const p=c.portada_position; if(p&&p.x!==undefined) h.style.backgroundPosition=p.x+'% '+p.y+'%'; } }
+  if(c.foto_url){ const p=document.querySelector('.profile-photo'); if(p) p.src=c.foto_url; }
+  if(c.fondo_url){ document.body.style.backgroundImage=`url('${c.fondo_url}')`; document.body.style.backgroundSize='cover'; }
+  if(c.fondo_color){ document.body.style.backgroundImage='none'; document.body.style.backgroundColor=c.fondo_color; }
+  if(c.slogan){ const el=document.querySelector('.hero-banner span'); if(el) el.textContent=c.slogan; }
+  if(c.frase){ const el=document.querySelector('.profile-desc'); if(el) el.textContent=c.frase; }
+  if(c.direccion){ const el=document.querySelector('.profile-addr'); if(el){ const svg=el.querySelector('svg'); el.textContent=c.direccion; if(svg)el.prepend(svg); el.style.display=''; } }
+  if(c.nombre_empresa){ const el=document.getElementById('profile-name'); if(el) el.textContent=c.nombre_empresa; }
+  if(c.especialidades){ const el=document.querySelector('.profile-specs'); if(el) el.textContent=Array.isArray(c.especialidades)?c.especialidades.join(' · '):c.especialidades; }
+  if(c.modos) renderModos(c.modos);
+  if(c.horario) renderHorario(c.horario);
+  if(c.opacidad!==undefined){ const v=(c.opacidad/100).toFixed(2); document.querySelectorAll('.profile-top-glass,.service-card,.comment-card,.agenda-card,.sidebar-hablemos,.prof-card').forEach(el=>{ el.style.cssText+=`;background:rgba(255,255,255,${v}) !important`; }); }
+  if(c.inf_oficio?.length) renderInfOficio(c.inf_oficio);
+  if(c.infraestructura?.length) renderInfOficio(c.infraestructura);
+  if(c.equipo_prof) renderProfCard(c.equipo_prof);
+}
+
+// ── MODO EMPRESA PÚBLICA (heavensy.cl/p/<slug>) ──
+// Fuente: GET /api/public/empresa/<slug> (snapshot publicado, sin token)
+async function initPerfilEmpresa(){
+  if(document.documentElement.classList.contains('in-preview')) return false;
+  const urlParams=new URLSearchParams(window.location.search);
+  let slug=urlParams.get('empresa')||'';
+  if(!slug){ const m=window.location.pathname.match(/\/p\/([a-z0-9-]+)/); if(m) slug=m[1]; }
+  if(!slug) return false;
+
+  const data = await _ppFetch('/api/public/empresa/'+encodeURIComponent(slug));
+  if(!data||!data.success){
+    const el=document.getElementById('profile-name');
+    if(el) el.textContent='Página no disponible';
+    return true;
+  }
+
+  if(data.empresa){ const el=document.getElementById('profile-name'); if(el) el.textContent=data.empresa; }
+  _ppAplicarPerfil(data.perfil||{});
+
+  // Servicios y programas publicados
+  if(data.servicios?.length){
+    _ppServices=data.servicios;
+    renderServicios(data.servicios.map(s=>({
+      nombre: s.nombre||'',
+      meta: [s.duracion?(s.duracion+' min'):'', s.mod||'', s.desc||''].filter(Boolean).join(' · ')||'—',
+      precio: s.precio?(String(s.precio).startsWith('$')?s.precio:'$'+Number(s.precio).toLocaleString('es-CL')):'Consultar'
+    })));
+    _ppBuildBookingChips();
+  }
+  if(data.programas?.length) renderProgramas(data.programas);
+
+  // Recursos publicados (equipo o unidades, según el rubro)
+  (data.recursos||[]).forEach(r=>renderProfCard({
+    nombre: r.name||'', foto: r.photo_url||'',
+    frase: r.slogan||r.description||'',
+    especialidades: (r.specialties||r.features||[]).join(' · ')
+  }));
+
+  // Hablemos / Agendar → WhatsApp del negocio (puerta de entrada al bot)
+  const wsp=(data.perfil||{}).whatsapp_publico;
+  if(wsp){
+    const num=String(wsp).replace(/[^0-9]/g,'');
+    const abrir=()=>window.open('https://wa.me/'+num+'?text='+encodeURIComponent('Hola! Vengo desde la página de '+(data.empresa||'')), '_blank');
+    const h=document.querySelector('.sidebar-hablemos'); if(h){ h.style.cursor='pointer'; h.addEventListener('click', abrir); }
+    const b=document.getElementById('btn-agendar'); if(b){ b.onclick=abrir; }
+  }
+  return true;
+}
+
 async function initPerfilPublico(){
   const urlParams=new URLSearchParams(window.location.search);
   const resourceId=urlParams.get('resource_id');
@@ -142,23 +227,7 @@ async function initPerfilPublico(){
 
   // Perfil config (colores, slogan, frase, portada, fondo, foto)
   const cfgData = await _ppFetch('/api/perfil-profesional/config', { resource_id: resourceId });
-  if(cfgData?.success && cfgData.config){
-    const c=cfgData.config;
-    const R=document.documentElement;
-    if(c.colores) Object.entries(c.colores).forEach(([k,v])=>R.style.setProperty(k,v));
-    if(c.portada_url){ const h=document.querySelector('.hero'); if(h) h.style.backgroundImage=`url('${c.portada_url}')`; }
-    if(c.foto_url){ const p=document.querySelector('.profile-photo'); if(p) p.src=c.foto_url; }
-    if(c.fondo_url){ document.body.style.backgroundImage=`url('${c.fondo_url}')`; document.body.style.backgroundSize='cover'; }
-    if(c.fondo_color){ document.body.style.backgroundImage='none'; document.body.style.backgroundColor=c.fondo_color; }
-    if(c.slogan){ const el=document.querySelector('.hero-banner span'); if(el) el.textContent=c.slogan; }
-    if(c.frase){ const el=document.querySelector('.profile-desc'); if(el) el.textContent=c.frase; }
-    if(c.direccion){ const el=document.querySelector('.profile-addr'); if(el){ const svg=el.querySelector('svg'); el.textContent=c.direccion; if(svg)el.prepend(svg); el.style.display=''; } }
-    if(c.nombre_empresa){ const el=document.getElementById('profile-name'); if(el) el.textContent=c.nombre_empresa; }
-    if(c.especialidades){ const el=document.querySelector('.profile-specs'); if(el) el.textContent=c.especialidades; }
-    if(c.opacidad!==undefined){ const v=(c.opacidad/100).toFixed(2); document.querySelectorAll('.profile-top-glass,.service-card,.comment-card,.agenda-card,.sidebar-hablemos,.prof-card').forEach(el=>{ el.style.cssText+=`;background:rgba(255,255,255,${v}) !important`; }); }
-    if(c.inf_oficio?.length) renderInfOficio(c.inf_oficio);
-    if(c.equipo_prof) renderProfCard(c.equipo_prof);
-  }
+  if(cfgData?.success && cfgData.config) _ppAplicarPerfil(cfgData.config);
 
   // Servicios del resource
   const svcsData = await _ppFetch(`/api/agenda/resources/${resourceId}/services`);
@@ -207,7 +276,7 @@ async function initPerfilPublico(){
 // Auto-iniciar cuando NO es preview
 (function(){
   if(!document.documentElement.classList.contains('in-preview')){
-    initPerfilPublico();
+    initPerfilEmpresa().then(es=>{ if(!es) initPerfilPublico(); });
   }
 })();
 

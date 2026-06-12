@@ -1,3 +1,11 @@
+/* ── BITÁCORA ──
+   [v2026.06.11-1] perfil_profesional.css
+   2026-06-11 | Eliminadas imágenes demo hardcodeadas (980452...jpg y
+                fotoquimica.jpg, huella Lattice) que daban 404 en consola.
+                Defaults neutros: el fondo y la portada reales vienen del
+                perfil publicado / preview (fondo_url, fondo_color,
+                portada_url los aplican por JS).
+   ══════════════════════════════════════ */
 /* ══════════════════════════════════════
    PERFIL PROFESIONAL — HEAVENSY
 ══════════════════════════════════════ */
@@ -7,7 +15,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 b,strong,.profile-name,.service-name,.comment-author,.cal-month{color:var(--text-titulo)}
 .service-price,.comments-title,.slot-time{color:#333333}
-body{font-family:'DM Sans',sans-serif;color:var(--text);background:url('980452e625392e917a227229bd8e903c.jpg') center top/cover fixed;overflow-x:hidden}
+body{font-family:'DM Sans',sans-serif;color:var(--text);background:#F4F6FB;overflow-x:hidden}
 
 /* NAV */
 .nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.75);backdrop-filter:blur(16px);border-bottom:1px solid rgba(200,210,240,0.4);padding:.8rem 2rem}
@@ -21,7 +29,7 @@ body{font-family:'DM Sans',sans-serif;color:var(--text);background:url('980452e6
 .nav-avatar{width:32px;height:32px;border-radius:50%;background:var(--btn);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:700}
 
 /* HERO */
-.hero{position:relative;min-height:380px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;background:url('fotoquimica.jpg') center center/cover no-repeat}
+.hero{position:relative;min-height:380px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;background:linear-gradient(135deg,#9961FF 0%,#5b8dee 60%,#1E2A5E 100%)}
 .hero img.hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%}
 .hero-banner{display:block;width:100%;background:var(--titulo-bg);backdrop-filter:blur(2px);padding:.45rem 2rem;text-align:center;position:relative;z-index:2}
 .hero-banner span{font-family:'Libre Baskerville',serif;font-style:italic;letter-spacing:.25em;font-size:.95rem;color:var(--text-franja);text-shadow:0 1px 4px rgba(0,0,0,.3)}

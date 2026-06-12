@@ -3,6 +3,12 @@
 // Heavensy Admin
 // ============================================
 // ── BITÁCORA ──
+// [v2026.06.10-3] companies.js
+// 2026-06-10 | Fix UX Paso 2: al navegar entre rubros ya no se pierde la selección
+//              de categorías. Nueva memoria por sesión _catsPorRubro: al salir de
+//              un rubro se recuerda su selección y al volver se restaura. Al editar,
+//              la selección guardada de la empresa queda anclada a su rubro. El
+//              payload sigue llevando solo las categorías del rubro activo.
 // [v2026.06.10-2] companies.js
 // 2026-06-10 | Paso 2 (Rubro): categorías ahora son SELECCIONABLES (multi, opcional).
 //              Nuevo estado _selectedCats (profession_key[]) + wToggleCat. Se resetea
@@ -81,6 +87,7 @@ let _editingCompanyId  = null;  // null = nueva empresa
 let _currentStep       = 0;
 let _selectedRubro     = 'salud';
 let _selectedCats      = [];     // profession_key[] seleccionadas para la empresa (paso 2)
+let _catsPorRubro      = {};     // memoria de selección por rubro durante la sesión del wizard
 let _rubroConfig       = null;  // config del template seleccionado
 
 // ── Helpers de sector (fuente única: PROMPT_SECTORES, cargado de la BD) ──
@@ -1494,6 +1501,7 @@ async function openWizard(companyId = null) {
   _currentStep      = 0;
   _selectedRubro    = 'salud';
   _selectedCats     = [];
+  _catsPorRubro     = {};
   _rubroConfig      = null;
 
   // Limpiar formulario
@@ -1566,6 +1574,7 @@ async function loadCompanyIntoWizard(companyId) {
   // Paso 2: Sector (preferir sector_key; normalizar rubro legado si la empresa es vieja)
   _selectedRubro = _sectorKeyDeEmpresa(company, config);
   _selectedCats  = Array.isArray(company.profesiones) ? company.profesiones.slice() : [];
+  _catsPorRubro  = { [_selectedRubro]: _selectedCats.slice() };  // ancla la selección guardada a su rubro
   await wRenderRubros();   // pinta las tarjetas y marca activa _selectedRubro
   await loadRubroTemplate(_selectedRubro);  // renderTemplatePreview pinta las categorías (marca _selectedCats)
 
@@ -1628,6 +1637,7 @@ function clearWizardForm() {
 
   // Reset personalización
   _selectedCats      = [];
+  _catsPorRubro     = {};
   _botStyle          = 'cercano';
 
   // Reset formas de pago (3 métodos, mismos campos)
@@ -1657,6 +1667,7 @@ function clearWizardForm() {
   });
   _selectedRubro = 'salud';
   _selectedCats  = [];
+  _catsPorRubro  = {};
 
   // Limpiar error
   const errEl = document.getElementById('wizard-error');
@@ -1727,7 +1738,11 @@ function showWizardError(msg) {
 // ── Rubro ─────────────────────────────────────
 
 async function selectRubro(key, card) {
-  if (key !== _selectedRubro) _selectedCats = [];  // categorías no se conservan entre rubros
+  if (key !== _selectedRubro) {
+    // Recordar la selección del rubro que dejamos y restaurar la del nuevo (si la hubo)
+    _catsPorRubro[_selectedRubro] = _selectedCats.slice();
+    _selectedCats = (_catsPorRubro[key] || []).slice();
+  }
   _selectedRubro = key;
   document.querySelectorAll('.rubro-card').forEach(c => c.classList.remove('active'));
   card.classList.add('active');
