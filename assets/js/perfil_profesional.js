@@ -1,4 +1,18 @@
 // ── BITÁCORA ──
+// [v2026.06.14-7] perfil_profesional.js
+// 2026-06-14 | Galería en la página pública: renderInfOficio soporta item.url
+//              (Cloudinary) además de item.data (base64); se renderiza desde
+//              data.perfil.galeria. Para todos los rubros.
+// [v2026.06.14-6] perfil_profesional.js
+// 2026-06-14 | renderProfCard acepta tipo='objeto': tarjeta de unidad con foto
+//              rectangular, precio destacado y características como chips (clase
+//              prof-card--obj). La de persona queda igual.
+// [v2026.06.14-5] perfil_profesional.js
+// 2026-06-14 | Quitados datos demo hardcodeados: horasData traía
+//              'Psicoterapia'/'Hipnosis Clínica' con horarios fijos que
+//              aparecían en rubros que no corresponden. Ahora vacío; las horas
+//              vienen del backend (recurso real) y sin datos muestra mensaje
+//              neutro. El calendario ya era dinámico (fecha real).
 // [v2026.06.14-4] perfil_profesional.js
 // 2026-06-14 | Naturaleza objeto: el bloque "Horario de atención" (de persona)
 //              ahora muestra "Estadía" con check-in/check-out y mínimo de
@@ -70,12 +84,13 @@ async function _ppFetch(path, params) {
   } catch { return null; }
 }
 
-const horasData = {
-  'Psicoterapia':   ['10:00','11:00','12:30','15:00','16:00'],
-  'Hipnosis Clínica':['10:30','13:00','14:30','17:00']
-};
+// [14-06-2026] Sin datos demo: las horas reales vienen del backend cuando hay
+// recurso (_ppResourceId). Este objeto queda vacío a propósito; antes traía
+// 'Psicoterapia'/'Hipnosis Clínica' hardcodeados que aparecían en rubros que
+// no corresponden.
+const horasData = {};
 let diaSeleccionado = null;
-let chipSeleccionado = 'Psicoterapia';
+let chipSeleccionado = '';
 
 function selDia(el){
   document.querySelectorAll('.cal-day').forEach(d=>d.classList.remove('selected'));
@@ -115,7 +130,9 @@ async function mostrarHoras(){
     }
   } else {
     const horas = horasData[chipSeleccionado] || [];
-    grid.innerHTML = horas.map(h=>`<div class="hora-chip" onclick="selHora(this)">${h}</div>`).join('');
+    grid.innerHTML = horas.length
+      ? horas.map(h=>`<div class="hora-chip" onclick="selHora(this)">${h}</div>`).join('')
+      : '<span style="font-size:12px;color:var(--text-lt)">Selecciona un servicio para ver horas disponibles</span>';
     wrap.style.display='block';
     document.getElementById('btn-agendar').style.display='none';
   }
@@ -221,6 +238,10 @@ async function initPerfilEmpresa(){
   if(data.empresa){ const el=document.getElementById('profile-name'); if(el) el.textContent=data.empresa; }
   _ppAplicarPerfil(data.perfil||{});
 
+  // [14-06] Galería publicada (URLs de Cloudinary) — para todos los rubros.
+  const gal = (data.perfil||{}).galeria;
+  if(Array.isArray(gal) && gal.length) renderInfOficio(gal);
+
   // Servicios y programas publicados
   if(data.servicios?.length){
     _ppServices=data.servicios;
@@ -253,7 +274,7 @@ async function initPerfilEmpresa(){
         specs:  [r.capacidad?(r.capacidad+' personas'):'', r.dormitorios?(r.dormitorios+' dorm.'):''].filter(Boolean).join(' · '),
         desc:   r.precio_noche?('$'+Number(r.precio_noche).toLocaleString('es-CL')+' / noche'):'',
         modos:  Array.isArray(r.features)?r.features:[]
-      }, true);
+      }, true, 'objeto');
     } else {
       renderProfCard({
         nombre: r.name||'',
@@ -359,16 +380,20 @@ async function initPerfilPublico(){
 
 function renderInfOficio(items){
   const row = document.getElementById('photos-row');
-  if(!row) return;
-  row.innerHTML = items.map(item => item.isVideo
-    ? `<div class="photo-thumb is-video" onclick="abrirVideo('${item.data}')">
-        <video src="${item.data}" muted playsinline preload="metadata" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:12px"></video>
-        <div class="play" style="position:relative;z-index:2"><svg width="14" height="14" viewBox="0 0 24 24" fill="var(--text-franja)"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
-       </div>`
-    : `<div class="photo-thumb">
-        <img src="${item.data}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;border-radius:12px">
-       </div>`
-  ).join('');
+  if(!row || !Array.isArray(items) || !items.length) return;
+  // [14-06] Soporta item.url (Cloudinary, página pública) o item.data (base64, preview)
+  row.innerHTML = items.map(item => {
+    const src = item.url || item.data || '';
+    if(!src) return '';
+    return item.isVideo
+      ? `<div class="photo-thumb is-video" onclick="abrirVideo('${src}')">
+          <video src="${src}" muted playsinline preload="metadata" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:12px"></video>
+          <div class="play" style="position:relative;z-index:2"><svg width="14" height="14" viewBox="0 0 24 24" fill="var(--text-franja)"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+         </div>`
+      : `<div class="photo-thumb">
+          <img src="${src}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;border-radius:12px">
+         </div>`;
+  }).join('');
 }
 function renderHorario(h){
   const el = id => document.getElementById(id);
@@ -505,7 +530,7 @@ function abrirVideo(src){
   overlay.classList.add('open');
   vid.play();
 }
-function renderProfCard(p, append){
+function renderProfCard(p, append, tipo){
   const carousel = document.getElementById('prof-carousel');
   const wrap     = document.getElementById('prof-carousel-wrap');
   if(!carousel) return;
@@ -516,20 +541,39 @@ function renderProfCard(p, append){
     return;
   }
 
-  const iconos = {Presencial:'<i class="fas fa-map-marker-alt"></i>', Online:'<i class="fas fa-video"></i>', 'A domicilio':'<i class="fas fa-home"></i>'};
-  const modosHTML = (p.modos && p.modos.length)
-    ? p.modos.map(m=>`<span class="prof-card-modo">${iconos[m]||'<i class="fas fa-circle"></i>'} ${m}</span>`).join('')
-    : '';
-
-  const cardHTML = `
-    <div class="prof-card">
-      ${p.foto ? `<img class="prof-card-photo" src="${p.foto}" alt="${p.nombre||''}">` : ''}
-      <div class="prof-card-name">${p.nombre||''}</div>
-      <div class="prof-card-specs">${p.specs||''}</div>
-      <div class="prof-card-desc">${p.desc||''}</div>
-      ${modosHTML ? `<div class="prof-card-modos">${modosHTML}</div>` : ''}
-      ${p.addr ? `<div class="prof-card-addr"><i class="fas fa-map-pin"></i> ${p.addr}</div>` : ''}
-    </div>`;
+  let cardHTML;
+  if(tipo === 'objeto'){
+    // Tarjeta de unidad (cabaña/inmueble): foto rectangular, jerarquía clara,
+    // precio destacado y características como chips. [14-06]
+    const features = (p.modos && p.modos.length)
+      ? `<div class="prof-card-feats">${p.modos.map(f=>`<span class="prof-card-feat">${f}</span>`).join('')}</div>`
+      : '';
+    cardHTML = `
+      <div class="prof-card prof-card--obj">
+        ${p.foto ? `<img class="prof-card-img" src="${p.foto}" alt="${p.nombre||''}">` : '<div class="prof-card-img prof-card-img--ph"><i class="fas fa-image"></i></div>'}
+        <div class="prof-card-body">
+          <div class="prof-card-name">${p.nombre||''}</div>
+          ${p.specs ? `<div class="prof-card-specs">${p.specs}</div>` : ''}
+          ${p.desc ? `<div class="prof-card-price">${p.desc}</div>` : ''}
+          ${features}
+        </div>
+      </div>`;
+  } else {
+    // Tarjeta de equipo (persona): foto redonda centrada.
+    const iconos = {Presencial:'<i class="fas fa-map-marker-alt"></i>', Online:'<i class="fas fa-video"></i>', 'A domicilio':'<i class="fas fa-home"></i>'};
+    const modosHTML = (p.modos && p.modos.length)
+      ? p.modos.map(m=>`<span class="prof-card-modo">${iconos[m]||'<i class="fas fa-circle"></i>'} ${m}</span>`).join('')
+      : '';
+    cardHTML = `
+      <div class="prof-card">
+        ${p.foto ? `<img class="prof-card-photo" src="${p.foto}" alt="${p.nombre||''}">` : ''}
+        <div class="prof-card-name">${p.nombre||''}</div>
+        <div class="prof-card-specs">${p.specs||''}</div>
+        <div class="prof-card-desc">${p.desc||''}</div>
+        ${modosHTML ? `<div class="prof-card-modos">${modosHTML}</div>` : ''}
+        ${p.addr ? `<div class="prof-card-addr"><i class="fas fa-map-pin"></i> ${p.addr}</div>` : ''}
+      </div>`;
+  }
 
   if(append) carousel.insertAdjacentHTML('beforeend', cardHTML);
   else carousel.innerHTML = cardHTML;

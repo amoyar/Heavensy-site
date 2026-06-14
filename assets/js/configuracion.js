@@ -3,6 +3,11 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.14-2] configuracion.js
+// 2026-06-14 | Galería (inf_oficio) ahora se publica: al subir cada imagen
+//              también va a Cloudinary (ppUploadImage) y su URL se guarda en
+//              ep_galeria_urls, que entra al payload (campo 'galeria'). Antes
+//              solo vivía en preview (base64). El preview base64 se mantiene.
 // [v2026.06.14-1] configuracion.js
 // 2026-06-14 | Nombres de foto del paso 5: al subir se guarda el nombre real
 //              (ep_*_fname); al cargar, _epNombreFoto muestra nombre guardado >
@@ -205,6 +210,7 @@ function ppSaveConfig() {
       portada_url: localStorage.getItem('ep_portada_url')||'',
       foto_url:    localStorage.getItem('ep_foto_url')||'',
       fondo_url:   localStorage.getItem('ep_fondo_url')||'',
+      galeria:     JSON.parse(localStorage.getItem('ep_galeria_urls')||'[]'),  // [14-06] galería con URLs de Cloudinary
     };
     apiCall('/api/perfil-profesional/config',{ method:'PATCH', body:JSON.stringify(payload) }).catch(()=>{});
     // Fase 3.1: el mismo payload alimenta el BORRADOR de la página pública
@@ -564,6 +570,13 @@ async function guardarDisponibilidad(btn) {
 
 // ── INF OFICIO ──
 const infMedia = [];
+function _epGuardarGaleria(){
+  // [14-06] Guardar en localStorage las URLs de Cloudinary (las subidas, con url
+  // que empieza por http) para que entren al payload de publicación.
+  const urls = infMedia.filter(m => m && m.cloudUrl).map(m => ({ url: m.cloudUrl, isVideo: !!m.isVideo }));
+  localStorage.setItem('ep_galeria_urls', JSON.stringify(urls));
+  if(typeof ppSaveConfig === 'function') ppSaveConfig();
+}
 function onInfOficio(input) {
   const grid = document.getElementById('inf-grid');
   const MAX  = 3;
@@ -586,6 +599,10 @@ function onInfOficio(input) {
       pmSend({type:'inf_oficio', value: infMedia.filter(m=>m.data).map(m=>({data:m.data,isVideo:m.isVideo}))});
     };
     r.readAsDataURL(file);
+    // [14-06] Subir a Cloudinary para que la galería persista en la publicación.
+    ppUploadImage(file, 'perfil_profesional_galeria').then(cloudUrl => {
+      if(cloudUrl){ infMedia[idx].cloudUrl = cloudUrl; _epGuardarGaleria(); }
+    });
     updateInfCount();
   });
   input.value = '';
@@ -598,6 +615,7 @@ function removeInf(btn) {
   document.querySelectorAll('#inf-grid .media-thumb').forEach((t,i) => t.dataset.idx = i);
   const clean = infMedia.filter(Boolean); infMedia.length = 0; clean.forEach(m => infMedia.push(m));
   pmSend({type:'inf_oficio', value: infMedia.filter(m=>m&&m.data).map(m=>({data:m.data,isVideo:m.isVideo}))});
+  _epGuardarGaleria();  // [14-06] actualizar URLs publicadas tras quitar una
   updateInfCount();
 }
 function updateInfCount() {

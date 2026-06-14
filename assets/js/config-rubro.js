@@ -7,6 +7,15 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.14-3] config-rubro.js
+// 2026-06-14 | Formato monetario en la tabla "Mis cabañas": los campos de tipo
+//              price (o key precio/valor/monto) se muestran como $50.000 en vez
+//              de 50000. Por tipo de campo, sirve para cualquier rubro objeto.
+// [v2026.06.14-2] config-rubro.js
+// 2026-06-14 | Hardcodeos que inducían a error: el paso 2 mostraba check-in/out
+//              con value='15:00'/'12:00' aunque no hubiera dato guardado
+//              (parecía guardado sin estarlo). Ahora value solo si hay dato
+//              real; la sugerencia va como placeholder.
 // [v2026.06.14-1] config-rubro.js
 // 2026-06-14 | Activar/desactivar recurso: la Configuración pide
 //              ?include_inactive=1 y muestra los inactivos atenuados (opacity
@@ -261,13 +270,25 @@ function _crFila(r){
   const esP = _esPersona();
   const f = r.fields || {};
   const campos = (_crRec.campos || []);
+  // Formatea el valor de una celda según el tipo/clave del campo: los de precio
+  // se muestran como moneda chilena ($50.000). [14-06]
+  const _fmtCelda = (campo) => {
+    const val = f[campo?.key];
+    if (val === undefined || val === null || val === '') return '—';
+    const esPrecio = campo?.tipo === 'price' || /precio|valor|monto/i.test(campo?.key || '');
+    if (esPrecio) {
+      const n = Number(String(val).replace(/[^0-9.-]/g, ''));
+      if (!isNaN(n)) return '$' + n.toLocaleString('es-CL');
+    }
+    return val;
+  };
   // celdas intermedias según naturaleza (alineadas a las columnas sembradas)
   const medias = esP
     ? `<td>${r.email || (r.user_id ? '<span class="cr-badge"><i class="fas fa-user-check"></i> Vinculado</span>' : '<span style="color:#ef4444;font-size:10.5px;font-weight:700">Sin usuario</span>')}</td>
        <td>${r.user_id ? '<span class="cr-badge">Vinculado</span>' : '<span style="color:#a8aed1">—</span>'}</td>`
-    : `<td>${f[campos[0]?.key] ?? '—'}</td>
+    : `<td>${_fmtCelda(campos[0])}</td>
        <td>${(r.features || []).slice(0,3).join(' · ') || '—'}</td>
-       <td style="font-weight:700">${f[campos[2]?.key] ?? '—'}</td>`;
+       <td style="font-weight:700">${_fmtCelda(campos[2])}</td>`;
   const inactiva = r.active === false;
   return `<tr style="${inactiva ? 'opacity:.5' : ''}">
     <td><div style="display:flex;align-items:center;gap:8px">
@@ -431,9 +452,9 @@ async function _crDisponibilidad(){
     <div style="font-size:11px;color:#7D84C1;margin-bottom:12px">Reservas por día: el cliente elige fechas de llegada y salida.</div>
     <div class="cr-form">
       <div class="cr-grid">
-        <div><label>Hora de check-in</label><input id="cr-d-checkin" type="time" value="${cfg.checkin||'15:00'}"></div>
-        <div><label>Hora de check-out</label><input id="cr-d-checkout" type="time" value="${cfg.checkout||'12:00'}"></div>
-        <div><label>Mínimo de noches</label><input id="cr-d-minn" type="number" min="1" value="${cfg.min_noches||1}"></div>
+        <div><label>Hora de check-in</label><input id="cr-d-checkin" type="time" value="${cfg.checkin||''}" placeholder="15:00"></div>
+        <div><label>Hora de check-out</label><input id="cr-d-checkout" type="time" value="${cfg.checkout||''}" placeholder="12:00"></div>
+        <div><label>Mínimo de noches</label><input id="cr-d-minn" type="number" min="1" value="${cfg.min_noches||''}" placeholder="1"></div>
       </div>
       <label style="margin-top:6px">Temporadas (opcional)</label>
       <div class="cr-sug">Define rangos con nombre (ej: Temporada alta, 15 dic – 28 feb).</div>
