@@ -1,5 +1,24 @@
 // ── BITÁCORA ──
-// [v2026.06.13-1] perfil_profesional.js
+// [v2026.06.14-3] perfil_profesional.js
+// 2026-06-14 | Fix: el carrusel de recursos solo mostraba UNA tarjeta porque
+//              renderProfCard hacía innerHTML= (reemplazaba). Ahora acepta
+//              append: el loop limpia el carrusel una vez y acumula todas las
+//              unidades. Quitados ids duplicados (prof-jm-*). Las N cabañas
+//              activas aparecen todas.
+// [v2026.06.14-2] perfil_profesional.js
+// 2026-06-14 | Loader de carga: la página arranca cubierta por un spinner
+//              ("Cargando página…") y hace fade-in cuando los datos reales
+//              están listos (body.pp-ready), para no mostrar el placeholder
+//              "Nombre de tu negocio" del HTML. Failsafe de 6s. En preview
+//              (in-preview) no aplica.
+// [v2026.06.14-1] perfil_profesional.js
+// 2026-06-14 | Fix flash de imágenes demo en la página pública: el bloque que
+//              restaura el preview desde localStorage (ep_*) corría SIEMPRE,
+//              también en /p/<slug>. Como localStorage es global del dominio,
+//              pintaba las imágenes de la última empresa editada en
+//              Configuración (p.ej. Heavensy demo) antes de llegar los datos
+//              reales. Ahora solo corre si ?cfg=1 (modo preview).
+// [v2026.06.13-1] perfil_profesional.js — página pública por rubro (naturaleza/labels) + fix nombres de campos
 // 2026-06-13 | Página pública por rubro (nivel B): el render de recursos se
 //              adapta a data.naturaleza — objeto muestra capacidad/dormitorios/
 //              precio-noche/features; persona muestra especialidades/modos.
@@ -216,6 +235,9 @@ async function initPerfilEmpresa(){
   //  persona → tarjeta de equipo (foto, especialidades, modos)
   //  objeto  → tarjeta de unidad (foto, capacidad, dormitorios, precio/noche, features)
   const naturaleza = data.naturaleza || 'persona';
+  // Limpiar el carrusel una vez y acumular todas las tarjetas (append). [14-06]
+  const _carousel = document.getElementById('prof-carousel');
+  if(_carousel) _carousel.innerHTML = '';
   (data.recursos||[]).forEach(r=>{
     if(naturaleza === 'objeto'){
       renderProfCard({
@@ -224,7 +246,7 @@ async function initPerfilEmpresa(){
         specs:  [r.capacidad?(r.capacidad+' personas'):'', r.dormitorios?(r.dormitorios+' dorm.'):''].filter(Boolean).join(' · '),
         desc:   r.precio_noche?('$'+Number(r.precio_noche).toLocaleString('es-CL')+' / noche'):'',
         modos:  Array.isArray(r.features)?r.features:[]
-      });
+      }, true);
     } else {
       renderProfCard({
         nombre: r.name||'',
@@ -232,7 +254,7 @@ async function initPerfilEmpresa(){
         specs:  Array.isArray(r.specialties)?r.specialties.join(' · '):(r.specialties||''),
         desc:   r.slogan||r.description||'',
         modos:  Array.isArray(r.modalities)?r.modalities:[]
-      });
+      }, true);
     }
   });
 
@@ -315,7 +337,16 @@ async function initPerfilPublico(){
 // Auto-iniciar cuando NO es preview
 (function(){
   if(!document.documentElement.classList.contains('in-preview')){
-    initPerfilEmpresa().then(es=>{ if(!es) initPerfilPublico(); });
+    // [14-06-2026] Al terminar de cargar (éxito o fallo), revelar la página con
+    // fade-in y ocultar el loader. Marca de seguridad por si algo se cuelga.
+    const reveal = () => document.body.classList.add('pp-ready');
+    initPerfilEmpresa()
+      .then(es => { if(!es) return initPerfilPublico(); })
+      .catch(() => {})
+      .finally(reveal);
+    setTimeout(reveal, 6000);  // failsafe: nunca dejar el loader infinito
+  } else {
+    document.body.classList.add('pp-ready');
   }
 })();
 
@@ -447,15 +478,14 @@ function abrirVideo(src){
   overlay.classList.add('open');
   vid.play();
 }
-function renderProfCard(p){
+function renderProfCard(p, append){
   const carousel = document.getElementById('prof-carousel');
   const wrap     = document.getElementById('prof-carousel-wrap');
   if(!carousel) return;
 
-  // Sin datos o vacío → ocultar carrusel
+  // Sin datos o vacío → ocultar carrusel (solo si no estamos acumulando)
   if(!p || (!p.nombre && !p.foto)) {
-    carousel.innerHTML = '';
-    if(wrap) wrap.style.display = 'none';
+    if(!append){ carousel.innerHTML = ''; if(wrap) wrap.style.display = 'none'; }
     return;
   }
 
@@ -464,15 +494,18 @@ function renderProfCard(p){
     ? p.modos.map(m=>`<span class="prof-card-modo">${iconos[m]||'<i class="fas fa-circle"></i>'} ${m}</span>`).join('')
     : '';
 
-  carousel.innerHTML = `
-    <div class="prof-card" id="prof-card-jm">
-      ${p.foto ? `<img class="prof-card-photo" id="prof-jm-foto" src="${p.foto}" alt="${p.nombre||''}">` : ''}
-      <div class="prof-card-name"  id="prof-jm-nombre">${p.nombre||''}</div>
-      <div class="prof-card-specs" id="prof-jm-specs">${p.specs||''}</div>
-      <div class="prof-card-desc"  id="prof-jm-desc">${p.desc||''}</div>
-      ${modosHTML ? `<div class="prof-card-modos" id="prof-jm-modos">${modosHTML}</div>` : ''}
-      ${p.addr ? `<div class="prof-card-addr" id="prof-jm-addr"><i class="fas fa-map-pin"></i> ${p.addr}</div>` : ''}
+  const cardHTML = `
+    <div class="prof-card">
+      ${p.foto ? `<img class="prof-card-photo" src="${p.foto}" alt="${p.nombre||''}">` : ''}
+      <div class="prof-card-name">${p.nombre||''}</div>
+      <div class="prof-card-specs">${p.specs||''}</div>
+      <div class="prof-card-desc">${p.desc||''}</div>
+      ${modosHTML ? `<div class="prof-card-modos">${modosHTML}</div>` : ''}
+      ${p.addr ? `<div class="prof-card-addr"><i class="fas fa-map-pin"></i> ${p.addr}</div>` : ''}
     </div>`;
+
+  if(append) carousel.insertAdjacentHTML('beforeend', cardHTML);
+  else carousel.innerHTML = cardHTML;
 
   if(wrap) wrap.style.display = '';
 }
@@ -516,6 +549,12 @@ window.addEventListener('message', function(e){
 });
 
 (function(){
+  // [14-06-2026] Este bloque restaura el preview desde localStorage (ep_*).
+  // SOLO debe correr en modo preview (?cfg=1). En la página pública por slug,
+  // los datos vienen del servidor; leer localStorage aquí pintaba los datos de
+  // OTRA empresa (la última editada en Configuración en este navegador) antes
+  // de que llegaran los reales → flash de imágenes demo.
+  if (new URLSearchParams(window.location.search).get('cfg') !== '1') return;
   const R = document.documentElement;
   function safeJ(key){ const raw=localStorage.getItem(key); if(!raw) return null; try{ return JSON.parse(raw); }catch(e){ localStorage.removeItem(key); return null; } }
 

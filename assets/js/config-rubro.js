@@ -7,6 +7,12 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.14-1] config-rubro.js
+// 2026-06-14 | Activar/desactivar recurso: la Configuración pide
+//              ?include_inactive=1 y muestra los inactivos atenuados (opacity
+//              .5 + etiqueta "Inactiva") con el toggle desmarcado, para poder
+//              reactivarlos. Antes desaparecían (el backend solo devolvía
+//              activos). Quitado el botón basurero (solo desactivaba, confuso).
 // [v2026.06.13-12] config-rubro.js
 // 2026-06-13 | Fix arranque al refrescar: crInit solo corría una vez al cargar
 //              el script; si el DOM del panel no estaba montado aún (típico al
@@ -212,7 +218,7 @@ function _crVerTab(rec){
 
 // ── Vista de recursos ──
 async function _crLoadRecursos(){
-  const r = await apiCall('/api/agenda/resources').catch(() => null);
+  const r = await apiCall('/api/agenda/resources?include_inactive=1').catch(() => null);
   _crRecursos = r?.data?.resources || [];
   const t = await apiCall('/api/agenda/resource-types').catch(() => null);
   _crTipoId = (t?.data?.resource_types || t?.data?.types || [])[0]?._id || null;
@@ -262,16 +268,16 @@ function _crFila(r){
     : `<td>${f[campos[0]?.key] ?? '—'}</td>
        <td>${(r.features || []).slice(0,3).join(' · ') || '—'}</td>
        <td style="font-weight:700">${f[campos[2]?.key] ?? '—'}</td>`;
-  return `<tr>
+  const inactiva = r.active === false;
+  return `<tr style="${inactiva ? 'opacity:.5' : ''}">
     <td><div style="display:flex;align-items:center;gap:8px">
       <span style="width:26px;height:26px;border-radius:50%;background:${r.color||'#9961FF'};color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">${(r.name||'?').slice(0,2).toUpperCase()}</span>
-      <span style="font-weight:600">${r.name||''}</span></div></td>
+      <span style="font-weight:600">${r.name||''}</span>${inactiva ? ' <span style="font-size:9.5px;font-weight:700;color:#ef4444;text-transform:uppercase">Inactiva</span>' : ''}</div></td>
     <td>${r.profession_key ? `<span class="cr-badge">${_catName(r.profession_key)}</span>` : '<span style="color:#a8aed1">—</span>'}</td>
     ${medias}
     <td><label class="switch"><input type="checkbox" ${r.active!==false?'checked':''} onchange="crToggle('${r._id}', this.checked)"><span class="slider"></span></label></td>
     <td style="white-space:nowrap">
       <button class="btn-icon" style="color:#5b8dee" onclick="crEditar('${r._id}')"><i class="fas fa-pen"></i></button>
-      <button class="btn-icon" style="color:#9ca3af" onclick="crToggle('${r._id}', false)"><i class="fas fa-trash"></i></button>
     </td></tr>`;
 }
 

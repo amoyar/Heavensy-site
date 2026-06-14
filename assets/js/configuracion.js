@@ -3,13 +3,15 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
-// [v2026.06.13-1] configuracion.js
-// 2026-06-13 | Fix persistencia de imágenes del paso 5 (Edición del perfil):
-//              al subir portada/foto/fondo, su URL de Cloudinary se guarda en
-//              localStorage (ep_portada_url/ep_foto_url/ep_fondo_url) y se
-//              incluye en el payload de ppSaveConfig → borrador/publicación.
-//              Antes solo iba al PATCH de perfil-profesional y la página pública
-//              mostraba las imágenes por defecto. Tras subir, dispara ppSaveConfig.
+// [v2026.06.14-1] configuracion.js
+// 2026-06-14 | Nombres de foto del paso 5: al subir se guarda el nombre real
+//              (ep_*_fname); al cargar, _epNombreFoto muestra nombre guardado >
+//              derivado de la URL > 'Seleccionar imagen…' (antes mostraba un
+//              default hardcodeado aunque hubiera imagen). Cargas de servicios/
+//              programas hechas robustas (Array.isArray). Galería inf_oficio
+//              NO tocada (nice-to-have → motor B, ver A4).
+// [v2026.06.13-2] configuracion.js — fix 9x apiCall().then(r=>r.json()) → r.data
+// [v2026.06.13-1] configuracion.js — fix persistencia imágenes paso 5
 // [v2026.06.12-3] configuracion.js
 // 2026-06-12 | Loader: si config-rubro.js ya está cargado (navegación SPA),
 //              re-invoca crInit en vez de no hacer nada.
@@ -63,10 +65,26 @@ function _ppBuildSvcRow(s, profileType) {
 }
 
 // ── CARGA INICIAL DESDE SERVIDOR ──
+// Decide qué nombre mostrar en el cuadro de una foto: nombre real guardado,
+// o uno derivado de la URL de Cloudinary, o el placeholder si no hay imagen. [14-06]
+function _epNombreFoto(elId, url, fnameKey){
+  const n = document.getElementById(elId);
+  if(!n) return;
+  const guardado = localStorage.getItem(fnameKey);
+  if(guardado){ n.textContent = guardado; return; }
+  if(url){
+    // derivar algo legible del final de la URL
+    try{ const base = url.split('/').pop().split('?')[0]; n.textContent = base || 'Imagen cargada'; }
+    catch{ n.textContent = 'Imagen cargada'; }
+    return;
+  }
+  n.textContent = 'Seleccionar imagen…';
+}
+
 function ppLoadFromServer() {
   if (typeof apiCall === 'undefined') return;
   // Config del perfil (colores, textos, posición portada)
-  apiCall('/api/perfil-profesional/config').then(r=>r.json()).then(d=>{
+  apiCall('/api/perfil-profesional/config').then(r=>(r.data||{})).then(d=>{
     if(!d.success||!d.config) return;
     const c=d.config;
     const idMap={'--text-titulo':'ec-ttitulo','--titulo-bg':'ec-titulo','--text-lt':'ec-texto','--text-franja':'ec-franja','--navy':'ec-navy'};
@@ -109,41 +127,43 @@ function ppLoadFromServer() {
     if(c.foto_url) pmSend({type:'foto', value:c.foto_url});
     pmSend({type:'fondo',   value: fondoUrl});
 
-    // Mostrar nombre en los labels del input file
-    if(!c.portada_url){const n=document.getElementById('ep-portada-name');if(n)n.textContent='diseño final portada para todos.png';}
-    if(!c.fondo_url)  {const n=document.getElementById('ep-fondo-name');  if(n)n.textContent='fondoperfilprofesional.jpg';}
+    // Mostrar nombre en los labels del input file (nombre guardado > derivado
+    // de la URL > 'Seleccionar imagen…' si no hay nada). [14-06]
+    _epNombreFoto('ep-portada-name', c.portada_url, 'ep_portada_fname');
+    _epNombreFoto('ep-foto-name',    c.foto_url,    'ep_foto_fname');
+    _epNombreFoto('ep-fondo-name',   c.fondo_url,   'ep_fondo_fname');
   }).catch(()=>{});
   // Programas empresa
-  apiCall('/api/perfil-profesional/programas?tipo=empresa').then(r=>r.json()).then(d=>{
-    if(!d.success) return;
+  apiCall('/api/perfil-profesional/programas?tipo=empresa').then(r=>(r.data||{})).then(d=>{
+    const progs = Array.isArray(d.programas) ? d.programas : [];
     const list=document.getElementById('prog-list'); if(!list) return;
     list.querySelectorAll('.svc-row').forEach(r=>r.remove());
-    d.programas.forEach(p=>list.appendChild(_ppBuildProgRow(p,'empresa')));
-    if(d.programas.length) syncProgramas();
+    progs.forEach(p=>list.appendChild(_ppBuildProgRow(p,'empresa')));
+    if(progs.length) syncProgramas();
   }).catch(()=>{});
   // Programas profesional
-  apiCall('/api/perfil-profesional/programas?tipo=profesional').then(r=>r.json()).then(d=>{
-    if(!d.success) return;
+  apiCall('/api/perfil-profesional/programas?tipo=profesional').then(r=>(r.data||{})).then(d=>{
+    const progs = Array.isArray(d.programas) ? d.programas : [];
     const list=document.getElementById('jm-prog-list'); if(!list) return;
     list.querySelectorAll('.svc-row').forEach(r=>r.remove());
-    d.programas.forEach(p=>list.appendChild(_ppBuildProgRow(p,'profesional')));
-    if(d.programas.length) jmSyncProgramas();
+    progs.forEach(p=>list.appendChild(_ppBuildProgRow(p,'profesional')));
+    if(progs.length) jmSyncProgramas();
   }).catch(()=>{});
   // Servicios empresa
-  apiCall('/api/perfil-profesional/servicios?tipo=empresa').then(r=>r.json()).then(d=>{
-    if(!d.success||!d.servicios.length) return;
+  apiCall('/api/perfil-profesional/servicios?tipo=empresa').then(r=>(r.data||{})).then(d=>{
+    const svcs = Array.isArray(d.servicios) ? d.servicios : [];
     const list=document.getElementById('svc-list'); if(!list) return;
     list.querySelectorAll('.svc-row').forEach(r=>r.remove());
-    d.servicios.forEach(s=>list.appendChild(_ppBuildSvcRow(s,'empresa')));
-    syncServicios();
+    svcs.forEach(s=>list.appendChild(_ppBuildSvcRow(s,'empresa')));
+    if(svcs.length) syncServicios();
   }).catch(()=>{});
   // Servicios profesional
-  apiCall('/api/perfil-profesional/servicios?tipo=profesional').then(r=>r.json()).then(d=>{
-    if(!d.success||!d.servicios.length) return;
+  apiCall('/api/perfil-profesional/servicios?tipo=profesional').then(r=>(r.data||{})).then(d=>{
+    const svcs = Array.isArray(d.servicios) ? d.servicios : [];
     const list=document.getElementById('jm-svc-list'); if(!list) return;
     list.querySelectorAll('.svc-row').forEach(r=>r.remove());
-    d.servicios.forEach(s=>list.appendChild(_ppBuildSvcRow(s,'profesional')));
-    jmSyncServicios();
+    svcs.forEach(s=>list.appendChild(_ppBuildSvcRow(s,'profesional')));
+    if(svcs.length) jmSyncServicios();
   }).catch(()=>{});
 }
 
@@ -420,7 +440,8 @@ function epPortada(input) {
   r.readAsDataURL(file);
   ppUploadImage(file, 'perfil_profesional').then(url => {
     if(url){
-      localStorage.setItem('ep_portada_url', url);   // [v2026.06.13] para que entre al borrador público
+      localStorage.setItem('ep_portada_url', url);   // para que entre al borrador público
+      localStorage.setItem('ep_portada_fname', file.name);  // [14-06] recordar nombre real
       apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({portada_url:url})}).catch(()=>{});
       ppSaveConfig();
     }
@@ -436,7 +457,8 @@ function epFotoPerfil(input) {
   r.readAsDataURL(file);
   ppUploadImage(file, 'perfil_profesional').then(url => {
     if(url){
-      localStorage.setItem('ep_foto_url', url);      // [v2026.06.13]
+      localStorage.setItem('ep_foto_url', url);
+      localStorage.setItem('ep_foto_fname', file.name);  // [14-06]
       apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({foto_url:url})}).catch(()=>{});
       ppSaveConfig();
     }
@@ -452,7 +474,8 @@ function epFondo(input) {
   r.readAsDataURL(file);
   ppUploadImage(file, 'perfil_profesional').then(url => {
     if(url){
-      localStorage.setItem('ep_fondo_url', url);     // [v2026.06.13]
+      localStorage.setItem('ep_fondo_url', url);
+      localStorage.setItem('ep_fondo_fname', file.name);  // [14-06]
       apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({fondo_url:url})}).catch(()=>{});
       ppSaveConfig();
     }
@@ -791,7 +814,7 @@ function jmGuardarSesion() {
     const row=document.createElement('div'); row.className='svc-row'; row.style.background=color;
     row.innerHTML=`<span class="svc-dot" style="background:${color}"></span><div style="flex:1"><div class="svc-name">${nombre}</div><div class="svc-meta">${meta}</div>${desc?`<div style="font-size:11px;color:#7D84C1;margin-top:2px">${desc}</div>`:''}</div><span class="svc-price">${precio}</span><button class="btn-secondary btn-sm" style="margin-left:10px" onclick="jmEditarSesion(this)"><i class="fas fa-pen"></i></button><button class="btn-icon" style="margin-left:2px;color:#ef4444" onclick="ppDeleteServicio(this)"><i class="fas fa-trash"></i></button>`;
     row.dataset.cancelacion=JSON.stringify(cancelacion); list.appendChild(row);
-    if(typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/servicios',{method:'POST',body:JSON.stringify(_jmSvcPayload)}).then(r=>r.json()).then(d=>{if(d.success&&d.servicio)row.dataset.ppId=d.servicio.id;}).catch(()=>{});
+    if(typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/servicios',{method:'POST',body:JSON.stringify(_jmSvcPayload)}).then(r=>(r.data||{})).then(d=>{if(d.success&&d.servicio)row.dataset.ppId=d.servicio.id;}).catch(()=>{});
   }
   if(_jmSvcEditId&&typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/servicios/'+_jmSvcEditId,{method:'PUT',body:JSON.stringify(_jmSvcPayload)}).catch(()=>{});
   jmSyncServicios();
@@ -1043,7 +1066,7 @@ function jmGuardarPrograma() {
     const row=document.createElement('div'); row.className='svc-row'; row.style.background=color;
     row.innerHTML=`${jmProgImgData?`<img src="${jmProgImgData}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0">`:''}<span class="svc-dot" style="background:${color}"></span><div style="flex:1"><div class="svc-name">${nombre}</div><div class="svc-meta">${meta}</div></div><span class="svc-price">${precio}</span><button class="btn-secondary btn-sm" style="margin-left:10px" onclick="jmEditarPrograma(this)"><i class="fas fa-pen"></i></button><button class="btn-icon" style="margin-left:2px;color:#ef4444" onclick="ppDeletePrograma(this)"><i class="fas fa-trash"></i></button>`;
     row.dataset.desc=jmDesc; row.dataset.tipo=jmProgTipo; row.dataset.precioTipo=jmPrecioTipo; row.dataset.bgColor=jmBgColor; row.dataset.colorNavy=jmColorNavy; row.dataset.colorText=jmColorText; row.dataset.colorTextLt=jmColorTextLt; row.dataset.cardOpacity=jmCardOpacity; row.dataset.tituloFont=jmTituloFont; row.dataset.tituloSize=jmTituloSize; row.dataset.cancelacion=JSON.stringify(jmCancelacion); row.dataset.modulos=JSON.stringify(jmModulos); row.dataset.includes=JSON.stringify(jmIncludes); row.dataset.requisitos=JSON.stringify(jmRequisitos); row.dataset.galeria=JSON.stringify(jmGaleria); row.dataset.galeriaOri=jmGaleriaOri; row.dataset.testimonios=JSON.stringify(jmTestimonios); row.dataset.cupos=jmCupos; row.dataset.mostrarCupos=jmMostrarCupos; row.dataset.media=JSON.stringify(jmMedia||null); list.appendChild(row);
-    if(typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/programas',{method:'POST',body:JSON.stringify(_jmProgPayload)}).then(r=>r.json()).then(d=>{if(d.success&&d.programa)row.dataset.ppId=d.programa.id;}).catch(()=>{});
+    if(typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/programas',{method:'POST',body:JSON.stringify(_jmProgPayload)}).then(r=>(r.data||{})).then(d=>{if(d.success&&d.programa)row.dataset.ppId=d.programa.id;}).catch(()=>{});
   }
   if(_jmProgEditId&&typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/programas/'+_jmProgEditId,{method:'PUT',body:JSON.stringify(_jmProgPayload)}).catch(()=>{});
   jmSyncProgramas();
@@ -1941,7 +1964,7 @@ function guardarSesion() {
   const _ppSvcPayload={profile_type:'empresa',nombre,duracion,precio,mod,desc:document.getElementById('ses-desc')?.value.trim()||'',color,cancelacion,meta};
   const _ppSvcEditId=editingSesionRow?.dataset?.ppId;
   if(editingSesionRow){editingSesionRow.innerHTML=innerHTML;editingSesionRow.style.background=color;editingSesionRow.dataset.cancelacion=JSON.stringify(cancelacion);editingSesionRow=null;}
-  else{const row=document.createElement('div');row.className='svc-row';row.style.background=color;row.innerHTML=innerHTML;row.dataset.cancelacion=JSON.stringify(cancelacion);document.getElementById('svc-list').appendChild(row);if(typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/servicios',{method:'POST',body:JSON.stringify(_ppSvcPayload)}).then(r=>r.json()).then(d=>{if(d.success&&d.servicio)row.dataset.ppId=d.servicio.id;}).catch(()=>{});}
+  else{const row=document.createElement('div');row.className='svc-row';row.style.background=color;row.innerHTML=innerHTML;row.dataset.cancelacion=JSON.stringify(cancelacion);document.getElementById('svc-list').appendChild(row);if(typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/servicios',{method:'POST',body:JSON.stringify(_ppSvcPayload)}).then(r=>(r.data||{})).then(d=>{if(d.success&&d.servicio)row.dataset.ppId=d.servicio.id;}).catch(()=>{});}
   if(_ppSvcEditId&&typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/servicios/'+_ppSvcEditId,{method:'PUT',body:JSON.stringify(_ppSvcPayload)}).catch(()=>{});
   ['ses-nombre','ses-duracion','ses-precio','ses-desc'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ses-mod').value='';
@@ -2039,7 +2062,7 @@ function guardarPrograma() {
   const _ppPayload={profile_type:'empresa',nombre,tipo:progTipo,desc,precio,precioTipo,mod,encuentros,duracion,duracion_unidad:durUnidad,frecuencia,cupos,mostrarCupos:mostrarCupos==='1',color,bgColor,colorNavy,colorText,colorTextLt,btnStart,btnEnd,cardOpacity,tituloFont,tituloSize,cancelacion,imgPosition,modulos,includes,requisitos,galeria,galeriaOri,media,meta};
   const _ppEditId=editingProgRow?.dataset?.ppId;
   if(editingProgRow){editingProgRow.innerHTML=innerHTML;editingProgRow.style.background=color;editingProgRow.dataset.desc=desc;editingProgRow.dataset.tipo=progTipo;editingProgRow.dataset.precioTipo=precioTipo;editingProgRow.dataset.bgColor=bgColor;editingProgRow.dataset.colorNavy=colorNavy;editingProgRow.dataset.colorText=colorText;editingProgRow.dataset.colorTextLt=colorTextLt;editingProgRow.dataset.btnStart=btnStart;editingProgRow.dataset.btnEnd=btnEnd;editingProgRow.dataset.cardOpacity=cardOpacity;editingProgRow.dataset.tituloFont=tituloFont;editingProgRow.dataset.tituloSize=tituloSize;editingProgRow.dataset.cancelacion=JSON.stringify(cancelacion);editingProgRow.dataset.imgPosition=JSON.stringify(imgPosition);editingProgRow.dataset.modulos=JSON.stringify(modulos);editingProgRow.dataset.includes=JSON.stringify(includes);editingProgRow.dataset.requisitos=JSON.stringify(requisitos);editingProgRow.dataset.galeria=JSON.stringify(galeria);editingProgRow.dataset.galeriaOri=galeriaOri;editingProgRow.dataset.testimonios=JSON.stringify(testimonios);editingProgRow.dataset.cupos=cupos;editingProgRow.dataset.mostrarCupos=mostrarCupos;editingProgRow.dataset.media=JSON.stringify(media||null);editingProgRow=null;}
-  else{const row=document.createElement('div');row.className='svc-row';row.style.background=color;row.innerHTML=innerHTML;row.dataset.desc=desc;row.dataset.tipo=progTipo;row.dataset.precioTipo=precioTipo;row.dataset.bgColor=bgColor;row.dataset.colorNavy=colorNavy;row.dataset.colorText=colorText;row.dataset.colorTextLt=colorTextLt;row.dataset.btnStart=btnStart;row.dataset.btnEnd=btnEnd;row.dataset.cardOpacity=cardOpacity;row.dataset.tituloFont=tituloFont;row.dataset.tituloSize=tituloSize;row.dataset.cancelacion=JSON.stringify(cancelacion);row.dataset.imgPosition=JSON.stringify(imgPosition);row.dataset.modulos=JSON.stringify(modulos);row.dataset.includes=JSON.stringify(includes);row.dataset.requisitos=JSON.stringify(requisitos);row.dataset.galeria=JSON.stringify(galeria);row.dataset.galeriaOri=galeriaOri;row.dataset.testimonios=JSON.stringify(testimonios);row.dataset.cupos=cupos;row.dataset.mostrarCupos=mostrarCupos;row.dataset.media=JSON.stringify(media||null);document.getElementById('prog-list').appendChild(row);if(typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/programas',{method:'POST',body:JSON.stringify(_ppPayload)}).then(r=>r.json()).then(d=>{if(d.success&&d.programa)row.dataset.ppId=d.programa.id;}).catch(()=>{});}
+  else{const row=document.createElement('div');row.className='svc-row';row.style.background=color;row.innerHTML=innerHTML;row.dataset.desc=desc;row.dataset.tipo=progTipo;row.dataset.precioTipo=precioTipo;row.dataset.bgColor=bgColor;row.dataset.colorNavy=colorNavy;row.dataset.colorText=colorText;row.dataset.colorTextLt=colorTextLt;row.dataset.btnStart=btnStart;row.dataset.btnEnd=btnEnd;row.dataset.cardOpacity=cardOpacity;row.dataset.tituloFont=tituloFont;row.dataset.tituloSize=tituloSize;row.dataset.cancelacion=JSON.stringify(cancelacion);row.dataset.imgPosition=JSON.stringify(imgPosition);row.dataset.modulos=JSON.stringify(modulos);row.dataset.includes=JSON.stringify(includes);row.dataset.requisitos=JSON.stringify(requisitos);row.dataset.galeria=JSON.stringify(galeria);row.dataset.galeriaOri=galeriaOri;row.dataset.testimonios=JSON.stringify(testimonios);row.dataset.cupos=cupos;row.dataset.mostrarCupos=mostrarCupos;row.dataset.media=JSON.stringify(media||null);document.getElementById('prog-list').appendChild(row);if(typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/programas',{method:'POST',body:JSON.stringify(_ppPayload)}).then(r=>(r.data||{})).then(d=>{if(d.success&&d.programa)row.dataset.ppId=d.programa.id;}).catch(()=>{});}
   if(_ppEditId&&typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/programas/'+_ppEditId,{method:'PUT',body:JSON.stringify(_ppPayload)}).catch(()=>{});
   ['prog-nombre','prog-encuentros','prog-duracion','prog-precio','prog-frecuencia'].forEach(id=>{const el=document.getElementById(id);if(el) el.value='';});
   const pdu=document.getElementById('prog-duracion-unidad'); if(pdu) pdu.value='min';

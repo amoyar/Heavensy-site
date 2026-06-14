@@ -12,6 +12,14 @@
 </head>
 <body>
 
+<!-- [14-06-2026] Loader: cubre la página mientras llegan los datos reales, para
+     no mostrar el placeholder "Nombre de tu negocio" ni un salto brusco. El JS
+     añade la clase pp-ready al <body> cuando el perfil está cargado. -->
+<div id="pp-loader" aria-hidden="true">
+  <div class="pp-spinner"></div>
+  <div class="pp-loader-txt">Cargando página…</div>
+</div>
+
 <div class="hero"></div>
 
 <div class="hero-banner">

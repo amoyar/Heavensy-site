@@ -1,4 +1,8 @@
 /* ── BITÁCORA ──
+   [v2026.06.14-1] perfil_profesional.css
+   2026-06-14 | Loader de carga (#pp-loader spinner) + fade-in de la página
+                (body.pp-ready) para evitar el pantallazo del placeholder. En
+                in-preview no aplica.
    [v2026.06.11-1] perfil_profesional.css
    2026-06-11 | Eliminadas imágenes demo hardcodeadas (980452...jpg y
                 fotoquimica.jpg, huella Lattice) que daban 404 en consola.
@@ -225,3 +229,34 @@ body{font-family:'DM Sans',sans-serif;color:var(--text);background:#F4F6FB;overf
   .prof-card-name{font-size:.88rem}
   .prof-carousel-wrap{margin:1rem 0}
 }
+/* ── [14-06-2026] Loader de carga + fade-in de la página ──
+   Evita el "pantallazo" del placeholder antes de llegar los datos reales. */
+#pp-loader{
+  position:fixed; inset:0; z-index:9999;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+  background:#2a3550;
+  transition:opacity .35s ease;
+}
+.pp-spinner{
+  width:44px; height:44px; border-radius:50%;
+  border:3px solid rgba(255,255,255,.25); border-top-color:#9961FF;
+  animation:pp-spin .8s linear infinite;
+}
+@keyframes pp-spin{ to{ transform:rotate(360deg); } }
+.pp-loader-txt{
+  font-family:'DM Sans',sans-serif; font-size:.9rem; letter-spacing:.04em;
+  color:rgba(255,255,255,.8);
+}
+/* Página oculta hasta que el JS marque body.pp-ready */
+body:not(.pp-ready) .hero,
+body:not(.pp-ready) .profile-top-glass,
+body:not(.pp-ready) .main{ opacity:0; }
+body.pp-ready .hero,
+body.pp-ready .profile-top-glass,
+body.pp-ready .main{ opacity:1; transition:opacity .4s ease; }
+body.pp-ready #pp-loader{ opacity:0; pointer-events:none; }
+/* En modo preview (Configuración) no aplica el loader: se ve siempre. */
+html.in-preview #pp-loader{ display:none; }
+html.in-preview .hero,
+html.in-preview .profile-top-glass,
+html.in-preview .main{ opacity:1 !important; }
