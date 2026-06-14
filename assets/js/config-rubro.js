@@ -7,6 +7,11 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.14-4] config-rubro.js
+// 2026-06-14 | Foto de recurso objeto: el editor (lápiz) ahora tiene campo para
+//              subir foto (sube a Cloudinary vía ppUploadImage, guarda photo_url).
+//              Antes no había forma de ponerle foto a una cabaña, por eso las
+//              tarjetas mostraban el placeholder. El backend ya aceptaba photo_url.
 // [v2026.06.14-3] config-rubro.js
 // 2026-06-14 | Formato monetario en la tabla "Mis cabañas": los campos de tipo
 //              price (o key precio/valor/monto) se muestran como $50.000 en vez
@@ -342,6 +347,16 @@ function _crForm(r){
       <div id="cr-user-sel" style="font-size:11px;color:#059669;font-weight:700;margin-top:4px">${r.user_id?'✓ Usuario vinculado':''}</div>
     </div>` : `
     <div class="cr-block-o">
+      <div style="font-size:11.5px;font-weight:700;color:#d97706;margin-bottom:6px"><i class="fas fa-image"></i> Foto</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <div id="cr-f-foto-prev" style="width:64px;height:64px;border-radius:10px;background:#f0eefc center/cover no-repeat;${r.photo_url?`background-image:url('${r.photo_url}')`:''};display:flex;align-items:center;justify-content:center;color:#b9a8e8;flex-shrink:0">${r.photo_url?'':'<i class="fas fa-image"></i>'}</div>
+        <div>
+          <input type="hidden" id="cr-f-photo" value="${r.photo_url||''}">
+          <button type="button" class="btn-secondary" onclick="document.getElementById('cr-f-foto-input').click()"><i class="fas fa-upload" style="margin-right:5px"></i>${r.photo_url?'Cambiar foto':'Subir foto'}</button>
+          <input type="file" id="cr-f-foto-input" accept="image/*" style="display:none" onchange="crSubirFotoRecurso(this)">
+          <div class="cr-sug">Se mostrará en la tarjeta de la página pública.</div>
+        </div>
+      </div>
       <div style="font-size:11.5px;font-weight:700;color:#d97706;margin-bottom:4px"><i class="fas fa-tags"></i> ${_lbl('caracteristicas_titulo','Características')}</div>
       <div class="cr-sug">Toca para marcar las que aplican; agrega otras abajo.</div>
       <div id="cr-feats">${todas.map(t => `<span class="cr-fchip ${feats.includes(t)?'on':''}" onclick="this.classList.toggle('on')">${t}</span>`).join('')}</div>
@@ -356,6 +371,20 @@ function _crForm(r){
     </div>
   </div>`;
 }
+
+window.crSubirFotoRecurso = function(input){
+  const file = input.files && input.files[0]; if(!file) return;
+  if(typeof ppUploadImage !== 'function'){ if(typeof showToast==='function') showToast('No se pudo subir la imagen','error'); return; }
+  const prev = document.getElementById('cr-f-foto-prev');
+  if(prev) prev.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  ppUploadImage(file, 'perfil_profesional_recurso').then(url => {
+    if(url){
+      const h = document.getElementById('cr-f-photo'); if(h) h.value = url;
+      if(prev){ prev.style.backgroundImage = `url('${url}')`; prev.innerHTML = ''; }
+    } else if(prev){ prev.innerHTML = '<i class="fas fa-image"></i>'; }
+  });
+  input.value = '';
+};
 
 window.crAddFeat = function(){
   const inp = $('#cr-f-feat-nueva'); const v = (inp.value||'').trim(); if (!v) return;
@@ -400,6 +429,7 @@ window.crGuardar = async function(){
     const uid = $('#cr-f-user-id')?.value; if (uid) body.user_id = uid;
   } else {
     body.features = [...document.querySelectorAll('#cr-feats .cr-fchip.on')].map(x => x.textContent.trim());
+    const photo = $('#cr-f-photo')?.value; if (photo) body.photo_url = photo;  // [14-06]
   }
   let res;
   if (_crEditId){
