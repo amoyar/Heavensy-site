@@ -1,4 +1,9 @@
 // ── BITÁCORA ──
+// [v2026.06.14-4] perfil_profesional.js
+// 2026-06-14 | Naturaleza objeto: el bloque "Horario de atención" (de persona)
+//              ahora muestra "Estadía" con check-in/check-out y mínimo de
+//              noches (renderEstadia), leídos de data.estadia. Antes mostraba
+//              un horario de atención que no corresponde a un alojamiento.
 // [v2026.06.14-3] perfil_profesional.js
 // 2026-06-14 | Fix: el carrusel de recursos solo mostraba UNA tarjeta porque
 //              renderProfCard hacía innerHTML= (reemplazaba). Ahora acepta
@@ -235,6 +240,8 @@ async function initPerfilEmpresa(){
   //  persona → tarjeta de equipo (foto, especialidades, modos)
   //  objeto  → tarjeta de unidad (foto, capacidad, dormitorios, precio/noche, features)
   const naturaleza = data.naturaleza || 'persona';
+  // En objeto, mostrar datos de estadía (check-in/out) en vez del horario. [14-06]
+  if(naturaleza === 'objeto' && data.estadia) renderEstadia(data.estadia);
   // Limpiar el carrusel una vez y acumular todas las tarjetas (append). [14-06]
   const _carousel = document.getElementById('prof-carousel');
   if(_carousel) _carousel.innerHTML = '';
@@ -372,6 +379,26 @@ function renderHorario(h){
   // Mostrar el bloque solo cuando hay datos reales
   const block = document.getElementById('horario-block');
   if(block && h.inicio) block.style.display = '';
+}
+
+// Para naturaleza objeto: reusa el bloque #horario-block pero muestra los datos
+// de estadía (check-in/out, mínimo de noches) en vez del horario de atención. [14-06]
+function renderEstadia(est){
+  if(!est || (!est.checkin && !est.checkout)) return;
+  const block = document.getElementById('horario-block');
+  if(!block) return;
+  // Cambiar el título del bloque
+  const titulo = block.querySelector('.agenda-title');
+  if(titulo){
+    const svg = titulo.querySelector('svg');
+    titulo.innerHTML = (svg ? svg.outerHTML : '') + ' Estadía';
+  }
+  const el = id => document.getElementById(id);
+  if(el('hor-rango'))      el('hor-rango').textContent      = `Check-in: ${est.checkin||'—'} · Check-out: ${est.checkout||'—'}`;
+  if(el('hor-almuerzo'))   el('hor-almuerzo').textContent   = est.min_noches ? `Mínimo ${est.min_noches} noche${est.min_noches>1?'s':''}` : '';
+  if(el('hor-intervalo'))  el('hor-intervalo').textContent  = '';
+  if(el('hor-cancelacion'))el('hor-cancelacion').textContent= '';
+  block.style.display = '';
 }
 function renderServicios(servicios){
   const container = document.querySelector('.services-list');
