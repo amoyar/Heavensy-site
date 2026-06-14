@@ -1,0 +1,35 @@
+/* ══════════════════════════════════════════════
+   CONFIG-RUBRO — estilos del módulo (Fase 3.2)
+   Par de config-rubro.js: paso Mi empresa adaptativo.
+   ── BITÁCORA ──
+   [v2026.06.12-1] config-rubro.css
+   2026-06-12 | Estilos del módulo en archivo propio (cohesión js+css):
+                barra de contexto de rubro, pestañas Recursos/Cuentas,
+                stats, chips, formulario y tabla de recursos.
+   ══════════════════════════════════════════════ */
+.cr-ctx{background:linear-gradient(90deg,#f5f3ff,#EFF6FF);border:1px solid #ddd6fe;border-radius:12px;padding:9px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;font-size:12px}
+.cr-ctx b{color:#1e2a5e;font-size:13px}
+.cr-cat{background:#fff;border:1px solid #ddd6fe;color:#7c3aed;font-size:10.5px;font-weight:700;padding:2px 10px;border-radius:20px}
+.cr-lock{margin-left:auto;font-size:10px;color:#9096b0}
+.cr-tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:1.5px solid #e8edf8}
+.cr-tab{background:none;border:none;cursor:pointer;font-size:12.5px;font-weight:700;color:#7D84C1;padding:8px 14px;border-bottom:2.5px solid transparent;margin-bottom:-1.5px}
+.cr-tab.on{color:#9961FF;border-bottom-color:#9961FF}
+.cr-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.cr-stat{background:#fff;border:.5px solid #C9D9FF;border-radius:10px;padding:10px 12px}
+.cr-stat .n{font-size:20px;font-weight:800;color:#1e2a5e}
+.cr-stat .l{font-size:9.5px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.05em}
+.cr-chip{background:#fff;border:1px solid #ddd6fe;color:#7c3aed;font-size:10.5px;font-weight:600;padding:3px 11px;border-radius:20px;cursor:pointer}
+.cr-chip.on{background:#9961FF;border-color:#9961FF;color:#fff}
+.cr-fchip{background:#f5f3ff;border:1px solid #ddd6fe;color:#7c3aed;font-size:10.5px;font-weight:600;padding:3px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:6px;margin:0 5px 5px 0;cursor:pointer}
+.cr-fchip.on{background:#9961FF;border-color:#9961FF;color:#fff}
+.cr-badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:#f5f3ff;color:#9961FF;border:.5px solid #ddd6fe}
+.cr-form{background:#fbfaff;border:1px solid #ddd6fe;border-radius:12px;padding:14px;margin-bottom:14px}
+.cr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:10px}
+.cr-form label{font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px}
+.cr-form input,.cr-form select{width:100%;border:1px solid #C9D9FF;border-radius:8px;padding:7px 10px;font-size:12px}
+.cr-block-p{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.cr-block-o{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.cr-table{width:100%;border-collapse:collapse;font-size:12px}
+.cr-table th{text-align:left;padding:8px 10px;font-size:9.5px;font-weight:700;color:#7D84C1;text-transform:uppercase;background:#fafbff;border-bottom:.5px solid #e8edf8}
+.cr-table td{padding:8px 10px;border-bottom:.5px solid #f0f3fa;vertical-align:middle}
+.cr-sug{font-size:10px;color:#a8aed1;margin:4px 0 2px}

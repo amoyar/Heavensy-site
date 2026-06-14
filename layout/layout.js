@@ -1,4 +1,10 @@
 // ── BITÁCORA ──
+// [v2026.06.13-1] layout.js
+// 2026-06-13 | _switchSidebarCompany emite el evento global
+//              'heavensy:company-changed' (detail: companyId, companyName) tras
+//              refrescar la config de empresa. Los módulos se suscriben en vez
+//              de depender del if/else explícito (que queda como respaldo).
+//              Solución escalable: agregar un módulo ya no requiere tocar layout.
 // [v2026.06.10-1] layout.js
 // 2026-06-10 | Selector de empresas: pinta desde caché y SIEMPRE refresca desde
 //              /api/auth/my-companies (lista dinámica: empresas nuevas, o todas
@@ -318,7 +324,19 @@ async function _switchSidebarCompany(companyId, companyName) {
     if (dropdown) dropdown.style.display = 'none';
     if (chevron)  chevron.style.transform = '';
 
-    // Recargar módulos sin salto visual
+    // Refrescar la config de empresa cacheada ANTES de avisar a los módulos
+    if (typeof refreshCompanyConfig === 'function') { try { await refreshCompanyConfig(); } catch {} }
+
+    // ── EVENTO GLOBAL DE CAMBIO DE EMPRESA ──
+    // Cualquier módulo puede suscribirse con:
+    //   window.addEventListener('heavensy:company-changed', e => { ... e.detail.companyId ... })
+    // y reaccionar sin que layout.js tenga que conocerlo. Patrón abierto y escalable.
+    window.dispatchEvent(new CustomEvent('heavensy:company-changed', {
+      detail: { companyId: companyId, companyName: companyName }
+    }));
+
+    // Recargar módulos sin salto visual (enrutador explícito: respaldo para los
+    // módulos que aún no migran al evento; se irá vaciando con el tiempo)
     const page = location.hash.replace('#', '') || 'dashboard';
     if (page === 'conversaciones' && typeof cargarEmpresasYConversaciones === 'function') {
       cargarEmpresasYConversaciones();

@@ -1,4 +1,12 @@
 // ── BITÁCORA ──
+// [v2026.06.13-1] perfil_profesional.js
+// 2026-06-13 | Página pública por rubro (nivel B): el render de recursos se
+//              adapta a data.naturaleza — objeto muestra capacidad/dormitorios/
+//              precio-noche/features; persona muestra especialidades/modos.
+//              Fix del bug de nombres de campos (el llamado pasaba frase/
+//              especialidades pero renderProfCard espera specs/desc/modos).
+//              _ppAplicarLabels cambia los títulos "Servicios"/"Equipo" por los
+//              del catálogo (ej: "Tipos de estadía"/"Mis cabañas").
 // [v2026.06.11-1] perfil_profesional.js
 // 2026-06-11 | Fase 3.1 — página DUAL: nuevo modo EMPRESA PÚBLICA por slug
 //              (?empresa=<slug> o ruta /p/<slug>) que consume
@@ -137,6 +145,17 @@ function _ppRenderCalendar(year, month){
 // ── Aplicador compartido de la config visual del perfil ──
 // Lo usan el modo por resource_id (pp_config) y el modo empresa pública
 // (snapshot publicado): mismos nombres de campo en ambas fuentes.
+// Adapta los títulos de sección ("Servicios"/"Equipo") según el rubro.
+// Los <span> de .section-title no tienen id; se ubican por su texto actual.
+function _ppAplicarLabels(labels){
+  if(!labels) return;
+  document.querySelectorAll('.section-title span').forEach(sp=>{
+    const t=(sp.textContent||'').trim().toLowerCase();
+    if(t==='servicios' && labels.servicios) sp.textContent=labels.servicios;
+    if(t==='equipo'    && labels.recursos)  sp.textContent=labels.recursos;
+  });
+}
+
 function _ppAplicarPerfil(c){
   if(!c) return;
   const R=document.documentElement;
@@ -190,12 +209,32 @@ async function initPerfilEmpresa(){
   }
   if(data.programas?.length) renderProgramas(data.programas);
 
-  // Recursos publicados (equipo o unidades, según el rubro)
-  (data.recursos||[]).forEach(r=>renderProfCard({
-    nombre: r.name||'', foto: r.photo_url||'',
-    frase: r.slogan||r.description||'',
-    especialidades: (r.specialties||r.features||[]).join(' · ')
-  }));
+  // Títulos de sección según el rubro (labels del catálogo)
+  if(data.labels) _ppAplicarLabels(data.labels);
+
+  // Recursos publicados — render según naturaleza del rubro:
+  //  persona → tarjeta de equipo (foto, especialidades, modos)
+  //  objeto  → tarjeta de unidad (foto, capacidad, dormitorios, precio/noche, features)
+  const naturaleza = data.naturaleza || 'persona';
+  (data.recursos||[]).forEach(r=>{
+    if(naturaleza === 'objeto'){
+      renderProfCard({
+        nombre: r.name||'',
+        foto:   r.photo_url||'',
+        specs:  [r.capacidad?(r.capacidad+' personas'):'', r.dormitorios?(r.dormitorios+' dorm.'):''].filter(Boolean).join(' · '),
+        desc:   r.precio_noche?('$'+Number(r.precio_noche).toLocaleString('es-CL')+' / noche'):'',
+        modos:  Array.isArray(r.features)?r.features:[]
+      });
+    } else {
+      renderProfCard({
+        nombre: r.name||'',
+        foto:   r.photo_url||'',
+        specs:  Array.isArray(r.specialties)?r.specialties.join(' · '):(r.specialties||''),
+        desc:   r.slogan||r.description||'',
+        modos:  Array.isArray(r.modalities)?r.modalities:[]
+      });
+    }
+  });
 
   // Hablemos / Agendar → WhatsApp del negocio (puerta de entrada al bot)
   const wsp=(data.perfil||{}).whatsapp_publico;

@@ -3,6 +3,23 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.13-1] configuracion.js
+// 2026-06-13 | Fix persistencia de imágenes del paso 5 (Edición del perfil):
+//              al subir portada/foto/fondo, su URL de Cloudinary se guarda en
+//              localStorage (ep_portada_url/ep_foto_url/ep_fondo_url) y se
+//              incluye en el payload de ppSaveConfig → borrador/publicación.
+//              Antes solo iba al PATCH de perfil-profesional y la página pública
+//              mostraba las imágenes por defecto. Tras subir, dispara ppSaveConfig.
+// [v2026.06.12-3] configuracion.js
+// 2026-06-12 | Loader: si config-rubro.js ya está cargado (navegación SPA),
+//              re-invoca crInit en vez de no hacer nada.
+// [v2026.06.12-2] configuracion.js
+// 2026-06-12 | El loader inyecta además config-rubro.css (estilos del módulo
+//              en archivo propio; configuracion.css vuelve a quedar intacto).
+// [v2026.06.12-1] configuracion.js
+// 2026-06-12 | Fase 3.2: loader del módulo config-rubro.js (paso Mi empresa
+//              adaptativo por rubro). Si el módulo o el catálogo no están,
+//              la página opera exactamente como antes.
 // [v2026.06.11-1] configuracion.js
 // 2026-06-11 | Fase 3.1 — perfil público real: ppSaveConfig escribe ADEMÁS el
 //              borrador en backend (PUT /api/perfil-publico/borrador; el
@@ -163,6 +180,11 @@ function ppSaveConfig() {
       nombre_empresa: localStorage.getItem('ep_nombre_empresa')||'',
       fondo_color: localStorage.getItem('ep_fondo_color')||'',
       portada_position: JSON.parse(localStorage.getItem('ep_portada_position')||'{"x":50,"y":50}'),
+      // [v2026.06.13] Imágenes: incluir las URLs subidas para que persistan en el
+      // borrador/publicación (antes solo iban al PATCH de perfil-profesional).
+      portada_url: localStorage.getItem('ep_portada_url')||'',
+      foto_url:    localStorage.getItem('ep_foto_url')||'',
+      fondo_url:   localStorage.getItem('ep_fondo_url')||'',
     };
     apiCall('/api/perfil-profesional/config',{ method:'PATCH', body:JSON.stringify(payload) }).catch(()=>{});
     // Fase 3.1: el mismo payload alimenta el BORRADOR de la página pública
@@ -397,7 +419,11 @@ function epPortada(input) {
   r.onload = e => pmSend({type:'portada', value:e.target.result});
   r.readAsDataURL(file);
   ppUploadImage(file, 'perfil_profesional').then(url => {
-    if(url) apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({portada_url:url})}).catch(()=>{});
+    if(url){
+      localStorage.setItem('ep_portada_url', url);   // [v2026.06.13] para que entre al borrador público
+      apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({portada_url:url})}).catch(()=>{});
+      ppSaveConfig();
+    }
   });
 }
 function epFotoPerfil(input) {
@@ -409,7 +435,11 @@ function epFotoPerfil(input) {
   r.onload = e => pmSend({type:'foto', value:e.target.result});
   r.readAsDataURL(file);
   ppUploadImage(file, 'perfil_profesional').then(url => {
-    if(url) apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({foto_url:url})}).catch(()=>{});
+    if(url){
+      localStorage.setItem('ep_foto_url', url);      // [v2026.06.13]
+      apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({foto_url:url})}).catch(()=>{});
+      ppSaveConfig();
+    }
   });
 }
 function epFondo(input) {
@@ -421,7 +451,11 @@ function epFondo(input) {
   r.onload = e => pmSend({type:'fondo', value:e.target.result});
   r.readAsDataURL(file);
   ppUploadImage(file, 'perfil_profesional').then(url => {
-    if(url) apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({fondo_url:url})}).catch(()=>{});
+    if(url){
+      localStorage.setItem('ep_fondo_url', url);     // [v2026.06.13]
+      apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({fondo_url:url})}).catch(()=>{});
+      ppSaveConfig();
+    }
   });
 }
 function epFondoColor(color) {
@@ -2663,4 +2697,18 @@ async function _cfgPatchCurrentResource() {
       if (h > 100) zf.style.height = h + 'px';
     } catch(e) {}
   });
+})();
+
+
+// ── Fase 3.2: cargar módulo de adaptación por rubro (config-rubro.js) ──
+(function(){
+  if (document.getElementById('cr-script')) { if (window.crInit) window.crInit(); return; }
+  var l = document.createElement('link');
+  l.id = 'cr-css-link'; l.rel = 'stylesheet';
+  l.href = 'assets/css/config-rubro.css?v=' + Date.now();
+  document.head.appendChild(l);
+  var s = document.createElement('script');
+  s.id = 'cr-script';
+  s.src = 'assets/js/config-rubro.js?v=' + Date.now();
+  document.body.appendChild(s);
 })();
