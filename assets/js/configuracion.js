@@ -3,6 +3,9 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.14-4] configuracion.js
+// 2026-06-14 | Botón Quitar alineado a la derecha del campo (margin-left:auto +
+//              contenedor flex) en vez de pegado al nombre, que se veía apretado.
 // [v2026.06.14-3] configuracion.js
 // 2026-06-14 | Quitar fotos: portada/perfil/fondo ahora tienen botón "✕ Quitar"
 //              (epQuitarFoto) que vacía la URL en localStorage y servidor, limpia
@@ -89,15 +92,22 @@ function _epNombreFoto(elId, url, fnameKey){
     try{ const base = url.split('/').pop().split('?')[0]; n.textContent = base || 'Imagen cargada'; }
     catch{ n.textContent = 'Imagen cargada'; }
   } else { n.textContent = 'Seleccionar imagen…'; }
-  // Botón "Quitar" junto al nombre, sólo si hay foto. [14-06]
+  // Botón "Quitar" a la DERECHA del campo, sólo si hay foto. [14-06]
   const existente = document.getElementById('ep-quitar-'+campo);
   if(tieneFoto && !existente){
-    const btn = document.createElement('button');
-    btn.id = 'ep-quitar-'+campo; btn.type = 'button';
-    btn.textContent = '✕ Quitar';
-    btn.style.cssText = 'margin-left:8px;font-size:11px;font-weight:700;color:#ef4444;background:none;border:none;cursor:pointer';
-    btn.onclick = () => epQuitarFoto(campo);
-    if(n.parentElement) n.parentElement.appendChild(btn);
+    const cont = n.parentElement;
+    if(cont){
+      // asegurar que el contenedor distribuya nombre (izq) y botón (der)
+      cont.style.display = 'flex';
+      cont.style.alignItems = 'center';
+      cont.style.width = '100%';
+      const btn = document.createElement('button');
+      btn.id = 'ep-quitar-'+campo; btn.type = 'button';
+      btn.innerHTML = '<i class="fas fa-times" style="margin-right:4px"></i>Quitar';
+      btn.style.cssText = 'margin-left:auto;font-size:11px;font-weight:700;color:#ef4444;background:none;border:none;cursor:pointer;white-space:nowrap;padding:2px 4px';
+      btn.onclick = () => epQuitarFoto(campo);
+      cont.appendChild(btn);
+    }
   } else if(!tieneFoto && existente){
     existente.remove();
   }
