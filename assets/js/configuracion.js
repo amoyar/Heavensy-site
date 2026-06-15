@@ -3,6 +3,11 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.14-3] configuracion.js
+// 2026-06-14 | Quitar fotos: portada/perfil/fondo ahora tienen botón "✕ Quitar"
+//              (epQuitarFoto) que vacía la URL en localStorage y servidor, limpia
+//              preview y nombre. Antes no había forma de sacar una foto puesta.
+//              El botón se inyecta junto al nombre cuando hay foto.
 // [v2026.06.14-2] configuracion.js
 // 2026-06-14 | Galería (inf_oficio) ahora se publica: al subir cada imagen
 //              también va a Cloudinary (ppUploadImage) y su URL se guarda en
@@ -75,16 +80,54 @@ function _ppBuildSvcRow(s, profileType) {
 function _epNombreFoto(elId, url, fnameKey){
   const n = document.getElementById(elId);
   if(!n) return;
+  // campo derivado del id: 'ep-portada-name' → 'portada'
+  const campo = elId.replace('ep-','').replace('-name','');
   const guardado = localStorage.getItem(fnameKey);
-  if(guardado){ n.textContent = guardado; return; }
-  if(url){
-    // derivar algo legible del final de la URL
+  const tieneFoto = !!(guardado || url);
+  if(guardado){ n.textContent = guardado; }
+  else if(url){
     try{ const base = url.split('/').pop().split('?')[0]; n.textContent = base || 'Imagen cargada'; }
     catch{ n.textContent = 'Imagen cargada'; }
-    return;
+  } else { n.textContent = 'Seleccionar imagen…'; }
+  // Botón "Quitar" junto al nombre, sólo si hay foto. [14-06]
+  const existente = document.getElementById('ep-quitar-'+campo);
+  if(tieneFoto && !existente){
+    const btn = document.createElement('button');
+    btn.id = 'ep-quitar-'+campo; btn.type = 'button';
+    btn.textContent = '✕ Quitar';
+    btn.style.cssText = 'margin-left:8px;font-size:11px;font-weight:700;color:#ef4444;background:none;border:none;cursor:pointer';
+    btn.onclick = () => epQuitarFoto(campo);
+    if(n.parentElement) n.parentElement.appendChild(btn);
+  } else if(!tieneFoto && existente){
+    existente.remove();
   }
-  n.textContent = 'Seleccionar imagen…';
 }
+
+// [14-06] Quitar una foto: vacía la URL (localStorage + servidor), limpia el
+// preview y el nombre. campo: 'portada' | 'foto' | 'fondo'.
+function epQuitarFoto(campo){
+  const urlKey = 'ep_'+campo+'_url', fnameKey = 'ep_'+campo+'_fname';
+  const savedKey = 'ep_'+campo+'_saved';
+  localStorage.removeItem(urlKey);
+  localStorage.removeItem(fnameKey);
+  localStorage.removeItem(savedKey);
+  // Persistir el vaciado en el servidor (PATCH con cadena vacía)
+  const patch = {}; patch[campo+'_url'] = '';
+  if(typeof apiCall === 'function') apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify(patch)}).catch(()=>{});
+  // Actualizar el nombre mostrado
+  const nameId = 'ep-'+campo+'-name';
+  const n = document.getElementById(nameId); if(n) n.textContent = 'Seleccionar imagen…';
+  // Limpiar preview en el iframe
+  if(campo==='portada') pmSend({type:'portada', value:''});
+  else if(campo==='foto') pmSend({type:'foto', value:''});
+  else if(campo==='fondo') pmSend({type:'fondo', value:''});
+  // Quitar el botón de quitar
+  const btn = document.getElementById('ep-quitar-'+campo); if(btn) btn.remove();
+  if(typeof ppSaveConfig === 'function') ppSaveConfig();
+}
+window.epQuitarPortada = () => epQuitarFoto('portada');
+window.epQuitarFotoPerfil = () => epQuitarFoto('foto');
+window.epQuitarFondo = () => epQuitarFoto('fondo');
 
 function ppLoadFromServer() {
   if (typeof apiCall === 'undefined') return;

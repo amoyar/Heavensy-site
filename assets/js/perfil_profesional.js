@@ -1,4 +1,8 @@
 // ── BITÁCORA ──
+// [v2026.06.14-9] perfil_profesional.js
+// 2026-06-14 | Preview maneja foto vacía (al quitar): portada/foto/fondo con
+//              value vacío ahora limpian de verdad (antes url('') dejaba imagen
+//              rota). Acompaña el botón Quitar de configuracion.js.
 // [v2026.06.14-8] perfil_profesional.js
 // 2026-06-14 | Fix prioridad de fondo: cuando había foto de fondo Y color, el
 //              color pisaba siempre a la foto (orden de los if). Ahora si hay
@@ -612,9 +616,9 @@ window.addEventListener('message', function(e){
     localStorage.setItem('ep_'+type, stored);
   }catch(err){}
   const R = document.documentElement;
-  if(type === 'portada'){ const h=document.querySelector('.hero'); if(h){ h.style.backgroundImage=`url('${value}')`;try{const p=JSON.parse(localStorage.getItem('ep_portada_position')||'{"x":50,"y":50}');h.style.backgroundPosition=p.x+'% '+p.y+'%';}catch(e){} } }
-  else if(type === 'foto'){ const p=document.querySelector('.profile-photo'); if(p) p.src=value; }
-  else if(type === 'fondo'){ document.body.style.backgroundImage=`url('${value}')`; document.body.style.backgroundSize='cover'; document.body.style.backgroundColor=''; }
+  if(type === 'portada'){ const h=document.querySelector('.hero'); if(h){ if(value){ h.style.backgroundImage=`url('${value}')`; try{const p=JSON.parse(localStorage.getItem('ep_portada_position')||'{"x":50,"y":50}');h.style.backgroundPosition=p.x+'% '+p.y+'%';}catch(e){} } else { h.style.backgroundImage='none'; } } }
+  else if(type === 'foto'){ const p=document.querySelector('.profile-photo'); if(p) p.src=value||''; }
+  else if(type === 'fondo'){ if(value){ document.body.style.backgroundImage=`url('${value}')`; document.body.style.backgroundSize='cover'; document.body.style.backgroundColor=''; } else { document.body.style.backgroundImage='none'; } }
   else if(type === 'fondo_color'){ document.body.style.backgroundImage='none'; document.body.style.backgroundColor=value; }
   else if(type.startsWith('color_')){ R.style.setProperty(type.replace('color_',''), value); }
   else if(type === 'opacidad'){ const op=(value/100).toFixed(2); document.querySelectorAll('.profile-top-glass,.service-card,.comment-card,.agenda-card,.sidebar-hablemos,.prof-card').forEach(el=>{ el.style.cssText+=`;background:rgba(255,255,255,${op}) !important`; }); }
