@@ -1,4 +1,8 @@
 // ── BITÁCORA ──
+// [v2026.06.14-10] perfil_profesional.js
+// 2026-06-14 | Estadía: check-in y check-out en líneas separadas (cada uno con
+//              nowrap) para que no se corten a media palabra en la columna
+//              estrecha ("Check-" / "out").
 // [v2026.06.14-9] perfil_profesional.js
 // 2026-06-14 | Preview maneja foto vacía (al quitar): portada/foto/fondo con
 //              value vacío ahora limpian de verdad (antes url('') dejaba imagen
@@ -435,7 +439,7 @@ function renderEstadia(est){
     titulo.innerHTML = (svg ? svg.outerHTML : '') + ' Estadía';
   }
   const el = id => document.getElementById(id);
-  if(el('hor-rango'))      el('hor-rango').textContent      = `Check-in: ${est.checkin||'—'} · Check-out: ${est.checkout||'—'}`;
+  if(el('hor-rango'))      el('hor-rango').innerHTML        = `<span style="white-space:nowrap">Check-in: ${est.checkin||'—'}</span><br><span style="white-space:nowrap">Check-out: ${est.checkout||'—'}</span>`;
   if(el('hor-almuerzo'))   el('hor-almuerzo').textContent   = est.min_noches ? `Mínimo ${est.min_noches} noche${est.min_noches>1?'s':''}` : '';
   if(el('hor-intervalo'))  el('hor-intervalo').textContent  = '';
   if(el('hor-cancelacion'))el('hor-cancelacion').textContent= '';
