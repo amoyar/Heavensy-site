@@ -1,4 +1,8 @@
 // ── BITÁCORA ──
+// [v2026.06.14-8] perfil_profesional.js
+// 2026-06-14 | Fix prioridad de fondo: cuando había foto de fondo Y color, el
+//              color pisaba siempre a la foto (orden de los if). Ahora si hay
+//              foto gana la foto; el color es el fallback (solo sin foto).
 // [v2026.06.14-7] perfil_profesional.js
 // 2026-06-14 | Galería en la página pública: renderInfOficio soporta item.url
 //              (Cloudinary) además de item.data (base64); se renderiza desde
@@ -204,8 +208,16 @@ function _ppAplicarPerfil(c){
   if(c.portada_url){ const h=document.querySelector('.hero'); if(h){ h.style.backgroundImage=`url('${c.portada_url}')`;
     const p=c.portada_position; if(p&&p.x!==undefined) h.style.backgroundPosition=p.x+'% '+p.y+'%'; } }
   if(c.foto_url){ const p=document.querySelector('.profile-photo'); if(p) p.src=c.foto_url; }
-  if(c.fondo_url){ document.body.style.backgroundImage=`url('${c.fondo_url}')`; document.body.style.backgroundSize='cover'; }
-  if(c.fondo_color){ document.body.style.backgroundImage='none'; document.body.style.backgroundColor=c.fondo_color; }
+  // [14-06] Prioridad: si hay foto de fondo, gana la foto; el color sólo cuando
+  // NO hay foto (antes el color pisaba siempre a la foto).
+  if(c.fondo_url){
+    document.body.style.backgroundImage=`url('${c.fondo_url}')`;
+    document.body.style.backgroundSize='cover';
+    document.body.style.backgroundColor='';
+  } else if(c.fondo_color){
+    document.body.style.backgroundImage='none';
+    document.body.style.backgroundColor=c.fondo_color;
+  }
   if(c.slogan){ const el=document.querySelector('.hero-banner span'); if(el) el.textContent=c.slogan; }
   if(c.frase){ const el=document.querySelector('.profile-desc'); if(el) el.textContent=c.frase; }
   if(c.direccion){ const el=document.querySelector('.profile-addr'); if(el){ const svg=el.querySelector('svg'); el.textContent=c.direccion; if(svg)el.prepend(svg); el.style.display=''; } }
