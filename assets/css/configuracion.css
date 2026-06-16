@@ -1,5 +1,8 @@
 /* ══════════════════════════════════════
    CONFIGURACIÓN — HEAVENSY
+   ── BITÁCORA ──
+   [v2026.06.16-1] 2026-06-16 | Estilo Heavensy para input time/date (borde violeta,
+   focus, ícono violeta). Bloque .alm-row (almuerzo en línea: toggle + campos).
    Extraído de configuracion.html
 ══════════════════════════════════════ */
 
@@ -92,6 +95,29 @@ input:checked+.slider:before{transform:translateX(16px)}
 .form-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:end}
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group label{font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.04em}
+
+/* Relojes / fechas estilo Heavensy [16-06] */
+input[type="time"],input[type="date"]{
+  font-size:13px;padding:7px 10px;border:1px solid #E3E0F0;border-radius:8px;
+  color:#1e2a5e;background:#fff;font-family:inherit;transition:border-color .15s,box-shadow .15s;
+}
+input[type="time"]:hover,input[type="date"]:hover{border-color:#9961FF}
+input[type="time"]:focus,input[type="date"]:focus{outline:none;border-color:#9961FF;box-shadow:0 0 0 3px #9961FF20}
+input[type="time"]:disabled,input[type="date"]:disabled{background:#f3f4f6;color:#9ca3af;border-color:#e5e7eb}
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator{
+  filter:invert(38%) sepia(82%) saturate(2619%) hue-rotate(248deg) brightness(101%) contrast(101%);
+  cursor:pointer;opacity:.7;transition:opacity .15s;
+}
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
+
+/* Bloque almuerzo en línea: toggle + inputs juntos [16-06] */
+.alm-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;background:#f7f8fc;border-radius:8px;margin-top:4px}
+.alm-row .alm-label{font-size:12.5px;color:#7D84C1;font-weight:600}
+.alm-row .alm-campos{display:flex;align-items:center;gap:8px}
+.alm-row .alm-campos.off{display:none}
+.alm-row .alm-campos label{font-size:10px;font-weight:700;color:#7D84C1;text-transform:uppercase}
 
 /* SUMMARY CARD */
 .summary-card{background:#EFF6FF;border:0.5px solid #C9D9FF;border-radius:12px;padding:16px 18px;margin-bottom:16px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}

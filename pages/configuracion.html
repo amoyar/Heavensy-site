@@ -1,4 +1,24 @@
 <!-- ── BITÁCORA ──
+[v2026.06.16-5] configuracion.html
+2026-06-16 | Panel-2: id #esp-modos al grupo de "Modos de trabajo" para
+             poblar/leer los modos reales del recurso (antes fijos en Presencial+
+             Online en el resumen).
+[v2026.06.16-4] configuracion.html
+2026-06-16 | Panel-1: resumen de disponibilidad con IDs (#sum-horario, sum-almuerzo,
+             sum-intervalo, sum-cancel, sum-dias, sum-tz) para poblarlo por JS con
+             datos reales del recurso. Antes los valores estaban fijos en el HTML.
+[v2026.06.16-3] configuracion.html
+2026-06-16 | Panel-1: resumen de modos (#sum-modos) ya no hardcodeado; IDs
+             #disp-dias y #disp-modos en los toggle-groups para poblar/leer por JS.
+[v2026.06.16-2] configuracion.html
+2026-06-16 | jm-panel-1 (disponibilidad del especialista en gestión de equipo):
+             bloque almuerzo unificado al mismo patrón (toggle "Almuerzo" + inputs
+             en línea), igual que el panel-1.
+[v2026.06.16-1] configuracion.html
+2026-06-16 | Panel-1: bloque almuerzo rediseñado a una fila en línea (toggle
+             "Almuerzo" + inputs desde/hasta que aparecen al activarlo). Antes eran
+             dos campos sueltos siempre visibles. Para rubros sin_almuerzo arranca
+             apagado.
 [v2026.06.15-3] configuracion.html
 2026-06-15 | Panel-2 (Especialidades/Características): agregado selector de recurso
              (#esp-recurso-chips), igual que en Disponibilidad, para elegir a qué
@@ -154,26 +174,24 @@
     <div class="summary-grid">
       <div>
         <div class="summary-section-title">Horario de atención</div>
-        <div style="font-size:14px;font-weight:700;color:#3b4a6b">09:00 a 18:00 hrs</div>
-        <div style="font-size:11px;color:#7D84C1;margin-top:3px">Almuerzo: 13:00 – 14:00</div>
-        <div style="font-size:11px;color:#7D84C1">Intervalo: 15 min · Anticip.: 2 hrs</div>
-        <div style="font-size:11px;color:#7D84C1">Cancelación: 48 hrs · 40% tardía</div>
+        <div id="sum-horario" style="font-size:14px;font-weight:700;color:#3b4a6b">09:00 a 18:00 hrs</div>
+        <div id="sum-almuerzo" style="font-size:11px;color:#7D84C1;margin-top:3px">Almuerzo: 13:00 – 14:00</div>
+        <div id="sum-intervalo" style="font-size:11px;color:#7D84C1">Intervalo: 15 min · Anticip.: 2 hrs</div>
+        <div id="sum-cancel" style="font-size:11px;color:#7D84C1">Cancelación: 48 hrs · 40% tardía</div>
       </div>
       <div>
         <div class="summary-section-title">Días disponibles</div>
-        <div class="chips">
+        <div class="chips" id="sum-dias">
           <span class="chip chip-on">L</span><span class="chip chip-on">M</span>
           <span class="chip chip-on">X</span><span class="chip chip-on">J</span>
           <span class="chip chip-on">V</span><span class="chip chip-off">S</span>
           <span class="chip chip-off">D</span>
         </div>
-        <div style="font-size:11px;color:#7D84C1;margin-top:6px">GMT-3 America/Santiago</div>
+        <div id="sum-tz" style="font-size:11px;color:#7D84C1;margin-top:6px">GMT-3 America/Santiago</div>
       </div>
       <div>
         <div class="summary-section-title">Modos de atención</div>
-        <div style="font-size:12px;color:#10b981;margin-top:2px"><i class="fas fa-check" style="margin-right:4px"></i>Presencial</div>
-        <div style="font-size:12px;color:#10b981"><i class="fas fa-check" style="margin-right:4px"></i>Online</div>
-        <div style="font-size:12px;color:#9ca3af"><i class="fas fa-times" style="margin-right:4px"></i>A domicilio</div>
+        <div id="sum-modos"></div>
       </div>
     </div>
     <button class="btn-primary btn-sm" onclick="toggleEditPanel('disp')"><i class="fas fa-pen" style="margin-right:5px"></i>Editar</button>
@@ -187,14 +205,12 @@
       <div class="form-grid-2">
         <div class="form-group"><label>Hora inicio jornada</label><input id="disp-inicio" type="time" value="09:00"/></div>
         <div class="form-group"><label>Hora término jornada</label><input id="disp-fin" type="time" value="18:00"/></div>
-        <div class="form-group"><label>Almuerzo desde</label><input id="disp-alm-desde" type="time" value="13:00"/></div>
-        <div class="form-group"><label>Almuerzo hasta</label><input id="disp-alm-hasta" type="time" value="14:00"/></div>
         <div class="form-group"><label>Intervalo entre atenciones (min)</label><input id="disp-intervalo" type="number" value="15" min="0" max="120"/></div>
         <div class="form-group"><label>Anticipación mínima (hrs)</label><input id="disp-anticip" type="number" value="2" min="0"/></div>
         <div class="form-group"><label>Cancelación sin costo (hrs antes)</label><input id="disp-cancel-hrs" type="number" value="48" min="0"/></div>
         <div class="form-group"><label>Cobro cancelación tardía (%)</label><input id="disp-cancel-pct" type="number" value="40" min="0" max="100"/></div>
         <div class="form-group form-full"><label>Días disponibles</label>
-          <div class="toggle-group">
+          <div class="toggle-group" id="disp-dias">
             <span class="toggle-btn on" onclick="this.classList.toggle('on')">Lun</span>
             <span class="toggle-btn on" onclick="this.classList.toggle('on')">Mar</span>
             <span class="toggle-btn on" onclick="this.classList.toggle('on')">Mié</span>
@@ -204,8 +220,18 @@
             <span class="toggle-btn" onclick="this.classList.toggle('on')">Dom</span>
           </div>
         </div>
+        <div class="form-group form-full"><label>Pausa de colación</label>
+          <div class="alm-row">
+            <label class="switch" title="Habilitar pausa de almuerzo"><input type="checkbox" id="disp-alm-on" onchange="toggleAlmuerzo(this)"><span class="slider"></span></label>
+            <span class="alm-label">Almuerzo</span>
+            <div class="alm-campos off" id="disp-alm-campos">
+              <label>Desde</label><input id="disp-alm-desde" type="time" value="13:00"/>
+              <label>Hasta</label><input id="disp-alm-hasta" type="time" value="14:00"/>
+            </div>
+          </div>
+        </div>
         <div class="form-group form-full"><label>Modos de atención</label>
-          <div class="toggle-group">
+          <div class="toggle-group" id="disp-modos">
             <span class="toggle-btn on" onclick="this.classList.toggle('on')">Presencial</span>
             <span class="toggle-btn on" onclick="this.classList.toggle('on')">Online</span>
             <span class="toggle-btn" onclick="this.classList.toggle('on')">A domicilio</span>
@@ -274,7 +300,7 @@
         <button class="btn-secondary btn-sm" style="margin-left:6px;margin-top:4px" onclick="addSpec()"><i class="fas fa-plus" style="margin-right:4px"></i>Agregar</button>
       </div>
       <div class="form-group" style="margin-bottom:14px"><label>Modos de trabajo</label>
-        <div class="toggle-group">
+        <div class="toggle-group" id="esp-modos">
           <span class="toggle-btn on" onclick="this.classList.toggle('on')">Presencial</span>
           <span class="toggle-btn on" onclick="this.classList.toggle('on')">Online</span>
           <span class="toggle-btn" onclick="this.classList.toggle('on')">A domicilio</span>
@@ -831,8 +857,6 @@
         <div class="form-grid-2">
           <div class="form-group"><label>Hora inicio jornada</label><input id="jm-disp-inicio" type="time" value="09:00"/></div>
           <div class="form-group"><label>Hora término jornada</label><input id="jm-disp-fin" type="time" value="18:00"/></div>
-          <div class="form-group"><label>Almuerzo desde</label><input id="jm-disp-alm-desde" type="time" value="13:00"/></div>
-          <div class="form-group"><label>Almuerzo hasta</label><input id="jm-disp-alm-hasta" type="time" value="14:00"/></div>
           <div class="form-group"><label>Intervalo entre atenciones (min)</label><input id="jm-disp-intervalo" type="number" value="15" min="0" max="120"/></div>
           <div class="form-group"><label>Anticipación mínima (hrs)</label><input id="jm-disp-anticip" type="number" value="2" min="0"/></div>
           <div class="form-group"><label>Cancelación sin costo (hrs antes)</label><input id="jm-disp-cancel-hrs" type="number" value="48" min="0"/></div>
@@ -846,6 +870,16 @@
               <span class="toggle-btn on" onclick="this.classList.toggle('on')">Vie</span>
               <span class="toggle-btn" onclick="this.classList.toggle('on')">Sáb</span>
               <span class="toggle-btn" onclick="this.classList.toggle('on')">Dom</span>
+            </div>
+          </div>
+          <div class="form-group form-full"><label>Pausa de colación</label>
+            <div class="alm-row">
+              <label class="switch" title="Habilitar pausa de almuerzo"><input type="checkbox" id="jm-disp-alm-on" onchange="toggleAlmuerzoJm(this)"><span class="slider"></span></label>
+              <span class="alm-label">Almuerzo</span>
+              <div class="alm-campos off" id="jm-disp-alm-campos">
+                <label>Desde</label><input id="jm-disp-alm-desde" type="time" value="13:00"/>
+                <label>Hasta</label><input id="jm-disp-alm-hasta" type="time" value="14:00"/>
+              </div>
             </div>
           </div>
           <div class="form-group"><label>Dirección</label><input id="jm-direccion" value="Av. Providencia 1234"/></div>

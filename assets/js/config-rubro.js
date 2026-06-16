@@ -7,6 +7,14 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.16-2] config-rubro.js
+// 2026-06-16 | Disponibilidad por recurso ahora cubre también por_visita
+//              (propiedades): _crDisponibilidad acepta por_dia Y por_visita;
+//              crDispSelect arma el form según modo (visitas: ventana desde/hasta,
+//              duración, máx visitas/día, días, anticip/cancel); crDispGuardar
+//              arma el body por modo y guarda en el recurso (PATCH). por_dia
+//              (alojamiento) intacto. Pendiente: ocultar almuerzo en
+//              por_hora_sin_almuerzo (panel del HTML).
 // [v2026.06.16-1] config-rubro.js
 // 2026-06-16 | Disponibilidad de objetos (por_dia) ahora es POR RECURSO: el panel
 //              _crDisponibilidad ganó selector de recurso (chips) y guarda
@@ -256,6 +264,9 @@ async function _crCargar(){
   const rs = await apiCall('/api/sectores/' + sectorKey).catch(() => null);
   _crSector = rs?.data?.sector || rs?.data || null;
   _crRec = _crSector?.business?.recursos || null;
+  // Default de pausa de almuerzo del sector (lo usa el toggle de almuerzo en
+  // configuracion.js). has_lunch_break en resource_defaults. [16-06]
+  window._cfgSectorLunchDefault = !!(_crSector?.business?.resource_defaults?.has_lunch_break);
   return !!_crRec;   // sin catálogo de recursos → no se activa la capa
 }
 
@@ -652,11 +663,14 @@ window.crFiltro = function(k){ _crCatFiltro = k; _crRender(); };
 
 
 // ── PASO 2: Disponibilidad por rubro (Fase 3.3.1) ──
-// Si el sector opera por_dia (alojamiento), el panel 2 muestra check-in/out,
-// mínimo de noches y temporadas; lo original queda oculto (intacto en DOM).
-// Si es por_hora, no se toca nada.
+// Panel de disponibilidad POR RECURSO para modos de objeto/visita.
+//  - por_dia (alojamiento): check-in/out, mínimo de noches, temporadas.
+//  - por_visita (propiedades): ventana de visitas, duración, máx/día, días.
+// El selector de recurso y el andamiaje son comunes; cambia el form interno.
+// por_hora / por_hora_sin_almuerzo usan el panel del HTML (no este).
 async function _crDisponibilidad(){
-  if ((_crSector?.business?.availability_mode || 'por_hora') !== 'por_dia') return;
+  const modo = _crSector?.business?.availability_mode || 'por_hora';
+  if (modo !== 'por_dia' && modo !== 'por_visita') return;
   const panel = document.getElementById('panel-1');
   if (!panel || document.getElementById('cr-disp')) return;
 
@@ -671,11 +685,15 @@ async function _crDisponibilidad(){
   const rc = await apiCall('/api/me/company/config').catch(() => null);
   _crDispCfgGlobal = rc?.data?.config || {};
 
+  const intro = modo === 'por_visita'
+    ? 'El cliente agenda una hora para visitar. Configura la ventana y el tope diario de cada recurso.'
+    : 'Reservas por día: el cliente elige fechas de llegada y salida. Configura cada recurso por separado.';
+
   const div = document.createElement('div');
   div.className = 'content'; div.id = 'cr-disp';
   div.innerHTML = `
-    <div style="font-size:15px;font-weight:800;color:#1e2a5e;margin-bottom:2px">Disponibilidad</div>
-    <div style="font-size:11px;color:#7D84C1;margin-bottom:12px">Reservas por día: el cliente elige fechas de llegada y salida. Configura cada recurso por separado.</div>
+    <div style="font-size:15px;font-weight:800;color:#1e2a5e;margin-bottom:2px">Disponibilidad${modo==='por_visita'?' para visitas':''}</div>
+    <div style="font-size:11px;color:#7D84C1;margin-bottom:12px">${intro}</div>
     <div style="font-size:11px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px"><i class="fas fa-cube" style="color:#9961FF;font-size:12px;margin-right:5px"></i>¿De qué recurso?</div>
     <div id="cr-disp-chips" class="toggle-group" style="flex-wrap:wrap;margin-bottom:14px"></div>
     <div id="cr-disp-form-wrap"></div>`;
@@ -684,7 +702,7 @@ async function _crDisponibilidad(){
   _crDispRenderChips();
   // Cargar el primer recurso por defecto
   if (_crRecursos.length) crDispSelect(_crRecursos[0]._id || _crRecursos[0].id);
-  else document.getElementById('cr-disp-form-wrap').innerHTML = '<div style="font-size:11px;color:#a8aed1">No hay recursos creados aún. Créalos en "Mis cabañas".</div>';
+  else document.getElementById('cr-disp-form-wrap').innerHTML = '<div style="font-size:11px;color:#a8aed1">No hay recursos creados aún. Créalos primero.</div>';
 }
 
 // Pinta los chips de recurso en el panel de disponibilidad de objetos.
@@ -706,15 +724,49 @@ window.crDispSelect = function(resourceId){
   if (!r) return;
   _crDispRecId = resourceId;
   _crDispRenderChips();
-  // Valor por recurso si existe; si no, heredar de la config global.
+  const wrap = document.getElementById('cr-disp-form-wrap');
+  if (!wrap) return;
   const g = _crDispCfgGlobal || {};
+  const modo = _crSector?.business?.availability_mode || 'por_hora';
+
+  if (modo === 'por_visita'){
+    // Ventana de visitas + duración + tope diario, por recurso (Opción 2: hereda global).
+    const rd = (_crSector?.business?.resource_defaults) || {};
+    const desde   = r.checkin     !== undefined ? r.checkin     : (g.checkin || '10:00');
+    const hasta   = r.checkout    !== undefined ? r.checkout    : (g.checkout || '18:00');
+    const dur     = r.slot_duration !== undefined ? r.slot_duration : (g.slot_duration || rd.slot_duration || 30);
+    const maxDia  = r.max_visits_per_day !== undefined ? r.max_visits_per_day : (g.max_visits_per_day || rd.max_visits_per_day || 2);
+    const minAdv  = r.min_advance_hours !== undefined ? r.min_advance_hours : (rd.min_advance_hours || 2);
+    const cancel  = r.cancel_hours !== undefined ? r.cancel_hours : (rd.cancel_hours || 24);
+    const dias    = Array.isArray(r.dias_visita) ? r.dias_visita : (g.dias_visita || [1,2,3,4,5,6]);
+    const DOW = [['Dom',0],['Lun',1],['Mar',2],['Mié',3],['Jue',4],['Vie',5],['Sáb',6]];
+    wrap.innerHTML = `
+      <div class="cr-form">
+        <div class="cr-grid">
+          <div><label>Visitas desde</label><input id="cr-v-desde" type="time" value="${desde}"></div>
+          <div><label>Visitas hasta</label><input id="cr-v-hasta" type="time" value="${hasta}"></div>
+          <div><label>Duración visita (min)</label><input id="cr-v-dur" type="number" min="5" value="${dur}"></div>
+          <div><label>Máx. visitas por día</label><input id="cr-v-max" type="number" min="1" value="${maxDia}"></div>
+        </div>
+        <label style="margin-top:6px">Días que se puede visitar</label>
+        <div id="cr-v-dias" class="toggle-group" style="flex-wrap:wrap;margin:4px 0 10px">
+          ${DOW.map(([n,i]) => `<span class="toggle-btn ${dias.includes(i)?'on':''}" data-dow="${i}" onclick="this.classList.toggle('on')">${n}</span>`).join('')}
+        </div>
+        <div class="cr-grid">
+          <div><label>Anticipación mínima (hrs)</label><input id="cr-v-anticip" type="number" min="0" value="${minAdv}"></div>
+          <div><label>Cancelación (hrs)</label><input id="cr-v-cancel" type="number" min="0" value="${cancel}"></div>
+        </div>
+        <div style="margin-top:10px"><button class="btn-primary" onclick="crDispGuardar()"><i class="fas fa-check" style="margin-right:5px"></i>Guardar disponibilidad</button>
+        <span id="cr-d-msg" style="font-size:11px;font-weight:700;margin-left:8px"></span></div>
+      </div>`;
+    return;
+  }
+
+  // modo por_dia (alojamiento): check-in/out, mínimo de noches, temporadas
   const checkin    = r.checkin    !== undefined ? r.checkin    : (g.checkin || '');
   const checkout   = r.checkout   !== undefined ? r.checkout   : (g.checkout || '');
   const minNoches  = r.min_noches !== undefined ? r.min_noches : (g.min_noches || '');
   const temporadas = Array.isArray(r.temporadas) ? r.temporadas : (g.temporadas || []);
-
-  const wrap = document.getElementById('cr-disp-form-wrap');
-  if (!wrap) return;
   wrap.innerHTML = `
     <div class="cr-form">
       <div class="cr-grid">
@@ -745,17 +797,34 @@ window.crDispAddTemp = function(t){
 
 window.crDispGuardar = async function(){
   if (!_crDispRecId){ return; }
-  const temporadas = [...document.querySelectorAll('.cr-d-temp')].map(r => ({
-    nombre: r.querySelector('.t-nombre').value.trim(),
-    desde:  r.querySelector('.t-desde').value,
-    hasta:  r.querySelector('.t-hasta').value,
-  })).filter(t => t.nombre || t.desde || t.hasta);
-  const body = {
-    checkin:    document.getElementById('cr-d-checkin').value,
-    checkout:   document.getElementById('cr-d-checkout').value,
-    min_noches: parseInt(document.getElementById('cr-d-minn').value || '1', 10),
-    temporadas,
-  };
+  const modo = _crSector?.business?.availability_mode || 'por_hora';
+  let body;
+  if (modo === 'por_visita'){
+    const dias = [...document.querySelectorAll('#cr-v-dias .toggle-btn.on')].map(x => parseInt(x.dataset.dow, 10));
+    body = {
+      checkin:            document.getElementById('cr-v-desde').value,   // ventana inicio
+      checkout:           document.getElementById('cr-v-hasta').value,   // ventana fin
+      slot_duration:      parseInt(document.getElementById('cr-v-dur').value || '30', 10),
+      max_visits_per_day: parseInt(document.getElementById('cr-v-max').value || '1', 10),
+      dias_visita:        dias,
+      booking_rules: {
+        min_advance_hours: parseInt(document.getElementById('cr-v-anticip').value || '0', 10),
+        cancel_hours:      parseInt(document.getElementById('cr-v-cancel').value || '0', 10),
+      },
+    };
+  } else {
+    const temporadas = [...document.querySelectorAll('.cr-d-temp')].map(r => ({
+      nombre: r.querySelector('.t-nombre').value.trim(),
+      desde:  r.querySelector('.t-desde').value,
+      hasta:  r.querySelector('.t-hasta').value,
+    })).filter(t => t.nombre || t.desde || t.hasta);
+    body = {
+      checkin:    document.getElementById('cr-d-checkin').value,
+      checkout:   document.getElementById('cr-d-checkout').value,
+      min_noches: parseInt(document.getElementById('cr-d-minn').value || '1', 10),
+      temporadas,
+    };
+  }
   // Guardar POR RECURSO: PATCH al recurso (update_resource hace $set libre, así
   // que estos campos quedan en el documento del recurso). [16-06]
   const res = await apiCall('/api/agenda/resources/' + _crDispRecId, { method:'PUT', body: JSON.stringify(body) }).catch(() => null);

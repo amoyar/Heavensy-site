@@ -3,6 +3,42 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.16-6] configuracion.js
+// 2026-06-16 | Fix "no guarda": guardarEspecialidades y guardarDisponibilidad
+//              fingían "Guardado" aunque _cfgFirstResourceId fuera null (fallo
+//              silencioso) y tenían catch vacío. Ahora avisan si no hay recurso o
+//              si el backend falla, y reflejan el cambio en _cfgResourceMap. Solo
+//              muestran "Guardado" si el PATCH fue ok.
+// [v2026.06.16-5] configuracion.js
+// 2026-06-16 | Modos de trabajo en panel-2 (Especialidades) ya no hardcodeados:
+//              cfgPopulateSpecialties sincroniza los toggles (#esp-modos) con los
+//              modalities reales y carga años de experiencia; syncEspecialidades
+//              lee #esp-modos (id robusto). guardarEspecialidades ahora persiste
+//              modalities y anios_experiencia, no solo specialties.
+// [v2026.06.16-4] configuracion.js
+// 2026-06-16 | Resumen de disponibilidad (panel-1) ya no hardcodeado:
+//              cfgPopulateSchedule puebla #sum-horario/almuerzo/intervalo/cancel/
+//              dias/tz con los datos reales del recurso (almuerzo se oculta si no
+//              tiene; días desde schedule_rules). rules ahora toma solo el objeto
+//              schedule_config (nunca el array), evitando leer mal los escalares.
+// [v2026.06.16-3] configuracion.js
+// 2026-06-16 | Modos de atención (panel-1) dejan de estar hardcodeados: el resumen
+//              (#sum-modos) y los toggles (#disp-modos) reflejan los modalities
+//              reales del recurso, y guardarDisponibilidad ahora los persiste
+//              (modalities en el PATCH). IDs #disp-dias/#disp-modos para selección
+//              robusta.
+// [v2026.06.16-2] configuracion.js
+// 2026-06-16 | Unificado el toggle de almuerzo también en la vista jm-disp
+//              (gestión de equipo): toggleAlmuerzoJm, init según recurso/sector, y
+//              _cfgPatchCurrentResource ahora guarda schedule_config con
+//              has_lunch_break respetando el toggle.
+// [v2026.06.16-1] configuracion.js
+// 2026-06-16 | Almuerzo opcional vía toggle: nuevo toggleAlmuerzo muestra/oculta
+//              los campos (en línea, label "Almuerzo"). cfgPopulateSchedule
+//              inicializa el toggle según lo guardado del recurso o el default del
+//              sector (window._cfgSectorLunchDefault, has_lunch_break).
+//              guardarDisponibilidad respeta el toggle (off → has_lunch_break:false
+//              y lunch vacío). Resuelve el hueco de rubros por_hora_sin_almuerzo.
 // [v2026.06.15-6] configuracion.js
 // 2026-06-15 | Fix: el breadcrumb mostraba "Disponibilidad de —" / "Especialidades
 //              de —" porque el nombre solo se seteaba al cambiar de recurso, no al
@@ -655,51 +691,97 @@ function syncHorario() {
 
 async function guardarEspecialidades(btn) {
   syncEspecialidades();
-  if (typeof apiCall !== 'undefined' && _cfgFirstResourceId) {
-    const specs = [...document.querySelectorAll('#spec-tags-container .spec-tag')]
-      .map(t => { const c = t.cloneNode(true); c.querySelectorAll('.spec-x').forEach(x => x.remove()); return c.textContent.trim(); })
-      .filter(Boolean);
-    apiCall(`/api/agenda/resources/${_cfgFirstResourceId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ specialties: specs }),
-    }).catch(() => {});
+  if (typeof apiCall === 'undefined' || !_cfgFirstResourceId) {
+    if (typeof showToast === 'function') showToast('Selecciona o crea un recurso antes de guardar', 'error');
+    return;
   }
-  const orig = btn.innerHTML;
-  btn.innerHTML = '<i class="fas fa-check" style="margin-right:6px"></i>Guardado';
-  btn.disabled = true;
-  setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; toggleEditPanel('esp'); }, 1200);
+  const specs = [...document.querySelectorAll('#spec-tags-container .spec-tag')]
+    .map(t => { const c = t.cloneNode(true); c.querySelectorAll('.spec-x').forEach(x => x.remove()); return c.textContent.trim(); })
+    .filter(Boolean);
+  const modMap = { 'presencial':'presencial', 'online':'online', 'a domicilio':'domicilio' };
+  const modalities = [...document.querySelectorAll('#esp-modos .toggle-btn.on')]
+    .map(b => modMap[b.textContent.trim().toLowerCase()] || b.textContent.trim().toLowerCase());
+  const payload = { specialties: specs, modalities };
+  const exp = document.getElementById('esp-exp')?.value;
+  if (exp !== undefined && exp !== '') payload.anios_experiencia = parseInt(exp, 10);
+
+  const res = await apiCall(`/api/agenda/resources/${_cfgFirstResourceId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }).catch(() => null);
+
+  if (res && res.ok) {
+    // Reflejar en el recurso en memoria para que el resumen no se revierta al recargar la vista
+    if (typeof _cfgResourceMap === 'object' && _cfgResourceMap[_cfgFirstResourceId]) {
+      Object.assign(_cfgResourceMap[_cfgFirstResourceId], payload);
+    }
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check" style="margin-right:6px"></i>Guardado';
+    btn.disabled = true;
+    setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; toggleEditPanel('esp'); }, 1200);
+  } else {
+    if (typeof showToast === 'function') showToast((res && res.data && res.data.error) || 'No se pudo guardar', 'error');
+  }
+}
+
+// Muestra/oculta los campos de almuerzo según el toggle. [16-06]
+function toggleAlmuerzo(chk){
+  const campos = document.getElementById('disp-alm-campos');
+  if (campos) campos.classList.toggle('off', !chk.checked);
+}
+
+// Igual, para la vista de gestión de equipo (jm-disp). [16-06]
+function toggleAlmuerzoJm(chk){
+  const campos = document.getElementById('jm-disp-alm-campos');
+  if (campos) campos.classList.toggle('off', !chk.checked);
 }
 
 async function guardarDisponibilidad(btn) {
   syncHorario();
-  if (typeof apiCall !== 'undefined' && _cfgFirstResourceId) {
-    const v = id => document.getElementById(id)?.value || '';
-    const scheduleConfig = {
-      start_time:        v('disp-inicio'),
-      end_time:          v('disp-fin'),
-      lunch_start:       v('disp-alm-desde'),
-      lunch_end:         v('disp-alm-hasta'),
-      slot_duration:     parseInt(v('disp-intervalo')) || 15,
-      min_advance_hours: parseInt(v('disp-anticip')) || 2,
-      cancel_hours:      parseInt(v('disp-cancel-hrs')) || 48,
-      cancel_pct:        parseInt(v('disp-cancel-pct')) || 40,
-    };
-    const dayBtns = [...document.querySelectorAll('#editp-disp .toggle-group .toggle-btn')].slice(0, 7);
-    const scheduleRules = dayBtns.map((b, i) => ({
-      weekday:    i + 1,
-      start_time: scheduleConfig.start_time,
-      end_time:   scheduleConfig.end_time,
-      active:     b.classList.contains('on'),
-    }));
-    apiCall(`/api/agenda/resources/${_cfgFirstResourceId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ schedule_config: scheduleConfig, schedule_rules: scheduleRules }),
-    }).catch(() => {});
+  if (typeof apiCall === 'undefined' || !_cfgFirstResourceId) {
+    if (typeof showToast === 'function') showToast('Selecciona o crea un recurso antes de guardar', 'error');
+    return;
   }
-  const orig = btn.innerHTML;
-  btn.innerHTML = '<i class="fas fa-check" style="margin-right:6px"></i>Guardado';
-  btn.disabled = true;
-  setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; toggleEditPanel('disp'); }, 1200);
+  const v = id => document.getElementById(id)?.value || '';
+  const tieneAlmuerzo = !!document.getElementById('disp-alm-on')?.checked;
+  const scheduleConfig = {
+    start_time:        v('disp-inicio'),
+    end_time:          v('disp-fin'),
+    has_lunch_break:   tieneAlmuerzo,
+    lunch_start:       tieneAlmuerzo ? v('disp-alm-desde') : '',
+    lunch_end:         tieneAlmuerzo ? v('disp-alm-hasta') : '',
+    slot_duration:     parseInt(v('disp-intervalo')) || 15,
+    min_advance_hours: parseInt(v('disp-anticip')) || 2,
+    cancel_hours:      parseInt(v('disp-cancel-hrs')) || 48,
+    cancel_pct:        parseInt(v('disp-cancel-pct')) || 40,
+  };
+  const dayBtns = [...document.querySelectorAll('#disp-dias .toggle-btn')].slice(0, 7);
+  const scheduleRules = dayBtns.map((b, i) => ({
+    weekday:    i + 1,
+    start_time: scheduleConfig.start_time,
+    end_time:   scheduleConfig.end_time,
+    active:     b.classList.contains('on'),
+  }));
+  const modMap = { 'presencial':'presencial', 'online':'online', 'a domicilio':'domicilio' };
+  const modalities = [...document.querySelectorAll('#disp-modos .toggle-btn.on')]
+    .map(b => modMap[b.textContent.trim().toLowerCase()] || b.textContent.trim().toLowerCase());
+
+  const res = await apiCall(`/api/agenda/resources/${_cfgFirstResourceId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ schedule_config: scheduleConfig, schedule_rules: scheduleRules, modalities }),
+  }).catch(() => null);
+
+  if (res && res.ok) {
+    if (typeof _cfgResourceMap === 'object' && _cfgResourceMap[_cfgFirstResourceId]) {
+      Object.assign(_cfgResourceMap[_cfgFirstResourceId], { schedule_config: scheduleConfig, modalities });
+    }
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check" style="margin-right:6px"></i>Guardado';
+    btn.disabled = true;
+    setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; toggleEditPanel('disp'); }, 1200);
+  } else {
+    if (typeof showToast === 'function') showToast((res && res.data && res.data.error) || 'No se pudo guardar', 'error');
+  }
 }
 
 // ── INF OFICIO ──
@@ -2255,7 +2337,7 @@ function syncEspecialidades() {
   const exp=document.getElementById('esp-exp')?.value||'0';
   const sumExp=document.getElementById('sum-exp');
   if(sumExp) sumExp.innerHTML=`<i class="fas fa-star" style="margin-right:4px;color:#f59e0b"></i>${exp} año${exp==1?'':'s'} de experiencia`;
-  const todosLosModos=[...document.querySelectorAll('#editp-esp .toggle-group .toggle-btn')].map(b=>({nombre:b.textContent.trim(),activo:b.classList.contains('on')}));
+  const todosLosModos=[...document.querySelectorAll('#esp-modos .toggle-btn')].map(b=>({nombre:b.textContent.trim(),activo:b.classList.contains('on')}));
   const sumModos=document.getElementById('sum-modos-trabajo');
   if(sumModos) sumModos.innerHTML=todosLosModos.map(m=>`<div style="font-size:12px;color:${m.activo?'#10b981':'#9ca3af'}"><i class="fas fa-${m.activo?'check':'times'}" style="margin-right:4px"></i>${m.nombre}</div>`).join('');
   const modosActivos=todosLosModos.filter(m=>m.activo).map(m=>m.nombre);
@@ -2585,17 +2667,90 @@ function cfgPopulateUsersTable(systemUsers = [], resources = []) {
 }
 
 function cfgPopulateSchedule(resource) {
-  const rules = resource.schedule_config || resource.schedule_rules || resource.scheduleRules || {};
+  const sc = resource.schedule_config || resource.scheduleConfig;
+  const rules = (sc && !Array.isArray(sc)) ? sc : {};
   const set = (id, val) => { const el=document.getElementById(id); if(el && val!==undefined) el.value=val; };
 
   set('disp-inicio',      rules.start_time    || rules.startTime    || '09:00');
   set('disp-fin',         rules.end_time      || rules.endTime      || '18:00');
   set('disp-alm-desde',   rules.lunch_start   || rules.lunchStart   || '13:00');
   set('disp-alm-hasta',   rules.lunch_end     || rules.lunchEnd     || '14:00');
+  // Estado del toggle de almuerzo: lo guardado del recurso, o el default del
+  // sector (has_lunch_break). [16-06]
+  const sectorDefault = !!(window._cfgSectorLunchDefault);
+  const tieneAlmuerzo = (rules.has_lunch_break !== undefined)
+    ? !!rules.has_lunch_break
+    : (resource.has_lunch_break !== undefined ? !!resource.has_lunch_break : sectorDefault);
+  const almChk = document.getElementById('disp-alm-on');
+  if (almChk) { almChk.checked = tieneAlmuerzo; toggleAlmuerzo(almChk); }
   set('disp-intervalo',   rules.slot_duration || rules.slotDuration || 15);
   set('disp-anticip',     rules.min_advance_hours || rules.minAdvanceHours || 2);
   set('disp-cancel-hrs',  rules.cancel_hours  || rules.cancelHours  || 48);
   set('disp-cancel-pct',  rules.cancel_pct    || rules.cancelPct    || 40);
+
+  // ── Modos de atención: reflejar los modalities reales del recurso ──
+  // (antes el resumen estaba hardcodeado en Presencial+Online). [16-06]
+  const mods = (resource.modalities || resource.modos || []).map(m => String(m).toLowerCase());
+  const MODOS = [['presencial','Presencial'],['online','Online'],['domicilio','A domicilio']];
+  // Resumen
+  const sumModos = document.getElementById('sum-modos');
+  if (sumModos) {
+    sumModos.innerHTML = MODOS.map(([k,label]) => {
+      const on = mods.includes(k);
+      return `<div style="font-size:12px;color:${on?'#10b981':'#9ca3af'};margin-top:2px"><i class="fas fa-${on?'check':'times'}" style="margin-right:4px"></i>${label}</div>`;
+    }).join('');
+  }
+  // Toggles del form de edición (los 3 botones de "Modos de atención")
+  const modBtns = document.getElementById('disp-modos');
+  if (modBtns) {
+    [...modBtns.querySelectorAll('.toggle-btn')].forEach(b => {
+      const txt = b.textContent.trim().toLowerCase();
+      const k = txt.includes('domicilio') ? 'domicilio' : txt;
+      b.classList.toggle('on', mods.includes(k));
+    });
+  }
+
+  // ── Resumen de disponibilidad: reflejar los datos reales del recurso ──
+  // (antes hardcodeado 09:00-18:00 / 13:00-14:00 / etc.). [16-06]
+  const inicio = rules.start_time || rules.startTime || '09:00';
+  const fin    = rules.end_time   || rules.endTime   || '18:00';
+  const interv = rules.slot_duration || rules.slotDuration || 15;
+  const antic  = rules.min_advance_hours || rules.minAdvanceHours || 2;
+  const canHrs = rules.cancel_hours || rules.cancelHours || 48;
+  const canPct = rules.cancel_pct   || rules.cancelPct   || 40;
+  const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  setTxt('sum-horario', `${inicio} a ${fin} hrs`);
+  const almEl = document.getElementById('sum-almuerzo');
+  if (almEl) {
+    if (tieneAlmuerzo) {
+      const ad = rules.lunch_start || rules.lunchStart || '13:00';
+      const ah = rules.lunch_end   || rules.lunchEnd   || '14:00';
+      almEl.textContent = `Almuerzo: ${ad} – ${ah}`;
+      almEl.style.display = '';
+    } else {
+      almEl.style.display = 'none';
+    }
+  }
+  setTxt('sum-intervalo', `Intervalo: ${interv} min · Anticip.: ${antic} hrs`);
+  setTxt('sum-cancel',    `Cancelación: ${canHrs} hrs · ${canPct}% tardía`);
+  const sumDias = document.getElementById('sum-dias');
+  if (sumDias) {
+    const DIAS = ['L','M','X','J','V','S','D'];
+    let activos;
+    const sr = resource.schedule_rules || resource.scheduleRules;
+    if (Array.isArray(sr) && sr.length) {
+      activos = DIAS.map((_, i) => {
+        const r = sr.find(x => x.weekday === i + 1);
+        return r ? r.active !== false : false;
+      });
+    } else {
+      activos = [true, true, true, true, true, false, false];
+    }
+    sumDias.innerHTML = DIAS.map((d, i) =>
+      `<span class="chip ${activos[i] ? 'chip-on' : 'chip-off'}">${d}</span>`).join('');
+  }
+  const tz = rules.timezone || resource.timezone || 'America/Santiago';
+  setTxt('sum-tz', tz === 'America/Santiago' ? 'GMT-3 America/Santiago' : tz);
 
   // Sincronizar al perfil
   syncHorario();
@@ -2608,6 +2763,23 @@ function cfgPopulateSpecialties(resource) {
   container.innerHTML = specs.map(s =>
     `<span class="spec-tag">${s} <span class="spec-x" onclick="removeSpec(this)">✕</span></span>`
   ).join('');
+
+  // Modos de trabajo: reflejar los modalities reales del recurso (antes los
+  // toggles arrancaban fijos en Presencial+Online). [16-06]
+  const mods = (resource.modalities || resource.modos || []).map(m => String(m).toLowerCase());
+  const espModos = document.getElementById('esp-modos');
+  if (espModos) {
+    [...espModos.querySelectorAll('.toggle-btn')].forEach(b => {
+      const txt = b.textContent.trim().toLowerCase();
+      const k = txt.includes('domicilio') ? 'domicilio' : txt;
+      b.classList.toggle('on', mods.includes(k));
+    });
+  }
+  // Años de experiencia real (si el recurso lo trae en fields o raíz)
+  const exp = resource.anios_experiencia ?? resource.years_experience
+            ?? (resource.fields && resource.fields.anios_experiencia);
+  const expEl = document.getElementById('esp-exp');
+  if (expEl && exp !== undefined && exp !== null && exp !== '') expEl.value = exp;
 
   syncEspecialidades();
 }
@@ -2824,6 +2996,12 @@ function cfgOpenResourceEdit(resourceId) {
   setJm('jm-disp-fin',         rules.end_time      || '18:00');
   setJm('jm-disp-alm-desde',   rules.lunch_start   || '13:00');
   setJm('jm-disp-alm-hasta',   rules.lunch_end     || '14:00');
+  // Toggle de almuerzo: lo guardado del recurso, o el default del sector. [16-06]
+  const jmTieneAlm = (rules.has_lunch_break !== undefined)
+    ? !!rules.has_lunch_break
+    : (r.has_lunch_break !== undefined ? !!r.has_lunch_break : !!window._cfgSectorLunchDefault);
+  const jmAlmChk = document.getElementById('jm-disp-alm-on');
+  if (jmAlmChk) { jmAlmChk.checked = jmTieneAlm; toggleAlmuerzoJm(jmAlmChk); }
   setJm('jm-disp-intervalo',   rules.slot_duration || 15);
   setJm('jm-disp-anticip',     rules.min_advance_hours || 2);
   setJm('jm-disp-cancel-hrs',  rules.cancel_hours  || 48);
@@ -2865,12 +3043,25 @@ async function _cfgPatchCurrentResource() {
     .map(b => modLabels[b.textContent.trim()] || b.textContent.trim().toLowerCase())
     .filter(Boolean);
 
+  const jmTieneAlm = !!document.getElementById('jm-disp-alm-on')?.checked;
+  const gv = id => document.getElementById(id)?.value || '';
   const payload = {
     name:        fullName,
     slogan:      document.getElementById('jm-frase')?.value.trim() || '',
     specialties: specs,
     location:    document.getElementById('jm-direccion')?.value.trim() || '',
     modalities:  mods,
+    schedule_config: {
+      start_time:        gv('jm-disp-inicio'),
+      end_time:          gv('jm-disp-fin'),
+      has_lunch_break:   jmTieneAlm,
+      lunch_start:       jmTieneAlm ? gv('jm-disp-alm-desde') : '',
+      lunch_end:         jmTieneAlm ? gv('jm-disp-alm-hasta') : '',
+      slot_duration:     parseInt(gv('jm-disp-intervalo')) || 15,
+      min_advance_hours: parseInt(gv('jm-disp-anticip')) || 2,
+      cancel_hours:      parseInt(gv('jm-disp-cancel-hrs')) || 48,
+      cancel_pct:        parseInt(gv('jm-disp-cancel-pct')) || 40,
+    },
     ...(jmData.foto ? { photo_url: jmData.foto } : {}),
   };
 
