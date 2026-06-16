@@ -1,4 +1,12 @@
 <!-- ── BITÁCORA ──
+[v2026.06.15-3] configuracion.html
+2026-06-15 | Panel-2 (Especialidades/Características): agregado selector de recurso
+             (#esp-recurso-chips), igual que en Disponibilidad, para elegir a qué
+             recurso pertenecen las especialidades/características que se editan.
+[v2026.06.15-2] configuracion.html
+2026-06-15 | Panel-1 (Disponibilidad): agregado selector de recurso
+             (#disp-recurso-chips) entre el breadcrumb y el Resumen, para elegir
+             a qué recurso (profesional u objeto) pertenece la agenda que se edita.
 [v2026.06.15-1] configuracion.html
 2026-06-15 | "Agregar miembro al equipo": reemplazado el <select id="add-rol">
              nativo (opciones hardcodeadas terapeuta/admin/secretaria, que
@@ -133,6 +141,12 @@
     <i class="fas fa-chevron-right" style="font-size:10px"></i>
     <span>Disponibilidad de <strong id="detail-name-1">—</strong></span>
   </div>
+  <div id="disp-recurso-selector" style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.06em">
+      <i class="fas fa-user-clock" style="color:#9961FF;font-size:12px"></i> ¿De qué recurso?
+    </div>
+    <div id="disp-recurso-chips" class="toggle-group" style="flex-wrap:wrap"></div>
+  </div>
   <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.06em">
     <i class="fas fa-eye" style="color:#9961FF;font-size:12px"></i> Resumen
   </div>
@@ -222,6 +236,12 @@
     <button class="btn-secondary btn-sm" onclick="goStep(1)"><i class="fas fa-arrow-left" style="margin-right:5px"></i>Volver</button>
     <i class="fas fa-chevron-right" style="font-size:10px"></i>
     <span>Especialidades de <strong id="detail-name-2">—</strong></span>
+  </div>
+  <div id="esp-recurso-selector" style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.06em">
+      <i class="fas fa-user-tag" style="color:#9961FF;font-size:12px"></i> ¿De qué recurso?
+    </div>
+    <div id="esp-recurso-chips" class="toggle-group" style="flex-wrap:wrap"></div>
   </div>
   <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.06em">
     <i class="fas fa-eye" style="color:#9961FF;font-size:12px"></i> Resumen

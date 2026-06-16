@@ -3,6 +3,28 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.15-6] configuracion.js
+// 2026-06-15 | Fix: el breadcrumb mostraba "Disponibilidad de —" / "Especialidades
+//              de —" porque el nombre solo se seteaba al cambiar de recurso, no al
+//              cargar. Nuevo helper cfgSetRecursoNombre usado en la carga inicial y
+//              en cfgSelectRecurso (panel-1 y panel-2). (Aplica a rubros por_hora /
+//              profesionales; cabañas usa otro panel, pendiente.)
+// [v2026.06.15-5] configuracion.js
+// 2026-06-15 | Selector de recurso también en el panel-2 (Especialidades/
+//              Características): cfgRenderRecursoSelector pinta los chips en ambos
+//              paneles (disp + esp), que comparten el recurso activo. Al elegir,
+//              se re-pobla y guardarEspecialidades guarda contra ese recurso.
+//              detail-name-2 también se actualiza. Solo se agregaron chips; sin
+//              tocar layout ni etiquetas (el rubro ya las adapta).
+// [v2026.06.15-4] configuracion.js
+// 2026-06-15 | Disponibilidad/Características POR RECURSO: nuevo selector de
+//              recurso en el panel-1 (cfgRenderRecursoSelector + cfgSelectRecurso).
+//              Antes editaba siempre el primer recurso (_cfgFirstResourceId fijo);
+//              ahora se elige cuál y _cfgFirstResourceId apunta a ese, de modo que
+//              guardarDisponibilidad/guardarEspecialidades guardan al recurso
+//              correcto. Sirve para personas y objetos. cfgPopulateSpecialties
+//              ahora limpia el contenedor cuando el recurso no tiene (evita
+//              arrastrar las del recurso anterior).
 // [v2026.06.15-3] configuracion.js
 // 2026-06-15 | cfgToggleEsRecurso corregido a MULTI-TENANT: ahora llama a
 //              PUT /api/companies/<cid>/users/<username>/resource-flag (la bandera
@@ -2489,10 +2511,13 @@ async function cfgLoadFromBackend() {
       cfgPopulateUsersTable(systemUsers, resources);
     }
 
-    // 3. Recursos → horario + especialidades + servicios (primer recurso)
+    // 3. Recursos → horario + especialidades + servicios (recurso seleccionable)
     if (resources.length) {
+      _cfgResourcesList = resources;
       const resource = resources[0];
       _cfgFirstResourceId = resource._id || resource.id || null;
+      cfgRenderRecursoSelector();
+      cfgSetRecursoNombre(resource);
       cfgPopulateSchedule(resource);
       cfgPopulateSpecialties(resource);
 
@@ -2578,8 +2603,6 @@ function cfgPopulateSchedule(resource) {
 
 function cfgPopulateSpecialties(resource) {
   const specs = resource.specialties || resource.especialidades || [];
-  if (!specs.length) return;
-
   const container = document.getElementById('spec-tags-container');
   if (!container) return;
   container.innerHTML = specs.map(s =>
@@ -2702,6 +2725,52 @@ function cfgPopulateServices(services) {
 const _cfgResourceMap = {};
 let _cfgCurrentResourceId = null;
 let _cfgFirstResourceId   = null;
+let _cfgResourcesList     = [];   // todos los recursos de la empresa (para el selector de disponibilidad)
+
+// Setea el nombre del recurso en los breadcrumbs (panel-1 y panel-2).
+function cfgSetRecursoNombre(r) {
+  const nombre = (r && (r.name || r.full_name)) || '—';
+  const nm1 = document.getElementById('detail-name-1');
+  const nm2 = document.getElementById('detail-name-2');
+  if (nm1) nm1.textContent = nombre;
+  if (nm2) nm2.textContent = nombre;
+}
+
+// Pinta los chips del selector de recurso en los paneles que lo usan
+// (panel-1 Disponibilidad y panel-2 Especialidades/Características). Ambos
+// comparten el recurso activo (_cfgFirstResourceId): es el mismo wizard.
+function cfgRenderRecursoSelector() {
+  if (!_cfgResourcesList.length) return;
+  const chipsHtml = _cfgResourcesList.map(r => {
+    const id = r._id || r.id;
+    const nombre = (r.name || r.full_name || '—').replace(/"/g, '&quot;');
+    const on = id === _cfgFirstResourceId;
+    return `<span class="toggle-btn ${on?'on':''}" data-rid="${id}" onclick="cfgSelectRecurso('${id}')">${nombre}</span>`;
+  }).join('');
+  ['disp-recurso-chips', 'esp-recurso-chips'].forEach(cid => {
+    const cont = document.getElementById(cid);
+    if (cont) cont.innerHTML = chipsHtml;
+  });
+}
+
+// Cambia el recurso activo: re-puebla el form (horario + especialidades) con la
+// agenda de ESE recurso. Como guardarDisponibilidad/guardarEspecialidades usan
+// _cfgFirstResourceId, al cambiarlo guardan contra el recurso elegido.
+async function cfgSelectRecurso(resourceId) {
+  if (!resourceId || resourceId === _cfgFirstResourceId) return;
+  const r = _cfgResourcesList.find(x => (x._id || x.id) === resourceId);
+  if (!r) return;
+  _cfgFirstResourceId = resourceId;
+  cfgRenderRecursoSelector();
+  cfgPopulateSchedule(r);
+  cfgPopulateSpecialties(r);
+  cfgSetRecursoNombre(r);
+  // Servicios del recurso elegido
+  if (typeof apiCall !== 'undefined') {
+    const svcRes = await apiCall(`/api/agenda/resources/${resourceId}/services`).catch(() => null);
+    if (svcRes?.ok && svcRes.data?.services?.length) cfgPopulateServices(svcRes.data.services);
+  }
+}
 
 function cfgOpenResourceEdit(resourceId) {
   const r = _cfgResourceMap[resourceId];

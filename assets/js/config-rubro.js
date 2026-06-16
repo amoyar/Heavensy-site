@@ -7,6 +7,15 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.16-1] config-rubro.js
+// 2026-06-16 | Disponibilidad de objetos (por_dia) ahora es POR RECURSO: el panel
+//              _crDisponibilidad ganó selector de recurso (chips) y guarda
+//              checkin/checkout/min_noches/temporadas en CADA recurso (PATCH
+//              /api/agenda/resources/<id>; update_resource hace $set libre) en vez
+//              de business_config global. Si un recurso no tiene config propia,
+//              hereda la global como valor inicial (Opción 2). _crReset limpia el
+//              estado nuevo. Características del recinto siguen globales (decisión:
+//              son del establecimiento, no de cada unidad).
 // [v2026.06.15-10] config-rubro.js
 // 2026-06-15 | Campos numéricos del recurso (ej. años de experiencia) no aceptan
 //              negativos: min="0" en el input y clamp a 0 en crGuardar si escriben
@@ -218,6 +227,8 @@ let _crCatFiltro = '';
 let _crEditId  = null;   // recurso en edición (null = nuevo)
 let _crTipoId  = null;   // resource_type_id por defecto (requerido por el POST)
 let _crBusy    = false;  // anti-concurrencia: crInit en vuelo (evita doble montaje)
+let _crDispRecId = null; // recurso activo en el panel Disponibilidad (objetos)
+let _crDispCfgGlobal = {}; // config global de la empresa (fallback heredado por recurso)
 
 const $ = s => document.querySelector(s);
 
@@ -655,20 +666,61 @@ async function _crDisponibilidad(){
   while (panel.firstChild) original.appendChild(panel.firstChild);
   panel.appendChild(original);
 
+  // Config global de la empresa: se usa como valor heredado si un recurso aún
+  // no tiene su propia disponibilidad (Opción 2). [16-06]
   const rc = await apiCall('/api/me/company/config').catch(() => null);
-  const cfg = rc?.data?.config || {};
-  const temporadas = cfg.temporadas || [];
+  _crDispCfgGlobal = rc?.data?.config || {};
 
   const div = document.createElement('div');
   div.className = 'content'; div.id = 'cr-disp';
   div.innerHTML = `
     <div style="font-size:15px;font-weight:800;color:#1e2a5e;margin-bottom:2px">Disponibilidad</div>
-    <div style="font-size:11px;color:#7D84C1;margin-bottom:12px">Reservas por día: el cliente elige fechas de llegada y salida.</div>
+    <div style="font-size:11px;color:#7D84C1;margin-bottom:12px">Reservas por día: el cliente elige fechas de llegada y salida. Configura cada recurso por separado.</div>
+    <div style="font-size:11px;font-weight:700;color:#7D84C1;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px"><i class="fas fa-cube" style="color:#9961FF;font-size:12px;margin-right:5px"></i>¿De qué recurso?</div>
+    <div id="cr-disp-chips" class="toggle-group" style="flex-wrap:wrap;margin-bottom:14px"></div>
+    <div id="cr-disp-form-wrap"></div>`;
+  panel.appendChild(div);
+
+  _crDispRenderChips();
+  // Cargar el primer recurso por defecto
+  if (_crRecursos.length) crDispSelect(_crRecursos[0]._id || _crRecursos[0].id);
+  else document.getElementById('cr-disp-form-wrap').innerHTML = '<div style="font-size:11px;color:#a8aed1">No hay recursos creados aún. Créalos en "Mis cabañas".</div>';
+}
+
+// Pinta los chips de recurso en el panel de disponibilidad de objetos.
+function _crDispRenderChips(){
+  const cont = document.getElementById('cr-disp-chips');
+  if (!cont) return;
+  cont.innerHTML = _crRecursos.map(r => {
+    const id = r._id || r.id;
+    const nombre = (r.name || '—').replace(/"/g, '&quot;');
+    const on = id === _crDispRecId;
+    return `<span class="toggle-btn ${on?'on':''}" onclick="crDispSelect('${id}')">${nombre}</span>`;
+  }).join('');
+}
+
+// Selecciona un recurso y puebla el form con SU disponibilidad. Si el recurso no
+// tiene config propia todavía, hereda la global de la empresa como valor inicial.
+window.crDispSelect = function(resourceId){
+  const r = _crRecursos.find(x => (x._id || x.id) === resourceId);
+  if (!r) return;
+  _crDispRecId = resourceId;
+  _crDispRenderChips();
+  // Valor por recurso si existe; si no, heredar de la config global.
+  const g = _crDispCfgGlobal || {};
+  const checkin    = r.checkin    !== undefined ? r.checkin    : (g.checkin || '');
+  const checkout   = r.checkout   !== undefined ? r.checkout   : (g.checkout || '');
+  const minNoches  = r.min_noches !== undefined ? r.min_noches : (g.min_noches || '');
+  const temporadas = Array.isArray(r.temporadas) ? r.temporadas : (g.temporadas || []);
+
+  const wrap = document.getElementById('cr-disp-form-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = `
     <div class="cr-form">
       <div class="cr-grid">
-        <div><label>Hora de check-in</label><input id="cr-d-checkin" type="time" value="${cfg.checkin||''}" placeholder="15:00"></div>
-        <div><label>Hora de check-out</label><input id="cr-d-checkout" type="time" value="${cfg.checkout||''}" placeholder="12:00"></div>
-        <div><label>Mínimo de noches</label><input id="cr-d-minn" type="number" min="1" value="${cfg.min_noches||''}" placeholder="1"></div>
+        <div><label>Hora de check-in</label><input id="cr-d-checkin" type="time" value="${checkin}" placeholder="15:00"></div>
+        <div><label>Hora de check-out</label><input id="cr-d-checkout" type="time" value="${checkout}" placeholder="12:00"></div>
+        <div><label>Mínimo de noches</label><input id="cr-d-minn" type="number" min="1" value="${minNoches}" placeholder="1"></div>
       </div>
       <label style="margin-top:6px">Temporadas (opcional)</label>
       <div class="cr-sug">Define rangos con nombre (ej: Temporada alta, 15 dic – 28 feb).</div>
@@ -677,9 +729,8 @@ async function _crDisponibilidad(){
       <div><button class="btn-primary" onclick="crDispGuardar()"><i class="fas fa-check" style="margin-right:5px"></i>Guardar disponibilidad</button>
       <span id="cr-d-msg" style="font-size:11px;font-weight:700;margin-left:8px"></span></div>
     </div>`;
-  panel.appendChild(div);
   temporadas.forEach(t => crDispAddTemp(t));
-}
+};
 
 window.crDispAddTemp = function(t){
   t = t || {};
@@ -693,6 +744,7 @@ window.crDispAddTemp = function(t){
 };
 
 window.crDispGuardar = async function(){
+  if (!_crDispRecId){ return; }
   const temporadas = [...document.querySelectorAll('.cr-d-temp')].map(r => ({
     nombre: r.querySelector('.t-nombre').value.trim(),
     desde:  r.querySelector('.t-desde').value,
@@ -704,11 +756,16 @@ window.crDispGuardar = async function(){
     min_noches: parseInt(document.getElementById('cr-d-minn').value || '1', 10),
     temporadas,
   };
-  const cid = localStorage.getItem('company_id');
-  const res = await apiCall('/api/companies/' + cid + '/config', { method:'PUT', body: JSON.stringify(body) }).catch(() => null);
+  // Guardar POR RECURSO: PATCH al recurso (update_resource hace $set libre, así
+  // que estos campos quedan en el documento del recurso). [16-06]
+  const res = await apiCall('/api/agenda/resources/' + _crDispRecId, { method:'PUT', body: JSON.stringify(body) }).catch(() => null);
   const msg = document.getElementById('cr-d-msg');
-  if (res?.ok){ msg.textContent = 'Guardado ✓'; msg.style.color = '#10b981'; }
-  else { msg.textContent = (res?.data?.error) || 'Error al guardar'; msg.style.color = '#ef4444'; }
+  if (res?.ok){
+    msg.textContent = 'Guardado ✓'; msg.style.color = '#10b981';
+    // Reflejar en el recurso en memoria para que el chip recargue su valor.
+    const r = _crRecursos.find(x => (x._id || x.id) === _crDispRecId);
+    if (r) Object.assign(r, body);
+  } else { msg.textContent = (res?.data?.error) || 'Error al guardar'; msg.style.color = '#ef4444'; }
   setTimeout(() => msg.textContent = '', 3000);
 };
 
@@ -975,6 +1032,7 @@ function _crReset(){
   // Restaurar labels del stepper a su texto original guardado
   if (_crStepOrig){ Object.entries(_crStepOrig).forEach(([i,txt]) => { const el = document.querySelector('#step-'+i+' .step-label'); if (el) el.textContent = txt; }); }
   _crCompany = null; _crSector = null; _crRec = null; _crCompanyId = null;
+  _crDispRecId = null; _crDispCfgGlobal = {};
 }
 let _crStepOrig = null;
 
