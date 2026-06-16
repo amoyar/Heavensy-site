@@ -3,6 +3,26 @@
 // Heavensy Admin
 // ============================================
 // ── BITÁCORA ──
+// [v2026.06.15-3] users.js
+// 2026-06-15 | Fix precarga al EDITAR usuario: loadUserIntoWizard llamaba a
+//              /api/users/id/<id>/companies (con "/id/" de más) → 404 → _wCompanies
+//              quedaba vacío y el paso "Empresa y Rol" no mostraba la empresa ni el
+//              rol guardados. Corregido a /api/users/<id>/companies (el real). La
+//              forma {company,user_relation} ya calzaba con el .map del front.
+// [v2026.06.15-2] users.js
+// 2026-06-15 | Fix BUG recurso: fetchResources llamaba a /api/agenda/company/<id>
+//              (endpoint inexistente → 404), por lo que el paso 3 "Recurso" del
+//              wizard no cargaba nada. Corregido a /api/agenda/resources (el real,
+//              toma la empresa del JWT). El guardado de la vinculación
+//              (PUT .../users/<uid>/resource) ya existía y funcionaba.
+// [v2026.06.15-1] users.js
+// 2026-06-15 | Roles del wizard cargados desde BD (GET /api/system-roles) en vez
+//              de la lista hardcodeada AVAILABLE_ROLES, que tenía roles inexistentes
+//              en inglés (OPERATOR_ROL/VIEWER_ROL) y generaba usuarios con roles
+//              inválidos sin permisos efectivos (caso lovichu1). Nuevo
+//              loadAvailableRoles() en initUsersPage; mapea role_id→id,
+//              role_name→label, ícono por rol con fallback. Excluye el rol
+//              superadmin Heavensy del selector. Render y toggle intactos.
 // [v2026.06.09-1] users.js
 // 2026-06-09 | Aislamiento de empresas: el wizard de usuario nuevo sugiere la
 //              empresa según contexto (override / empresa del admin); el superadmin
@@ -24,11 +44,40 @@ let _wCompanies      = [];    // [{ company_id, company_name, roles[], is_primar
 let _wSelectedResource = null; // resource_id o null
 
 // ── Roles disponibles ─────────────────────────
-const AVAILABLE_ROLES = [
-  { id: 'ADMIN_ROL',    label: 'Admin',      icon: 'fa-shield-alt' },
-  { id: 'OPERATOR_ROL', label: 'Operador',   icon: 'fa-headset' },
-  { id: 'VIEWER_ROL',   label: 'Viewer',     icon: 'fa-eye' },
-];
+// Se cargan desde la BD (GET /api/system-roles), NO hardcodeados: la fuente de
+// verdad es la colección system_roles. Antes era una lista fija en inglés
+// (OPERATOR_ROL / VIEWER_ROL) que no existen en el sistema y producía usuarios
+// con roles inválidos sin permisos efectivos.
+let AVAILABLE_ROLES = [];
+
+// Ícono por rol (cosmético). Si un rol nuevo no está mapeado, usa un ícono
+// genérico — nunca bloquea ni inventa roles.
+const _ROLE_ICONS = {
+  ADMIN_ROL:       'fa-shield-alt',
+  SUPERVISOR_ROL:  'fa-user-tie',
+  OPERADOR_ROL:    'fa-headset',
+  PROFESIONAL_ROL: 'fa-user-md',
+  ASISTENTE_ROL:   'fa-user-clock',
+};
+
+async function loadAvailableRoles() {
+  try {
+    const res = await apiCall('/api/system-roles');
+    // El endpoint devuelve el array de roles directo (no envuelto en {data}).
+    const roles = Array.isArray(res.data) ? res.data : (res.data?.roles || []);
+    AVAILABLE_ROLES = roles
+      // No ofrecer el rol superadmin Heavensy en el wizard de usuarios de empresa
+      .filter(r => r.role_id && r.role_id !== 'HEAVENSY_SUPERADMIN_ROL')
+      .map(r => ({
+        id:    r.role_id,
+        label: r.role_name || r.role_id,
+        icon:  _ROLE_ICONS[r.role_id] || 'fa-user-tag',
+      }));
+  } catch (e) {
+    console.error('No se pudieron cargar los roles del sistema:', e);
+    AVAILABLE_ROLES = [];
+  }
+}
 
 // ============================================
 // INICIALIZACIÓN
@@ -42,6 +91,7 @@ async function initUsersPage() {
   await Promise.all([
     fetchUsers(),
     fetchAvailableCompanies(),
+    loadAvailableRoles(),
   ]);
 }
 
@@ -84,9 +134,15 @@ async function fetchAvailableCompanies() {
 }
 
 async function fetchResources(companyId) {
-  const res = await apiCall(`/api/agenda/company/${companyId}`);
+  // El endpoint correcto es /api/agenda/resources (toma la empresa del JWT).
+  // Antes se llamaba /api/agenda/company/<id>, que NO existe → 404 y el paso
+  // "Recurso" del wizard quedaba sin datos. companyId se mantiene en la firma
+  // por compatibilidad con las llamadas, pero la empresa la resuelve el token.
+  const res = await apiCall('/api/agenda/resources');
   if (res.ok) {
-    _availableResources = res.data.resources || res.data || [];
+    _availableResources = (res.data && (res.data.resources || res.data)) || [];
+  } else {
+    _availableResources = [];
   }
 }
 
@@ -107,9 +163,9 @@ function renderUsers() {
     const isActive  = user.status === 'A';
     const roles     = user.company_roles || [];
     const roleLabel = roles[0] || '—';
-    const hasResource = !!user.company_resource_id;
     const initials  = _getInitials(user.first_name, user.last_name);
     const color     = _getAvatarColor(user.username || user._id);
+    const hasResource = !!user.company_resource_id;
 
     const tr = document.createElement('tr');
     if (!isActive) tr.style.opacity = '.6';
@@ -342,8 +398,10 @@ async function loadUserIntoWizard(username) {
   const usernameEl = document.getElementById('u-username');
   if (usernameEl) { usernameEl.disabled = true; usernameEl.style.background = '#f9fafb'; }
 
-  // Empresas del usuario
-  const resCompanies = await apiCall(`/api/users/id/${user._id}/companies`);
+  // Empresas del usuario. El endpoint es /api/users/<id>/companies (antes se
+  // llamaba con /id/ de más → 404 → el paso "Empresa y Rol" quedaba vacío al
+  // editar). La forma devuelta es {company:{...}, user_relation:{roles,is_primary}}.
+  const resCompanies = await apiCall(`/api/users/${user._id}/companies`);
   if (resCompanies.ok) {
     _wCompanies = (resCompanies.data.companies || []).map(c => ({
       company_id:   c.company.company_id,

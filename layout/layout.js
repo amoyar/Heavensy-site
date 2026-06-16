@@ -1,4 +1,12 @@
 // ── BITÁCORA ──
+// [v2026.06.15-1] layout.js
+// 2026-06-15 | _switchSidebarCompany ahora AVISA al usuario cuando el cambio de
+//              empresa falla, en vez de fallar en silencio (antes solo
+//              console.error). Si el backend responde error (403 por permisos,
+//              etc.) muestra su mensaje real; ante excepción de red, un mensaje
+//              genérico. Nuevo helper _layoutToast: usa el showToast global de
+//              Heavensy si existe, con fallback a un toast propio (nunca alert
+//              nativo). Cierra el dropdown tras el error.
 // [v2026.06.13-1] layout.js
 // 2026-06-13 | _switchSidebarCompany emite el evento global
 //              'heavensy:company-changed' (detail: companyId, companyName) tras
@@ -309,7 +317,18 @@ async function _switchSidebarCompany(companyId, companyName) {
       method: 'POST',
       body: JSON.stringify({ company_id: companyId })
     });
-    if (!res.ok || !res.data.access_token) throw new Error('Error al cambiar empresa');
+    // Si el backend respondió error (403 por permisos, 400, etc.), avisar al
+    // usuario con su mensaje real en vez de fallar en silencio.
+    if (!res.ok || !res.data || !res.data.access_token) {
+      const msg = (res.data && res.data.error) || 'No se pudo cambiar de empresa.';
+      _layoutToast(msg, 'error');
+      // Cerrar el dropdown para que no quede abierto tras el error
+      const dd = document.getElementById('sidebarCompanyDropdown');
+      const ch = document.getElementById('sidebarCompanyChevron');
+      if (dd) dd.style.display = 'none';
+      if (ch) ch.style.transform = '';
+      return;
+    }
 
     // Actualizar token y recargar
     localStorage.setItem('token', res.data.access_token);
@@ -357,5 +376,38 @@ async function _switchSidebarCompany(companyId, companyName) {
     }
   } catch(e) {
     console.error('Error cambiando empresa:', e);
+    _layoutToast('No se pudo cambiar de empresa. Revisa tu conexión e intenta de nuevo.', 'error');
+  }
+}
+
+// Toast del layout: usa el showToast global de Heavensy si está disponible; si no
+// (p.ej. el módulo que lo define aún no cargó), cae a un toast mínimo propio
+// —nunca un alert nativo— para no dejar al usuario sin feedback visible.
+function _layoutToast(message, type = 'error') {
+  if (typeof showToast === 'function') { showToast(message, type); return; }
+  try {
+    const bg = type === 'success' ? '#22c55e' : (type === 'warning' ? '#f59e0b' : '#ef4444');
+    let el = document.getElementById('layout-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'layout-toast';
+      el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);' +
+        'color:#fff;padding:11px 20px;border-radius:10px;font-size:12.5px;font-weight:600;z-index:99999;' +
+        'opacity:0;transition:all .3s;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2);max-width:90vw;';
+      document.body.appendChild(el);
+    }
+    el.style.background = bg;
+    el.textContent = message;
+    requestAnimationFrame(() => {
+      el.style.opacity = '1';
+      el.style.transform = 'translateX(-50%) translateY(0)';
+    });
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(-50%) translateY(80px)';
+    }, 4000);
+  } catch (_) {
+    console.error('[layout toast]', message);
   }
 }

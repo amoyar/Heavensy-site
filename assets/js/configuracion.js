@@ -3,6 +3,16 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.15-1] configuracion.js
+// 2026-06-15 | "Agregar miembro al equipo": eliminada la fabricación de role_id
+//              por concatenación (rol.toUpperCase()+'_ROL') y el fallback
+//              hardcodeado 'terapeuta', que generaban roles inexistentes
+//              (TERAPEUTA_ROL/SECRETARIA_ROL) sin permisos efectivos. El rol ahora
+//              sale de chips Heavensy poblados desde BD (GET /api/system-roles) vía
+//              cfgLoadRolesEquipo/cfgSelRolEquipo; el role_id real viaja en el
+//              hidden #add-rol y se manda tal cual al backend. Reemplazado el
+//              <select> nativo por chips toggle-btn (selección única). La columna
+//              de empresa de la fila ya no es "Heavensy" fija: usa la empresa activa.
 // [v2026.06.14-4] configuracion.js
 // 2026-06-14 | Botón Quitar alineado a la derecha del campo (margin-left:auto +
 //              contenedor flex) en vez de pegado al nombre, que se veía apretado.
@@ -357,13 +367,49 @@ function toggleAddMember() {
   if (!panel) return;
   const open = panel.style.display === 'none' || !panel.style.display;
   panel.style.display = open ? 'block' : 'none';
-  if (!open) {
+  if (open) {
+    cfgLoadRolesEquipo();   // poblar chips de rol desde BD (system-roles)
+  } else {
     const inp = document.getElementById('add-q');
     if (inp) inp.value = '';
     const box = document.getElementById('db-suggestions');
     if (box) box.style.display = 'none';
     setProfSeleccionado(null);
   }
+}
+
+// Puebla los chips de "Rol en el equipo" desde la BD (GET /api/system-roles).
+// Selección única estilo Heavensy: el role_id real queda en el hidden #add-rol.
+// Sin roles hardcodeados ni concatenación de IDs.
+let _cfgRolesEquipoCargados = false;
+async function cfgLoadRolesEquipo() {
+  const cont = document.getElementById('add-rol-chips');
+  if (!cont) return;
+  // Re-render barato; si ya están y no falló, evitamos otra llamada.
+  if (_cfgRolesEquipoCargados && cont.children.length) return;
+  try {
+    const res = await apiCall('/api/system-roles');
+    const roles = Array.isArray(res.data) ? res.data : (res.data?.roles || []);
+    const asignables = roles.filter(r => r.role_id && r.role_id !== 'HEAVENSY_SUPERADMIN_ROL');
+    cont.innerHTML = asignables.map(r => {
+      const label = String(r.role_name || r.role_id).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return `<span class="toggle-btn" data-rol="${r.role_id}" onclick="cfgSelRolEquipo(this)">${label}</span>`;
+    }).join('');
+    document.getElementById('add-rol').value = '';
+    _cfgRolesEquipoCargados = true;
+  } catch (e) {
+    console.error('No se pudieron cargar los roles del equipo:', e);
+    cont.innerHTML = '';
+  }
+}
+
+// Selección única de chip de rol (patrón Heavensy). Guarda el role_id en el hidden.
+function cfgSelRolEquipo(el) {
+  const ya = el.classList.contains('on');
+  el.parentElement.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('on'));
+  const hidden = document.getElementById('add-rol');
+  if (!ya) { el.classList.add('on'); hidden.value = el.dataset.rol; }
+  else { hidden.value = ''; }   // re-clic = sin rol
 }
 
 function recalcStats() {
@@ -2269,9 +2315,14 @@ function setProfSeleccionado(p) {
 async function agregarAlEquipo() {
   if (!profesionalSeleccionado) return;
   const p = profesionalSeleccionado;
-  const rol = document.getElementById('add-rol')?.value || p.role || p.rol || 'terapeuta';
+  // role_id REAL desde el hidden (lo fija cfgSelRolEquipo desde los chips de BD).
+  // Sin fallback hardcodeado ni concatenación: si no hay rol, no se asigna.
+  const roleId = document.getElementById('add-rol')?.value || '';
+  if (!roleId) { if (typeof showToast === 'function') showToast('Selecciona un rol', 'warning'); return; }
+  // Label visible = texto del chip seleccionado (cae al role_id si no se encuentra).
+  const chipSel = document.querySelector('#add-rol-chips .toggle-btn.on');
+  const rolLabel = chipSel ? chipSel.textContent.trim() : roleId;
   const recurso = 'si';
-  const rolLabel = rol ? (rol.charAt(0).toUpperCase() + rol.slice(1)) : 'Terapeuta';
   const recursoLabel = recurso === 'no' ? 'No' : 'Sí';
   const recursoClass = recurso === 'no' ? 'b-inactive' : 'b-active';
   const nombre = p.full_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || p.username || p.email || '';
@@ -2279,13 +2330,17 @@ async function agregarAlEquipo() {
   const initials = nombre.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
   const username = p.username || email;
   const userId = p._id || p.id;
+  // Nombre de la empresa activa (no hardcodear "Heavensy").
+  const empresaNombre = (window._cpOverrideCompanyName)
+    || (function(){ try { return JSON.parse(atob((localStorage.getItem('token')||'').split('.')[1])).company_name; } catch { return ''; } })()
+    || localStorage.getItem('company_id') || '';
 
-  const row = `<tr data-name="${nombre.toLowerCase()}" data-email="${email}" data-rol="${rol}" data-estado="activo" data-recurso="${recurso}">
+  const row = `<tr data-name="${nombre.toLowerCase()}" data-email="${email}" data-rol="${roleId}" data-estado="activo" data-recurso="${recurso}">
     <td><div class="user-cell"><div class="avatar">${initials}</div><div><div style="font-weight:600;font-size:12px">${nombre}</div><div style="font-size:10px;color:#7D84C1">${username}</div></div></div></td>
     <td>${email}</td>
     <td><span class="badge b-resource">${rolLabel}</span></td>
     <td><span class="badge ${recursoClass}">${recursoLabel}</span></td>
-    <td>Heavensy</td>
+    <td>${empresaNombre}</td>
     <td><label class="switch"><input type="checkbox" checked onchange="recalcStats()"><span class="slider"></span></label></td>
     <td style="white-space:nowrap"><button class="btn-icon" title="Editar" style="color:#5b8dee"><i class="fas fa-pen"></i></button><button class="btn-icon" title="Eliminar" style="color:#9ca3af" onclick="cfgDeleteUser('${userId||username}',this.closest('tr'))"><i class="fas fa-trash"></i></button></td>
   </tr>`;
@@ -2299,7 +2354,7 @@ async function agregarAlEquipo() {
     const companyId = localStorage.getItem('company_id');
     apiCall(`/api/companies/${companyId}/users/${userId}`, {
       method: 'POST',
-      body: JSON.stringify({ roles: [rol.toUpperCase() + '_ROL'] }),
+      body: JSON.stringify({ roles: [roleId] }),   // role_id real, sin transformar
     }).catch(() => {});
   }
 }

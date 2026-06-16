@@ -1,3 +1,14 @@
+<!-- ── BITÁCORA ──
+[v2026.06.15-1] configuracion.html
+2026-06-15 | "Agregar miembro al equipo": reemplazado el <select id="add-rol">
+             nativo (opciones hardcodeadas terapeuta/admin/secretaria, que
+             generaban roles inexistentes) por chips Heavensy (.toggle-group
+             #add-rol-chips) + <input type="hidden" id="add-rol">. Los chips se
+             pueblan desde BD (GET /api/system-roles) en configuracion.js
+             (cfgLoadRolesEquipo/cfgSelRolEquipo). El role_id real viaja en el
+             hidden. Pendiente (backlog): selects de rol aún hardcodeados en el
+             filtro #f-rol, fila demo "juana machuca" y select de edición.
+-->
 <div id="cfg-toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#ef4444;color:#fff;padding:10px 20px;border-radius:10px;font-size:12.5px;font-weight:600;z-index:9999;opacity:0;transition:all .3s;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px"><i class="fas fa-exclamation-circle"></i><span id="cfg-toast-msg"></span></div>
 <div id="main-layout">
 <div id="left-pane">
@@ -48,11 +59,11 @@
         </div>
         <div class="form-group">
           <label>Rol en el equipo</label>
-          <select id="add-rol">
-            <option value="terapeuta">Terapeuta</option>
-            <option value="admin">Admin</option>
-            <option value="secretaria">Secretaria</option>
-          </select>
+          <!-- Chips Heavensy (selección única). El valor real (role_id) va en el
+               hidden #add-rol. Los chips se pueblan desde BD (system-roles) en
+               cfgLoadRolesEquipo(); NO hay roles hardcodeados. -->
+          <input type="hidden" id="add-rol" value="">
+          <div class="toggle-group" id="add-rol-chips"></div>
         </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:14px">

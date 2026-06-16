@@ -7,6 +7,31 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.15-3] config-rubro.js
+// 2026-06-15 | Fix parpadeo (causa real): no era concurrencia (el flag _crBusy no
+//              bastó) sino que #panel-0 se ve con la "Lista de usuarios" cruda
+//              durante el ~1s que tardan las 2 llamadas de _crCargar. Ahora crInit
+//              oculta #panel-0 (visibility:hidden) antes del await y lo revela en
+//              el finally, ya reorganizado en "Mi equipo". Todos los caminos de
+//              salida pasan por finally → el panel nunca queda oculto (incluye el
+//              caso "sector sin recursos" y excepciones). El guard "misma empresa
+//              activa" retorna antes de ocultar (no afecta re-disparos inocuos).
+// [v2026.06.15-2] config-rubro.js
+// 2026-06-15 | Fix parpadeo "carga 2 veces": crInit (async por las 2 llamadas de
+//              _crCargar) podía dispararse en paralelo (crInit directo + interval
+//              resiliente); el 2º entraba durante el await, antes de que cr-ctx
+//              existiera, y montaba el panel dos veces (se veían los usuarios y
+//              luego "Mi equipo"). Nuevo flag _crBusy de re-entrada con try/finally:
+//              un solo montaje a la vez; el finally libera siempre (los return
+//              internos no dejan el flag pegado).
+// [v2026.06.15-1] config-rubro.js
+// 2026-06-15 | Fix "Mi equipo" vacía (persona): _crBloqueMiembro crasheaba al
+//              hacer [...sel.options] sobre #add-rol, que pasó de <select> a
+//              <input type="hidden"> (configuracion.html 15-06). El throw cortaba
+//              crInit antes de _crLoadRecursos → la tabla nunca se pintaba
+//              ("se ve y desaparece al refrescar"). Se elimina la migración
+//              select→chips, ya obsoleta (configuracion.js puebla esos chips desde
+//              BD). Se elimina también crMiembroSelRol (huérfana, sin referencias).
 // [v2026.06.14-4] config-rubro.js
 // 2026-06-14 | Foto de recurso objeto: el editor (lápiz) ahora tiene campo para
 //              subir foto (sube a Cloudinary vía ppUploadImage, guarda photo_url).
@@ -145,6 +170,7 @@ let _crRecursos = [];    // recursos de la empresa
 let _crCatFiltro = '';
 let _crEditId  = null;   // recurso en edición (null = nuevo)
 let _crTipoId  = null;   // resource_type_id por defecto (requerido por el POST)
+let _crBusy    = false;  // anti-concurrencia: crInit en vuelo (evita doble montaje)
 
 const $ = s => document.querySelector(s);
 
@@ -962,40 +988,47 @@ function _crBloqueMiembro(){
     if (btnPrincipal) btnPrincipal.style.display = '';
   }
 
-  // PERSONA: migrar el <select id="add-rol"> a chips Heavensy
-  const sel = document.getElementById('add-rol');
-  if (sel && !sel.dataset.crReplaced){
-    sel.dataset.crReplaced = '1';
-    const roles = [...sel.options].map(o => o.textContent.trim());
-    const actual = sel.options[sel.selectedIndex]?.textContent.trim() || roles[0];
-    sel.style.display = 'none';
-    const chips = document.createElement('div');
-    chips.className = 'toggle-group'; chips.dataset.crRoleChips = '1'; chips.style.marginTop = '5px';
-    chips.innerHTML = roles.map(r =>
-      `<span class="toggle-btn ${r===actual?'on':''}" onclick="crMiembroSelRol(this)">${r}</span>`).join('');
-    sel.parentElement.appendChild(chips);
-  }
+  // PERSONA: el rol del bloque "Agregar miembro" se gestiona ahora con chips
+  // poblados desde BD por configuracion.js (cfgLoadRolesEquipo). El #add-rol pasó
+  // de <select> a <input type="hidden"> (configuracion.html 15-06), por lo que la
+  // antigua migración select→chips de aquí quedó obsoleta y además crasheaba
+  // ([...input.options] no es iterable), cortando crInit antes de pintar la tabla
+  // de "Mi equipo". Se elimina esa migración; el manejo de rol vive en configuracion.js.
 }
 
-window.crMiembroSelRol = function(el){
-  el.parentElement.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('on'));
-  el.classList.add('on');
-  const sel = document.getElementById('add-rol');
-  if (sel){ [...sel.options].forEach((o,i) => { if (o.textContent.trim() === el.textContent.trim()) sel.selectedIndex = i; }); }
-};
-
 // ── Arranque ──
+// Oculta el contenido de #panel-0 mientras config-rubro monta, para que no se
+// vea la "Lista de usuarios" cruda durante el ~1s que tardan las 2 llamadas de
+// _crCargar (empresa + sector). Se revela ya reorganizado ("Mi equipo"). Usa
+// visibility (no display) para no provocar saltos de layout. Idempotente.
+function _crOcultarPanel(){
+  const p = document.getElementById('panel-0');
+  if (p) p.style.visibility = 'hidden';
+}
+function _crRevelarPanel(){
+  const p = document.getElementById('panel-0');
+  if (p) p.style.visibility = '';
+}
+
 window.crInit = async function(){
+  // Guard de página: SOLO en Configuración (perfil-iframe es único de esa
+  // página). Evita la colisión de IDs con el wizard de Empresas (v3).
+  if (!document.getElementById('perfil-iframe')) return;
+  // Anti-concurrencia: crInit es async (await _crCargar hace 2 llamadas API).
+  // Sin este guard, un segundo disparo entra durante el await y monta dos veces.
+  if (_crBusy) return;
+  // Si ya está activo para la MISMA empresa, no hay nada que montar ni ocultar.
+  const cidActual = localStorage.getItem('company_id');
+  if (document.getElementById('cr-ctx') && cidActual === _crCompanyId) return;
+  _crBusy = true;
+  // Ocultar el panel ANTES del await para que no se vea la lista de usuarios
+  // cruda mientras carga. Se revela en el finally, ya reorganizado.
+  _crOcultarPanel();
   try{
-    // Guard de página: SOLO en Configuración (perfil-iframe es único de esa
-    // página). Evita la colisión de IDs con el wizard de Empresas (v3).
-    if (!document.getElementById('perfil-iframe')) return;
-    const cidActual = localStorage.getItem('company_id');
     if (document.getElementById('cr-ctx')){
-      if (cidActual === _crCompanyId) return;  // misma empresa: ya activo
-      _crReset();                              // cambió de empresa: reconstruir
+      _crReset();   // cambió de empresa: reconstruir desde cero
     }
-    if (!await _crCargar()) return;   // sin catálogo → página como siempre
+    if (!await _crCargar()) return;   // sin catálogo → página como siempre (se revela en finally)
     _crTabs(); _crCtxBar(); _crPasos();
     _crDisponibilidad();
     _crCaracteristicas();
@@ -1007,6 +1040,7 @@ window.crInit = async function(){
     _crBloqueMiembro();
     _crLoadRecursos();
   }catch(e){ console.warn('config-rubro no activado:', e); }
+  finally{ _crBusy = false; _crRevelarPanel(); }
 };
 // Arranque resiliente: al cargar/refrescar la página estando en #configuracion,
 // el DOM del panel puede no estar montado todavía cuando el loader inyecta este
