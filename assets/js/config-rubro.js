@@ -7,6 +7,52 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.15-10] config-rubro.js
+// 2026-06-15 | Campos numéricos del recurso (ej. años de experiencia) no aceptan
+//              negativos: min="0" en el input y clamp a 0 en crGuardar si escriben
+//              un valor negativo a mano.
+// [v2026.06.15-9] config-rubro.js
+// 2026-06-15 | Tabla de especialistas: las columnas EMAIL y USUARIO mostraban
+//              "Vinculado" en vez del dato real. Ahora _crLoadRecursos carga los
+//              usuarios de la empresa en _crUsersById y _crFila cruza r.user_id
+//              para mostrar email y username reales del profesional (con fallback
+//              al badge "Vinculado" si no se encuentra).
+// [v2026.06.15-8] config-rubro.js
+// 2026-06-15 | Dos ajustes a "Nuevo especialista": (1) el nombre se compone como
+//              "Nombre Apellido" (_crNombreUser usa first_name+last_name con
+//              fallbacks) en lista, buscador y autocompletado. (2) al guardar se
+//              recoge también la especialidad/característica escrita en "Otra…"
+//              aunque no se haya presionado + (_crRecogerFeats: chips .on + texto
+//              pendiente, sin duplicar).
+// [v2026.06.15-7] config-rubro.js
+// 2026-06-15 | "Nuevo especialista" (rama persona) rediseñado al patrón cabañas:
+//              (1) recuadro "¿Qué profesional?" con LISTA de candidatos (usuarios
+//              marcados como recurso sin recurso aún) seleccionables — reemplaza el
+//              campo "Vincular a usuario (opcional)". Al elegir, autocompleta el
+//              nombre. (2) recuadro foto + chips de ESPECIALIDADES (espejo del de
+//              equipamiento de objetos), reutilizando crSubirFotoRecurso/crAddFeat.
+//              crGuardar ahora persiste features+photo_url también para persona.
+//              crSelUser resalta el candidato y limpia el buscador. Nueva
+//              _crPintarCandidatos.
+// [v2026.06.15-6] config-rubro.js
+// 2026-06-15 | "Nuevo especialista": quitado el cache _crUsuariosEmpresa que
+//              mostraba estado viejo (un usuario recién marcado como recurso no
+//              aparecía hasta recargar). Ahora crBuscarUser pide la lista fresca
+//              en cada búsqueda. Filtra: is_resource (por empresa) + sin recurso
+//              creado + match por nombre/email.
+// [v2026.06.15-5] config-rubro.js
+// 2026-06-15 | "Nuevo especialista": crBuscarUser ahora se alimenta de la lista
+//              de usuarios de la EMPRESA (/api/companies/<id>/users, que expone
+//              is_resource por empresa) en vez del search global (que no lo trae).
+//              Filtra local por nombre/email + marcados como recurso + sin recurso
+//              creado. Cache _crUsuariosEmpresa, invalidado en _crReset al cambiar
+//              de empresa.
+// [v2026.06.15-4] config-rubro.js
+// 2026-06-15 | "Nuevo especialista": crBuscarUser ahora ofrece SOLO usuarios
+//              marcados como recurso (is_resource) que AÚN NO tienen recurso
+//              creado (su user_id no está en _crRecursos). Antes traía cualquier
+//              usuario. Filtro en frontend sobre /api/users/search (que devuelve
+//              is_resource). Mensaje vacío específico cuando no hay pendientes.
 // [v2026.06.15-3] config-rubro.js
 // 2026-06-15 | Fix parpadeo (causa real): no era concurrencia (el flag _crBusy no
 //              bastó) sino que #panel-0 se ve con la "Lista de usuarios" cruda
@@ -167,6 +213,7 @@ let _crCompanyId = null;  // company_id con el que se activó el módulo
 let _crSector  = null;   // doc del sector (business, profesiones[])
 let _crRec     = null;   // atajo: _crSector.business.recursos
 let _crRecursos = [];    // recursos de la empresa
+let _crUsersById = {};   // usuarios de la empresa por _id (para email/username en tabla)
 let _crCatFiltro = '';
 let _crEditId  = null;   // recurso en edición (null = nuevo)
 let _crTipoId  = null;   // resource_type_id por defecto (requerido por el POST)
@@ -262,6 +309,12 @@ async function _crLoadRecursos(){
   _crRecursos = r?.data?.resources || [];
   const t = await apiCall('/api/agenda/resource-types').catch(() => null);
   _crTipoId = (t?.data?.resource_types || t?.data?.types || [])[0]?._id || null;
+  // Mapa de usuarios por _id, para mostrar email/username reales del vinculado.
+  if (_esPersona()){
+    const users = await _crCargarUsuariosEmpresa();
+    _crUsersById = {};
+    users.forEach(u => { const id = u._id || u.id; if (id) _crUsersById[id] = u; });
+  }
   _crRender();
 }
 
@@ -314,9 +367,12 @@ function _crFila(r){
     return val;
   };
   // celdas intermedias según naturaleza (alineadas a las columnas sembradas)
+  const u = r.user_id ? _crUsersById[r.user_id] : null;
+  const emailReal = (r.email || u?.email || '').trim();
+  const userReal  = (u?.username || '').trim();
   const medias = esP
-    ? `<td>${r.email || (r.user_id ? '<span class="cr-badge"><i class="fas fa-user-check"></i> Vinculado</span>' : '<span style="color:#ef4444;font-size:10.5px;font-weight:700">Sin usuario</span>')}</td>
-       <td>${r.user_id ? '<span class="cr-badge">Vinculado</span>' : '<span style="color:#a8aed1">—</span>'}</td>`
+    ? `<td>${emailReal || (r.user_id ? '<span class="cr-badge"><i class="fas fa-user-check"></i> Vinculado</span>' : '<span style="color:#ef4444;font-size:10.5px;font-weight:700">Sin usuario</span>')}</td>
+       <td>${userReal ? userReal : (r.user_id ? '<span class="cr-badge">Vinculado</span>' : '<span style="color:#a8aed1">—</span>')}</td>`
     : `<td>${_fmtCelda(campos[0])}</td>
        <td>${(r.features || []).slice(0,3).join(' · ') || '—'}</td>
        <td style="font-weight:700">${_fmtCelda(campos[2])}</td>`;
@@ -361,16 +417,35 @@ function _crForm(r){
     </div>
     <div class="cr-grid">
       ${(_crRec.campos||[]).map(c => `<div><label>${c.label}</label>
-        <input id="cr-f-${c.key}" type="${c.tipo==='number'?'number':'text'}" placeholder="${c.placeholder||''}" value="${f[c.key]!==undefined?String(f[c.key]).replace(/"/g,'&quot;'):''}"></div>`).join('')}
+        <input id="cr-f-${c.key}" type="${c.tipo==='number'?'number':'text'}"${c.tipo==='number'?' min="0"':''} placeholder="${c.placeholder||''}" value="${f[c.key]!==undefined?String(f[c.key]).replace(/"/g,'&quot;'):''}"></div>`).join('')}
     </div>
     ${esP ? `
     <div class="cr-block-p">
-      <div style="font-size:11.5px;font-weight:700;color:#059669;margin-bottom:6px"><i class="fas fa-user-check"></i> Vincular a un usuario del sistema</div>
-      <div style="font-size:10.5px;color:#5b6a96;margin-bottom:6px">Le permite iniciar sesión y ver su agenda. Busca por nombre o email:</div>
-      <input id="cr-f-user-q" placeholder="Buscar usuario… (opcional)" oninput="crBuscarUser(this.value)" style="max-width:320px">
+      <div style="font-size:11.5px;font-weight:700;color:#5b4bbd;margin-bottom:4px"><i class="fas fa-user-check"></i> ¿Qué profesional?</div>
+      <div style="font-size:10.5px;color:#7a6db0;margin-bottom:8px">Elige un usuario marcado como recurso. Será el profesional reservable.</div>
+      <div id="cr-cand-list" style="display:flex;flex-direction:column;gap:6px"><div style="font-size:10.5px;color:#a8aed1">Cargando candidatos…</div></div>
+      <input id="cr-f-user-q" placeholder="Buscar otro usuario marcado…" oninput="crBuscarUser(this.value)" style="max-width:320px;margin-top:8px">
       <div id="cr-user-sug" style="margin-top:6px"></div>
       <input type="hidden" id="cr-f-user-id" value="${r.user_id||''}">
-      <div id="cr-user-sel" style="font-size:11px;color:#059669;font-weight:700;margin-top:4px">${r.user_id?'✓ Usuario vinculado':''}</div>
+    </div>
+    <div class="cr-block-o">
+      <div style="font-size:11.5px;font-weight:700;color:#d97706;margin-bottom:6px"><i class="fas fa-image"></i> Foto</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <div id="cr-f-foto-prev" style="width:64px;height:64px;border-radius:10px;background:#f0eefc center/cover no-repeat;${r.photo_url?`background-image:url('${r.photo_url}')`:''};display:flex;align-items:center;justify-content:center;color:#b9a8e8;flex-shrink:0">${r.photo_url?'':'<i class="fas fa-image"></i>'}</div>
+        <div>
+          <input type="hidden" id="cr-f-photo" value="${r.photo_url||''}">
+          <button type="button" class="btn-secondary" onclick="document.getElementById('cr-f-foto-input').click()"><i class="fas fa-upload" style="margin-right:5px"></i>${r.photo_url?'Cambiar foto':'Subir foto'}</button>
+          <input type="file" id="cr-f-foto-input" accept="image/*" style="display:none" onchange="crSubirFotoRecurso(this)">
+          <div class="cr-sug">Se mostrará en la tarjeta de la página pública.</div>
+        </div>
+      </div>
+      <div style="font-size:11.5px;font-weight:700;color:#d97706;margin-bottom:4px"><i class="fas fa-tags"></i> Especialidades</div>
+      <div class="cr-sug">Toca para marcar las que aplican; agrega otras abajo.</div>
+      <div id="cr-feats">${todas.map(t => `<span class="cr-fchip ${feats.includes(t)?'on':''}" onclick="this.classList.toggle('on')">${t}</span>`).join('')}</div>
+      <div style="display:flex;gap:6px;margin-top:8px;max-width:300px">
+        <input id="cr-f-feat-nueva" placeholder="Otra especialidad…">
+        <button class="btn-secondary" onclick="crAddFeat()" type="button"><i class="fas fa-plus"></i></button>
+      </div>
     </div>` : `
     <div class="cr-block-o">
       <div style="font-size:11.5px;font-weight:700;color:#d97706;margin-bottom:6px"><i class="fas fa-image"></i> Foto</div>
@@ -396,6 +471,37 @@ function _crForm(r){
       <button class="btn-secondary" onclick="document.getElementById('cr-form-wrap').innerHTML=''">Cancelar</button>
     </div>
   </div>`;
+  if (esP) _crPintarCandidatos(r.user_id || '');
+}
+
+// Pinta la lista de candidatos (usuarios marcados como recurso sin recurso aún)
+// en el recuadro "¿Qué profesional?". Resalta el ya seleccionado (selUid).
+async function _crPintarCandidatos(selUid){
+  const cont = document.getElementById('cr-cand-list');
+  if (!cont) return;
+  const users = await _crCargarUsuariosEmpresa();
+  const conRecurso = new Set(_crRecursos.map(x => x.user_id).filter(Boolean));
+  const candidatos = users.filter(u => {
+    const uid = u._id || u.id || u.user_id;
+    // Mostrar los marcados sin recurso; y también el ya vinculado (al editar).
+    return uid && u.is_resource && (!conRecurso.has(uid) || uid === selUid);
+  });
+  if (!candidatos.length){
+    cont.innerHTML = '<div style="font-size:10.5px;color:#a8aed1">No hay profesionales marcados como recurso pendientes. Márcalos en "Cuentas de acceso".</div>';
+    return;
+  }
+  cont.innerHTML = candidatos.map(u => {
+    const uid = u._id || u.id || u.user_id;
+    const nombre = _crNombreUser(u).replace(/'/g,'');
+    const ini = (nombre.split(' ').map(w=>w[0]).join('') || '?').toUpperCase().slice(0,2);
+    const sel = uid === selUid;
+    return `<div class="cr-cand ${sel?'on':''}" data-uid="${uid}" onclick="crSelUser('${uid}','${nombre}')"
+      style="display:flex;align-items:center;gap:10px;background:#fff;border:${sel?'2px solid #7c5cff':'0.5px solid #e3e0ef'};border-radius:8px;padding:8px 10px;cursor:pointer">
+      <span style="width:30px;height:30px;border-radius:50%;background:${sel?'#7c5cff':'#cdbff5'};color:${sel?'#fff':'#4a3b9e'};display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${ini}</span>
+      <span style="flex:1"><span style="display:block;font-size:12.5px;font-weight:600">${nombre}</span><span style="display:block;font-size:10.5px;color:#7D84C1">${u.email||''}</span></span>
+      ${sel?'<i class="fas fa-check" style="color:#7c5cff"></i>':''}
+    </div>`;
+  }).join('');
 }
 
 window.crSubirFotoRecurso = function(input){
@@ -418,21 +524,68 @@ window.crAddFeat = function(){
   inp.value = '';
 };
 
+// Recoge las características/especialidades a guardar: chips marcados (.on) MÁS
+// lo que haya quedado escrito en "Otra…" sin presionar + (error de UX común).
+// Evita duplicados.
+function _crRecogerFeats(){
+  const feats = [...document.querySelectorAll('#cr-feats .cr-fchip.on')].map(x => x.textContent.trim());
+  const inp = document.getElementById('cr-f-feat-nueva');
+  const pend = inp && inp.value ? inp.value.trim() : '';
+  if (pend && !feats.includes(pend)) feats.push(pend);
+  return feats;
+}
+
+// Trae la lista de usuarios de la empresa SIN cachear: el estado is_resource
+// puede cambiar en la misma sesión (toggle en Cuentas de acceso), así que se
+// pide fresca en cada búsqueda para no mostrar datos viejos.
+async function _crCargarUsuariosEmpresa(){
+  const cid = _crCompanyId || localStorage.getItem('company_id');
+  const r = await apiCall('/api/companies/' + cid + '/users').catch(() => null);
+  return (r?.data?.users) || [];
+}
+
+// Compone el nombre visible del usuario: "Nombre Apellido", con fallbacks.
+function _crNombreUser(u){
+  const fn = (u.first_name || '').trim();
+  const ln = (u.last_name || '').trim();
+  const compuesto = [fn, ln].filter(Boolean).join(' ').trim();
+  return compuesto || (u.full_name || '').trim() || u.username || u.email || '';
+}
+
 let _crUserTimer = null;
 window.crBuscarUser = function(q){
   clearTimeout(_crUserTimer);
   if (!q || q.length < 2){ $('#cr-user-sug').innerHTML=''; return; }
   _crUserTimer = setTimeout(async () => {
-    const r = await apiCall('/api/users/search?q=' + encodeURIComponent(q)).catch(() => null);
-    const users = r?.data?.users || r?.data?.results || [];
-    $('#cr-user-sug').innerHTML = users.slice(0,5).map(u =>
-      `<span class="cr-chip" onclick="crSelUser('${u._id||u.id}','${(u.name||u.username||'').replace(/'/g,'')}')">${u.name||u.username} ${u.email?('· '+u.email):''}</span>`).join(' ') || '<span style="font-size:10.5px;color:#a8aed1">Sin resultados</span>';
+    // Fuente: la lista de usuarios de la EMPRESA (trae is_resource por empresa,
+    // a diferencia del search global). Solo los marcados como recurso que AÚN NO
+    // tienen recurso creado (su user_id no está en _crRecursos).
+    const users = await _crCargarUsuariosEmpresa();
+    const conRecurso = new Set(_crRecursos.map(x => x.user_id).filter(Boolean));
+    const ql = q.toLowerCase();
+    const candidatos = users.filter(u => {
+      const uid = u._id || u.id || u.user_id;
+      if (!u.is_resource || !uid || conRecurso.has(uid)) return false;
+      const nombre = _crNombreUser(u).toLowerCase();
+      const email  = (u.email || '').toLowerCase();
+      return nombre.includes(ql) || email.includes(ql);
+    });
+    $('#cr-user-sug').innerHTML = candidatos.slice(0,5).map(u => {
+      const nm = _crNombreUser(u).replace(/'/g,'');
+      return `<span class="cr-chip" onclick="crSelUser('${u._id||u.id}','${nm}')">${nm} ${u.email?('· '+u.email):''}</span>`;
+    }).join(' ')
+      || '<span style="font-size:10.5px;color:#a8aed1">Sin profesionales marcados como recurso pendientes</span>';
   }, 350);
 };
 window.crSelUser = function(id, nombre){
   $('#cr-f-user-id').value = id;
-  $('#cr-user-sel').textContent = '✓ Vinculado a: ' + nombre;
+  // Autocompletar el nombre del especialista si está vacío (editable después)
+  const nEl = $('#cr-f-nombre');
+  if (nEl && !nEl.value.trim() && nombre) nEl.value = nombre;
   $('#cr-user-sug').innerHTML = '';
+  const q = $('#cr-f-user-q'); if (q) q.value = '';
+  // Re-resaltar la tarjeta elegida en la lista de candidatos
+  _crPintarCandidatos(id);
 };
 
 window.crGuardar = async function(){
@@ -442,7 +595,10 @@ window.crGuardar = async function(){
   (_crRec.campos||[]).forEach(c => {
     const el = $('#cr-f-'+c.key); if (!el) return;
     let v = el.value.trim(); if (v==='') return;
-    if (c.tipo==='number' && !isNaN(Number(v))) v = Number(v);
+    if (c.tipo==='number' && !isNaN(Number(v))){
+      v = Number(v);
+      if (v < 0) v = 0;  // no se permiten negativos (ej. años de experiencia)
+    }
     fields[c.key] = v;
   });
   const body = {
@@ -453,8 +609,10 @@ window.crGuardar = async function(){
   };
   if (_esPersona()){
     const uid = $('#cr-f-user-id')?.value; if (uid) body.user_id = uid;
+    body.features = _crRecogerFeats();
+    const photo = $('#cr-f-photo')?.value; if (photo) body.photo_url = photo;
   } else {
-    body.features = [...document.querySelectorAll('#cr-feats .cr-fchip.on')].map(x => x.textContent.trim());
+    body.features = _crRecogerFeats();
     const photo = $('#cr-f-photo')?.value; if (photo) body.photo_url = photo;  // [14-06]
   }
   let res;

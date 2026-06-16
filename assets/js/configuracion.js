@@ -3,6 +3,19 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.15-3] configuracion.js
+// 2026-06-15 | cfgToggleEsRecurso corregido a MULTI-TENANT: ahora llama a
+//              PUT /api/companies/<cid>/users/<username>/resource-flag (la bandera
+//              is_resource vive en companies[], por empresa) en vez del PUT a la
+//              raíz del usuario. Un profesional puede ser recurso en una empresa y
+//              no en otra.
+// [v2026.06.15-2] configuracion.js
+// 2026-06-15 | Columna "Recurso" de la tabla de usuarios: el badge Sí/No pasó a
+//              ser un toggle (cfgToggleEsRecurso) que marca la bandera is_resource
+//              del usuario vía PUT /api/users/<username>. NO crea el recurso de
+//              agenda (eso se hace al configurarlo en "Mi equipo"); solo marca la
+//              capacidad. Revierte y avisa si el backend falla; mantiene
+//              data-recurso sincronizado para filtros/stats.
 // [v2026.06.15-1] configuracion.js
 // 2026-06-15 | "Agregar miembro al equipo": eliminada la fabricación de role_id
 //              por concatenación (rol.toUpperCase()+'_ROL') y el fallback
@@ -2505,14 +2518,13 @@ function cfgPopulateUsersTable(systemUsers = [], resources = []) {
     const email = u.email || '—';
     const rol = u.role || u.rol || 'usuario';
     const rolLabel = rol.charAt(0).toUpperCase() + rol.slice(1);
-    const esRecurso = u.is_resource ? 'Sí' : 'No';
-    const recursoClass = u.is_resource ? 'b-active' : 'b-inactive';
     const activo = u.is_active !== false;
+    const uname = (u.username || '').replace(/'/g, '');
     return `<tr data-name="${nombre.toLowerCase()}" data-email="${email}" data-rol="${rol}" data-estado="${activo?'activo':'inactivo'}" data-recurso="${u.is_resource?'si':'no'}">
       <td><div class="user-cell"><div class="avatar">${initials}</div><div><div style="font-weight:600;font-size:12px">${nombre}</div><div style="font-size:10px;color:#7D84C1">${u.username||''}</div></div></div></td>
       <td>${email}</td>
       <td><span class="badge b-resource">${rolLabel}</span></td>
-      <td><span class="badge ${recursoClass}">${esRecurso}</span></td>
+      <td><label class="switch" title="${u.is_resource?'Es recurso reservable':'Marcar como recurso reservable'}"><input type="checkbox" ${u.is_resource?'checked':''} onchange="cfgToggleEsRecurso('${uname}', this)"><span class="slider"></span></label></td>
       <td>${u.company_name || 'Heavensy'}</td>
       <td><label class="switch"><input type="checkbox" ${activo?'checked':''} onchange="recalcStats()"><span class="slider"></span></label></td>
       <td style="white-space:nowrap"><button class="btn-icon" title="Editar" style="color:#5b8dee"><i class="fas fa-pen"></i></button><button class="btn-icon" title="Eliminar" style="color:#9ca3af" onclick="cfgDeleteUser('${u.username||u.email}',this.closest('tr'))"><i class="fas fa-trash"></i></button></td>
@@ -2618,6 +2630,44 @@ async function cfgDeleteUser(username, rowEl) {
     // Revertir silenciosamente si el backend falla
     if(parent) parent.insertBefore(rowEl, next);
     recalcStats();
+  }
+}
+
+// ── Toggle "es recurso" ───────────────────────
+// Marca/desmarca al usuario como recurso reservable EN ESTA EMPRESA. La bandera
+// is_resource vive en companies[] (multi-tenant): puede ser recurso en una
+// empresa y no en otra. NO crea el recurso de agenda: eso se hace al
+// configurarlo en "Mi equipo". Endpoint: PUT .../users/<username>/resource-flag. [15-06]
+async function cfgToggleEsRecurso(username, checkbox) {
+  if (!username) { checkbox.checked = !checkbox.checked; return; }
+  const quiere = checkbox.checked;
+  const companyId = localStorage.getItem('company_id');
+  if (!companyId) {
+    checkbox.checked = !quiere;
+    if (typeof showToast === 'function') showToast('No se pudo determinar la empresa activa', 'error');
+    return;
+  }
+  // Reflejar en el data-recurso de la fila para que filtros/stats sigan al día
+  const tr = checkbox.closest('tr');
+  if (tr) tr.dataset.recurso = quiere ? 'si' : 'no';
+
+  const res = await apiCall(`/api/companies/${companyId}/users/${encodeURIComponent(username)}/resource-flag`, {
+    method: 'PUT',
+    body:   JSON.stringify({ is_resource: quiere }),
+  }).catch(() => null);
+
+  if (res && res.ok) {
+    if (typeof showToast === 'function') {
+      showToast(quiere ? 'Marcado como recurso. Configúralo en "Mi equipo".' : 'Ya no es recurso', 'success');
+    }
+    recalcStats();
+  } else {
+    // Revertir el toggle y el data-recurso si el backend falla
+    checkbox.checked = !quiere;
+    if (tr) tr.dataset.recurso = !quiere ? 'si' : 'no';
+    if (typeof showToast === 'function') {
+      showToast((res && res.data && res.data.error) || 'No se pudo actualizar', 'error');
+    }
   }
 }
 
