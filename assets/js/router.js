@@ -1,11 +1,19 @@
 // ============================================
 // ROUTER – HEAVENSY ADMIN
 // ============================================
+// ── BITÁCORA ──
+// [v2026.06.16-1] router.js
+// 2026-06-16 | loadPage: fetch de ./pages/<page>.html ahora con ?t=Date.now() +
+//              cache:'no-cache'. El navegador cacheaba el HTML de las vistas y servía
+//              copias viejas tras actualizar el archivo en el servidor (el JS se
+//              recargaba pero el HTML no) → se veía UI antigua. Aplica a todas las vistas.
 
 async function loadPage(page) {
   try {
     // 1️⃣ Cargar HTML
-    const res = await fetch(`./pages/${page}.html`);
+    // cache:'no-cache' + sello de tiempo: evita que el navegador sirva una copia
+    // cacheada vieja del HTML de la vista tras actualizar el archivo en el servidor. [16-06]
+    const res = await fetch(`./pages/${page}.html?t=${Date.now()}`, { cache: 'no-cache' });
     if (!res.ok) throw new Error('No se pudo cargar la página');
 
     const html = await res.text();

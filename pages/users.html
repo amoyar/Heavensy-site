@@ -1,4 +1,9 @@
 <!-- USERS PAGE — Heavensy -->
+<!-- ── BITÁCORA ──
+     [v2026.06.16-1] users.html
+     2026-06-16 | Paso 3 "Recurso": reemplazado el bloque "Vincular a Recurso"
+                  (opción sin-recurso + buscador + lista) por un check único
+                  "Este usuario es un recurso reservable" + nota para sectores objeto. -->
 <div id="usersRoot" class="users-root">
 
   <!-- ── VISTA LISTADO ──────────────────────────────── -->
@@ -198,32 +203,30 @@
     <!-- ── PANEL 3: Recurso ── -->
     <div class="u-wizard-panel" id="u-panel-2">
       <div class="u-panel-content">
-        <div class="u-form-section-title"><i class="fas fa-link"></i> Vincular a Recurso</div>
+        <div class="u-form-section-title"><i class="fas fa-link"></i> Recurso reservable</div>
         <p class="u-form-hint" style="margin-bottom:16px">
-          Opcional. Si este usuario es también un recurso reservable, vincúlalo aquí.
+          Si este usuario atiende y debe recibir reservas, márcalo como recurso.
+          Se creará su ficha en la agenda; los detalles (foto, especialidades,
+          horario) se completan luego en Mi equipo.
         </p>
-        <div class="u-no-resource-opt selected" id="u-opt-none" onclick="uSelectResource(null)">
-          <div class="u-resource-icon-wrap">
-            <i class="fas fa-user-slash"></i>
-          </div>
+
+        <!-- Check principal: es recurso -->
+        <label class="u-no-resource-opt" id="u-resource-toggle" onclick="uToggleEsRecurso(event)" style="cursor:pointer">
+          <div class="u-resource-icon-wrap"><i class="fas fa-user-clock"></i></div>
           <div style="flex:1">
-            <div class="u-resource-name">Sin recurso vinculado</div>
-            <div class="u-resource-meta">Solo tiene acceso al sistema</div>
+            <div class="u-resource-name">Este usuario es un recurso reservable</div>
+            <div class="u-resource-meta" id="u-resource-toggle-meta">Podrá recibir reservas en la agenda</div>
           </div>
-          <div class="u-resource-check" id="u-check-none">
+          <div class="u-resource-check" id="u-check-resource">
             <i class="fas fa-check" style="font-size:9px"></i>
           </div>
-        </div>
+        </label>
 
-        <div class="u-resource-search">
-          <input id="u-resource-search" placeholder="Buscar recurso..." oninput="uFilterResources(this.value)"/>
-        </div>
-
-        <div class="u-resource-list" id="u-resource-list">
-          <div class="u-empty" style="display:none" id="u-resource-empty">
-            <i class="fas fa-inbox"></i>
-            <p>No hay recursos disponibles.</p>
-          </div>
+        <!-- Aviso para sectores de objetos (deshabilitado) -->
+        <div class="u-form-hint-box" id="u-resource-objeto-note" style="margin-top:14px;display:none">
+          <i class="fas fa-info-circle"></i>
+          Los recursos de este rubro (cabañas, espacios, propiedades) se crean en
+          <strong>Mi empresa → Recursos</strong>, no desde el usuario.
         </div>
       </div>
       <div class="u-nav-footer">

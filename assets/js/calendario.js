@@ -2,12 +2,13 @@
 //  CALENDARIO — HEAVENSY (conectado al backend)
 // ═══════════════════════════════════════════
 // ── BITÁCORA ──
-// [v2026.06.16-1] calendario.js
-// 2026-06-16 | Sin cambios funcionales en este archivo. Nota: _calRenderProfChips
-//              y _calProfSearch que corren en producción los define prof-chips.js
-//              (se carga después en index.html y sobrescribe los de aquí). El fix
-//              de la barra de filtros para empresas con un solo recurso está en
-//              prof-chips.js, no acá.
+// [v2026.06.16-2] calendario.js
+// 2026-06-16 | calLoadResources: si el usuario actual ES un recurso (su user_id
+//              coincide con un recurso de la lista), el calendario muestra SOLO su
+//              agenda (calResources = [su recurso]) → solo su chip, no el de los
+//              colegas. Admin/gestor sin recurso propio ve todos. Decisión por dato
+//              (¿tiene recurso?), no por rol. Filtro de visualización (no seguridad).
+// [v2026.06.16-1] calendario.js — sin cambios funcionales (aclaración prof-chips)
 
 // ── CONFIG ──
 const CAL_HOUR_START = 8;
@@ -280,6 +281,17 @@ async function calLoadResources() {
     const res = await apiCall('/api/agenda/resources');
     if (res.ok && res.data?.resources) {
       calResources = res.data.resources;
+
+      // Si el usuario actual ES un recurso (tiene su propio recurso en la lista),
+      // el calendario muestra SOLO su agenda — no la de sus colegas. Un admin/gestor
+      // que no es recurso ve todos. Se decide por el dato (¿tiene recurso?), no por rol. [16-06]
+      const _u   = (typeof getUserFromToken === 'function') ? getUserFromToken() : null;
+      const _uid = _u && (_u.user_id || _u.sub);
+      if (_uid) {
+        const propio = calResources.find(r => r.user_id && String(r.user_id) === String(_uid));
+        if (propio) calResources = [propio];
+      }
+
       await Promise.all([
         ...calResources.map(r => calLoadServicesForResource(r._id)),
         ...calResources.map(r => calLoadBlocksForResource(r._id)),
@@ -635,7 +647,7 @@ function _calRenderSvcFilterChips() {
     if (name && !nameMap.has(name)) nameMap.set(name, { id, name });
   });
   const svcs = [...nameMap.values()];
-  if (bar) bar.style.display = (calResources.length >= 1 || svcs.length > 0) ? '' : 'none';
+  if (bar) bar.style.display = (calResources.length > 1 || svcs.length > 0) ? '' : 'none';
   if (!svcs.length) { container.innerHTML = ''; return; }
   const allChip = `<div class="prof-chip${!calSvcFilter ? ' prof-chip-sel' : ''}" onclick="calSetSvcFilter(null)" data-id="">Todos</div>`;
   const chips = svcs.map(svc => {

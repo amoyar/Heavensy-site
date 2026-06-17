@@ -3,6 +3,25 @@
 // Heavensy Admin
 // ============================================
 // ── BITÁCORA ──
+// [v2026.06.16-3] users.js
+// 2026-06-16 | Columna "Recurso" de la tabla y filtro "Es recurso": leían
+//              user.company_resource_id (campo inexistente) → siempre mostraban "—".
+//              Ahora leen user.is_resource (que el backend ya envía en
+//              /companies/<id>/users) y muestran "Sí" / "No".
+// [v2026.06.16-2] users.js
+// 2026-06-16 | El check "es recurso" ahora LEE su estado al editar: loadUserIntoWizard
+//              toma is_resource de las empresas del usuario (user_relation.is_resource)
+//              y marca el check. Antes solo se marcaba si había un recurso vinculado
+//              (resource_id), así que un usuario con is_resource:true pero sin recurso
+//              creado salía siempre desmarcado.
+// [v2026.06.16-1] users.js
+// 2026-06-16 | Paso 3 del wizard rediseñado: de "vincular a recurso existente" a un
+//              check único "Este usuario es un recurso reservable" (_wIsResource).
+//              Al guardar llama a PUT .../resource-flag {is_resource}, que en backend
+//              crea el agenda_resources (si marca) o lo desactiva (si desmarca). En
+//              sectores de objeto el check va deshabilitado (recursos objeto se crean
+//              en config-rubro). Desmarcar en edición pide confirmación. Eliminado el
+//              modelo viejo (_wSelectedResource lista, uSelectResource, uFilterResources).
 // [v2026.06.15-3] users.js
 // 2026-06-15 | Fix precarga al EDITAR usuario: loadUserIntoWizard llamaba a
 //              /api/users/id/<id>/companies (con "/id/" de más) → 404 → _wCompanies
@@ -41,7 +60,10 @@ let _editingUsername = null;
 
 // Estado del wizard
 let _wCompanies      = [];    // [{ company_id, company_name, roles[], is_primary }]
-let _wSelectedResource = null; // resource_id o null
+let _wSelectedResource = null; // (legacy) resource_id ya vinculado, para detectar estado al editar
+let _wIsResource     = false;  // ¿el usuario es recurso reservable? (modelo nuevo)
+let _wEsObjeto       = false;  // ¿el sector de la empresa es de naturaleza objeto? (deshabilita el check)
+let _wNaturalezaCargada = false; // ¿ya se evaluó la naturaleza del sector en esta sesión del wizard?
 
 // ── Roles disponibles ─────────────────────────
 // Se cargan desde la BD (GET /api/system-roles), NO hardcodeados: la fuente de
@@ -165,7 +187,7 @@ function renderUsers() {
     const roleLabel = roles[0] || '—';
     const initials  = _getInitials(user.first_name, user.last_name);
     const color     = _getAvatarColor(user.username || user._id);
-    const hasResource = !!user.company_resource_id;
+    const hasResource = !!user.is_resource;
 
     const tr = document.createElement('tr');
     if (!isActive) tr.style.opacity = '.6';
@@ -185,7 +207,7 @@ function renderUsers() {
       </td>
       <td>${escapeHtml(user.email || '—')}</td>
       <td><span class="u-badge u-badge-role">${escapeHtml(roleLabel)}</span></td>
-      <td>${hasResource ? '<span class="u-badge u-badge-resource">Sí</span>' : '—'}</td>
+      <td>${hasResource ? '<span class="u-badge u-badge-resource">Sí</span>' : '<span class="u-badge">No</span>'}</td>
       <td>${escapeHtml(user.company_name || _userCompanyId || '—')}</td>
       <td>
         <label class="u-switch">
@@ -238,8 +260,8 @@ function filterUsers() {
       (status === 'inactive' && u.status !== 'A');
 
     const matchResource = !resource ||
-      (resource === 'yes' && u.company_resource_id) ||
-      (resource === 'no'  && !u.company_resource_id);
+      (resource === 'yes' && u.is_resource) ||
+      (resource === 'no'  && !u.is_resource);
 
     return matchSearch && matchRole && matchStatus && matchResource;
   });
@@ -323,6 +345,9 @@ async function openUserWizard(username = null) {
   _editingUsername    = username;
   _wCompanies         = [];
   _wSelectedResource  = null;
+  _wIsResource        = false;
+  _wEsObjeto          = false;
+  _wNaturalezaCargada = false;
 
   clearUserWizardForm();
 
@@ -408,14 +433,39 @@ async function loadUserIntoWizard(username) {
       company_name: c.company.name || c.company.company_id,
       roles:        c.user_relation?.roles || [],
       is_primary:   c.user_relation?.is_primary || false,
+      is_resource:  c.user_relation?.is_resource || false,
     }));
+    // El check "es recurso" se marca si el usuario ya tiene el flag is_resource
+    // en alguna de sus empresas (lo guardado en BD). [16-06]
+    if (_wCompanies.some(c => c.is_resource)) _wIsResource = true;
   }
   renderWizardEmpresas();
 
-  // Recurso vinculado
+  // Recurso vinculado: si ya tiene, el usuario ES recurso (check marcado)
   const resResource = await apiCall(`/api/companies/${_userCompanyId}/users/${user._id}/resource`);
   if (resResource.ok && resResource.data.resource) {
     _wSelectedResource = resResource.data.resource._id;
+    _wIsResource = true;
+  }
+  // Naturaleza del sector de la empresa (objeto → check deshabilitado)
+  await uCargarNaturalezaSector(_userCompanyId);
+  _wNaturalezaCargada = true;
+}
+
+// Determina si el sector de la empresa es de naturaleza "objeto" (cabañas, etc.),
+// en cuyo caso el check de recurso va deshabilitado. Lo infiere del availability_mode:
+// por_dia / por_visita = objeto; por_hora / por_hora_sin_almuerzo = persona.
+async function uCargarNaturalezaSector(companyId) {
+  _wEsObjeto = false;
+  try {
+    const res = await apiCall(`/api/companies/${companyId}/config`);
+    const cfg = (res && res.data) || {};
+    const modo = cfg.availability_mode
+      || (cfg.business_config && cfg.business_config.availability_mode)
+      || '';
+    _wEsObjeto = (modo === 'por_dia' || modo === 'por_visita');
+  } catch (e) {
+    _wEsObjeto = false; // ante la duda, habilitado (persona)
   }
 }
 
@@ -433,6 +483,9 @@ function clearUserWizardForm() {
 
   _wCompanies = [];
   _wSelectedResource = null;
+  _wIsResource = false;
+  _wEsObjeto = false;
+  _wNaturalezaCargada = false;
 }
 
 // ── Navegación ────────────────────────────────
@@ -446,6 +499,7 @@ function uGoStep(step) {
   document.querySelectorAll('.u-wizard-panel').forEach((el, i) => {
     el.classList.toggle('active', i === step);
   });
+  if (step === 2) renderWizardResources();
   if (step === 3) buildUserReview();
 }
 
@@ -582,74 +636,57 @@ function uUpdateEmpresa(idx, field, value) {
   renderWizardEmpresas();
 }
 
-// ── Paso 3: Recursos ──────────────────────────
+// ── Paso 3: Recurso (es recurso reservable) ──────
 
-function renderWizardResources() {
-  const list  = document.getElementById('u-resource-list');
-  const empty = document.getElementById('u-resource-empty');
-  if (!list) return;
-
-  // Limpiar lista (mantener el empty)
-  Array.from(list.children).forEach(c => {
-    if (c.id !== 'u-resource-empty') c.remove();
-  });
-
-  // Mostrar "sin recurso" como seleccionado por defecto
-  const noneOpt = document.getElementById('u-opt-none');
-  if (noneOpt) noneOpt.classList.toggle('selected', !_wSelectedResource);
-  const noneCheck = document.getElementById('u-check-none');
-  if (noneCheck) noneCheck.style.color = !_wSelectedResource ? '#fff' : 'transparent';
-
-  const freeResources = _availableResources.filter(r => !r.user_id || r._id === _wSelectedResource);
-
-  if (freeResources.length === 0) {
-    if (empty) empty.style.display = 'flex';
-    return;
+// Refleja en la UI el estado de _wIsResource y _wEsObjeto.
+async function renderWizardResources() {
+  // Si hay empresa asignada y aún no se evaluó la naturaleza, hacerlo ahora
+  // (en creación, la empresa se elige en el paso 2). Usa la primera empresa.
+  if (_wCompanies.length && !_wNaturalezaCargada) {
+    await uCargarNaturalezaSector(_wCompanies[0].company_id);
+    _wNaturalezaCargada = true;
   }
-  if (empty) empty.style.display = 'none';
 
-  freeResources.forEach(resource => {
-    const item = document.createElement('div');
-    item.className = `u-resource-item${resource._id === _wSelectedResource ? ' selected' : ''}`;
-    item.dataset.id = resource._id;
-    item.onclick = () => uSelectResource(resource._id);
+  const toggle = document.getElementById('u-resource-toggle');
+  const check  = document.getElementById('u-check-resource');
+  const meta   = document.getElementById('u-resource-toggle-meta');
+  const note   = document.getElementById('u-resource-objeto-note');
+  if (!toggle) return;
 
-    const color = resource.color || '#9961FF';
-    const isSelected = resource._id === _wSelectedResource;
+  // Sectores de objeto: el check se muestra deshabilitado (los recursos objeto
+  // se crean en config-rubro, no desde el usuario).
+  if (_wEsObjeto) {
+    _wIsResource = false;
+    toggle.classList.add('disabled');
+    toggle.style.opacity = '0.5';
+    toggle.style.pointerEvents = 'none';
+    if (note) note.style.display = 'flex';
+  } else {
+    toggle.classList.remove('disabled');
+    toggle.style.opacity = '';
+    toggle.style.pointerEvents = '';
+    if (note) note.style.display = 'none';
+  }
 
-    item.innerHTML = `
-      <div class="u-resource-dot" style="background:${color}"></div>
-      <div style="flex:1">
-        <div class="u-resource-name">${escapeHtml(resource.name || resource.resource_id)}</div>
-        <div class="u-resource-meta">${escapeHtml(resource.resource_type || '')}${resource.specialty ? ' · ' + resource.specialty : ''}</div>
-      </div>
-      <div class="u-resource-check" style="color:${isSelected ? '#fff' : 'transparent'}">
-        <i class="fas fa-check" style="font-size:9px"></i>
-      </div>
-    `;
-    list.appendChild(item);
-  });
+  toggle.classList.toggle('selected', _wIsResource);
+  if (check) check.style.color = _wIsResource ? '#fff' : 'transparent';
+  if (meta) meta.textContent = _wIsResource
+    ? 'Se creará / mantendrá su ficha en la agenda'
+    : 'Podrá recibir reservas en la agenda';
 }
 
-function uSelectResource(resourceId) {
-  _wSelectedResource = resourceId;
+// Click en el check. Si está en edición y ya era recurso, desmarcar pide confirmación.
+function uToggleEsRecurso(ev) {
+  if (ev) ev.preventDefault();
+  if (_wEsObjeto) return;
 
-  // Actualizar UI
-  document.querySelectorAll('.u-resource-item, .u-no-resource-opt').forEach(el => {
-    const isSelected = resourceId
-      ? el.dataset.id === resourceId
-      : el.id === 'u-opt-none';
-    el.classList.toggle('selected', isSelected);
-    const check = el.querySelector('.u-resource-check');
-    if (check) check.style.color = isSelected ? '#fff' : 'transparent';
-  });
-}
-
-function uFilterResources(q) {
-  document.querySelectorAll('.u-resource-item').forEach(item => {
-    const name = item.querySelector('.u-resource-name')?.textContent?.toLowerCase() || '';
-    item.style.display = name.includes(q.toLowerCase()) ? '' : 'none';
-  });
+  // Va a pasar a DESMARCADO y ya tenía recurso vinculado → confirmar (lo saca de agenda)
+  if (_wIsResource && _wSelectedResource) {
+    const ok = confirm('Si quitas la marca de recurso, este profesional se desactivará de la agenda y dejará de recibir reservas. ¿Continuar?');
+    if (!ok) return;
+  }
+  _wIsResource = !_wIsResource;
+  renderWizardResources();
 }
 
 // ── Paso 4: Revisión ──────────────────────────
@@ -660,10 +697,6 @@ function buildUserReview() {
 
   const get    = id => document.getElementById(id)?.value || '';
   const getChk = id => document.getElementById(id)?.checked;
-
-  const resource = _wSelectedResource
-    ? _availableResources.find(r => r._id === _wSelectedResource)
-    : null;
 
   container.innerHTML = `
     <div class="u-review-section">
@@ -706,10 +739,12 @@ function buildUserReview() {
     </div>
 
     <div class="u-review-section">
-      <div class="u-review-section-title"><i class="fas fa-link"></i> Recurso vinculado</div>
-      ${resource
-        ? `<div class="u-review-val">${escapeHtml(resource.name || resource.resource_id)}</div>`
-        : `<div class="u-review-val empty">Sin recurso vinculado</div>`
+      <div class="u-review-section-title"><i class="fas fa-link"></i> Recurso reservable</div>
+      ${_wEsObjeto
+        ? `<div class="u-review-val empty">No aplica (recurso de objeto, se crea en Mi empresa)</div>`
+        : (_wIsResource
+            ? `<div class="u-review-val">✅ Sí — se creará/mantendrá su ficha en la agenda</div>`
+            : `<div class="u-review-val empty">No — solo acceso al sistema</div>`)
       }
     </div>
   `;
@@ -772,12 +807,15 @@ async function saveUser() {
       });
     }
 
-    // ── Vincular recurso ──
-    if (_wSelectedResource && userId) {
-      await apiCall(`/api/companies/${_userCompanyId}/users/${userId}/resource`, {
-        method: 'PUT',
-        body:   JSON.stringify({ resource_id: _wSelectedResource }),
-      });
+    // ── Marcar como recurso (crea/desactiva el recurso de agenda en backend) ──
+    // Solo para sectores de persona; en objeto el check va deshabilitado.
+    if (userId && !_wEsObjeto) {
+      for (const wc of _wCompanies) {
+        await apiCall(`/api/companies/${wc.company_id}/users/${userId}/resource-flag`, {
+          method: 'PUT',
+          body:   JSON.stringify({ is_resource: _wIsResource }),
+        });
+      }
     }
 
     showToast(_editingUsername ? 'Usuario actualizado ✅' : 'Usuario creado ✅', 'success');
@@ -834,8 +872,7 @@ window.uAddEmpresa         = uAddEmpresa;
 window.uRemoveEmpresa      = uRemoveEmpresa;
 window.uToggleRole         = uToggleRole;
 window.uUpdateEmpresa      = uUpdateEmpresa;
-window.uSelectResource     = uSelectResource;
-window.uFilterResources    = uFilterResources;
+window.uToggleEsRecurso    = uToggleEsRecurso;
 window.saveUser            = saveUser;
 window.filterUsers         = filterUsers;
 window.clearUserFilters    = clearUserFilters;
