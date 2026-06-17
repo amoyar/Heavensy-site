@@ -7,6 +7,11 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.16-3] config-rubro.js
+// 2026-06-16 | crGuardar/_crLoadRecursos: el resource_type_id ya no se toma del
+//              primer tipo de la lista (bug que asignaba "Alojamiento" a un dentista),
+//              sino del tipo cuyo `activity` coincide con el availability_mode del
+//              sector. Requiere los 4 tipos nuevos sembrados (sembrar_resource_types).
 // [v2026.06.16-2] config-rubro.js
 // 2026-06-16 | Disponibilidad por recurso ahora cubre también por_visita
 //              (propiedades): _crDisponibilidad acepta por_dia Y por_visita;
@@ -330,7 +335,16 @@ async function _crLoadRecursos(){
   const r = await apiCall('/api/agenda/resources?include_inactive=1').catch(() => null);
   _crRecursos = r?.data?.resources || [];
   const t = await apiCall('/api/agenda/resource-types').catch(() => null);
-  _crTipoId = (t?.data?.resource_types || t?.data?.types || [])[0]?._id || null;
+  const _tipos = t?.data?.resource_types || t?.data?.types || [];
+  // El resource_type correcto es el cuyo `activity` coincide con el
+  // availability_mode del sector (los tipos nuevos usan activity=availability_mode).
+  // Fallbacks: si no hay match, intenta por_hora; si tampoco, el primero. [16-06]
+  const _modo = _crSector?.business?.availability_mode || 'por_hora';
+  _crTipoId = (
+    _tipos.find(x => x.activity === _modo) ||
+    _tipos.find(x => x.activity === 'por_hora') ||
+    _tipos[0] || {}
+  )._id || null;
   // Mapa de usuarios por _id, para mostrar email/username reales del vinculado.
   if (_esPersona()){
     const users = await _crCargarUsuariosEmpresa();

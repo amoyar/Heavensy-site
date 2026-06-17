@@ -1,5 +1,13 @@
 // ── CHIPS DE PROFESIONALES — FILTRO DE CALENDARIO ──
 // Archivo separado para no modificar calendario.js
+//
+// ── BITÁCORA ──
+// [v2026.06.16-1] prof-chips.js
+// 2026-06-16 | Fix: la barra de filtros (cal-prof-bar) solo se mostraba con MÁS de
+//              1 profesional (calResources.length <= 1 la ocultaba), así que una
+//              empresa con un único recurso no veía su chip en el calendario.
+//              Ahora se muestra con al menos 1 (< 1 oculta). Esta función sobrescribe
+//              la de calendario.js (se carga después en index.html).
 
 const _PROF_COLORS = [
   '#9961FF','#3b82f6','#10b981','#f59e0b','#ef4444',
@@ -11,8 +19,9 @@ function _calRenderProfChips() {
   const wrap   = document.getElementById('cal-prof-chips');
   if (!bar || !wrap) return;
 
-  // Solo mostrar si hay más de 1 profesional
-  if (!calResources || calResources.length <= 1) {
+  // Mostrar si hay al menos 1 profesional (antes pedía más de 1, lo que ocultaba
+  // la barra cuando la empresa tenía un único recurso). [16-06]
+  if (!calResources || calResources.length < 1) {
     bar.style.display = 'none';
     return;
   }

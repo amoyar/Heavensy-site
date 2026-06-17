@@ -1,4 +1,18 @@
 <!-- ── BITÁCORA ──
+[v2026.06.16-9] configuracion.html
+2026-06-16 | Panel disponibilidad: nuevo campo "Descanso entre citas (min)"
+             (#disp-buffer) para configurar buffer_after por recurso.
+[v2026.06.16-8] configuracion.html
+2026-06-16 | Panel-1: dirección (#disp-direccion), oficina (#disp-oficina) y zona
+             horaria (#disp-tz) con IDs y placeholders, para cargar/guardar de
+             verdad (dirección/oficina por recurso, zona horaria por empresa).
+[v2026.06.16-7] configuracion.html
+2026-06-16 | #6 Datos demo eliminados: tbody de usuarios vacío (lo puebla el JS, ya
+             no la fila "Juana Machuca"); panel jm-panel-0 con placeholders + IDs
+             (#jm-email/telefono/rut/rol) en vez de values demo y rol fijo.
+[v2026.06.16-6] configuracion.html
+2026-06-16 | Filtro #f-rol: quitadas las opciones fijas terapeuta/admin/secretaria;
+             ahora solo "Todos los roles" y el JS lo puebla desde system-roles.
 [v2026.06.16-5] configuracion.html
 2026-06-16 | Panel-2: id #esp-modos al grupo de "Modos de trabajo" para
              poblar/leer los modos reales del recurso (antes fijos en Presencial+
@@ -109,9 +123,6 @@
     </div>
     <select id="f-rol" onchange="filterUsers()" style="height:32px;font-size:12px;border:1px solid #ddd6fe;border-radius:8px;padding:0 10px;background:#fff;color:#3b4a6b;min-width:120px">
       <option value="">Todos los roles</option>
-      <option value="terapeuta">Terapeuta</option>
-      <option value="admin">Admin</option>
-      <option value="secretaria">Secretaria</option>
     </select>
     <select id="f-estado" onchange="filterUsers()" style="height:32px;font-size:12px;border:1px solid #ddd6fe;border-radius:8px;padding:0 10px;background:#fff;color:#3b4a6b;min-width:100px">
       <option value="">Estado</option>
@@ -135,17 +146,7 @@
     <div class="table-scroll-wrap">
     <table>
       <thead><tr><th>Usuario</th><th>Email</th><th>Rol</th><th>Recurso</th><th>Empresa</th><th>Activo</th><th>Acciones</th></tr></thead>
-      <tbody id="users-tbody">
-        <tr data-name="juana machuca" data-email="jmachuca@heavensy.cl" data-rol="terapeuta" data-estado="activo" data-recurso="si">
-          <td><div class="user-cell"><div class="avatar">JM</div><div><div style="font-weight:600;font-size:12px">Juana Machuca</div><div style="font-size:10px;color:#7D84C1">juana.machuca</div></div></div></td>
-          <td>jmachuca@heavensy.cl</td>
-          <td><span class="badge b-resource">Terapeuta</span></td>
-          <td><span class="badge b-active">Sí</span></td>
-          <td>Heavensy</td>
-          <td><label class="switch"><input type="checkbox" checked onchange="recalcStats()"><span class="slider"></span></label></td>
-          <td style="white-space:nowrap"><button class="btn-icon" title="Editar" style="color:#5b8dee" onclick="toggleEdit('jm')"><i class="fas fa-pen"></i></button><button class="btn-icon" title="Eliminar" style="color:#9ca3af" onclick="cfgDeleteUser('jmachuca',this.closest('tr'))"><i class="fas fa-trash"></i></button></td>
-        </tr>
-      </tbody>
+      <tbody id="users-tbody"></tbody>
     </table>
     </div>
   </div>
@@ -206,6 +207,7 @@
         <div class="form-group"><label>Hora inicio jornada</label><input id="disp-inicio" type="time" value="09:00"/></div>
         <div class="form-group"><label>Hora término jornada</label><input id="disp-fin" type="time" value="18:00"/></div>
         <div class="form-group"><label>Intervalo entre atenciones (min)</label><input id="disp-intervalo" type="number" value="15" min="0" max="120"/></div>
+        <div class="form-group"><label>Descanso entre citas (min)</label><input id="disp-buffer" type="number" value="0" min="0" max="120"/></div>
         <div class="form-group"><label>Anticipación mínima (hrs)</label><input id="disp-anticip" type="number" value="2" min="0"/></div>
         <div class="form-group"><label>Cancelación sin costo (hrs antes)</label><input id="disp-cancel-hrs" type="number" value="48" min="0"/></div>
         <div class="form-group"><label>Cobro cancelación tardía (%)</label><input id="disp-cancel-pct" type="number" value="40" min="0" max="100"/></div>
@@ -237,10 +239,13 @@
             <span class="toggle-btn" onclick="this.classList.toggle('on')">A domicilio</span>
           </div>
         </div>
-        <div class="form-group"><label>Dirección</label><input value="Av. Providencia 1234"/></div>
-        <div class="form-group"><label>Oficina / Piso</label><input value="Oficina 3, piso 2"/></div>
+        <div class="form-group"><label>Dirección</label><input id="disp-direccion" placeholder="Av. Providencia 1234"/></div>
+        <div class="form-group"><label>Oficina / Piso</label><input id="disp-oficina" placeholder="Oficina 3, piso 2"/></div>
         <div class="form-group form-full"><label>Zona horaria</label>
-          <select><option>America/Santiago – GMT-3</option><option>America/New_York – GMT-5</option></select>
+          <select id="disp-tz">
+            <option value="America/Santiago">America/Santiago – GMT-3</option>
+            <option value="America/New_York">America/New_York – GMT-5</option>
+          </select>
         </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:16px">
@@ -841,12 +846,12 @@
       <!-- TAB 1: INFO -->
       <div class="ue-panel active" id="jm-panel-0">
         <div class="form-grid-3">
-          <div class="form-group"><label>Nombre</label><input id="jm-nombre" value="Juana"/></div>
-          <div class="form-group"><label>Apellido</label><input id="jm-apellido" value="Machuca"/></div>
-          <div class="form-group"><label>Email</label><input value="jmachuca@heavensy.cl"/></div>
-          <div class="form-group"><label>Teléfono</label><input value="+56912345678"/></div>
-          <div class="form-group"><label>Rol</label><select><option selected>Terapeuta</option><option>Admin</option><option>Secretaria</option></select></div>
-          <div class="form-group"><label>RUT</label><input value="12.345.678-9"/></div>
+          <div class="form-group"><label>Nombre</label><input id="jm-nombre" placeholder="Nombre"/></div>
+          <div class="form-group"><label>Apellido</label><input id="jm-apellido" placeholder="Apellido"/></div>
+          <div class="form-group"><label>Email</label><input id="jm-email" placeholder="correo@ejemplo.cl"/></div>
+          <div class="form-group"><label>Teléfono</label><input id="jm-telefono" placeholder="+56 9 1234 5678"/></div>
+          <div class="form-group"><label>Rol</label><select id="jm-rol"></select></div>
+          <div class="form-group"><label>RUT</label><input id="jm-rut" placeholder="12.345.678-9"/></div>
         </div>
         <div style="display:flex;gap:8px;margin-top:12px">
           <button class="btn-primary btn-sm" onclick="jmGuardarInfo(this)"><i class="fas fa-check" style="margin-right:5px"></i>Guardar</button>

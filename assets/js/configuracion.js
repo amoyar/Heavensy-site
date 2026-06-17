@@ -3,6 +3,54 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.16-14] configuracion.js
+// 2026-06-16 | showToast: posición a arriba-centro con z-index máximo (la esquina
+//              inferior derecha quedaba tapada por el panel de edición violeta).
+// [v2026.06.16-13] configuracion.js
+// 2026-06-16 | FEEDBACK DE GUARDADO: se define window.showToast (notificación
+//              lateral que se auto-oculta, color de marca). Antes se llamaba en
+//              ~13 puntos pero NUNCA estaba definida → ningún aviso aparecía, ni
+//              éxito ni error (de ahí que "no se supiera si guardó"). Se agregó
+//              toast de éxito en guardarDisponibilidad y guardarEspecialidades
+//              (antes solo cambiaban el botón) y se simplificaron los guards
+//              `if (typeof showToast === 'function')` que ya no hacen falta.
+// [v2026.06.16-12] configuracion.js
+// 2026-06-16 | Panel de disponibilidad: nuevo campo "Descanso entre citas" (buffer_after)
+//              editable. Se guarda en la raíz del recurso y cfgPopulateSchedule lo
+//              carga. El motor ya lo contempla (generate_base_slots: paso =
+//              slot_duration + buffer_after). Antes solo se preservaba, ahora se edita.
+// [v2026.06.16-11] configuracion.js
+// 2026-06-16 | guardarDisponibilidad ahora persiste también los campos CANÓNICOS
+//              que el motor de agenda (availability_service, usado por el calendario
+//              interno Y la IA del webhook) realmente lee: booking_rules
+//              {min_advance_hours, cancel_before_hours} y slot_duration/buffer_after
+//              en la raíz del recurso. Antes solo iban en schedule_config, donde el
+//              motor NO los lee → la anticipación/slot no se respetaban al agendar.
+//              schedule_config se mantiene para la UI y el almuerzo. buffer_after se
+//              preserva del recurso (no se expone en el panel).
+// [v2026.06.16-10] configuracion.js
+// 2026-06-16 | Fix raíz disponibilidad: el resumen y el form de días caían a un
+//              default (LMXJV) porque GET /resources no traía las schedule_rules
+//              (van en colección aparte; ahora el backend las adjunta).
+//              cfgPopulateSchedule ahora sincroniza también los toggles del form
+//              de días (#disp-dias) con las rules reales, no solo el resumen.
+// [v2026.06.16-9] configuracion.js
+// 2026-06-16 | #4 Dirección/oficina/zona horaria del panel-1 ahora persisten:
+//              dirección y oficina por recurso (location/office en el PATCH del
+//              recurso); zona horaria de la empresa (PUT /companies/<cid>/config,
+//              cacheada en _cfgCompanyTz, cargada al inicio). cfgPopulateSchedule
+//              los puebla al cargar el recurso.
+// [v2026.06.16-8] configuracion.js
+// 2026-06-16 | #6/#7 Datos demo eliminados: la tabla de usuarios se puebla siempre
+//              (con estado vacío si no hay datos, en vez de dejar la fila demo de
+//              Juana Machuca); las filas muestran la empresa REAL activa (no
+//              "Heavensy" fijo); fila de recurso con data-rol="recurso" (no
+//              "terapeuta"). Fallbacks "Juana Machuca" → vacío.
+// [v2026.06.16-7] configuracion.js
+// 2026-06-16 | #2 Filtros de rol ya no hardcodeados: nuevo cfgLoadRolesFiltro
+//              puebla #f-rol desde GET /api/system-roles (value=role_id), llamado
+//              al cargar la tabla. filterUsers compara el rol de forma tolerante
+//              (igualdad o contención, minúsculas) para calzar id o nombre.
 // [v2026.06.16-6] configuracion.js
 // 2026-06-16 | Fix "no guarda": guardarEspecialidades y guardarDisponibilidad
 //              fingían "Guardado" aunque _cfgFirstResourceId fuera null (fallo
@@ -123,6 +171,31 @@
 //              actualizarPublicacion ya NO descarga un HTML estático: llama a
 //              POST /api/perfil-publico/publicar y muestra la URL pública
 //              (/p/<slug>). El modal de primera publicación se conserva.
+
+// ── TOAST (notificación lateral que se auto-oculta) ──
+// Antes se llamaba showToast en varios puntos pero NUNCA estaba definido (las
+// llamadas iban con `if (typeof showToast === 'function')`, así que ningún aviso
+// aparecía — ni éxito ni error). Aquí se define de verdad. [16-06]
+if (typeof window.showToast !== 'function') {
+  window.showToast = function (msg, type = 'success') {
+    const color = type === 'success' ? '#9961FF' : type === 'error' ? '#ef4444' : '#f59e0b';
+    const icon  = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-times-circle' : 'fa-exclamation-circle';
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;top:20px;left:50%;transform:translate(-50%,-20px);z-index:2147483647;background:#fff;border-left:4px solid ' + color +
+      ';border-radius:10px;padding:11px 16px;box-shadow:0 4px 20px rgba(0,0,0,.14);font-size:12.5px;font-weight:600;color:#383838;' +
+      'display:flex;align-items:center;gap:8px;max-width:340px;opacity:0;transition:opacity .25s ease,transform .25s ease;';
+    el.innerHTML = '<i class="fas ' + icon + '" style="color:' + color + '"></i> ' + msg;
+    document.body.appendChild(el);
+    // Animación de entrada
+    requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translate(-50%,0)'; });
+    // Salida y limpieza
+    setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transform = 'translate(-50%,-20px)';
+      setTimeout(() => el.remove(), 300);
+    }, 3000);
+  };
+}
 
 // ── HELPERS: construir filas de programas y servicios ──
 function _ppBuildProgRow(p, profileType) {
@@ -413,9 +486,11 @@ function filterUsers() {
   const rec = document.getElementById('f-recurso')?.value.toLowerCase() || '';
   let count = 0;
   document.querySelectorAll('#users-tbody tr[data-name]').forEach(row => {
+    const dr = (row.dataset.rol || '').toLowerCase();
+    const rolMatch = !rol || dr === rol || dr.includes(rol) || rol.includes(dr);
     const match =
       (!q   || row.dataset.name.includes(q) || row.dataset.email.includes(q)) &&
-      (!rol || row.dataset.rol === rol) &&
+      rolMatch &&
       (!est || row.dataset.estado === est) &&
       (!rec || row.dataset.recurso === rec);
     row.style.display = match ? '' : 'none';
@@ -481,6 +556,32 @@ function cfgSelRolEquipo(el) {
   const hidden = document.getElementById('add-rol');
   if (!ya) { el.classList.add('on'); hidden.value = el.dataset.rol; }
   else { hidden.value = ''; }   // re-clic = sin rol
+}
+
+// Puebla el filtro de roles (#f-rol) desde la BD (GET /api/system-roles), en vez
+// de las opciones fijas terapeuta/admin/secretaria. El value es el role_id en
+// minúsculas; filterUsers compara de forma tolerante. [16-06]
+let _cfgRolesFiltroCargados = false;
+async function cfgLoadRolesFiltro() {
+  const sel = document.getElementById('f-rol');
+  if (!sel) return;
+  if (_cfgRolesFiltroCargados && sel.options.length > 1) return;
+  try {
+    const res = await apiCall('/api/system-roles');
+    const roles = Array.isArray(res.data) ? res.data : (res.data?.roles || []);
+    const asignables = roles.filter(r => r.role_id && r.role_id !== 'HEAVENSY_SUPERADMIN_ROL');
+    const opts = ['<option value="">Todos los roles</option>'].concat(
+      asignables.map(r => {
+        const val = String(r.role_id).toLowerCase();
+        const label = String(r.role_name || r.role_id).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<option value="${val}">${label}</option>`;
+      })
+    );
+    sel.innerHTML = opts.join('');
+    _cfgRolesFiltroCargados = true;
+  } catch (e) {
+    console.error('No se pudieron cargar los roles del filtro:', e);
+  }
 }
 
 function recalcStats() {
@@ -692,7 +793,7 @@ function syncHorario() {
 async function guardarEspecialidades(btn) {
   syncEspecialidades();
   if (typeof apiCall === 'undefined' || !_cfgFirstResourceId) {
-    if (typeof showToast === 'function') showToast('Selecciona o crea un recurso antes de guardar', 'error');
+    showToast('Selecciona o crea un recurso antes de guardar', 'error');
     return;
   }
   const specs = [...document.querySelectorAll('#spec-tags-container .spec-tag')]
@@ -718,9 +819,10 @@ async function guardarEspecialidades(btn) {
     const orig = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-check" style="margin-right:6px"></i>Guardado';
     btn.disabled = true;
+    showToast('Especialidades guardadas', 'success');
     setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; toggleEditPanel('esp'); }, 1200);
   } else {
-    if (typeof showToast === 'function') showToast((res && res.data && res.data.error) || 'No se pudo guardar', 'error');
+    showToast((res && res.data && res.data.error) || 'No se pudo guardar las especialidades', 'error');
   }
 }
 
@@ -739,7 +841,7 @@ function toggleAlmuerzoJm(chk){
 async function guardarDisponibilidad(btn) {
   syncHorario();
   if (typeof apiCall === 'undefined' || !_cfgFirstResourceId) {
-    if (typeof showToast === 'function') showToast('Selecciona o crea un recurso antes de guardar', 'error');
+    showToast('Selecciona o crea un recurso antes de guardar', 'error');
     return;
   }
   const v = id => document.getElementById(id)?.value || '';
@@ -765,22 +867,56 @@ async function guardarDisponibilidad(btn) {
   const modMap = { 'presencial':'presencial', 'online':'online', 'a domicilio':'domicilio' };
   const modalities = [...document.querySelectorAll('#disp-modos .toggle-btn.on')]
     .map(b => modMap[b.textContent.trim().toLowerCase()] || b.textContent.trim().toLowerCase());
+  const location = v('disp-direccion');
+  const office   = v('disp-oficina');
+  const tz       = v('disp-tz') || 'America/Santiago';
+
+  // El motor de agenda (availability_service, usado por el calendario interno Y por
+  // la IA del webhook) lee la anticipación/cancelación de `booking_rules`, y el
+  // slot/buffer de la RAÍZ del recurso — NO de schedule_config. Por eso, además de
+  // schedule_config (que alimenta la UI), persistimos estos campos canónicos. [16-06]
+  const slotDur = scheduleConfig.slot_duration;
+  // Descanso entre citas (buffer_after): respiro tras cada atención. Lo lee el motor
+  // en generate_base_slots (paso = slot_duration + buffer_after). [16-06]
+  const bufferAfter = parseInt(v('disp-buffer')) || 0;
+  const bookingRules = {
+    min_advance_hours:   scheduleConfig.min_advance_hours,
+    cancel_before_hours: scheduleConfig.cancel_hours,
+  };
+
+  // Zona horaria → config de empresa (no del recurso). En paralelo, sin bloquear.
+  const cid = localStorage.getItem('company_id');
+  if (cid && tz !== window._cfgCompanyTz) {
+    apiCall(`/api/companies/${cid}/config`, { method: 'PUT', body: JSON.stringify({ timezone: tz }) })
+      .then(() => { window._cfgCompanyTz = tz; }).catch(() => {});
+  }
 
   const res = await apiCall(`/api/agenda/resources/${_cfgFirstResourceId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ schedule_config: scheduleConfig, schedule_rules: scheduleRules, modalities }),
+    body: JSON.stringify({
+      schedule_config: scheduleConfig,
+      schedule_rules:  scheduleRules,
+      modalities, location, office,
+      slot_duration:   slotDur,
+      buffer_after:    bufferAfter,
+      booking_rules:   bookingRules,
+    }),
   }).catch(() => null);
 
   if (res && res.ok) {
     if (typeof _cfgResourceMap === 'object' && _cfgResourceMap[_cfgFirstResourceId]) {
-      Object.assign(_cfgResourceMap[_cfgFirstResourceId], { schedule_config: scheduleConfig, modalities });
+      Object.assign(_cfgResourceMap[_cfgFirstResourceId], {
+        schedule_config: scheduleConfig, modalities, location, office,
+        slot_duration: slotDur, buffer_after: bufferAfter, booking_rules: bookingRules,
+      });
     }
     const orig = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-check" style="margin-right:6px"></i>Guardado';
     btn.disabled = true;
+    showToast('Disponibilidad guardada', 'success');
     setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; toggleEditPanel('disp'); }, 1200);
   } else {
-    if (typeof showToast === 'function') showToast((res && res.data && res.data.error) || 'No se pudo guardar', 'error');
+    showToast((res && res.data && res.data.error) || 'No se pudo guardar la disponibilidad', 'error');
   }
 }
 
@@ -900,7 +1036,7 @@ function actualizarPublicacion(btn) {
       } else {
         const msg = (res && res.data && res.data.error) || 'No se pudo publicar';
         btn.innerHTML = '<i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>Error';
-        if (typeof showToast === 'function') showToast(msg, 'error');
+        showToast(msg, 'error');
       }
     })
     .catch(() => {
@@ -919,7 +1055,7 @@ function jmFeedback(btn, cb) {
 
 function jmEnviarProfCard() {
   const v = id => document.getElementById(id)?.value || '';
-  const nombre = (v('jm-nombre') + ' ' + v('jm-apellido')).trim() || 'Juana Machuca';
+  const nombre = (v('jm-nombre') + ' ' + v('jm-apellido')).trim() || '';
   const tags = document.querySelectorAll('#jm-spec-tags-container .spec-tag');
   const especialidades = [...tags].map(t => t.childNodes[0].textContent.trim()).filter(Boolean).join(', ');
   const modos = [...document.querySelectorAll('#jm-panel-2 .toggle-btn.on')].map(b => b.textContent.trim());
@@ -988,7 +1124,7 @@ function jmSyncServicios() {
 }
 function jmSyncProgramas() {
   const rows = document.querySelectorAll('#jm-prog-list .svc-row');
-  const _jmNombre = ((document.getElementById('jm-nombre')?.value||'')+' '+(document.getElementById('jm-apellido')?.value||'')).trim()||'Juana Machuca';
+  const _jmNombre = ((document.getElementById('jm-nombre')?.value||'')+' '+(document.getElementById('jm-apellido')?.value||'')).trim()||'';
   const _jmCreador = { tipo:'profesional', nombre:_jmNombre, foto:jmData.foto||'', experiencia:document.getElementById('jm-esp-exp')?.value||'', especialidad:[...document.querySelectorAll('#jm-spec-tags-container .spec-tag')].map(t=>t.textContent.trim()).filter(Boolean).join(', ') };
   jmData.programas = [...rows].map(row => ({ nombre:row.querySelector('.svc-name')?.textContent.trim()||'', tipo:row.dataset.tipo||'', color:row.querySelector('.svc-dot')?.style.background||'', bgColor:row.dataset.bgColor||'#F7F8FC', colorNavy:row.dataset.colorNavy||'#7E9DD6', colorText:row.dataset.colorText||'#333333', colorTextLt:row.dataset.colorTextLt||'#6B7194', cardOpacity:parseFloat(row.dataset.cardOpacity||'0.72'), tituloFont:row.dataset.tituloFont||'DM Sans', tituloSize:row.dataset.tituloSize||'36', cancelacion:JSON.parse(row.dataset.cancelacion||'null'), img:row.querySelector('img')?.src||'', meta:row.querySelector('.svc-meta')?.textContent.trim()||'', precio:row.querySelector('.svc-price')?.textContent.trim()||'', precioTipo:row.dataset.precioTipo||'total', desc:row.dataset.desc||'', modulos:JSON.parse(row.dataset.modulos||'[]'), includes:JSON.parse(row.dataset.includes||'[]'), requisitos:JSON.parse(row.dataset.requisitos||'[]'), galeria:JSON.parse(row.dataset.galeria||'[]'), galeriaOri:row.dataset.galeriaOri||'h', testimonios:JSON.parse(row.dataset.testimonios||'[]'), cupos:row.dataset.cupos||'', mostrarCupos:row.dataset.mostrarCupos==='1', media:JSON.parse(row.dataset.media||'null'), creador:_jmCreador }));
 }
@@ -2435,7 +2571,7 @@ async function agregarAlEquipo() {
   // role_id REAL desde el hidden (lo fija cfgSelRolEquipo desde los chips de BD).
   // Sin fallback hardcodeado ni concatenación: si no hay rol, no se asigna.
   const roleId = document.getElementById('add-rol')?.value || '';
-  if (!roleId) { if (typeof showToast === 'function') showToast('Selecciona un rol', 'warning'); return; }
+  if (!roleId) { showToast('Selecciona un rol', 'warning'); return; }
   // Label visible = texto del chip seleccionado (cae al role_id si no se encuentra).
   const chipSel = document.querySelector('#add-rol-chips .toggle-btn.on');
   const rolLabel = chipSel ? chipSel.textContent.trim() : roleId;
@@ -2578,6 +2714,11 @@ async function cfgLoadFromBackend() {
       const el = document.getElementById('empresa-nombre');
       if (el && nombre) { el.value = nombre; pmSend({type:'nombre_empresa', value:nombre}); }
     }
+    // Zona horaria de la empresa (para el panel de disponibilidad). [16-06]
+    try {
+      const cfgRes = await apiCall('/api/me/company/config');
+      window._cfgCompanyTz = cfgRes?.data?.config?.timezone || 'America/Santiago';
+    } catch { window._cfgCompanyTz = 'America/Santiago'; }
 
     // 2. Usuarios del sistema + recursos de agenda → tabla de equipo
     const companyId = localStorage.getItem('company_id');
@@ -2589,9 +2730,8 @@ async function cfgLoadFromBackend() {
     const systemUsers  = (usersRes.ok && usersRes.data?.users)     ? usersRes.data.users         : [];
     const resources    = (resourcesRes.ok && resourcesRes.data?.resources) ? resourcesRes.data.resources : [];
 
-    if (systemUsers.length || resources.length) {
-      cfgPopulateUsersTable(systemUsers, resources);
-    }
+    cfgPopulateUsersTable(systemUsers, resources);
+    cfgLoadRolesFiltro();   // poblar #f-rol desde system-roles (no hardcodeado)
 
     // 3. Recursos → horario + especialidades + servicios (recurso seleccionable)
     if (resources.length) {
@@ -2618,6 +2758,11 @@ function cfgPopulateUsersTable(systemUsers = [], resources = []) {
   const countEl = document.getElementById('user-count');
   if (!tbody) return;
 
+  // Nombre real de la empresa activa (no hardcodear "Heavensy"). [16-06]
+  const empresaActiva = (window._cpOverrideCompanyName)
+    || (function(){ try { return JSON.parse(atob((localStorage.getItem('token')||'').split('.')[1])).company_name; } catch { return ''; } })()
+    || '';
+
   // Construir filas desde usuarios del sistema
   const userRows = systemUsers.map(u => {
     const nombre = u.full_name || u.username || u.email || '—';
@@ -2632,7 +2777,7 @@ function cfgPopulateUsersTable(systemUsers = [], resources = []) {
       <td>${email}</td>
       <td><span class="badge b-resource">${rolLabel}</span></td>
       <td><label class="switch" title="${u.is_resource?'Es recurso reservable':'Marcar como recurso reservable'}"><input type="checkbox" ${u.is_resource?'checked':''} onchange="cfgToggleEsRecurso('${uname}', this)"><span class="slider"></span></label></td>
-      <td>${u.company_name || 'Heavensy'}</td>
+      <td>${u.company_name || empresaActiva || '—'}</td>
       <td><label class="switch"><input type="checkbox" ${activo?'checked':''} onchange="recalcStats()"><span class="slider"></span></label></td>
       <td style="white-space:nowrap"><button class="btn-icon" title="Editar" style="color:#5b8dee"><i class="fas fa-pen"></i></button><button class="btn-icon" title="Eliminar" style="color:#9ca3af" onclick="cfgDeleteUser('${u.username||u.email}',this.closest('tr'))"><i class="fas fa-trash"></i></button></td>
     </tr>`;
@@ -2649,18 +2794,21 @@ function cfgPopulateUsersTable(systemUsers = [], resources = []) {
       const nombre = r.name || r.full_name || '—';
       const initials = nombre.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
       const specs = (r.specialties || r.especialidades || []).slice(0, 1).join('') || 'Profesional';
-      return `<tr data-name="${nombre.toLowerCase()}" data-email="" data-rol="terapeuta" data-estado="activo" data-recurso="si">
+      return `<tr data-name="${nombre.toLowerCase()}" data-email="" data-rol="recurso" data-estado="activo" data-recurso="si">
         <td><div class="user-cell"><div class="avatar">${initials}</div><div><div style="font-weight:600;font-size:12px">${nombre}</div><div style="font-size:10px;color:#7D84C1">${specs}</div></div></div></td>
         <td>—</td>
         <td><span class="badge b-resource">Recurso</span></td>
         <td><span class="badge b-active">Sí</span></td>
-        <td>Heavensy</td>
+        <td>${empresaActiva || '—'}</td>
         <td><label class="switch"><input type="checkbox" checked onchange="recalcStats()"><span class="slider"></span></label></td>
         <td style="white-space:nowrap"><button class="btn-icon" title="Editar" style="color:#5b8dee" onclick="cfgOpenResourceEdit('${r._id}')"><i class="fas fa-pen"></i></button><button class="btn-icon" title="Eliminar" style="color:#9ca3af" onclick="cfgDeleteUser('${r._id}',this.closest('tr'))"><i class="fas fa-trash"></i></button></td>
       </tr>`;
     });
 
-  tbody.innerHTML = [...userRows, ...resourceRows].join('');
+  const filas = [...userRows, ...resourceRows];
+  tbody.innerHTML = filas.length
+    ? filas.join('')
+    : '<tr><td colspan="7" style="text-align:center;color:#a8aed1;padding:20px;font-size:12px">No hay usuarios ni recursos todavía.</td></tr>';
   const total = userRows.length + resourceRows.length;
   if (countEl) countEl.textContent = total;
   recalcStats();
@@ -2684,6 +2832,8 @@ function cfgPopulateSchedule(resource) {
   const almChk = document.getElementById('disp-alm-on');
   if (almChk) { almChk.checked = tieneAlmuerzo; toggleAlmuerzo(almChk); }
   set('disp-intervalo',   rules.slot_duration || rules.slotDuration || 15);
+  // Descanso entre citas: vive en la raíz del recurso (buffer_after), no en schedule_config.
+  set('disp-buffer',      Number.isInteger(resource.buffer_after) ? resource.buffer_after : 0);
   set('disp-anticip',     rules.min_advance_hours || rules.minAdvanceHours || 2);
   set('disp-cancel-hrs',  rules.cancel_hours  || rules.cancelHours  || 48);
   set('disp-cancel-pct',  rules.cancel_pct    || rules.cancelPct    || 40);
@@ -2748,9 +2898,19 @@ function cfgPopulateSchedule(resource) {
     }
     sumDias.innerHTML = DIAS.map((d, i) =>
       `<span class="chip ${activos[i] ? 'chip-on' : 'chip-off'}">${d}</span>`).join('');
+    // Sincronizar también los toggles del FORM de días con las rules reales
+    // (antes quedaban con el estado por defecto del HTML). [16-06]
+    const dayBtns = [...document.querySelectorAll('#disp-dias .toggle-btn')].slice(0, 7);
+    dayBtns.forEach((b, i) => b.classList.toggle('on', !!activos[i]));
   }
-  const tz = rules.timezone || resource.timezone || 'America/Santiago';
-  setTxt('sum-tz', tz === 'America/Santiago' ? 'GMT-3 America/Santiago' : tz);
+  // Dirección y oficina: por recurso. [16-06]
+  set('disp-direccion', resource.location || resource.address || '');
+  set('disp-oficina',   resource.office   || resource.oficina || '');
+  // Zona horaria: de la empresa (no del recurso). Se lee de _cfgCompanyTz si está.
+  const tzEmpresa = window._cfgCompanyTz || 'America/Santiago';
+  const tzSel = document.getElementById('disp-tz');
+  if (tzSel) tzSel.value = tzEmpresa;
+  setTxt('sum-tz', tzEmpresa === 'America/Santiago' ? 'GMT-3 America/Santiago' : tzEmpresa);
 
   // Sincronizar al perfil
   syncHorario();
@@ -2839,7 +2999,7 @@ async function cfgToggleEsRecurso(username, checkbox) {
   const companyId = localStorage.getItem('company_id');
   if (!companyId) {
     checkbox.checked = !quiere;
-    if (typeof showToast === 'function') showToast('No se pudo determinar la empresa activa', 'error');
+    showToast('No se pudo determinar la empresa activa', 'error');
     return;
   }
   // Reflejar en el data-recurso de la fila para que filtros/stats sigan al día

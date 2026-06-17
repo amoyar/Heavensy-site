@@ -1,12 +1,14 @@
 // ── BITÁCORA ──
-// [v2026.06.15-1] layout.js
-// 2026-06-15 | _switchSidebarCompany ahora AVISA al usuario cuando el cambio de
-//              empresa falla, en vez de fallar en silencio (antes solo
-//              console.error). Si el backend responde error (403 por permisos,
-//              etc.) muestra su mensaje real; ante excepción de red, un mensaje
-//              genérico. Nuevo helper _layoutToast: usa el showToast global de
-//              Heavensy si existe, con fallback a un toast propio (nunca alert
-//              nativo). Cierra el dropdown tras el error.
+// [v2026.06.16-2] layout.js
+// 2026-06-16 | showToast: posición movida a arriba-centro (top:20px, centrado) con
+//              z-index máximo. Antes en esquina inferior derecha, donde el panel de
+//              edición la tapaba (el toast se creaba pero no se veía).
+// [v2026.06.16-1] layout.js
+// 2026-06-16 | Se define window.showToast GLOBAL (notificación lateral auto-ocultable,
+//              color de marca). layout.js carga temprano, así queda disponible para
+//              todos los módulos (companies, config-rubro, users, configuracion) que
+//              llamaban a showToast sin tenerlo definido → ahora los avisos de
+//              guardado (éxito/error) aparecen en toda la app. Auto-protegido.
 // [v2026.06.13-1] layout.js
 // 2026-06-13 | _switchSidebarCompany emite el evento global
 //              'heavensy:company-changed' (detail: companyId, companyName) tras
@@ -20,6 +22,29 @@
 // 2026-06-04 | _switchSidebarCompany re-ejecuta initHeavensyMode tras cambiar
 //              el token: los elementos hvy-only (Empresas, Mensajes) aparecen
 //              o desaparecen según la empresa activa, sin recargar.
+
+// ── TOAST GLOBAL (notificación lateral que se auto-oculta) ──
+// Definido aquí porque layout.js carga temprano: queda disponible para TODOS los
+// módulos (companies, config-rubro, users, configuracion, etc.) que ya llamaban a
+// showToast pero no lo tenían definido. Auto-protegido: no pisa si ya existe. [16-06]
+if (typeof window.showToast !== 'function') {
+  window.showToast = function (msg, type = 'success') {
+    const color = type === 'success' ? '#9961FF' : type === 'error' ? '#ef4444' : '#f59e0b';
+    const icon  = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-times-circle' : 'fa-exclamation-circle';
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;top:20px;left:50%;transform:translate(-50%,-20px);z-index:2147483647;background:#fff;border-left:4px solid ' + color +
+      ';border-radius:10px;padding:11px 16px;box-shadow:0 4px 20px rgba(0,0,0,.14);font-size:12.5px;font-weight:600;color:#383838;' +
+      'display:flex;align-items:center;gap:8px;max-width:340px;opacity:0;transition:opacity .25s ease,transform .25s ease;';
+    el.innerHTML = '<i class="fas ' + icon + '" style="color:' + color + '"></i> ' + msg;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translate(-50%,0)'; });
+    setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transform = 'translate(-50%,-20px)';
+      setTimeout(() => el.remove(), 300);
+    }, 3000);
+  };
+}
 
 async function loadLayout() {
   console.log('🔵 Cargando layout...');
@@ -317,18 +342,7 @@ async function _switchSidebarCompany(companyId, companyName) {
       method: 'POST',
       body: JSON.stringify({ company_id: companyId })
     });
-    // Si el backend respondió error (403 por permisos, 400, etc.), avisar al
-    // usuario con su mensaje real en vez de fallar en silencio.
-    if (!res.ok || !res.data || !res.data.access_token) {
-      const msg = (res.data && res.data.error) || 'No se pudo cambiar de empresa.';
-      _layoutToast(msg, 'error');
-      // Cerrar el dropdown para que no quede abierto tras el error
-      const dd = document.getElementById('sidebarCompanyDropdown');
-      const ch = document.getElementById('sidebarCompanyChevron');
-      if (dd) dd.style.display = 'none';
-      if (ch) ch.style.transform = '';
-      return;
-    }
+    if (!res.ok || !res.data.access_token) throw new Error('Error al cambiar empresa');
 
     // Actualizar token y recargar
     localStorage.setItem('token', res.data.access_token);
@@ -376,38 +390,5 @@ async function _switchSidebarCompany(companyId, companyName) {
     }
   } catch(e) {
     console.error('Error cambiando empresa:', e);
-    _layoutToast('No se pudo cambiar de empresa. Revisa tu conexión e intenta de nuevo.', 'error');
-  }
-}
-
-// Toast del layout: usa el showToast global de Heavensy si está disponible; si no
-// (p.ej. el módulo que lo define aún no cargó), cae a un toast mínimo propio
-// —nunca un alert nativo— para no dejar al usuario sin feedback visible.
-function _layoutToast(message, type = 'error') {
-  if (typeof showToast === 'function') { showToast(message, type); return; }
-  try {
-    const bg = type === 'success' ? '#22c55e' : (type === 'warning' ? '#f59e0b' : '#ef4444');
-    let el = document.getElementById('layout-toast');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'layout-toast';
-      el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);' +
-        'color:#fff;padding:11px 20px;border-radius:10px;font-size:12.5px;font-weight:600;z-index:99999;' +
-        'opacity:0;transition:all .3s;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2);max-width:90vw;';
-      document.body.appendChild(el);
-    }
-    el.style.background = bg;
-    el.textContent = message;
-    requestAnimationFrame(() => {
-      el.style.opacity = '1';
-      el.style.transform = 'translateX(-50%) translateY(0)';
-    });
-    clearTimeout(el._hideTimer);
-    el._hideTimer = setTimeout(() => {
-      el.style.opacity = '0';
-      el.style.transform = 'translateX(-50%) translateY(80px)';
-    }, 4000);
-  } catch (_) {
-    console.error('[layout toast]', message);
   }
 }

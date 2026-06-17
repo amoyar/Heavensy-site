@@ -1,6 +1,13 @@
 // ═══════════════════════════════════════════
 //  CALENDARIO — HEAVENSY (conectado al backend)
 // ═══════════════════════════════════════════
+// ── BITÁCORA ──
+// [v2026.06.16-1] calendario.js
+// 2026-06-16 | Sin cambios funcionales en este archivo. Nota: _calRenderProfChips
+//              y _calProfSearch que corren en producción los define prof-chips.js
+//              (se carga después en index.html y sobrescribe los de aquí). El fix
+//              de la barra de filtros para empresas con un solo recurso está en
+//              prof-chips.js, no acá.
 
 // ── CONFIG ──
 const CAL_HOUR_START = 8;
@@ -628,7 +635,7 @@ function _calRenderSvcFilterChips() {
     if (name && !nameMap.has(name)) nameMap.set(name, { id, name });
   });
   const svcs = [...nameMap.values()];
-  if (bar) bar.style.display = (calResources.length > 1 || svcs.length > 0) ? '' : 'none';
+  if (bar) bar.style.display = (calResources.length >= 1 || svcs.length > 0) ? '' : 'none';
   if (!svcs.length) { container.innerHTML = ''; return; }
   const allChip = `<div class="prof-chip${!calSvcFilter ? ' prof-chip-sel' : ''}" onclick="calSetSvcFilter(null)" data-id="">Todos</div>`;
   const chips = svcs.map(svc => {
