@@ -1,4 +1,8 @@
 <!DOCTYPE html>
+<!-- [2026-06-16] Cache-busting ?v= agregado a app.js, router.js, users.js,
+     companies.js, calendario.js, configuracion.js (se cargaban sin versión y el
+     navegador servía copias viejas → fixes no surtían efecto sin F5). Al modificar
+     uno de estos JS, subir su ?v=. -->
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -114,21 +118,21 @@
 
   <!-- CORE -->
   <script src="./assets/js/navbar.js"></script>
-  <script src="./assets/js/app.js"></script>
-  <script src="./assets/js/router.js"></script>
+  <script src="./assets/js/app.js?v=20260616"></script>
+  <script src="./assets/js/router.js?v=20260616"></script>
 
   <!-- LAYOUT -->
   <script src="./layout/layout.js"></script>
 
   <!-- PAGES -->
-  <script src="./assets/js/users.js"></script>
+  <script src="./assets/js/users.js?v=20260616"></script>
   <script src="./assets/js/hvy-select.js"></script> <!-- BITÁCORA 2026-06-04: dropdowns estilo Heavensy -->
-  <script src="./assets/js/companies.js"></script>
+  <script src="./assets/js/companies.js?v=20260616"></script>
   <script src="./assets/js/roles.js"></script>
   <script src="./assets/js/settings.js"></script>
   <!-- <script src="./assets/js/conversations.js"></script> -->
-  <script src="./assets/js/calendario.js?v=2"></script>
-  <script src="./assets/js/configuracion.js"></script>
+  <script src="./assets/js/calendario.js?v=20260616"></script>
+  <script src="./assets/js/configuracion.js?v=20260616-16"></script>
   <script src="./assets/js/monitor.js"></script>
   <script src="./assets/js/mensajes.js"></script>
   <!-- <script src="./assets/js/historial.js"></script> -->

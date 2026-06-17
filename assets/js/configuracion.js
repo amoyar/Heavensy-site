@@ -3,6 +3,16 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.16-16] configuracion.js
+// 2026-06-16 | Fix REAL del resumen que no se actualizaba al guardar: el repintado
+//              usaba _cfgResourceMap[id], pero ese map EXCLUYE los recursos de
+//              profesionales (los que tienen user_id), así que para Marcos/Juan/Josefa
+//              daba undefined → cfgPopulateSchedule no recibía datos. Ahora usa
+//              _cfgResourcesList (que sí los contiene, es la fuente del selector) e
+//              incluye schedule_rules para refrescar también los días.
+// [v2026.06.16-15] configuracion.js
+// 2026-06-16 | Fix (parcial): el RESUMEN de disponibilidad no se actualizaba tras guardar.
+//              guardarDisponibilidad llama a cfgPopulateSchedule tras guardar OK.
 // [v2026.06.16-14] configuracion.js
 // 2026-06-16 | showToast: posición a arriba-centro con z-index máximo (la esquina
 //              inferior derecha quedaba tapada por el panel de edición violeta).
@@ -904,11 +914,24 @@ async function guardarDisponibilidad(btn) {
   }).catch(() => null);
 
   if (res && res.ok) {
+    // Actualizar el recurso en memoria. OJO: _cfgResourceMap EXCLUYE los recursos
+    // de profesionales (los que tienen user_id de un usuario del sistema), así que
+    // para el panel de disponibilidad hay que actualizar _cfgResourcesList, que sí
+    // los contiene (es de donde sale el selector Josefa/Juan/Marcos). [16-06]
+    const _ru = (_cfgResourcesList || []).find(r => (r._id || r.id) === _cfgFirstResourceId);
+    const _parche = {
+      schedule_config: scheduleConfig, schedule_rules: scheduleRules,
+      modalities, location, office,
+      slot_duration: slotDur, buffer_after: bufferAfter, booking_rules: bookingRules,
+    };
+    if (_ru) Object.assign(_ru, _parche);
     if (typeof _cfgResourceMap === 'object' && _cfgResourceMap[_cfgFirstResourceId]) {
-      Object.assign(_cfgResourceMap[_cfgFirstResourceId], {
-        schedule_config: scheduleConfig, modalities, location, office,
-        slot_duration: slotDur, buffer_after: bufferAfter, booking_rules: bookingRules,
-      });
+      Object.assign(_cfgResourceMap[_cfgFirstResourceId], _parche);
+    }
+    // Repintar el RESUMEN al instante con los valores recién guardados, usando el
+    // recurso de la lista (el que el selector realmente muestra). [16-06]
+    if (typeof cfgPopulateSchedule === 'function' && _ru) {
+      cfgPopulateSchedule(_ru);
     }
     const orig = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-check" style="margin-right:6px"></i>Guardado';
