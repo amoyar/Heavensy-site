@@ -7,6 +7,26 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.16-6] config-rubro.js
+// 2026-06-16 | Fix 405 al guardar disponibilidad de un recurso: crDispGuardar hacía
+//              PUT a /api/agenda/resources/<id>, pero ese endpoint solo acepta PATCH
+//              (PUT → 405 Method Not Allowed). Cambiado a PATCH. (Los PUT a
+//              /companies/<cid>/config sí están permitidos, se dejan igual.)
+// [v2026.06.16-5] config-rubro.js
+// 2026-06-16 | Fix cruce de recursos entre empresas en el paso 2 (Disponibilidad):
+//              en crInit, _crLoadRecursos() (que actualiza _crRecursos) se llamaba AL
+//              FINAL, después de _crDisponibilidad() que pinta los chips "¿De qué
+//              recurso?". Resultado: al cambiar de empresa, los chips se pintaban con
+//              _crRecursos de la empresa ANTERIOR (ej. profesionales de Diente Sano
+//              apareciendo en Cabañas Lovichu). Ahora _crLoadRecursos() se llama con
+//              await ANTES de _crDisponibilidad(), así los chips usan los recursos de
+//              la empresa actual. Era bug de ORDEN (determinista), no de timing.
+// [v2026.06.16-4] config-rubro.js
+// 2026-06-16 | _crVerTab ahora recarga datos al cambiar de pestaña: al ir a Mi equipo
+//              (Recursos) llama _crLoadRecursos(); al ir a Cuentas de acceso llama
+//              cfgLoadFromBackend(). Antes solo cambiaba la visibilidad → los cambios
+//              hechos en una pestaña (p.ej. marcar recurso) no se veían en la otra sin
+//              refrescar (F5). Ahora se sincroniza en ambos sentidos sin recargar.
 // [v2026.06.16-3] config-rubro.js
 // 2026-06-16 | crGuardar/_crLoadRecursos: el resource_type_id ya no se toma del
 //              primer tipo de la lista (bug que asignaba "Alojamiento" a un dentista),
@@ -328,6 +348,13 @@ function _crVerTab(rec){
   $('#cr-tab-cuentas').style.display  = rec ? 'none' : '';
   $('#cr-btn-rec').classList.toggle('on', rec);
   $('#cr-btn-cta').classList.toggle('on', !rec);
+  // Recarga de datos al cambiar de pestaña, para que los cambios hechos en una
+  // (p.ej. marcar recurso) se reflejen en la otra sin tener que refrescar (F5). [16-06]
+  if (rec) {
+    if (typeof _crLoadRecursos === 'function') _crLoadRecursos();
+  } else {
+    if (typeof cfgLoadFromBackend === 'function') cfgLoadFromBackend();
+  }
 }
 
 // ── Vista de recursos ──
@@ -840,8 +867,9 @@ window.crDispGuardar = async function(){
     };
   }
   // Guardar POR RECURSO: PATCH al recurso (update_resource hace $set libre, así
-  // que estos campos quedan en el documento del recurso). [16-06]
-  const res = await apiCall('/api/agenda/resources/' + _crDispRecId, { method:'PUT', body: JSON.stringify(body) }).catch(() => null);
+  // que estos campos quedan en el documento del recurso). El endpoint solo acepta
+  // PATCH; con PUT devolvía 405 Method Not Allowed. [16-06]
+  const res = await apiCall('/api/agenda/resources/' + _crDispRecId, { method:'PATCH', body: JSON.stringify(body) }).catch(() => null);
   const msg = document.getElementById('cr-d-msg');
   if (res?.ok){
     msg.textContent = 'Guardado ✓'; msg.style.color = '#10b981';
@@ -1329,6 +1357,11 @@ window.crInit = async function(){
     }
     if (!await _crCargar()) return;   // sin catálogo → página como siempre (se revela en finally)
     _crTabs(); _crCtxBar(); _crPasos();
+    // Cargar los recursos de la empresa ACTUAL antes de pintar la disponibilidad.
+    // Antes _crLoadRecursos iba al final, así que _crDisponibilidad pintaba los chips
+    // con _crRecursos de la empresa ANTERIOR (al cambiar de empresa se veían recursos
+    // de otra empresa, ej. profesionales de Diente Sano en Cabañas Lovichu). [16-06]
+    await _crLoadRecursos();
     _crDisponibilidad();
     _crCaracteristicas();
     _crEstadia();
@@ -1337,7 +1370,6 @@ window.crInit = async function(){
     _crVigilarModalRecurso();
     _crFiltrarCuentas();
     _crBloqueMiembro();
-    _crLoadRecursos();
   }catch(e){ console.warn('config-rubro no activado:', e); }
   finally{ _crBusy = false; _crRevelarPanel(); }
 };

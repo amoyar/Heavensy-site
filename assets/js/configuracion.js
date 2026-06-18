@@ -3,6 +3,12 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.16-17] configuracion.js
+// 2026-06-16 | Nombre real de las fotos del perfil: al subir, se envía también
+//              portada_fname/foto_fname/fondo_fname al backend (antes solo a
+//              localStorage, que se pierde al cerrar sesión o cambiar de equipo).
+//              _epNombreFoto ahora prioriza el nombre que viene del backend sobre
+//              el de localStorage y sobre el nombre técnico de Cloudinary.
 // [v2026.06.16-16] configuracion.js
 // 2026-06-16 | Fix REAL del resumen que no se actualizaba al guardar: el repintado
 //              usaba _cfgResourceMap[id], pero ese map EXCLUYE los recursos de
@@ -244,12 +250,14 @@ function _ppBuildSvcRow(s, profileType) {
 // ── CARGA INICIAL DESDE SERVIDOR ──
 // Decide qué nombre mostrar en el cuadro de una foto: nombre real guardado,
 // o uno derivado de la URL de Cloudinary, o el placeholder si no hay imagen. [14-06]
-function _epNombreFoto(elId, url, fnameKey){
+function _epNombreFoto(elId, url, fnameKey, backendFname){
   const n = document.getElementById(elId);
   if(!n) return;
   // campo derivado del id: 'ep-portada-name' → 'portada'
   const campo = elId.replace('ep-','').replace('-name','');
-  const guardado = localStorage.getItem(fnameKey);
+  // Prioridad: nombre persistido en backend > nombre en localStorage (misma sesión)
+  // > nombre técnico derivado de la URL de Cloudinary > placeholder. [16-06]
+  const guardado = backendFname || localStorage.getItem(fnameKey);
   const tieneFoto = !!(guardado || url);
   if(guardado){ n.textContent = guardado; }
   else if(url){
@@ -351,9 +359,9 @@ function ppLoadFromServer() {
 
     // Mostrar nombre en los labels del input file (nombre guardado > derivado
     // de la URL > 'Seleccionar imagen…' si no hay nada). [14-06]
-    _epNombreFoto('ep-portada-name', c.portada_url, 'ep_portada_fname');
-    _epNombreFoto('ep-foto-name',    c.foto_url,    'ep_foto_fname');
-    _epNombreFoto('ep-fondo-name',   c.fondo_url,   'ep_fondo_fname');
+    _epNombreFoto('ep-portada-name', c.portada_url, 'ep_portada_fname', c.portada_fname);
+    _epNombreFoto('ep-foto-name',    c.foto_url,    'ep_foto_fname',    c.foto_fname);
+    _epNombreFoto('ep-fondo-name',   c.fondo_url,   'ep_fondo_fname',   c.fondo_fname);
   }).catch(()=>{});
   // Programas empresa
   apiCall('/api/perfil-profesional/programas?tipo=empresa').then(r=>(r.data||{})).then(d=>{
@@ -729,7 +737,7 @@ function epPortada(input) {
     if(url){
       localStorage.setItem('ep_portada_url', url);   // para que entre al borrador público
       localStorage.setItem('ep_portada_fname', file.name);  // [14-06] recordar nombre real
-      apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({portada_url:url})}).catch(()=>{});
+      apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({portada_url:url, portada_fname:file.name})}).catch(()=>{});
       ppSaveConfig();
     }
   });
@@ -746,7 +754,7 @@ function epFotoPerfil(input) {
     if(url){
       localStorage.setItem('ep_foto_url', url);
       localStorage.setItem('ep_foto_fname', file.name);  // [14-06]
-      apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({foto_url:url})}).catch(()=>{});
+      apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({foto_url:url, foto_fname:file.name})}).catch(()=>{});
       ppSaveConfig();
     }
   });
@@ -763,7 +771,7 @@ function epFondo(input) {
     if(url){
       localStorage.setItem('ep_fondo_url', url);
       localStorage.setItem('ep_fondo_fname', file.name);  // [14-06]
-      apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({fondo_url:url})}).catch(()=>{});
+      apiCall('/api/perfil-profesional/config', {method:'PATCH', body:JSON.stringify({fondo_url:url, fondo_fname:file.name})}).catch(()=>{});
       ppSaveConfig();
     }
   });
