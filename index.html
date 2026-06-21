@@ -3,6 +3,9 @@
      companies.js, calendario.js, configuracion.js (se cargaban sin versión y el
      navegador servía copias viejas → fixes no surtían efecto sin F5). Al modificar
      uno de estos JS, subir su ?v=. -->
+<!-- [2026-06-19] Eliminada la carga de servicios.js (sistema viejo contact_services,
+     reemplazado por conv-agenda.js / agenda real). svc-chips.js NO se toca: es del
+     sistema de agenda vigente, distinto de servicios.js. -->
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -168,7 +171,8 @@
     <script src="./assets/js/seguimiento/seg-plantillas.js"></script>
     <script src="./assets/js/seguimiento/seg-derivaciones.js"></script>
     <script src="./assets/js/quick-replies.js?v=1"></script>
-    <script src="./assets/js/servicios.js?v=1"></script>
+    <!-- servicios.js eliminado [2026-06-19]: sistema viejo contact_services,
+         reemplazado por conv-agenda.js (agenda real). Sin uso, fuera del HTML. -->
   <!-- emojis -->
     <script src="./assets/js/emoji.js?v=5"></script>
      <!-- chat interno -->

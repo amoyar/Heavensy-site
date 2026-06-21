@@ -3,6 +3,34 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.20-2] configuracion.js
+// 2026-06-20 | Tanda 1: el botón Guardar de la pestaña Especialidad del editor de
+//              especialista (jmGuardarEspecialidades) ahora SÍ persiste al backend
+//              (antes solo actualizaba el preview) y muestra mensaje real de éxito/error.
+//              _cfgPatchCurrentResource ahora retorna true/false. Nuevo helper jmAviso:
+//              usa showToast si funciona en la pantalla, si no cae a un aviso flotante
+//              propio (evita el bug conocido del toast con qrToastContainer). Los modos
+//              de trabajo y años de experiencia ya estaban en este editor (no se movió nada).
+// [v2026.06.20-1] configuracion.js  (19º cambio sobre base 16)
+// 2026-06-20 | Fase B sync en vivo: ambos editores (paso 1 jm- y paso 3 wizard) disparan
+//              el evento global 'hvy:specialties-updated' al guardar specialties, y un
+//              listener actualiza el editor que tenga abierto el mismo recurso sin recargar
+//              (resuelve el "hay que refrescar para ver el cambio en el otro paso").
+//              Helper _emitSpecsUpdated. Coordinado con config-rubro.js v16-8.
+// [v2026.06.19-1] configuracion.js  (continúa numeración 16-x; 18º cambio sobre base 16)
+// 2026-06-19 | Fase B Especialidades (coordina paso 1 + paso 3-wizard con config-rubro).
+//              Ambos editores de especialidades de este archivo dejan de usar texto libre
+//              y pasan a CHIPS del catálogo de la categoría + propias, guardando specialties
+//              como ARRAY DE OBJETOS {key,nombre,propia} — mismo formato que config-rubro
+//              (resuelve la descoordinación y el bug [object Object] que aparecía al pintar
+//              objetos como string). (1) Editor de especialista (jm-): _jmProfKey/_jmSpecsSel,
+//              jmAddSpec/jmRemoveSpec/jmToggleSpec, _jmRenderSpecs; lectura en jmEnviarProfCard
+//              y _jmCreador desde el estado; payload _cfgPatchCurrentResource manda objetos.
+//              (2) Editor paso 3 del wizard (spec-tags-container): _espProfKey/_espSpecsSel,
+//              addSpec/removeSpec/espToggleSpec, _espRenderSpecs; cfgPopulateSpecialties pinta
+//              chips; syncEspecialidades y guardarEspecialidades usan el estado.
+//              Catálogo cargado autónomo vía GET /api/companies/<cid> → sector_key →
+//              GET /api/sectores/<key> (_jmCargarSector, cacheado). Backend no se tocó.
 // [v2026.06.16-17] configuracion.js
 // 2026-06-16 | Nombre real de las fotos del perfil: al subir, se envía también
 //              portada_fname/foto_fname/fondo_fname al backend (antes solo a
@@ -814,9 +842,7 @@ async function guardarEspecialidades(btn) {
     showToast('Selecciona o crea un recurso antes de guardar', 'error');
     return;
   }
-  const specs = [...document.querySelectorAll('#spec-tags-container .spec-tag')]
-    .map(t => { const c = t.cloneNode(true); c.querySelectorAll('.spec-x').forEach(x => x.remove()); return c.textContent.trim(); })
-    .filter(Boolean);
+  const specs = _espSpecsSel.map(s => ({ key: s.key, nombre: s.nombre, propia: !!s.propia }));
   const modMap = { 'presencial':'presencial', 'online':'online', 'a domicilio':'domicilio' };
   const modalities = [...document.querySelectorAll('#esp-modos .toggle-btn.on')]
     .map(b => modMap[b.textContent.trim().toLowerCase()] || b.textContent.trim().toLowerCase());
@@ -834,6 +860,7 @@ async function guardarEspecialidades(btn) {
     if (typeof _cfgResourceMap === 'object' && _cfgResourceMap[_cfgFirstResourceId]) {
       Object.assign(_cfgResourceMap[_cfgFirstResourceId], payload);
     }
+    _emitSpecsUpdated(_cfgFirstResourceId, specs);   // [Fase B] avisar a otros editores
     const orig = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-check" style="margin-right:6px"></i>Guardado';
     btn.disabled = true;
@@ -1084,11 +1111,38 @@ function jmFeedback(btn, cb) {
   setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; if(cb) cb(); }, 1200);
 }
 
+// Mensaje robusto de guardado/error. Usa showToast si funciona en esta pantalla;
+// si no (bug conocido: qrToastContainer solo existe en quick-replies), cae a un
+// aviso propio flotante que SIEMPRE se ve. [20-06]
+function jmAviso(ok, msgOk, msgErr) {
+  const texto = ok ? (msgOk || 'Guardado ✅') : (msgErr || 'Error al guardar');
+  let mostrado = false;
+  try {
+    if (typeof showToast === 'function' && document.getElementById('qrToastContainer')) {
+      showToast(texto, ok ? 'success' : 'error'); mostrado = true;
+    }
+  } catch(_) {}
+  if (mostrado) return;
+  let cont = document.getElementById('jm-aviso-flotante');
+  if (!cont) {
+    cont = document.createElement('div');
+    cont.id = 'jm-aviso-flotante';
+    cont.style.cssText = 'position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:99999;'
+      + 'padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;color:#fff;'
+      + 'box-shadow:0 4px 14px rgba(0,0,0,.18);transition:opacity .3s;opacity:0;pointer-events:none';
+    document.body.appendChild(cont);
+  }
+  cont.style.background = ok ? '#10b981' : '#ef4444';
+  cont.textContent = texto;
+  cont.style.opacity = '1';
+  clearTimeout(cont._t);
+  cont._t = setTimeout(() => { cont.style.opacity = '0'; }, 2200);
+}
+
 function jmEnviarProfCard() {
   const v = id => document.getElementById(id)?.value || '';
   const nombre = (v('jm-nombre') + ' ' + v('jm-apellido')).trim() || '';
-  const tags = document.querySelectorAll('#jm-spec-tags-container .spec-tag');
-  const especialidades = [...tags].map(t => t.childNodes[0].textContent.trim()).filter(Boolean).join(', ');
+  const especialidades = _jmSpecsSel.map(s => s.nombre).filter(Boolean).join(', ');
   const modos = [...document.querySelectorAll('#jm-panel-2 .toggle-btn.on')].map(b => b.textContent.trim());
   const frase = document.getElementById('jm-frase')?.value || '';
   const profCard = { id:'jm', nombre, specs:especialidades, desc:frase, modos, foto:jmData.foto||'', addr:v('jm-direccion') };
@@ -1139,15 +1193,34 @@ function jmGuardarDisponibilidad(btn) {
 function jmAddSpec() {
   const input = document.getElementById('jm-esp-input');
   const val = input?.value.trim(); if(!val) return;
-  const container = document.getElementById('jm-spec-tags-container');
-  const tag = document.createElement('span'); tag.className = 'spec-tag';
-  tag.innerHTML = val + ' <span class="spec-x" onclick="jmRemoveSpec(this)">✕</span>';
-  container.appendChild(tag);
+  const key = _jmSlug(val);
+  if (key && !_jmSpecsSel.some(s => s.key === key)) {
+    _jmSpecsSel.push({ key, nombre: val, propia: true });   // propia: solo en este recurso
+  }
   if(input) input.value = '';
+  _jmRenderSpecs();
 }
-function jmRemoveSpec(el) { el.closest('.spec-tag').remove(); }
+function jmRemoveSpec(el) {
+  // Compat: quitar un chip también lo saca del estado.
+  const key = el.closest('.spec-tag')?.getAttribute('data-key');
+  if (key) { const i = _jmSpecsSel.findIndex(s => s.key === key); if (i >= 0) _jmSpecsSel.splice(i, 1); }
+  el.closest('.spec-tag')?.remove();
+}
 
-function jmGuardarEspecialidades(btn) { jmEnviarProfCard(); pmSend({type:'scroll_to',value:'#prof-card-jm'}); jmFeedback(btn); }
+async function jmGuardarEspecialidades(btn) {
+  jmEnviarProfCard();
+  pmSend({type:'scroll_to',value:'#prof-card-jm'});
+  // Persistir al backend (antes solo actualizaba el preview). [20-06]
+  if (!_cfgCurrentResourceId) {
+    jmAviso(false, null, 'Selecciona un especialista antes de guardar');
+    return;
+  }
+  const orig = btn.innerHTML; btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:5px"></i>Guardando…';
+  const ok = await _cfgPatchCurrentResource();
+  btn.innerHTML = orig; btn.disabled = false;
+  jmAviso(ok, 'Especialidades guardadas ✅', 'No se pudieron guardar. Intenta de nuevo.');
+}
 
 function jmSyncServicios() {
   const rows = document.querySelectorAll('#jm-svc-list .svc-row');
@@ -1156,7 +1229,7 @@ function jmSyncServicios() {
 function jmSyncProgramas() {
   const rows = document.querySelectorAll('#jm-prog-list .svc-row');
   const _jmNombre = ((document.getElementById('jm-nombre')?.value||'')+' '+(document.getElementById('jm-apellido')?.value||'')).trim()||'';
-  const _jmCreador = { tipo:'profesional', nombre:_jmNombre, foto:jmData.foto||'', experiencia:document.getElementById('jm-esp-exp')?.value||'', especialidad:[...document.querySelectorAll('#jm-spec-tags-container .spec-tag')].map(t=>t.textContent.trim()).filter(Boolean).join(', ') };
+  const _jmCreador = { tipo:'profesional', nombre:_jmNombre, foto:jmData.foto||'', experiencia:document.getElementById('jm-esp-exp')?.value||'', especialidad:_jmSpecsSel.map(s=>s.nombre).filter(Boolean).join(', ') };
   jmData.programas = [...rows].map(row => ({ nombre:row.querySelector('.svc-name')?.textContent.trim()||'', tipo:row.dataset.tipo||'', color:row.querySelector('.svc-dot')?.style.background||'', bgColor:row.dataset.bgColor||'#F7F8FC', colorNavy:row.dataset.colorNavy||'#7E9DD6', colorText:row.dataset.colorText||'#333333', colorTextLt:row.dataset.colorTextLt||'#6B7194', cardOpacity:parseFloat(row.dataset.cardOpacity||'0.72'), tituloFont:row.dataset.tituloFont||'DM Sans', tituloSize:row.dataset.tituloSize||'36', cancelacion:JSON.parse(row.dataset.cancelacion||'null'), img:row.querySelector('img')?.src||'', meta:row.querySelector('.svc-meta')?.textContent.trim()||'', precio:row.querySelector('.svc-price')?.textContent.trim()||'', precioTipo:row.dataset.precioTipo||'total', desc:row.dataset.desc||'', modulos:JSON.parse(row.dataset.modulos||'[]'), includes:JSON.parse(row.dataset.includes||'[]'), requisitos:JSON.parse(row.dataset.requisitos||'[]'), galeria:JSON.parse(row.dataset.galeria||'[]'), galeriaOri:row.dataset.galeriaOri||'h', testimonios:JSON.parse(row.dataset.testimonios||'[]'), cupos:row.dataset.cupos||'', mostrarCupos:row.dataset.mostrarCupos==='1', media:JSON.parse(row.dataset.media||'null'), creador:_jmCreador }));
 }
 
@@ -2495,8 +2568,7 @@ function syncServicios() {
 }
 
 function syncEspecialidades() {
-  const container=document.getElementById('spec-tags-container');
-  const tags=[...container.querySelectorAll('.spec-tag')].map(tag=>{const c=tag.cloneNode(true);c.querySelectorAll('.spec-x').forEach(x=>x.remove());return c.textContent.trim();}).filter(t=>t.length>0);
+  const tags = _espSpecsSel.map(s => s.nombre).filter(Boolean);
   pmSend({type:'especialidades',value:tags.join(', ')});
   localStorage.setItem('ep_especialidades',tags.join(', '));
   const sumChips=document.getElementById('sum-esp-chips');
@@ -2512,16 +2584,22 @@ function syncEspecialidades() {
   localStorage.setItem('ep_modos',JSON.stringify(modosActivos));
 }
 
-function removeSpec(el) { el.closest('.spec-tag').remove(); }
+function removeSpec(el) {
+  const key = el.closest('.spec-tag')?.getAttribute('data-key');
+  if (key) { const i = _espSpecsSel.findIndex(s => s.key === key); if (i >= 0) _espSpecsSel.splice(i, 1); }
+  el.closest('.spec-tag')?.remove();
+  if (typeof syncEspecialidades === 'function') syncEspecialidades();
+}
 function addSpec() {
   const input=document.querySelector('#editp-esp input[placeholder]');
   const val=input?input.value.trim():'';
   if(!val) return;
-  const container=document.getElementById('spec-tags-container');
-  const span=document.createElement('span'); span.className='spec-tag';
-  span.innerHTML=`${val} <span class="spec-x" onclick="removeSpec(this)">✕</span>`;
-  container.appendChild(span);
+  const key = _jmSlug(val);
+  if (key && !_espSpecsSel.some(s => s.key === key)) {
+    _espSpecsSel.push({ key, nombre: val, propia: true });
+  }
   if(input) input.value='';
+  _espRenderSpecs();
 }
 
 // ── PREVIEW IFRAME ──
@@ -2948,12 +3026,11 @@ function cfgPopulateSchedule(resource) {
 }
 
 function cfgPopulateSpecialties(resource) {
-  const specs = resource.specialties || resource.especialidades || [];
-  const container = document.getElementById('spec-tags-container');
-  if (!container) return;
-  container.innerHTML = specs.map(s =>
-    `<span class="spec-tag">${s} <span class="spec-x" onclick="removeSpec(this)">✕</span></span>`
-  ).join('');
+  // [Fase B] Especialidades del catálogo de la categoría + propias. Reemplaza
+  // el pintado de strings (que con el nuevo formato objeto mostraba [object Object]).
+  _espProfKey  = resource.profession_key || '';
+  _espSpecsSel = _jmNormSpecs(resource.specialties || resource.especialidades || []);
+  _jmCargarSector().then(() => _espRenderSpecs());
 
   // Modos de trabajo: reflejar los modalities reales del recurso (antes los
   // toggles arrancaban fijos en Presencial+Online). [16-06]
@@ -3090,6 +3167,128 @@ let _cfgCurrentResourceId = null;
 let _cfgFirstResourceId   = null;
 let _cfgResourcesList     = [];   // todos los recursos de la empresa (para el selector de disponibilidad)
 
+// ── Especialidades (Fase B · paso 1 "Mi empresa") ─────────────────────────
+// Coordina con el paso 3 (config-rubro): los dos leen el catálogo del sector y
+// guardan specialties como objetos {key, nombre, propia}. configuracion.js NO
+// comparte estado con config-rubro, así que carga el catálogo por su cuenta vía
+// GET /api/sectores/<key> y mantiene su propio estado.
+let _jmSectorCache = null;   // doc del sector (con profesiones[].especialidades[])
+let _jmSpecsSel    = [];     // especialidades marcadas del recurso en edición [{key,nombre,propia}]
+let _jmProfKey     = '';     // profession_key (categoría) del recurso en edición
+let _espSpecsSel   = [];     // ídem para el editor del paso 3 wizard (spec-tags-container)
+let _espProfKey    = '';
+
+function _jmSlug(texto){
+  return (texto || '')
+    .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+function _jmNormSpecs(arr){
+  return (arr || []).map(s => {
+    if (typeof s === 'string') return { key: _jmSlug(s), nombre: s, propia: true };
+    return { key: s.key || _jmSlug(s.nombre), nombre: s.nombre || s.key, propia: !!s.propia };
+  });
+}
+// Carga el catálogo del sector de la empresa actual (una vez, cacheado).
+// Obtiene el sector_key igual que config-rubro: pidiendo la empresa
+// (business_config.template || sector), no de localStorage.
+async function _jmCargarSector(){
+  if (_jmSectorCache) return _jmSectorCache;
+  const cid = (typeof _cfgCompanyId !== 'undefined' && _cfgCompanyId) || localStorage.getItem('company_id');
+  if (!cid) return null;
+  const rc = await apiCall('/api/companies/' + cid).catch(() => null);
+  const company = (rc && rc.data && (rc.data.company || rc.data)) || null;
+  const sectorKey = (company && (company.business_config?.template || company.sector)) || '';
+  if (!sectorKey) return null;
+  const rs = await apiCall('/api/sectores/' + sectorKey).catch(() => null);
+  _jmSectorCache = (rs && rs.data && (rs.data.sector || rs.data)) || null;
+  return _jmSectorCache;
+}
+function _jmEspecialidadesDeCategoria(profKey){
+  const profs = (_jmSectorCache && _jmSectorCache.profesiones) || [];
+  const p = profs.find(x => x.profession_key === profKey);
+  return ((p && p.especialidades) || []).filter(e => e && e.active !== false);
+}
+
+// ── Sincronización en vivo entre editores de especialidades (Fase B) ──────
+// Cualquier editor que guarde specialties dispara este evento; los demás
+// editores (en esta u otra pieza de la pantalla) se actualizan si tienen
+// abierto el mismo recurso. Desacoplado: nadie conoce a los otros editores.
+function _emitSpecsUpdated(resourceId, specialties){
+  try {
+    window.dispatchEvent(new CustomEvent('hvy:specialties-updated', {
+      detail: { resourceId, specialties: specialties || [] }
+    }));
+  } catch (_) {}
+}
+
+// Pinta los chips de especialidad del catálogo de la categoría del recurso, más
+// las propias. Reemplaza el contenedor de tags de texto libre del paso 1.
+function _jmRenderSpecs(){
+  const cont = document.getElementById('jm-spec-tags-container');
+  if (!cont) return;
+  const catalogo = _jmEspecialidadesDeCategoria(_jmProfKey);
+  const selByKey = {}; _jmSpecsSel.forEach(s => { selByKey[s.key] = s; });
+
+  const chipsCat = catalogo.map(e => {
+    const on = selByKey[e.key] ? 'on' : '';
+    return `<span class="spec-tag jm-chip ${on}" data-key="${e.key}" data-nombre="${(e.nombre||'').replace(/"/g,'&quot;')}" data-propia="0"
+      onclick="jmToggleSpec(this)">${e.nombre}</span>`;
+  }).join('');
+
+  const keysCat = new Set(catalogo.map(e => e.key));
+  const propias = _jmSpecsSel.filter(s => s.propia && !keysCat.has(s.key));
+  const chipsPropias = propias.map(s =>
+    `<span class="spec-tag jm-chip on" data-key="${s.key}" data-nombre="${(s.nombre||'').replace(/"/g,'&quot;')}" data-propia="1"
+      onclick="jmToggleSpec(this)">${s.nombre} ★</span>`
+  ).join('');
+
+  cont.innerHTML = chipsCat + (chipsPropias ? `<div style="width:100%;font-size:10px;color:#a8aed1;margin:6px 0 2px">Propias:</div>` + chipsPropias : '')
+    || '<div style="font-size:11px;color:#a8aed1">Esta categoría no tiene especialidades en el catálogo aún.</div>';
+}
+
+window.jmToggleSpec = function(el){
+  const key = el.getAttribute('data-key');
+  const nombre = el.getAttribute('data-nombre');
+  const propia = el.getAttribute('data-propia') === '1';
+  const i = _jmSpecsSel.findIndex(s => s.key === key);
+  if (i >= 0) { _jmSpecsSel.splice(i, 1); el.classList.remove('on'); }
+  else { _jmSpecsSel.push({ key, nombre, propia }); el.classList.add('on'); }
+};
+
+// Render/toggle para el editor del paso 3 del wizard (#spec-tags-container).
+// Misma lógica que el jm-, con su propio estado _espSpecsSel.
+function _espRenderSpecs(){
+  const cont = document.getElementById('spec-tags-container');
+  if (!cont) return;
+  const catalogo = _jmEspecialidadesDeCategoria(_espProfKey);
+  const selByKey = {}; _espSpecsSel.forEach(s => { selByKey[s.key] = s; });
+  const chipsCat = catalogo.map(e => {
+    const on = selByKey[e.key] ? 'on' : '';
+    return `<span class="spec-tag esp-chip ${on}" data-key="${e.key}" data-nombre="${(e.nombre||'').replace(/"/g,'&quot;')}" data-propia="0"
+      onclick="espToggleSpec(this)">${e.nombre}</span>`;
+  }).join('');
+  const keysCat = new Set(catalogo.map(e => e.key));
+  const propias = _espSpecsSel.filter(s => s.propia && !keysCat.has(s.key));
+  const chipsPropias = propias.map(s =>
+    `<span class="spec-tag esp-chip on" data-key="${s.key}" data-nombre="${(s.nombre||'').replace(/"/g,'&quot;')}" data-propia="1"
+      onclick="espToggleSpec(this)">${s.nombre} ★</span>`
+  ).join('');
+  cont.innerHTML = chipsCat + (chipsPropias ? `<div style="width:100%;font-size:10px;color:#a8aed1;margin:6px 0 2px">Propias:</div>` + chipsPropias : '')
+    || '<div style="font-size:11px;color:#a8aed1">Esta categoría no tiene especialidades en el catálogo aún.</div>';
+  if (typeof syncEspecialidades === 'function') syncEspecialidades();
+}
+
+window.espToggleSpec = function(el){
+  const key = el.getAttribute('data-key');
+  const nombre = el.getAttribute('data-nombre');
+  const propia = el.getAttribute('data-propia') === '1';
+  const i = _espSpecsSel.findIndex(s => s.key === key);
+  if (i >= 0) { _espSpecsSel.splice(i, 1); el.classList.remove('on'); }
+  else { _espSpecsSel.push({ key, nombre, propia }); el.classList.add('on'); }
+  if (typeof syncEspecialidades === 'function') syncEspecialidades();
+};
+
 // Setea el nombre del recurso en los breadcrumbs (panel-1 y panel-2).
 function cfgSetRecursoNombre(r) {
   const nombre = (r && (r.name || r.full_name)) || '—';
@@ -3162,14 +3361,10 @@ function cfgOpenResourceEdit(resourceId) {
     if (cnt) cnt.textContent = jmFrase.value.length + '/240';
   }
 
-  // ── Especialidades ──
-  const container = document.getElementById('jm-spec-tags-container');
-  if (container) {
-    const specs = r.specialties || r.especialidades || [];
-    container.innerHTML = specs.map(s =>
-      `<span class="spec-tag">${s} <span class="spec-x" onclick="jmRemoveSpec(this)">✕</span></span>`
-    ).join('');
-  }
+  // ── Especialidades ── [Fase B] chips del catálogo de la categoría + propias
+  _jmProfKey  = r.profession_key || '';
+  _jmSpecsSel = _jmNormSpecs(r.specialties || r.especialidades || []);
+  _jmCargarSector().then(() => _jmRenderSpecs());
 
   // ── Modalidades (toggle buttons en panel 2) ──
   const mods = r.modalities || r.modalidades || [];
@@ -3225,9 +3420,14 @@ async function _cfgPatchCurrentResource() {
   const apellido = document.getElementById('jm-apellido')?.value.trim() || '';
   const fullName = [nombre, apellido].filter(Boolean).join(' ');
 
-  const specs = [...document.querySelectorAll('#jm-spec-tags-container .spec-tag')]
-    .map(t => { const c = t.cloneNode(true); c.querySelectorAll('.spec-x').forEach(x => x.remove()); return c.textContent.trim(); })
-    .filter(Boolean);
+  // [Fase B] Especialidades desde el estado (objetos {key,nombre,propia}).
+  // Incluye lo que quedó escrito en el input sin presionar +.
+  const _pendEsp = (document.getElementById('jm-esp-input')?.value || '').trim();
+  if (_pendEsp) {
+    const k = _jmSlug(_pendEsp);
+    if (k && !_jmSpecsSel.some(s => s.key === k)) _jmSpecsSel.push({ key:k, nombre:_pendEsp, propia:true });
+  }
+  const specs = _jmSpecsSel.map(s => ({ key: s.key, nombre: s.nombre, propia: !!s.propia }));
 
   const modLabels = { 'Presencial': 'presencial', 'Online': 'online', 'A domicilio': 'domicilio' };
   const mods = [...document.querySelectorAll('#jm-panel-2 .toggle-btn.on')]
@@ -3258,9 +3458,15 @@ async function _cfgPatchCurrentResource() {
 
   try {
     const res = await apiCall(`/api/agenda/resources/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
-    if (res.ok) Object.assign(_cfgResourceMap[id], payload);
+    if (res.ok) {
+      Object.assign(_cfgResourceMap[id], payload);
+      _emitSpecsUpdated(id, specs);   // [Fase B] avisar a otros editores
+      return true;
+    }
+    return false;
   } catch(e) {
     console.warn('[cfg] Error guardando recurso en backend', e);
+    return false;
   }
 }
 
@@ -3348,6 +3554,30 @@ async function _cfgPatchCurrentResource() {
     } catch(e) {}
   });
 })();
+
+
+// ── Listener de sincronización de especialidades (Fase B) ─────────────────
+// Cuando otro editor guarda specialties, actualiza los editores de este archivo
+// (paso 1 jm- y paso 3 wizard) si tienen abierto el MISMO recurso. Evita tener
+// que refrescar la página. Ignora su propio origen comparando el estado.
+window.addEventListener('hvy:specialties-updated', function(ev){
+  const { resourceId, specialties } = ev.detail || {};
+  if (!resourceId) return;
+  // Mantener el mapa en memoria al día
+  if (typeof _cfgResourceMap === 'object' && _cfgResourceMap[resourceId]) {
+    _cfgResourceMap[resourceId].specialties = specialties;
+  }
+  // Paso 1 (jm-): si está abierto ese recurso, refrescar su estado y chips
+  if (typeof _cfgCurrentResourceId !== 'undefined' && _cfgCurrentResourceId === resourceId) {
+    _jmSpecsSel = _jmNormSpecs(specialties);
+    if (typeof _jmRenderSpecs === 'function') _jmRenderSpecs();
+  }
+  // Paso 3 (wizard): si está seleccionado ese recurso, refrescar su estado y chips
+  if (typeof _cfgFirstResourceId !== 'undefined' && _cfgFirstResourceId === resourceId) {
+    _espSpecsSel = _jmNormSpecs(specialties);
+    if (typeof _espRenderSpecs === 'function') _espRenderSpecs();
+  }
+});
 
 
 // ── Fase 3.2: cargar módulo de adaptación por rubro (config-rubro.js) ──

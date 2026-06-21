@@ -7,6 +7,39 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.20-4] config-rubro.js  (10º cambio sobre base 16)
+// 2026-06-20 | Paso 3 del wizard (step-2 "Especialidad") DESHABILITADO para PERSONA:
+//              las especialidades ya se editan en el paso 1 (panel de config-rubro).
+//              No se elimina nada — solo se bloquea el acceso (clic, Continuar, Volver)
+//              vía _crTogglePaso3 (atenúa y quita onclick del step) + _crInstalarGoStepGuard
+//              (intercepta goStep y salta el paso 2 en persona: hacia adelante→3, atrás→1).
+//              Para OBJETO el paso 3 sigue habilitado (tiene Características del recinto +
+//              Cómo llegar, contenido propio). Reversible y por naturaleza.
+// [v2026.06.20-3] config-rubro.js  (9º cambio sobre base 16)
+// 2026-06-20 | Molde persona del editor de recurso: agregado el campo Modos de trabajo
+//              (chips Presencial/Online/A domicilio, reflejan r.modalities), debajo de
+//              "agregar especialidad propia". crGuardar lo persiste en body.modalities.
+//              (Años de experiencia NO se agrega aquí: ya existe como campo dinámico del
+//              recurso al lado de N° registro; se guarda solo vía fields. Corrige un
+//              intento previo que lo había duplicado.)
+// [v2026.06.20-1] config-rubro.js  (8º cambio sobre base 16)
+// 2026-06-20 | Fase B sync en vivo: al guardar especialidades (persona) dispara el
+//              evento global 'hvy:specialties-updated' {resourceId, specialties}; y
+//              escucha ese evento para refrescar sus chips si tiene abierto el mismo
+//              recurso. Coordina sin recargar con los editores de configuracion.js.
+// [v2026.06.19-1] config-rubro.js  (continúa numeración 16-x; 7º cambio sobre la base 16)
+// 2026-06-19 | Fase B Especialidades (paso 3, solo PERSONA): el bloque "Especialidades"
+//              deja de usar texto libre (caracteristicas_sugeridas → features) y pasa a
+//              pintar CHIPS desde el catálogo de la CATEGORÍA del recurso
+//              (_crSector.profesiones[].especialidades[], vía profession_key). Las
+//              marcadas se guardan en body.specialties como ARRAY DE OBJETOS
+//              {key, nombre, propia}. Se pueden agregar especialidades PROPIAS (key
+//              normalizada con _crSlug, guardadas solo en el recurso). Los chips se
+//              repintan al cambiar la categoría (crSelCat → _crRenderSpecs). OBJETO sigue
+//              igual: características → features. Nuevas fns: _crEspecialidadesDeCategoria,
+//              _crSlug, _crNormSpecs, _crRenderSpecs, crToggleSpec, crAddSpecPropia,
+//              _crRecogerSpecs. Estado: _crSpecsSel. (Backend ya devuelve el catálogo vía
+//              GET /api/sectores/<key>; no se tocó backend.)
 // [v2026.06.16-6] config-rubro.js
 // 2026-06-16 | Fix 405 al guardar disponibilidad de un recurso: crDispGuardar hacía
 //              PUT a /api/agenda/resources/<id>, pero ese endpoint solo acepta PATCH
@@ -262,6 +295,7 @@ let _crTipoId  = null;   // resource_type_id por defecto (requerido por el POST)
 let _crBusy    = false;  // anti-concurrencia: crInit en vuelo (evita doble montaje)
 let _crDispRecId = null; // recurso activo en el panel Disponibilidad (objetos)
 let _crDispCfgGlobal = {}; // config global de la empresa (fallback heredado por recurso)
+let _crSpecsSel = [];      // especialidades marcadas del recurso en edición (Fase B): [{key,nombre,propia}]
 
 const $ = s => document.querySelector(s);
 
@@ -269,6 +303,30 @@ function _catKeys(){ return (_crCompany?.profesiones) || []; }
 function _catName(k){
   const p = (_crSector?.profesiones || []).find(x => x.profession_key === k);
   return p ? (p.name || k) : k;
+}
+// ── Especialidades del catálogo (Fase B) ──────────────────────────────────
+// Devuelve el array especialidades[] de UNA categoría (profession_key) del
+// sector actual: [{key, nombre, active}]. Solo las activas.
+function _crEspecialidadesDeCategoria(profKey){
+  const p = (_crSector?.profesiones || []).find(x => x.profession_key === profKey);
+  return ((p && p.especialidades) || []).filter(e => e && e.active !== false);
+}
+// Normaliza un texto a key (minúscula, sin tildes ni símbolos) — misma regla
+// que el seed/backend, para que una especialidad propia matchee aunque se
+// escriba distinto ("Inglés" y "ingles" → "ingles").
+function _crSlug(texto){
+  return (texto || '')
+    .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+// Normaliza specialties del recurso a array de objetos {key, nombre, propia}.
+// Tolera el formato viejo (array de strings) por si quedara alguno, aunque la
+// decisión fue "empezar limpio".
+function _crNormSpecs(arr){
+  return (arr || []).map(s => {
+    if (typeof s === 'string') return { key: _crSlug(s), nombre: s, propia: true };
+    return { key: s.key || _crSlug(s.nombre), nombre: s.nombre || s.key, propia: !!s.propia };
+  });
 }
 function _esPersona(){ return (_crRec?.naturaleza || 'persona') === 'persona'; }
 function _lbl(k, def){ return (_crRec?.labels || {})[k] || def; }
@@ -320,6 +378,59 @@ function _crPasos(){
     const el = document.querySelector('#step-' + i + ' .step-label');
     if (el) el.textContent = label;
   });
+
+  // [20-06] Paso 3 (step-2 "Especialidad") deshabilitado para PERSONA: las
+  // especialidades ya se editan en el paso 1 (panel de config-rubro). Para OBJETO
+  // se deja habilitado porque ahí tiene contenido propio (características del
+  // recinto + cómo llegar). No se elimina nada, solo se bloquea el acceso.
+  _crTogglePaso3();
+}
+
+// Habilita/deshabilita el acceso al paso 3 (step-2) según naturaleza.
+function _crTogglePaso3(){
+  const step = document.getElementById('step-2');
+  if (!step) return;
+  const esObjeto = _crRec && _crRec.naturaleza === 'objeto';
+  if (esObjeto){
+    // Restaurar acceso (por si venía deshabilitado de otra empresa)
+    if (step.dataset.crDisabled === '1'){
+      step.dataset.crDisabled = '';
+      if (step.dataset.crOnclick){ step.setAttribute('onclick', step.dataset.crOnclick); }
+      step.style.opacity = ''; step.style.pointerEvents = ''; step.style.cursor = '';
+      step.title = '';
+    }
+  } else {
+    // Persona: deshabilitar acceso
+    if (step.dataset.crDisabled !== '1'){
+      step.dataset.crDisabled = '1';
+      if (step.getAttribute('onclick')) step.dataset.crOnclick = step.getAttribute('onclick');
+      step.removeAttribute('onclick');
+      step.style.opacity = '0.45';
+      step.style.pointerEvents = 'none';
+      step.style.cursor = 'not-allowed';
+      step.title = 'Las especialidades se configuran en el paso 1, dentro de cada profesional.';
+    }
+  }
+  _crInstalarGoStepGuard();
+}
+
+// Intercepta goStep una sola vez: si es persona y se pide el paso 2 (Especialidad,
+// deshabilitado), redirige saltándolo — hacia adelante va al 3, hacia atrás al 1.
+// Cubre todos los accesos (barra, botones Continuar/Volver) en un solo lugar.
+function _crInstalarGoStepGuard(){
+  if (window._crGoStepGuard) return;
+  if (typeof window.goStep !== 'function') return;
+  const orig = window.goStep;
+  window._crGoStepOrig = orig;
+  window.goStep = function(n){
+    const esPersona = !(_crRec && _crRec.naturaleza === 'objeto');
+    if (esPersona && n === 2){
+      const actual = (typeof cfgCurrentStep !== 'undefined') ? cfgCurrentStep : 1;
+      n = (actual >= 2) ? 1 : 3;   // venías de adelante → 1; de atrás → 3
+    }
+    return orig.call(this, n);
+  };
+  window._crGoStepGuard = true;
 }
 
 // ── Pestañas: mover lo existente a "Cuentas" y crear "Recursos" ──
@@ -464,6 +575,12 @@ function _crForm(r){
   const feats = r.features || [];
   const sug = _crRec.caracteristicas_sugeridas || [];
   const todas = [...new Set([...sug, ...feats])];
+  // Estado de especialidades del recurso (Fase B): objetos {key, nombre, propia}.
+  // _crSpecsSel = las que el recurso tiene marcadas; sobrevive a repintados al
+  // cambiar de categoría, para no perder las propias ya agregadas.
+  _crSpecsSel = _crNormSpecs(r.specialties);
+  // Modos de trabajo del recurso (para el molde persona). [20-06]
+  const _crMods = (r.modalities || r.modalidades || []).map(m => String(m).toLowerCase());
   $('#cr-form-wrap').innerHTML = `
   <div class="cr-form">
     <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:10px">
@@ -503,11 +620,20 @@ function _crForm(r){
         </div>
       </div>
       <div style="font-size:11.5px;font-weight:700;color:#d97706;margin-bottom:4px"><i class="fas fa-tags"></i> Especialidades</div>
-      <div class="cr-sug">Toca para marcar las que aplican; agrega otras abajo.</div>
-      <div id="cr-feats">${todas.map(t => `<span class="cr-fchip ${feats.includes(t)?'on':''}" onclick="this.classList.toggle('on')">${t}</span>`).join('')}</div>
+      <div class="cr-sug">Del catálogo de la categoría — toca para marcar; agrega propias abajo.</div>
+      <div id="cr-specs"></div>
       <div style="display:flex;gap:6px;margin-top:8px;max-width:300px">
-        <input id="cr-f-feat-nueva" placeholder="Otra especialidad…">
-        <button class="btn-secondary" onclick="crAddFeat()" type="button"><i class="fas fa-plus"></i></button>
+        <input id="cr-f-spec-nueva" placeholder="Agregar especialidad propia…">
+        <button class="btn-secondary" onclick="crAddSpecPropia()" type="button"><i class="fas fa-plus"></i></button>
+      </div>
+      <div class="cr-sug" style="margin-top:4px">Las propias se guardan solo en este profesional.</div>
+
+      <div style="border-top:1px solid #ece9f7;margin:14px 0 12px"></div>
+      <div style="font-size:11.5px;font-weight:700;color:#5b4bbd;margin-bottom:6px"><i class="fas fa-location-dot"></i> Modos de trabajo</div>
+      <div class="toggle-group" id="cr-modos">
+        <span class="toggle-btn ${_crMods.includes('presencial')?'on':''}" onclick="this.classList.toggle('on')">Presencial</span>
+        <span class="toggle-btn ${_crMods.includes('online')?'on':''}" onclick="this.classList.toggle('on')">Online</span>
+        <span class="toggle-btn ${_crMods.includes('domicilio')?'on':''}" onclick="this.classList.toggle('on')">A domicilio</span>
       </div>
     </div>` : `
     <div class="cr-block-o">
@@ -534,7 +660,7 @@ function _crForm(r){
       <button class="btn-secondary" onclick="document.getElementById('cr-form-wrap').innerHTML=''">Cancelar</button>
     </div>
   </div>`;
-  if (esP) _crPintarCandidatos(r.user_id || '');
+  if (esP) { _crPintarCandidatos(r.user_id || ''); _crRenderSpecs(); }
 }
 
 // Pinta la lista de candidatos (usuarios marcados como recurso sin recurso aún)
@@ -596,6 +722,75 @@ function _crRecogerFeats(){
   const pend = inp && inp.value ? inp.value.trim() : '';
   if (pend && !feats.includes(pend)) feats.push(pend);
   return feats;
+}
+
+// ── Especialidades (Fase B) ────────────────────────────────────────────────
+// Pinta los chips del catálogo de la categoría SELECCIONADA en el form, más las
+// especialidades propias del recurso. Marca (.on) las que el recurso tiene en
+// _crSpecsSel. Se llama al abrir el form y cada vez que cambia la categoría.
+function _crRenderSpecs(){
+  const cont = document.getElementById('cr-specs');
+  if (!cont) return;
+  const catKey = (document.getElementById('cr-f-cat')?.value) || '';
+  const catalogo = _crEspecialidadesDeCategoria(catKey);   // [{key,nombre,active}]
+  const selByKey = {}; _crSpecsSel.forEach(s => { selByKey[s.key] = s; });
+
+  // Chips del catálogo (marcados si están en la selección)
+  const chipsCat = catalogo.map(e => {
+    const on = selByKey[e.key] ? 'on' : '';
+    return `<span class="cr-fchip ${on}" data-key="${e.key}" data-nombre="${(e.nombre||'').replace(/"/g,'&quot;')}" data-propia="0"
+      onclick="crToggleSpec(this)">${e.nombre}</span>`;
+  }).join('');
+
+  // Chips de propias del recurso que NO están en el catálogo (se muestran aparte, marcadas)
+  const keysCat = new Set(catalogo.map(e => e.key));
+  const propias = _crSpecsSel.filter(s => s.propia && !keysCat.has(s.key));
+  const chipsPropias = propias.map(s =>
+    `<span class="cr-fchip on" data-key="${s.key}" data-nombre="${(s.nombre||'').replace(/"/g,'&quot;')}" data-propia="1"
+      onclick="crToggleSpec(this)">${s.nombre} <i class="fas fa-star" style="font-size:9px;color:#d97706"></i></span>`
+  ).join('');
+
+  cont.innerHTML = chipsCat + (chipsPropias ? `<div style="width:100%;font-size:10px;color:#a8aed1;margin:6px 0 2px">Propias:</div>` + chipsPropias : '')
+    || '<div style="font-size:10.5px;color:#a8aed1">Esta categoría no tiene especialidades en el catálogo aún.</div>';
+}
+
+// Toggle de un chip de especialidad → actualiza _crSpecsSel (fuente de verdad).
+window.crToggleSpec = function(el){
+  const key = el.getAttribute('data-key');
+  const nombre = el.getAttribute('data-nombre');
+  const propia = el.getAttribute('data-propia') === '1';
+  const i = _crSpecsSel.findIndex(s => s.key === key);
+  if (i >= 0) { _crSpecsSel.splice(i, 1); el.classList.remove('on'); }
+  else { _crSpecsSel.push({ key, nombre, propia }); el.classList.add('on'); }
+};
+
+// Agregar una especialidad PROPIA (no está en el catálogo): se guarda solo en
+// el recurso. Se le genera key normalizada para que la búsqueda IA matchee.
+window.crAddSpecPropia = function(){
+  const inp = document.getElementById('cr-f-spec-nueva');
+  const v = (inp?.value || '').trim();
+  if (!v) return;
+  const key = _crSlug(v);
+  if (!key) return;
+  if (!_crSpecsSel.some(s => s.key === key)) {
+    _crSpecsSel.push({ key, nombre: v, propia: true });
+  }
+  inp.value = '';
+  _crRenderSpecs();
+};
+
+// Recoge las especialidades a guardar (array de objetos {key,nombre,propia}).
+// Incluye lo que haya quedado escrito en "propia" sin presionar +.
+function _crRecogerSpecs(){
+  const inp = document.getElementById('cr-f-spec-nueva');
+  const pend = inp && inp.value ? inp.value.trim() : '';
+  if (pend) {
+    const key = _crSlug(pend);
+    if (key && !_crSpecsSel.some(s => s.key === key)) {
+      _crSpecsSel.push({ key, nombre: pend, propia: true });
+    }
+  }
+  return _crSpecsSel.map(s => ({ key: s.key, nombre: s.nombre, propia: !!s.propia }));
 }
 
 // Trae la lista de usuarios de la empresa SIN cachear: el estado is_resource
@@ -672,10 +867,14 @@ window.crGuardar = async function(){
   };
   if (_esPersona()){
     const uid = $('#cr-f-user-id')?.value; if (uid) body.user_id = uid;
-    body.features = _crRecogerFeats();
+    body.specialties = _crRecogerSpecs();   // [Fase B] especialidades del catálogo + propias
+    // Modos de trabajo [20-06] (la experiencia ya se guarda como campo dinámico de arriba)
+    const modMap = { 'Presencial':'presencial', 'Online':'online', 'A domicilio':'domicilio' };
+    body.modalities = [...document.querySelectorAll('#cr-modos .toggle-btn.on')]
+      .map(b => modMap[b.textContent.trim()] || b.textContent.trim().toLowerCase());
     const photo = $('#cr-f-photo')?.value; if (photo) body.photo_url = photo;
   } else {
-    body.features = _crRecogerFeats();
+    body.features = _crRecogerFeats();      // objeto: características
     const photo = $('#cr-f-photo')?.value; if (photo) body.photo_url = photo;  // [14-06]
   }
   let res;
@@ -688,6 +887,14 @@ window.crGuardar = async function(){
   }
   if (res?.ok && res.data?.success !== false){
     if (typeof showToast==='function') showToast('Guardado ✅','success');
+    // [Fase B] avisar a otros editores si se guardaron especialidades (persona)
+    if (_esPersona() && body.specialties){
+      const rid = _crEditId || res.data?._id || res.data?.id || res.data?.resource?._id;
+      if (rid && typeof window.dispatchEvent === 'function'){
+        try { window.dispatchEvent(new CustomEvent('hvy:specialties-updated',
+          { detail: { resourceId: rid, specialties: body.specialties } })); } catch(_){}
+      }
+    }
     $('#cr-form-wrap').innerHTML = '';
     _crLoadRecursos();
   } else {
@@ -932,6 +1139,9 @@ window.crSelCat = function(hiddenId, el){
   el.parentElement.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('on'));
   if (!ya){ el.classList.add('on'); document.getElementById(hiddenId).value = el.dataset.k; }
   else { document.getElementById(hiddenId).value = ''; }  // re-clic = Sin categoría
+  // Al cambiar la categoría del recurso, repintar los chips de especialidad
+  // (dependen de la categoría). Solo aplica al form del recurso (cr-f-cat). [Fase B]
+  if (hiddenId === 'cr-f-cat' && typeof _crRenderSpecs === 'function') _crRenderSpecs();
 };
 
 window.crCaracAdd = function(){
@@ -1397,5 +1607,16 @@ window.addEventListener('heavensy:company-changed', function(){
   if (estabaActivo) _crReset();
   // Reconstruir si estábamos en Configuración (activo) o si el hash lo indica.
   if (estabaActivo || /configuracion/.test(location.hash||'')) setTimeout(window.crInit, 300);
+});
+
+// ── Sincronización de especialidades (Fase B) ─────────────────────────────
+// Si otro editor guarda specialties del recurso que tengo abierto en el form,
+// actualizo mis chips sin recargar.
+window.addEventListener('hvy:specialties-updated', function(ev){
+  const { resourceId, specialties } = ev.detail || {};
+  if (!resourceId || _crEditId !== resourceId) return;       // solo si es el recurso abierto
+  if (!document.getElementById('cr-specs')) return;          // y si el panel está visible
+  _crSpecsSel = _crNormSpecs(specialties);
+  if (typeof _crRenderSpecs === 'function') _crRenderSpecs();
 });
 })();

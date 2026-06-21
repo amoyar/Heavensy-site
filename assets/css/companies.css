@@ -3,6 +3,12 @@
    Estilos del módulo de Empresas
    Heavensy Admin
    ── BITÁCORA ──
+   [v2026.06.20-2] companies.css
+   2026-06-20 | Servicios: estilo del dropdown de unidad (.sec-add-uni).
+   [v2026.06.20-1] companies.css
+   2026-06-20 | Fase C2: estilos del acordeón de categoría (.sec-acc-*, .sec-chip*,
+                .sec-add*) para el editor de especialidades + servicios. Imita el
+                pill .tp-cat-chip; servicios en azul para distinguirlos.
    [v2026.06.09-1] companies.css
    2026-06-09 | Nuevo estilo .tp-cat-chip para los chips de categoría del
                 preview del wizard (pill con degradado morado, punto de color
@@ -645,3 +651,66 @@
 
 .cp-panel           { display: none; flex: 1; flex-direction: column; overflow-y: auto; min-height: 0; }
 .cp-panel.active    { display: flex; }
+/* ════════════════════════════════════════════════════════════
+   ACORDEÓN de categoría — especialidades + servicios (Fase C2)
+   [v2026.06.20-1] companies.css
+   ════════════════════════════════════════════════════════════ */
+.sec-acc-tog {
+  width: 26px; height: 26px;
+  border: 1px solid #e3e1f3; border-radius: 8px;
+  background: #fff; color: #9961FF; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; transition: background .15s, border-color .15s; flex: none;
+}
+.sec-acc-tog:hover { background: #faf8ff; border-color: #9961FF; }
+.sec-prof-row.open { background: #faf8ff; border-radius: 10px; }
+
+.sec-acc-panel {
+  margin: 2px 0 14px 34px;
+  padding: 12px 14px;
+  background: #faf9ff;
+  border: 1px solid #ece5ff;
+  border-radius: 12px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.sec-acc-sub { display: flex; flex-direction: column; gap: 8px; }
+.sec-acc-h {
+  font-size: 12px; font-weight: 800; color: #2b3556;
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+}
+.sec-hint { font-size: 10.5px; font-weight: 500; color: #9096b0; font-style: italic; }
+
+.sec-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.sec-empty { font-size: 12px; color: #9096b0; }
+
+.sec-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(135deg, #f4ecff 0%, #e9dcff 100%);
+  border: 1px solid #d9c7ff; border-radius: 999px;
+  padding: 4px 8px 4px 12px;
+  font-size: 11px; font-weight: 600; color: #6b3fc4;
+  box-shadow: 0 1px 2px rgba(153, 97, 255, 0.12);
+}
+.sec-chip-srv {
+  background: linear-gradient(135deg, #eaf3ff 0%, #dce9ff 100%);
+  border-color: #c4d8ff; color: #2f5bb0;
+}
+.sec-chip-x {
+  border: none; background: transparent; cursor: pointer;
+  color: inherit; opacity: .55; font-size: 11px; line-height: 1;
+  padding: 0 2px; transition: opacity .12s;
+}
+.sec-chip-x:hover { opacity: 1; color: #dc2626; }
+
+.sec-add { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
+.sec-add input {
+  padding: 6px 10px; border: 1px solid #e3e1f3; border-radius: 8px;
+  font-size: 12px; color: #2b3556; min-width: 160px;
+}
+.sec-add input:focus { border-color: #9961FF; outline: none; }
+.sec-add .sec-add-dur { min-width: 0; width: 72px; }
+.sec-add .sec-add-uni {
+  padding: 6px 8px; border: 1px solid #e3e1f3; border-radius: 8px;
+  font-size: 12px; color: #2b3556; background: #fff; cursor: pointer;
+}
+.sec-add .sec-add-uni:focus { border-color: #9961FF; outline: none; }

@@ -3,6 +3,20 @@
 // Heavensy Admin
 // ============================================
 // ── BITÁCORA ──
+// [v2026.06.20-2] companies.js
+// 2026-06-20 | Servicios: campo `unidad` (minutos/horas/días/noches). El form de
+//              agregar trae un dropdown de unidad (default min) y el chip muestra
+//              la unidad ("Cabaña · 2 noches"). Helper _secUniLabel; secSrvAdd
+//              envía unidad; _normalizeSectores conserva sv.unidad.
+// [v2026.06.20-1] companies.js
+// 2026-06-20 | Fase C2: editor visual en acordeón dentro de Sectores→Categoría.
+//              Al expandir una categoría se editan sus ESPECIALIDADES (Fase A) y
+//              SERVICIOS-plantilla (Fase C1) con chips + alta/baja, sobre los
+//              endpoints ya vivos. _normalizeSectores ahora CONSERVA
+//              especialidades[] y servicios[] (antes los descartaba). Estado de
+//              acordeón abierto en _secAccOpen (sobrevive al re-render). Nuevas:
+//              _secRenderProfesiones, _secAccPanelHtml, secToggleAcc, secEspAdd/
+//              Delete, secSrvAdd/Delete, _secRefrescar.
 // [v2026.06.10-3] companies.js
 // 2026-06-10 | Fix UX Paso 2: al navegar entre rubros ya no se pierde la selección
 //              de categorías. Nueva memoria por sesión _catsPorRubro: al salir de
@@ -466,6 +480,7 @@ async function initSectoresTab() {
 function secOpenSector(key) {
   const s = PROMPT_SECTORES.find(x => x.sector_key === key);
   if (!s) return;
+  _secCurrentSector = key;   // recordar para re-render del acordeón
   const grid   = document.getElementById('sectores-grid');
   const detail = document.getElementById('sectores-detail');
   if (grid) grid.style.display = 'none';
@@ -490,19 +505,171 @@ function secOpenSector(key) {
       </button>
     </div>
 
-    ${s.profesiones.length ? s.profesiones.map((p, i) => `
-      <div class="prof-row">
-        <i class="fas fa-user" style="color:#8e84fa"></i>
-        <span class="pname">${escapeHtml(p.name)}</span>
-        <span style="display:flex;gap:8px;margin-left:auto">
-          <button class="btn-secondary pedit" onclick="secProfEdit('${s.sector_key}', ${i})"><i class="fas fa-pen"></i> Editar nombre</button>
-          <button class="btn-secondary pedit" style="color:#ef4444" onclick="secProfDelete('${s.sector_key}', ${i})"><i class="fas fa-trash"></i></button>
-        </span>
-      </div>`).join('') : '<p style="font-size:13px;color:#9096b0;padding:6px 2px">Aún no hay profesiones. Agrega la primera.</p>'}
+    ${s.profesiones.length ? _secRenderProfesiones(s)
+      : '<p style="font-size:13px;color:#9096b0;padding:6px 2px">Aún no hay profesiones. Agrega la primera.</p>'}
 
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid #eef0f4;font-size:12px;color:#9096b0">
       <i class="fas fa-circle-info"></i> El texto del prompt (base del sector y de cada profesión) se edita en la pestaña <b>Prompts</b>.
     </div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// ACORDEÓN de categoría: especialidades + servicios (Fase C2)
+// Editor visual sobre los endpoints ya vivos:
+//   especialidades → Fase A   ·   servicios → Fase C1
+// El estado abierto se guarda en _secAccOpen (profession_key) para
+// que sobreviva al re-render que hacemos tras cada alta/baja.
+// ════════════════════════════════════════════════════════════
+let _secCurrentSector = null;          // sector_key abierto (para re-render)
+let _secAccOpen       = new Set();     // profession_key con acordeón abierto
+
+function secToggleAcc(profKey) {
+  if (_secAccOpen.has(profKey)) _secAccOpen.delete(profKey);
+  else _secAccOpen.add(profKey);
+  if (_secCurrentSector) secOpenSector(_secCurrentSector);
+}
+
+// Re-carga el catálogo y re-pinta el sector dejando el acordeón abierto.
+async function _secRefrescar(sectorKey, profKey) {
+  if (profKey) _secAccOpen.add(profKey);
+  await _loadSectores();
+  secOpenSector(sectorKey);
+}
+
+// HTML de todas las categorías del sector (fila + panel de acordeón).
+function _secRenderProfesiones(s) {
+  return s.profesiones.map((p, i) => {
+    const abierto = _secAccOpen.has(p.profession_key);
+    const chevron = abierto ? 'down' : 'right';
+    return `
+      <div class="prof-row sec-prof-row${abierto ? ' open' : ''}">
+        <button class="sec-acc-tog" title="Ver especialidades y servicios"
+          onclick="secToggleAcc('${p.profession_key}')"><i class="fas fa-chevron-${chevron}"></i></button>
+        <i class="fas fa-user" style="color:#8e84fa"></i>
+        <span class="pname" style="cursor:pointer" onclick="secToggleAcc('${p.profession_key}')">${escapeHtml(p.name)}</span>
+        <span style="display:flex;gap:8px;margin-left:auto">
+          <button class="btn-secondary pedit" onclick="secProfEdit('${s.sector_key}', ${i})"><i class="fas fa-pen"></i> Editar nombre</button>
+          <button class="btn-secondary pedit" style="color:#ef4444" onclick="secProfDelete('${s.sector_key}', ${i})"><i class="fas fa-trash"></i></button>
+        </span>
+      </div>
+      ${abierto ? _secAccPanelHtml(s.sector_key, p) : ''}`;
+  }).join('');
+}
+
+// Etiqueta corta de la unidad para el chip ("minutos"->"min", etc.).
+function _secUniLabel(u) {
+  return ({ minutos: 'min', horas: 'h', dias: 'días', noches: 'noches' })[u] || 'min';
+}
+
+// Panel interno del acordeón: bloque Especialidades + bloque Servicios.
+function _secAccPanelHtml(sectorKey, p) {
+  const pk  = p.profession_key;
+  const esp = p.especialidades || [];
+  const srv = p.servicios || [];
+
+  const espChips = esp.length ? esp.map(e => `
+    <span class="sec-chip">${escapeHtml(e.nombre)}
+      <button class="sec-chip-x" title="Quitar"
+        onclick="secEspDelete('${sectorKey}','${pk}','${e.key}')">✕</button>
+    </span>`).join('') : '<span class="sec-empty">Sin especialidades aún.</span>';
+
+  const srvChips = srv.length ? srv.map(sv => `
+    <span class="sec-chip sec-chip-srv">${escapeHtml(sv.nombre)}${sv.duracion ? ` · ${sv.duracion} ${_secUniLabel(sv.unidad)}` : ''}
+      <button class="sec-chip-x" title="Quitar"
+        onclick="secSrvDelete('${sectorKey}','${pk}','${sv.key}')">✕</button>
+    </span>`).join('') : '<span class="sec-empty">Sin servicios aún.</span>';
+
+  return `
+    <div class="sec-acc-panel">
+      <div class="sec-acc-sub">
+        <div class="sec-acc-h"><i class="fas fa-star" style="color:#9961FF"></i> Especialidades</div>
+        <div class="sec-chips">${espChips}</div>
+        <div class="sec-add">
+          <input type="text" id="esp-add-${pk}" placeholder="Nueva especialidad"
+            onkeydown="if(event.key==='Enter')secEspAdd('${sectorKey}','${pk}')">
+          <button class="btn-primary btn-sm" onclick="secEspAdd('${sectorKey}','${pk}')"><i class="fas fa-plus"></i> Agregar</button>
+        </div>
+      </div>
+
+      <div class="sec-acc-sub">
+        <div class="sec-acc-h"><i class="fas fa-briefcase" style="color:#9961FF"></i> Servicios
+          <span class="sec-hint">la duración es sugerida — cada empresa puede ajustarla</span>
+        </div>
+        <div class="sec-chips">${srvChips}</div>
+        <div class="sec-add">
+          <input type="text" id="srv-add-nom-${pk}" placeholder="Nuevo servicio">
+          <input type="number" id="srv-add-dur-${pk}" min="1" placeholder="cant." class="sec-add-dur"
+            onkeydown="if(event.key==='Enter')secSrvAdd('${sectorKey}','${pk}')">
+          <select id="srv-add-uni-${pk}" class="sec-add-uni" title="Unidad de la duración">
+            <option value="minutos">min</option>
+            <option value="horas">horas</option>
+            <option value="dias">días</option>
+            <option value="noches">noches</option>
+          </select>
+          <button class="btn-primary btn-sm" onclick="secSrvAdd('${sectorKey}','${pk}')"><i class="fas fa-plus"></i> Agregar</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── CRUD especialidades (catálogo de la categoría) ──
+async function secEspAdd(sectorKey, profKey) {
+  const inp = document.getElementById(`esp-add-${profKey}`);
+  const nombre = inp ? inp.value.trim() : '';
+  if (!nombre) { if (inp) inp.focus(); return; }
+  const res = await apiCall(`/api/sectores/${sectorKey}/profesiones/${profKey}/especialidades`, {
+    method: 'POST', body: JSON.stringify({ nombre })
+  });
+  if (res.ok && res.data && res.data.ok) {
+    await _secRefrescar(sectorKey, profKey);
+    if (typeof showToast === 'function') showToast('Especialidad agregada', 'success');
+  } else {
+    alert((res.data && res.data.error) || 'No se pudo agregar la especialidad');
+  }
+}
+
+async function secEspDelete(sectorKey, profKey, espKey) {
+  const res = await apiCall(`/api/sectores/${sectorKey}/profesiones/${profKey}/especialidades/${espKey}`, {
+    method: 'DELETE'
+  });
+  if (res.ok && res.data && res.data.ok) {
+    await _secRefrescar(sectorKey, profKey);
+  } else {
+    alert((res.data && res.data.error) || 'No se pudo eliminar la especialidad');
+  }
+}
+
+// ── CRUD servicios-plantilla (catálogo de la categoría) ──
+async function secSrvAdd(sectorKey, profKey) {
+  const inN = document.getElementById(`srv-add-nom-${profKey}`);
+  const inD = document.getElementById(`srv-add-dur-${profKey}`);
+  const inU = document.getElementById(`srv-add-uni-${profKey}`);
+  const nombre  = inN ? inN.value.trim() : '';
+  const durRaw  = inD ? inD.value.trim() : '';
+  const unidad  = inU ? inU.value : 'minutos';
+  if (!nombre) { if (inN) inN.focus(); return; }
+  const body = { nombre };
+  if (durRaw !== '') { body.duracion = durRaw; body.unidad = unidad; }   // el backend valida
+  const res = await apiCall(`/api/sectores/${sectorKey}/profesiones/${profKey}/servicios`, {
+    method: 'POST', body: JSON.stringify(body)
+  });
+  if (res.ok && res.data && res.data.ok) {
+    await _secRefrescar(sectorKey, profKey);
+    if (typeof showToast === 'function') showToast('Servicio agregado', 'success');
+  } else {
+    alert((res.data && res.data.error) || 'No se pudo agregar el servicio');
+  }
+}
+
+async function secSrvDelete(sectorKey, profKey, srvKey) {
+  const res = await apiCall(`/api/sectores/${sectorKey}/profesiones/${profKey}/servicios/${srvKey}`, {
+    method: 'DELETE'
+  });
+  if (res.ok && res.data && res.data.ok) {
+    await _secRefrescar(sectorKey, profKey);
+  } else {
+    alert((res.data && res.data.error) || 'No se pudo eliminar el servicio');
+  }
 }
 
 // ── CRUD de profesiones (solo nombre) ──
@@ -637,6 +804,20 @@ function _normalizeSectores(arbol) {
       name:    p.name || p.profession_key,
       content: p.content || '',
       active:  p.active !== false,
+      // Catálogo anidado de la categoría (Fase A especialidades + Fase C1 servicios).
+      // Antes se descartaba aquí; el editor visual (acordeón) los necesita.
+      especialidades: (p.especialidades || []).map(e => ({
+        key:    e.key,
+        nombre: e.nombre || e.key,
+        active: e.active !== false,
+      })),
+      servicios: (p.servicios || []).map(sv => ({
+        key:      sv.key,
+        nombre:   sv.nombre || sv.key,
+        duracion: (sv.duracion === undefined ? null : sv.duracion),
+        unidad:   sv.unidad || 'minutos',
+        active:   sv.active !== false,
+      })),
     })),
   }));
 }

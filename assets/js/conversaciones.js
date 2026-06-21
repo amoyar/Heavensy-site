@@ -9,6 +9,13 @@
 // 4. conv-messages.js — Carga, envío, selección, audio, IA toggle
 // 5. conversaciones.js — ESTE ARCHIVO (orquestador)
 // ============================================
+//
+// ── BITÁCORA ──
+// [v2026.06.19-1] conversaciones.js
+// 2026-06-19 | Quitado el toggle de visibilidad del panel de servicios viejo
+//              (isModuleEnabled('servicios') + svcBtn). El panel pertenecía al
+//              sistema contact_services, reemplazado por la Agenda real; ya no
+//              existe svcBtn en el HTML, así que el toggle no aplicaba.
 
 console.log('✅ conversaciones.js (orquestador) cargado');
 
@@ -198,9 +205,8 @@ function applyCompanyLabels() {
         const calSection = document.querySelector('[onclick*="contactCalendarSection"]')?.closest('.border-b');
         if (calSection) calSection.style.display = isModuleEnabled('calendario') ? '' : 'none';
 
-        // Servicios (sección lateral)
-        const svcBtn = document.querySelector('[onclick*="servicesGroup"]');
-        if (svcBtn) svcBtn.parentElement.style.display = isModuleEnabled('servicios') ? '' : 'none';
+        // Servicios viejos (contact_services) eliminados [2026-06-19]: panel
+        // reemplazado por Agenda real. Ya no hay svcBtn que togglear.
     }
 
     console.log('✅ Labels de conversaciones aplicados');
