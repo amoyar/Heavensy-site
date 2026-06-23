@@ -3,13 +3,20 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.23-4] configuracion.js
+// 2026-06-23 | Disponibilidad: un recurso SIN reglas arranca con los días desmarcados
+//              (antes el fallback era L-V → parecía configurado sin estarlo, caso Juan
+//              Pérez). cfgPopulateSchedule: default activos = todos false; tras pintar
+//              días, sincroniza el toggle "Todos" (_cfgSyncTodosDias). Nuevas
+//              cfgToggleDia/cfgToggleTodosDias. guardarDisponibilidad bloquea si no hay
+//              ningún día marcado (no se guarda disponibilidad vacía). Recurso CON
+//              reglas sigue reflejando sus días reales (intacto).
 // [v2026.06.23-3] configuracion.js
-// 2026-06-22 | FIX fuga entre empresas en el Paso 5 (Media): ppLoadFromServer ahora
-//              HIDRATA las claves ep_* del borrador (localStorage) con la config de la
-//              empresa cargada (portada/foto/fondo/galería, colores, textos, opacidad,
-//              fondo_color, fnames). Antes esas claves no se hidrataban desde la API y
-//              quedaban con los valores de la empresa anterior → imágenes cruzadas y
-//              riesgo de guardar en la empresa equivocada.
+// 2026-06-23 | Horario canónico: el panel de disponibilidad arma scheduleRules con
+//              start/end (antes start_time/end_time, que el motor de slots no lee →
+//              KeyError 'start' y slots=0). schedule_config (blob de UI) se deja como
+//              está: no lo consume el motor para start/end. Backend (agenda_routes)
+//              igual normaliza por si acaso.
 // [v2026.06.23-2] configuracion.js
 // 2026-06-23 | Paso 4 objeto (pasada 2): el form de servicio soporta UNIDAD.
 //              Nuevo _cfgConfigurarFormServicioUnidad(): en objeto muestra
@@ -436,28 +443,6 @@ function ppLoadFromServer() {
   apiCall('/api/perfil-profesional/config').then(r=>(r.data||{})).then(d=>{
     if(!d.success||!d.config) return;
     const c=d.config;
-    // ── FIX fuga entre empresas (Paso 5): el borrador vive en localStorage con claves
-    // ep_* NO scopeadas por empresa. Acá se hidratan con la config de ESTA empresa, así
-    // no quedan imágenes/colores de la empresa anterior (ni se guardan en la equivocada).
-    try {
-      ['--text-titulo','--titulo-bg','--text-lt','--text-franja','--navy'].forEach(v=>{
-        const cv = (c.colores && c.colores[v]) || '';
-        if (cv) localStorage.setItem('ep_color_'+v, cv); else localStorage.removeItem('ep_color_'+v);
-      });
-      localStorage.setItem('ep_opacidad', (c.opacidad!==undefined ? c.opacidad : 55));
-      localStorage.setItem('ep_texto_slogan',    c.slogan || '');
-      localStorage.setItem('ep_texto_frase',     c.frase || '');
-      localStorage.setItem('ep_texto_direccion', c.direccion || '');
-      localStorage.setItem('ep_nombre_empresa',  c.nombre_empresa || '');
-      localStorage.setItem('ep_fondo_color',     c.fondo_color || '');
-      localStorage.setItem('ep_portada_url',     c.portada_url || '');
-      localStorage.setItem('ep_foto_url',        c.foto_url || '');
-      localStorage.setItem('ep_fondo_url',       c.fondo_url || '');
-      localStorage.setItem('ep_galeria_urls',    JSON.stringify(c.galeria || []));
-      localStorage.setItem('ep_portada_fname',   c.portada_fname || '');
-      localStorage.setItem('ep_foto_fname',      c.foto_fname || '');
-      localStorage.setItem('ep_fondo_fname',     c.fondo_fname || '');
-    } catch(e){}
     const idMap={'--text-titulo':'ec-ttitulo','--titulo-bg':'ec-titulo','--text-lt':'ec-texto','--text-franja':'ec-franja','--navy':'ec-navy'};
     if(c.colores){
       localStorage.setItem('ep_colores_saved', '1');
@@ -1027,11 +1012,15 @@ async function guardarDisponibilidad(btn) {
   };
   const dayBtns = [...document.querySelectorAll('#disp-dias .toggle-btn')].slice(0, 7);
   const scheduleRules = dayBtns.map((b, i) => ({
-    weekday:    i + 1,
-    start_time: scheduleConfig.start_time,
-    end_time:   scheduleConfig.end_time,
-    active:     b.classList.contains('on'),
+    weekday: i + 1,
+    start:   scheduleConfig.start_time,   // canónico start/end (lo que lee el motor de slots)
+    end:     scheduleConfig.end_time,
+    active:  b.classList.contains('on'),
   }));
+  if (!scheduleRules.some(r => r.active)) {
+    showToast('Marca al menos un día disponible antes de guardar', 'error');
+    return;
+  }
   const modMap = { 'presencial':'presencial', 'online':'online', 'a domicilio':'domicilio' };
   const modalities = [...document.querySelectorAll('#disp-modos .toggle-btn.on')]
     .map(b => modMap[b.textContent.trim().toLowerCase()] || b.textContent.trim().toLowerCase());
@@ -3077,6 +3066,29 @@ function cfgPopulateUsersTable(systemUsers = [], resources = []) {
   recalcStats();
 }
 
+// ── Días disponibles: toggle individual + "Todos" sincronizados ────────────
+window.cfgToggleDia = function(btn){
+  btn.classList.toggle('on');
+  _cfgSyncTodosDias();
+};
+// "Todos": si está apagado, prende y marca los 7; si está prendido, apaga los 7.
+window.cfgToggleTodosDias = function(){
+  const todos = document.getElementById('disp-dias-todos');
+  if (!todos) return;
+  const encender = !todos.classList.contains('on');
+  todos.classList.toggle('on', encender);
+  [...document.querySelectorAll('#disp-dias .toggle-btn')].slice(0, 7)
+    .forEach(b => b.classList.toggle('on', encender));
+};
+// Refleja en "Todos" si los 7 días están marcados.
+function _cfgSyncTodosDias(){
+  const todos = document.getElementById('disp-dias-todos');
+  if (!todos) return;
+  const dias = [...document.querySelectorAll('#disp-dias .toggle-btn')].slice(0, 7);
+  const allOn = dias.length === 7 && dias.every(b => b.classList.contains('on'));
+  todos.classList.toggle('on', allOn);
+}
+
 function cfgPopulateSchedule(resource) {
   const sc = resource.schedule_config || resource.scheduleConfig;
   const rules = (sc && !Array.isArray(sc)) ? sc : {};
@@ -3157,7 +3169,7 @@ function cfgPopulateSchedule(resource) {
         return r ? r.active !== false : false;
       });
     } else {
-      activos = [true, true, true, true, true, false, false];
+      activos = [false, false, false, false, false, false, false];
     }
     sumDias.innerHTML = DIAS.map((d, i) =>
       `<span class="chip ${activos[i] ? 'chip-on' : 'chip-off'}">${d}</span>`).join('');
@@ -3165,6 +3177,7 @@ function cfgPopulateSchedule(resource) {
     // (antes quedaban con el estado por defecto del HTML). [16-06]
     const dayBtns = [...document.querySelectorAll('#disp-dias .toggle-btn')].slice(0, 7);
     dayBtns.forEach((b, i) => b.classList.toggle('on', !!activos[i]));
+    if (typeof _cfgSyncTodosDias === 'function') _cfgSyncTodosDias();
   }
   // Dirección y oficina: por recurso. [16-06]
   set('disp-direccion', resource.location || resource.address || '');

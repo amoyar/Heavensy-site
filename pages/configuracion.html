@@ -1,4 +1,10 @@
 <!-- ── BITÁCORA ──
+[v2026.06.23-2] configuracion.html
+2026-06-23 | Disponibilidad: días #disp-dias SIN marcar por defecto (antes L-V con
+             'on' → un recurso sin configurar parecía abierto toda la semana). Días
+             usan cfgToggleDia (sincroniza el nuevo toggle "Todos" #disp-dias-todos,
+             que marca/desmarca los 7). Un recurso con horario guardado igual refleja
+             sus días reales (lo setea cfgPopulateSchedule).
 [v2026.06.23-1] configuracion.html
 2026-06-23 | Paso 4 objeto: form de servicio gana columna Unidad (#ses-unidad,
              hvy-form-select: minutos/horas/días/noches), oculta por defecto y que
@@ -238,15 +244,19 @@
         <div class="form-group"><label>Anticipación mínima (hrs)</label><input id="disp-anticip" type="number" value="2" min="0"/></div>
         <div class="form-group"><label>Cancelación sin costo (hrs antes)</label><input id="disp-cancel-hrs" type="number" value="48" min="0"/></div>
         <div class="form-group"><label>Cobro cancelación tardía (%)</label><input id="disp-cancel-pct" type="number" value="40" min="0" max="100"/></div>
-        <div class="form-group form-full"><label>Días disponibles</label>
+        <div class="form-group form-full">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+            <label style="margin:0">Días disponibles</label>
+            <span class="toggle-btn" id="disp-dias-todos" onclick="cfgToggleTodosDias()">Todos</span>
+          </div>
           <div class="toggle-group" id="disp-dias">
-            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Lun</span>
-            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Mar</span>
-            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Mié</span>
-            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Jue</span>
-            <span class="toggle-btn on" onclick="this.classList.toggle('on')">Vie</span>
-            <span class="toggle-btn" onclick="this.classList.toggle('on')">Sáb</span>
-            <span class="toggle-btn" onclick="this.classList.toggle('on')">Dom</span>
+            <span class="toggle-btn" onclick="cfgToggleDia(this)">Lun</span>
+            <span class="toggle-btn" onclick="cfgToggleDia(this)">Mar</span>
+            <span class="toggle-btn" onclick="cfgToggleDia(this)">Mié</span>
+            <span class="toggle-btn" onclick="cfgToggleDia(this)">Jue</span>
+            <span class="toggle-btn" onclick="cfgToggleDia(this)">Vie</span>
+            <span class="toggle-btn" onclick="cfgToggleDia(this)">Sáb</span>
+            <span class="toggle-btn" onclick="cfgToggleDia(this)">Dom</span>
           </div>
         </div>
         <div class="form-group form-full"><label>Pausa de colación</label>
