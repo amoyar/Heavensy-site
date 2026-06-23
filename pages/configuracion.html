@@ -1,4 +1,14 @@
 <!-- ── BITÁCORA ──
+[v2026.06.23-1] configuracion.html
+2026-06-23 | Paso 4 objeto: form de servicio gana columna Unidad (#ses-unidad,
+             hvy-form-select: minutos/horas/días/noches), oculta por defecto y que
+             el JS muestra solo en sectores objeto. Label de Duración con id
+             (#ses-dur-label) para alternar "(min)" según naturaleza. Columna
+             Especialidad envuelta en #ses-col-esp para poder ocultarla en
+             objeto-plano (sin agrupadores). La fila .ses-row3 pasa a flex en CSS.
+[v2026.06.22-6] configuracion.html
+2026-06-22 | #ses-padre (Especialidad) clase hvy-form-select (para que el botón del
+             hvy-select calce con los inputs del form) + opción '(otros)'.
 [v2026.06.22-5] configuracion.html
 2026-06-22 | Paso 4: card 'Servicios' → 'Servicios agendables'; #svc-list envuelto
              en .svc-list-section con cabecera 'Disponibles para agendar'.
@@ -372,9 +382,12 @@
       <div class="edit-body">
         <div class="form-grid-2">
           <div class="form-group form-full"><label>Nombre del servicio</label><input type="text" id="ses-nombre" placeholder="Nombre del servicio"></div>
-          <div class="form-group"><label>Cuelga de</label><select id="ses-padre"><option value="">— Otros servicios —</option></select></div>
-          <div class="form-group"><label>Duración (minutos)</label><input type="number" id="ses-duracion" placeholder="50" min="5" step="5"></div>
-          <div class="form-group"><label>Precio</label><input type="text" id="ses-precio" placeholder="Precio"></div>
+          <div class="form-group form-full"><div class="ses-row3">
+            <div class="ses-col-esp" id="ses-col-esp"><label>Especialidad</label><select id="ses-padre" class="hvy-form-select"><option value="">— Sin especialidad (otros) —</option></select></div>
+            <div><label id="ses-dur-label">Duración (min)</label><input type="number" id="ses-duracion" placeholder="50" min="5" step="5"></div>
+            <div class="ses-col-uni" id="ses-col-uni" style="display:none"><label>Unidad</label><select id="ses-unidad" class="hvy-form-select"><option value="minutos">minutos</option><option value="horas">horas</option><option value="dias">días</option><option value="noches">noches</option></select></div>
+            <div><label>Precio</label><input type="text" id="ses-precio" placeholder="Precio"></div>
+          </div></div>
           <div class="form-group form-full"><label>Modalidad</label>
             <div class="toggle-group">
               <button class="toggle-btn" onclick="toggleMod(this,'ses-mod')">Presencial</button>
@@ -410,7 +423,14 @@
             </div>
           </div>
           <div class="form-group form-full"><label>Descripción <span style="color:#9ca3af;font-weight:400">(opcional)</span></label><input type="text" id="ses-desc" placeholder="Breve descripción"></div>
-          <div class="form-group form-full"><label>Espectro de atención</label><input type="text" id="ses-espectro" placeholder="Servicio dirigido a personas con x características."></div>
+          <div class="form-group form-full">
+            <label>Espectro de atención <span style="color:#9ca3af;font-weight:400;text-transform:none">(a quién está dirigido · opcional)</span></label>
+            <div id="ses-espectro-chips" class="esp-multi-chips"></div>
+            <div class="esp-multi">
+              <button type="button" class="esp-multi-btn" onclick="sesEspectroToggle(event)">Agregar perfil… <i class="fas fa-chevron-down"></i></button>
+              <div id="ses-espectro-panel" class="esp-multi-panel"></div>
+            </div>
+          </div>
           <div class="form-group"><label>Color identificador</label>
             <div style="display:flex;align-items:center;gap:8px">
               <input type="color" id="ses-color" value="#9961FF" style="width:44px;height:38px;border:none;border-radius:8px;cursor:pointer" oninput="previewSesColor(this.value)">

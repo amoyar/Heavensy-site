@@ -7,6 +7,13 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.22-1] config-rubro.js
+// 2026-06-22 | El motor declarativo (_crModularFormularios) y _crEstadia DEJAN de
+//              tocar el form de servicio (ses-): ese form ahora es hecho a mano
+//              (catálogo + agenda). Quitado 'servicio' de _CR_FORM_PREFIX y la
+//              inyección de Categoría (cr-cat-ses). Esto eliminaba los campos
+//              duplicados/mal etiquetados (Categoría, doble cancelación, doble
+//              espectro, labels corridos). Programas (prog-) intacto.
 // [v2026.06.20-4] config-rubro.js  (10º cambio sobre base 16)
 // 2026-06-20 | Paso 3 del wizard (step-2 "Especialidad") DESHABILITADO para PERSONA:
 //              las especialidades ya se editan en el paso 1 (panel de config-rubro).
@@ -1173,7 +1180,7 @@ window.crCaracGuardar = async function(){
 // (c) Intercepta apiCall para anexar profession_key al POST/PUT de
 //     servicios y programas (el backend 2.2 ya lo valida).
 function _crEstadia(){
-  if (!_crRec || document.getElementById('cr-cat-ses')) return;
+  if (!_crRec || document.getElementById('cr-cat-prog')) return;
   const panel = document.getElementById('panel-3');
   if (!panel) return;
 
@@ -1211,7 +1218,8 @@ function _crEstadia(){
       </div>`;
     grp.parentNode.insertBefore(wrap, grp.nextSibling);
   }
-  inyectar('ses-nombre', 'cr-cat-ses');
+  // El form de servicio (ses-) se maneja a mano (agenda, con su propio selector de
+  // profesional/categoría); ya NO se inyecta la categoría aquí.
   inyectar('prog-nombre', 'cr-cat-prog');
 
   // (c) Interceptar apiCall una sola vez
@@ -1255,7 +1263,7 @@ function _crEstadia(){
 // override por-empresa son pasos posteriores.
 //
 // Mapa: cada form del schema → prefijo de id real en el HTML.
-const _CR_FORM_PREFIX = { servicio: 'ses-', programa: 'prog-' };
+const _CR_FORM_PREFIX = { programa: 'prog-' };  // 'servicio' (ses-) se maneja a mano (agenda), no por el motor declarativo
 
 
 // Inyecta un campo del schema que el HTML no tiene. Devuelve el .form-group creado.

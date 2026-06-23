@@ -3,6 +3,44 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.23-3] configuracion.js
+// 2026-06-22 | FIX fuga entre empresas en el Paso 5 (Media): ppLoadFromServer ahora
+//              HIDRATA las claves ep_* del borrador (localStorage) con la config de la
+//              empresa cargada (portada/foto/fondo/galería, colores, textos, opacidad,
+//              fondo_color, fnames). Antes esas claves no se hidrataban desde la API y
+//              quedaban con los valores de la empresa anterior → imágenes cruzadas y
+//              riesgo de guardar en la empresa equivocada.
+// [v2026.06.23-2] configuracion.js
+// 2026-06-23 | Paso 4 objeto (pasada 2): el form de servicio soporta UNIDAD.
+//              Nuevo _cfgConfigurarFormServicioUnidad(): en objeto muestra
+//              #ses-unidad (hvy-select) y ajusta el label/min/step de Duración;
+//              oculta Especialidad solo en objeto-plano (categoría sin servicios
+//              con padre). _svcUnidadSugerida() propone la unidad más común del
+//              catálogo (cabañas→noches) al crear servicio propio. guardarSesion
+//              envía 'unit' en objeto; cfgPopulateServices muestra la unidad real
+//              en el meta (no "min" fijo) y guarda data-unit; editarSesion la
+//              reprefija. Persona intacta (unit minutos implícito, sin cambios).
+// [v2026.06.23-1] configuracion.js
+// 2026-06-23 | Paso 4 para sectores OBJETO. cfgRenderCatalogAdoption ramifica por
+//              naturaleza (nuevo _svcSectorNaturaleza, lee business.recursos.naturaleza
+//              del sector cacheado). En objeto: sin candado ni gating por specialties
+//              (los recursos objeto no tienen specialties); especialidades CON servicios
+//              = agrupadores colapsables (ej. automotriz/propiedades), especialidades
+//              SIN servicios = características → NO se muestran (siguen en config-rubro);
+//              servicios padre:null = filas planas adoptables (ej. cabañas: Noche/Finde/
+//              Semana). Reusa clases .svc-cat-* (sin tocar CSS). Persona queda intacta.
+//              Además cfgAdoptCatalog ahora envía 'unit' (la unidad del catálogo) al POST
+//              para que el backend la persista (services_service v2026.06.22-4).
+// [v2026.06.22-13] configuracion.js
+// 2026-06-22 | FIX fuga entre empresas en el Paso 4: _jmCargarSector ahora cachea
+//              por company_id (_jmSectorCacheCid) y recarga si cambió la empresa
+//              (antes devolvía el sector cacheado de la empresa anterior → catálogo
+//              de cabañas en dentista y viceversa). goStep(3) resetea el recurso
+//              seleccionado si ya no pertenece a la empresa cargada.
+// [v2026.06.22-12] configuracion.js
+// 2026-06-22 | Texto de la opción vacía de Especialidad alineado con el HTML
+//              ('— Sin especialidad (otros) —'). (El hvy-select de #ses-padre ya
+//              estaba: _cfgPopulatePadreSelect hace hvySelectify + change.)
 // [v2026.06.22-11] configuracion.js
 // 2026-06-22 | Borrar servicio: reemplazado el confirm() nativo del navegador por el
 //              modal Heavensy existente cfgConfirm().
@@ -398,6 +436,28 @@ function ppLoadFromServer() {
   apiCall('/api/perfil-profesional/config').then(r=>(r.data||{})).then(d=>{
     if(!d.success||!d.config) return;
     const c=d.config;
+    // ── FIX fuga entre empresas (Paso 5): el borrador vive en localStorage con claves
+    // ep_* NO scopeadas por empresa. Acá se hidratan con la config de ESTA empresa, así
+    // no quedan imágenes/colores de la empresa anterior (ni se guardan en la equivocada).
+    try {
+      ['--text-titulo','--titulo-bg','--text-lt','--text-franja','--navy'].forEach(v=>{
+        const cv = (c.colores && c.colores[v]) || '';
+        if (cv) localStorage.setItem('ep_color_'+v, cv); else localStorage.removeItem('ep_color_'+v);
+      });
+      localStorage.setItem('ep_opacidad', (c.opacidad!==undefined ? c.opacidad : 55));
+      localStorage.setItem('ep_texto_slogan',    c.slogan || '');
+      localStorage.setItem('ep_texto_frase',     c.frase || '');
+      localStorage.setItem('ep_texto_direccion', c.direccion || '');
+      localStorage.setItem('ep_nombre_empresa',  c.nombre_empresa || '');
+      localStorage.setItem('ep_fondo_color',     c.fondo_color || '');
+      localStorage.setItem('ep_portada_url',     c.portada_url || '');
+      localStorage.setItem('ep_foto_url',        c.foto_url || '');
+      localStorage.setItem('ep_fondo_url',       c.fondo_url || '');
+      localStorage.setItem('ep_galeria_urls',    JSON.stringify(c.galeria || []));
+      localStorage.setItem('ep_portada_fname',   c.portada_fname || '');
+      localStorage.setItem('ep_foto_fname',      c.foto_fname || '');
+      localStorage.setItem('ep_fondo_fname',     c.fondo_fname || '');
+    } catch(e){}
     const idMap={'--text-titulo':'ec-ttitulo','--titulo-bg':'ec-titulo','--text-lt':'ec-texto','--text-franja':'ec-franja','--navy':'ec-navy'};
     if(c.colores){
       localStorage.setItem('ep_colores_saved', '1');
@@ -545,6 +605,10 @@ function goStep(n) {
   document.querySelectorAll('.step-line').forEach((l,i) => l.classList.toggle('done', cfgDoneSteps.has(i)));
   // Paso 4 (Servicios, panel-3): pintar chips de profesional + catálogo para adoptar.
   if (n === 3) {
+    // Si el recurso seleccionado no pertenece a la empresa cargada (cambio de empresa),
+    // resetear al primero para no arrastrar el catálogo/recurso de la empresa anterior.
+    const _stillThere = (_cfgResourcesList || []).some(r => (r._id || r.id) === _svcCurrentResourceId);
+    if (!_stillThere) { _svcCurrentResourceId = _cfgFirstResourceId; _svcCurrentProfKey = _espProfKey || ''; }
     _svcCurrentResourceId = _svcCurrentResourceId || _cfgFirstResourceId;
     if (!_svcCurrentProfKey) _svcCurrentProfKey = _espProfKey || '';
     if (typeof cfgRenderSvcRecursoChips === 'function') cfgRenderSvcRecursoChips();
@@ -1816,8 +1880,13 @@ function editarSesion(btn) {
   document.getElementById('ses-color').value = rgbToHex(row.querySelector('.svc-dot').style.background);
   _cfgPopulatePadreSelect();
   const selP = document.getElementById('ses-padre'); if(selP) selP.value = row.dataset.padre || '';
+  const selU = document.getElementById('ses-unidad'); if(selU) selU.value = row.dataset.unit || 'minutos';
+  if (typeof _cfgConfigurarFormServicioUnidad === 'function') _cfgConfigurarFormServicioUnidad();
   document.querySelectorAll('#form-sesion .toggle-group .toggle-btn').forEach(b=>b.classList.toggle('on', mod.includes(b.textContent)));
   loadCancelacion('ses', JSON.parse(row.dataset.cancelacion||'null'));
+  try { _sesEspectro = JSON.parse(row.dataset.espectro || '[]') || []; } catch(_){ _sesEspectro = []; }
+  sesEspectroRenderChips();
+  const _epw=document.querySelector('.esp-multi'); if(_epw) _epw.classList.remove('open');
   document.getElementById('form-sesion-title').innerHTML='<i class="fas fa-pen" style="margin-right:6px"></i>Editar servicio';
   document.getElementById('btn-guardar-sesion').innerHTML='<i class="fas fa-check" style="margin-right:5px"></i>Guardar';
   editingSesionRow=row;
@@ -2507,10 +2576,13 @@ function guardarSesion() {
     modality: mod,
     cancellation_policy: cancelacion,
     description: desc,
+    target_profiles: _sesEspectro.slice(),
     color,
     profession_key: (_svcCurrentProfKey||_espProfKey)
   };
   if(padre) body.padre=padre;
+  const unidadSel=document.getElementById('ses-unidad')?.value||'';
+  if(_svcSectorNaturaleza()==='objeto' && unidadSel) body.unit=unidadSel;
   const editId = editingSesionRow && editingSesionRow.dataset ? editingSesionRow.dataset.serviceId : '';
   const catKey = editingSesionRow && editingSesionRow.dataset ? editingSesionRow.dataset.catalogKey : '';
   if(catKey) body.catalog_key=catKey;
@@ -3220,6 +3292,7 @@ function cfgPopulateServices(services) {
   const list = document.getElementById('svc-list');
   if (!list) return;
   _cfgPopulatePadreSelect();
+  if (typeof _cfgConfigurarFormServicioUnidad === 'function') _cfgConfigurarFormServicioUnidad();
 
   const profKey = _svcCurrentProfKey || _espProfKey;
   const espKeys = new Set((typeof _jmEspecialidadesDeCategoria === 'function' ? _jmEspecialidadesDeCategoria(profKey) : []).map(e => e.key));
@@ -3230,20 +3303,23 @@ function cfgPopulateServices(services) {
     const id = s._id || s.id || '';
     const color = s.color || colors[i % colors.length];
     const precio = s.price ? `$${Number(s.price).toLocaleString('es-CL')}` : '';
-    const meta = `${s.duration || 0} min${s.modality ? ' · ' + s.modality : ''}`;
+    const meta = `${s.duration || 0} ${_svcUniLabel(s.unit || 'minutos')}${s.modality ? ' · ' + s.modality : ''}`;
     const esEsp = s.catalog_key && espKeys.has(s.catalog_key) && !s.padre;
     const tipo = `<span class="svc-tipo">${esEsp ? 'Especialidad' : 'Servicio'}</span>`;
     const cancelAttr = JSON.stringify(s.cancellation_policy || null).replace(/'/g, '&#39;');
+    const espAttr = JSON.stringify(s.target_profiles || []).replace(/'/g, '&#39;');
     return `<div class="svc-row svc-row-ag"
       data-service-id="${id}"
       data-nombre="${(s.name || '').replace(/"/g, '&quot;')}"
       data-duration="${s.duration || ''}"
+      data-unit="${s.unit || ''}"
       data-price="${s.price != null ? s.price : ''}"
       data-modality="${(s.modality || '').replace(/"/g, '&quot;')}"
       data-padre="${s.padre || ''}"
       data-catalog-key="${s.catalog_key || ''}"
       data-descripcion="${(s.description || '').replace(/"/g, '&quot;')}"
-      data-cancelacion='${cancelAttr}'>
+      data-cancelacion='${cancelAttr}'
+      data-espectro='${espAttr}'>
       <span class="svc-dot" style="background:${color}"></span>
       <div style="flex:1">
         <div class="svc-name">${tipo}${s.name || ''}</div>
@@ -3265,9 +3341,47 @@ function _cfgPopulatePadreSelect() {
   const profKey = _svcCurrentProfKey || _espProfKey;
   const esps = (typeof _jmEspecialidadesDeCategoria === 'function') ? _jmEspecialidadesDeCategoria(profKey) : [];
   const cur = sel.value;
-  sel.innerHTML = '<option value="">— Otros servicios —</option>' +
+  sel.innerHTML = '<option value="">— Sin especialidad (otros) —</option>' +
     esps.map(e => `<option value="${e.key}">${(e.nombre || '').replace(/</g, '&lt;')}</option>`).join('');
   sel.value = cur;
+  if (typeof hvySelectify === 'function') hvySelectify(sel);   // dropdown Heavensy
+  sel.dispatchEvent(new Event('change'));                      // refresca el label del hvy-select
+}
+
+// Unidad más frecuente del catálogo de la categoría (sugerencia al crear propio).
+function _svcUnidadSugerida(profKey){
+  const srvs = (typeof _jmServiciosDeCategoria === 'function') ? _jmServiciosDeCategoria(profKey) : [];
+  const cnt = {};
+  srvs.forEach(s => { if (s.unidad) cnt[s.unidad] = (cnt[s.unidad] || 0) + 1; });
+  let best = 'minutos', n = -1;
+  Object.keys(cnt).forEach(u => { if (cnt[u] > n){ n = cnt[u]; best = u; } });
+  return best;
+}
+
+// Adapta el form de servicio a la naturaleza del sector (persona vs objeto).
+// - Unidad (#ses-unidad): visible solo en objeto.
+// - Especialidad (#ses-col-esp): oculta SOLO en objeto-plano (categoría sin
+//   servicios con padre); en persona y en objeto-con-agrupadores se mantiene.
+// - Duración: label "(min)" y min/step 5 en persona; genérico y min/step 1 en objeto.
+function _cfgConfigurarFormServicioUnidad(){
+  const esObjeto = (_svcSectorNaturaleza() === 'objeto');
+  const profKey  = _svcCurrentProfKey || _espProfKey;
+  const srvs     = (typeof _jmServiciosDeCategoria === 'function') ? _jmServiciosDeCategoria(profKey) : [];
+  const hasUmbrellas = srvs.some(s => s.padre);
+
+  const colEsp = document.getElementById('ses-col-esp');
+  if (colEsp) colEsp.style.display = (esObjeto && !hasUmbrellas) ? 'none' : '';
+
+  const colUni = document.getElementById('ses-col-uni');
+  if (colUni) colUni.style.display = esObjeto ? '' : 'none';
+
+  const lbl = document.getElementById('ses-dur-label');
+  if (lbl) lbl.textContent = esObjeto ? 'Duración' : 'Duración (min)';
+  const dur = document.getElementById('ses-duracion');
+  if (dur){ dur.min = esObjeto ? '1' : '5'; dur.step = esObjeto ? '1' : '5'; dur.placeholder = esObjeto ? '1' : '50'; }
+
+  const uni = document.getElementById('ses-unidad');
+  if (uni && typeof hvySelectify === 'function'){ hvySelectify(uni); uni.dispatchEvent(new Event('change')); }
 }
 
 // Elimina (desactiva) un agenda_service desde la papelera.
@@ -3297,6 +3411,7 @@ let _cfgResourcesList     = [];   // todos los recursos de la empresa (para el s
 // comparte estado con config-rubro, así que carga el catálogo por su cuenta vía
 // GET /api/sectores/<key> y mantiene su propio estado.
 let _jmSectorCache = null;   // doc del sector (con profesiones[].especialidades[])
+let _jmSectorCacheCid = null; // company_id del sector cacheado (invalida al cambiar de empresa)
 let _jmSpecsSel    = [];     // especialidades marcadas del recurso en edición [{key,nombre,propia}]
 let _jmProfKey     = '';     // profession_key (categoría) del recurso en edición
 let _espSpecsSel   = [];     // ídem para el editor del paso 3 wizard (spec-tags-container)
@@ -3317,8 +3432,8 @@ function _jmNormSpecs(arr){
 // Obtiene el sector_key igual que config-rubro: pidiendo la empresa
 // (business_config.template || sector), no de localStorage.
 async function _jmCargarSector(){
-  if (_jmSectorCache) return _jmSectorCache;
   const cid = (typeof _cfgCompanyId !== 'undefined' && _cfgCompanyId) || localStorage.getItem('company_id');
+  if (_jmSectorCache && _jmSectorCacheCid === cid) return _jmSectorCache;   // cache válido solo si es la misma empresa
   if (!cid) return null;
   const rc = await apiCall('/api/companies/' + cid).catch(() => null);
   const company = (rc && rc.data && (rc.data.company || rc.data)) || null;
@@ -3326,6 +3441,7 @@ async function _jmCargarSector(){
   if (!sectorKey) return null;
   const rs = await apiCall('/api/sectores/' + sectorKey).catch(() => null);
   _jmSectorCache = (rs && rs.data && (rs.data.sector || rs.data)) || null;
+  _jmSectorCacheCid = cid;
   return _jmSectorCache;
 }
 function _jmEspecialidadesDeCategoria(profKey){
@@ -3426,6 +3542,13 @@ function _jmServiciosDeCategoria(profKey){
   return ((p && p.servicios) || []).filter(s => s && s.active !== false);
 }
 
+// Naturaleza del sector cacheado ('persona' | 'objeto'). Default seguro: 'persona'.
+function _svcSectorNaturaleza(){
+  return (_jmSectorCache && _jmSectorCache.business
+       && _jmSectorCache.business.recursos
+       && _jmSectorCache.business.recursos.naturaleza) || 'persona';
+}
+
 function _svcUniLabel(u){ return ({minutos:'min',horas:'h',dias:'días',noches:'noches'})[u] || 'min'; }
 
 function _svcCatName(profKey){
@@ -3482,6 +3605,40 @@ async function cfgRenderCatalogAdoption(){
   const right = (tipo, key, nombre, padre, dur, unidad) => (_svcAdoptedKeys.has(key) ? addedTag : ctrls(tipo, key, nombre, padre, dur, unidad));
   const srvRow = (s, owned) => `<div class="svc-cat-row is-srv">${tag('Serv.')}${chip('srv', s.nombre)}${owned ? right('srv', s.key, s.nombre, s.padre || '', s.duracion, s.unidad) : ''}</div>`;
   const lockHint = '<span class="svc-cat-lock"><i class="fas fa-lock" aria-hidden="true"></i> Asígnala en Mi empresa</span>';
+
+  // ── Sectores OBJETO (cabañas, salas, propiedades, automotriz…) ───────────
+  // No hay paraguas-especialidad adoptable ni candado: los recursos objeto no
+  // tienen specialties. Lo agendable son los SERVICIOS. Las especialidades que
+  // NO tienen servicios son características (tinaja, wifi) y NO se muestran acá
+  // (se siguen editando en config-rubro). Las que SÍ tienen servicios actúan de
+  // agrupador (ej. automotriz: Frenos → Servicio de frenos).
+  if (_svcSectorNaturaleza() === 'objeto'){
+    let oh = `<div class="svc-cat-title">Del catálogo · ${_svcCatName(profKey)}</div>`;
+    // Agrupadores: especialidades con al menos un servicio colgando.
+    esps.forEach(e => {
+      const hijos = srvs.filter(s => s.padre === e.key);
+      if (!hijos.length) return; // característica no agendable → fuera del Paso 4
+      oh += `<div class="svc-cat-esp has-children">
+        <div class="svc-cat-head" onclick="cfgSvcToggleGroup(this)">
+          <i class="svc-cat-chev fas fa-chevron-right" aria-hidden="true"></i>
+          ${tag('Esp.')}${chip('esp', e.nombre)}
+          <span class="svc-cat-count">${hijos.length + (hijos.length === 1 ? ' servicio' : ' servicios')}</span>
+        </div>
+        <div class="svc-cat-children">${hijos.map(s => srvRow(s, true)).join('')}</div>
+      </div>`;
+    });
+    // Servicios sin padre → filas planas adoptables (cabañas: Noche/Finde/Semana).
+    srvs.filter(s => !s.padre).forEach(s => {
+      oh += `<div class="svc-cat-esp">
+        <div class="svc-cat-head">
+          ${tag('Serv.')}${chip('srv', s.nombre)}
+          ${right('srv', s.key, s.nombre, '', s.duracion, s.unidad)}
+        </div>
+      </div>`;
+    });
+    cont.innerHTML = oh;
+    return;
+  }
 
   let html = `<div class="svc-cat-title">Del catálogo · ${_svcCatName(profKey)}</div>`;
 
@@ -3560,6 +3717,7 @@ window.cfgAdoptCatalog = async function(btn, tipo, key, nombre, padre, unidad){
     profession_key: (_svcCurrentProfKey || _espProfKey)
   };
   if (tipo === 'srv' && padre) body.padre = padre;
+  if (unidad) body.unit = unidad;        // persiste la unidad agendable (backend v2026.06.22-4)
   if (priceRaw !== '') body.price = Number(priceRaw);
 
   const res = await apiCall('/api/agenda/services', { method: 'POST', body: JSON.stringify(body) });
@@ -3571,6 +3729,81 @@ window.cfgAdoptCatalog = async function(btn, tipo, key, nombre, padre, unidad){
   }
 };
 
+// ── Espectro de atención: lista general multi-selección (chips) ────────────
+const SES_ESPECTRO = [
+  ['Etapa de vida', [
+    ['lactantes','Lactantes / primera infancia'], ['ninos','Niños'], ['adolescentes','Adolescentes'],
+    ['adultos','Adultos'], ['adultos_mayores','Adultos mayores']
+  ]],
+  ['Etapas y estados', [
+    ['embarazo','Embarazo'], ['posparto','Posparto'], ['post_operatorio','Cuidados post-operatorios'],
+    ['rehabilitacion','Personas en rehabilitación']
+  ]],
+  ['Neurodivergencia y desarrollo', [
+    ['tea','Espectro autista (TEA)'], ['tdah','TDAH'], ['dificultades_aprendizaje','Dificultades de aprendizaje'],
+    ['discapacidad_intelectual','Discapacidad intelectual'], ['altas_capacidades','Altas capacidades']
+  ]],
+  ['Discapacidad', [
+    ['disc_fisica','Discapacidad física / motora'], ['disc_visual','Discapacidad visual'],
+    ['disc_auditiva','Discapacidad auditiva'], ['movilidad_reducida','Movilidad reducida']
+  ]],
+  ['Salud y bienestar', [
+    ['condiciones_cronicas','Condiciones crónicas'], ['salud_mental','Salud mental'],
+    ['manejo_dolor','Manejo del dolor'], ['ansiedad_fobia','Ansiedad o fobia (ej. dental)'],
+    ['oncologico','Pacientes oncológicos']
+  ]],
+  ['Otros perfiles', [
+    ['deportistas','Deportistas / alto rendimiento'], ['familias','Familias / cuidadores'],
+    ['lgbtq','Población LGBTIQ+'], ['migrantes','Personas migrantes'], ['poblacion_general','Población general']
+  ]]
+];
+let _sesEspectro = [];
+
+function _sesEspectroLabel(key){
+  for (const [, items] of SES_ESPECTRO){ const f = items.find(i => i[0] === key); if (f) return f[1]; }
+  return key;
+}
+function sesEspectroRenderChips(){
+  const cont = document.getElementById('ses-espectro-chips');
+  if (!cont) return;
+  cont.innerHTML = _sesEspectro.map(k =>
+    `<span class="esp-multi-chip">${_sesEspectroLabel(k)}<i class="fas fa-times" onclick="sesEspectroRemove('${k}')"></i></span>`
+  ).join('');
+}
+function sesEspectroRenderPanel(){
+  const panel = document.getElementById('ses-espectro-panel');
+  if (!panel) return;
+  panel.innerHTML = SES_ESPECTRO.map(([grupo, items]) =>
+    `<div class="esp-multi-grp">${grupo}</div>` +
+    items.map(([k, nombre]) => {
+      const on = _sesEspectro.includes(k);
+      return `<button type="button" class="esp-multi-opt${on ? ' on' : ''}" onclick="sesEspectroPick('${k}')">${nombre}${on ? '<i class="fas fa-check"></i>' : ''}</button>`;
+    }).join('')
+  ).join('');
+}
+window.sesEspectroToggle = function(e){
+  if (e) e.stopPropagation();
+  const wrap = document.querySelector('.esp-multi');
+  if (!wrap) return;
+  const willOpen = !wrap.classList.contains('open');
+  if (willOpen) sesEspectroRenderPanel();
+  wrap.classList.toggle('open', willOpen);
+};
+window.sesEspectroPick = function(k){
+  const i = _sesEspectro.indexOf(k);
+  if (i >= 0) _sesEspectro.splice(i, 1); else _sesEspectro.push(k);
+  sesEspectroRenderChips(); sesEspectroRenderPanel();
+};
+window.sesEspectroRemove = function(k){
+  const i = _sesEspectro.indexOf(k);
+  if (i >= 0) _sesEspectro.splice(i, 1);
+  sesEspectroRenderChips(); sesEspectroRenderPanel();
+};
+document.addEventListener('click', function(e){
+  const wrap = document.querySelector('.esp-multi.open');
+  if (wrap && !wrap.contains(e.target)) wrap.classList.remove('open');
+});
+
 // Abre el form de servicio en modo "nuevo": limpia, resetea y hace scroll hasta él
 // (el form vive al final del panel, así no hay que buscarlo scrolleando).
 window.cfgNuevoServicio = function(){
@@ -3579,8 +3812,14 @@ window.cfgNuevoServicio = function(){
   const m=document.getElementById('ses-mod'); if(m) m.value='';
   document.querySelectorAll('#form-sesion .toggle-btn').forEach(b=>b.classList.remove('on'));
   if (typeof resetCancelacion === 'function') resetCancelacion('ses');
-  _cfgPopulatePadreSelect();
   const sp=document.getElementById('ses-padre'); if(sp) sp.value='';
+  _cfgPopulatePadreSelect();
+  const _profKey = _svcCurrentProfKey || _espProfKey;
+  const su=document.getElementById('ses-unidad');
+  if(su) su.value = (_svcSectorNaturaleza()==='objeto') ? _svcUnidadSugerida(_profKey) : 'minutos';
+  if (typeof _cfgConfigurarFormServicioUnidad === 'function') _cfgConfigurarFormServicioUnidad();
+  _sesEspectro = []; sesEspectroRenderChips();
+  const epw=document.querySelector('.esp-multi'); if(epw) epw.classList.remove('open');
   const t=document.getElementById('form-sesion-title'); if(t) t.innerHTML='<i class="fas fa-clock" style="margin-right:6px"></i>Crea tu servicio';
   const g=document.getElementById('btn-guardar-sesion'); if(g) g.innerHTML='<i class="fas fa-check" style="margin-right:5px"></i>Guardar';
   const panel=document.getElementById('form-sesion');

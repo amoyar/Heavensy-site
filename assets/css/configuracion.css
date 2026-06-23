@@ -1,6 +1,11 @@
 /* ══════════════════════════════════════
    CONFIGURACIÓN — HEAVENSY
    ── BITÁCORA ──
+   [v2026.06.23-1] 2026-06-23 | .ses-row3 pasa de grid a flex-wrap para reflowear
+   con 3 o 4 campos (Especialidad/Duración/Unidad/Precio) y colapsar limpio cuando
+   se oculta una columna en sectores objeto. Bases flexibles; Especialidad más ancha.
+   [v2026.06.22-9] 2026-06-22 | .hvy-form-select.hvy-select-btn: el botón del
+   dropdown 'Especialidad' calza con los inputs del form (borde/radio/padding).
    [v2026.06.22-8] 2026-06-22 | Lista de agendables en contenedor propio
    (.svc-list-section + .svc-list-head 'Disponibles para agendar') para distinguirla
    del catálogo; tooltip Heavensy [data-tip] (reemplaza el title nativo).
@@ -447,3 +452,29 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 [data-tip]{position:relative}
 [data-tip]:hover::after{content:attr(data-tip);position:absolute;right:calc(100% + 9px);top:50%;transform:translateY(-50%);background:#2b3556;color:#fff;font-size:11px;font-weight:500;white-space:nowrap;padding:5px 9px;border-radius:7px;box-shadow:0 4px 14px rgba(43,53,86,.25);z-index:60;pointer-events:none}
 [data-tip]:hover::before{content:'';position:absolute;right:calc(100% + 4px);top:50%;transform:translateY(-50%);border:5px solid transparent;border-left-color:#2b3556;z-index:60;pointer-events:none}
+
+/* ── C3 R2: form comprimido + espectro multi-select [v2026.06.22-9] ── */
+.ses-row3{display:flex;flex-wrap:wrap;gap:10px}
+.ses-row3 > div{flex:1 1 110px;min-width:0}
+.ses-row3 > .ses-col-esp{flex:1.6 1 150px}
+.ses-row3 > div > label{display:block;margin-bottom:4px}
+@media(max-width:640px){.ses-row3 > div{flex:1 1 100%}}
+.esp-multi-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.esp-multi-chip{display:inline-flex;align-items:center;gap:6px;background:#EEEDFE;color:#3C3489;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
+.esp-multi-chip i{cursor:pointer;font-size:11px;opacity:.55}
+.esp-multi-chip i:hover{opacity:1;color:#ef4444}
+.esp-multi{position:relative}
+.esp-multi-btn{width:100%;display:flex;align-items:center;gap:8px;justify-content:space-between;background:#fff;border:1px solid #C9D9FF;border-radius:8px;padding:8px 12px;font-size:13px;color:#7D84C1;cursor:pointer}
+.esp-multi-btn:hover{border-color:#9961FF}
+.esp-multi-btn i{font-size:10px;color:#9BA3C0}
+.esp-multi-panel{display:none;margin-top:6px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 4px 14px rgba(31,41,55,.10);padding:6px;max-height:240px;overflow-y:auto}
+.esp-multi.open .esp-multi-panel{display:block}
+.esp-multi-grp{font-size:10px;font-weight:700;color:#a8aed1;text-transform:uppercase;letter-spacing:.04em;padding:7px 10px 3px}
+.esp-multi-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:none;background:#fff;cursor:pointer;text-align:left;font-size:13px;color:#374151;padding:8px 10px;border-radius:8px}
+.esp-multi-opt:hover{background:#f5f3ff}
+.esp-multi-opt.on{background:#f5f3ff;color:#7a52d4;font-weight:600}
+.esp-multi-opt i{font-size:11px;color:#9961FF}
+
+/* Botón del hvy-select dentro del form de servicio (calza con .esp-multi-btn) [v2026.06.22-9] */
+.hvy-form-select.hvy-select-btn{width:100%;border:1px solid #C9D9FF;border-radius:8px;padding:8px 12px;font-size:13px;color:#2b3556;background:#fff}
+.hvy-form-select.hvy-select-btn:hover{border-color:#9961FF}
