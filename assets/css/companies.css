@@ -3,6 +3,22 @@
    Estilos del módulo de Empresas
    Heavensy Admin
    ── BITÁCORA ──
+   [v2026.06.23-1] companies.css
+   2026-06-23 | C2-ter: edición inline en el acordeón — botón lápiz (.sec-chip-ed) en
+                cada chip y fila de edición (.sec-edit, reusa .sec-add) para
+                especialidades y servicios.
+   [v2026.06.20-5] companies.css
+   2026-06-20 | hvy-select en el acordeón: borde/padding/radius de unidad/padre
+                pasan a las CLASES (.sec-add-uni/.sec-add-padre) para que el
+                <button> que genera hvy-select (hereda la clase) quede estilado.
+   [v2026.06.20-4] companies.css
+   2026-06-20 | Look Heavensy en el acordeón: especialidad = pill morado sólido
+                (#9961FF, paraguas/primario), servicio = pill blanco con borde
+                (detalle/secundario); inputs y selects alineados al control canónico
+                del sistema (6px, #e5e7eb, texto #374151, focus #9961FF).
+   [v2026.06.20-3] companies.css
+   2026-06-20 | C2-bis: estilos de grupos de servicio por padre (.sec-srv-grupo*) y
+                dropdown de especialidad padre (.sec-add-padre).
    [v2026.06.20-2] companies.css
    2026-06-20 | Servicios: estilo del dropdown de unidad (.sec-add-uni).
    [v2026.06.20-1] companies.css
@@ -684,16 +700,17 @@
 .sec-empty { font-size: 12px; color: #9096b0; }
 
 .sec-chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: linear-gradient(135deg, #f4ecff 0%, #e9dcff 100%);
-  border: 1px solid #d9c7ff; border-radius: 999px;
-  padding: 4px 8px 4px 12px;
-  font-size: 11px; font-weight: 600; color: #6b3fc4;
-  box-shadow: 0 1px 2px rgba(153, 97, 255, 0.12);
+  display: inline-flex; align-items: center; gap: 7px;
+  background: linear-gradient(135deg, #9961FF 0%, #7d5bff 100%);
+  border: none; border-radius: 999px;
+  padding: 5px 9px 5px 13px;
+  font-size: 11px; font-weight: 600; color: #fff;
+  box-shadow: 0 1px 3px rgba(153, 97, 255, 0.28);
 }
 .sec-chip-srv {
-  background: linear-gradient(135deg, #eaf3ff 0%, #dce9ff 100%);
-  border-color: #c4d8ff; color: #2f5bb0;
+  background: #fff;
+  border: 1px solid #e3d9ff; color: #6b3fc4;
+  box-shadow: none;
 }
 .sec-chip-x {
   border: none; background: transparent; cursor: pointer;
@@ -702,15 +719,37 @@
 }
 .sec-chip-x:hover { opacity: 1; color: #dc2626; }
 
-.sec-add { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
-.sec-add input {
-  padding: 6px 10px; border: 1px solid #e3e1f3; border-radius: 8px;
-  font-size: 12px; color: #2b3556; min-width: 160px;
+.sec-add { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+.sec-add input,
+.sec-add .sec-add-uni,
+.sec-add .sec-add-padre {
+  padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 6px;
+  font-size: 12px; color: #374151; background: #fff; outline: none;
 }
-.sec-add input:focus { border-color: #9961FF; outline: none; }
+.sec-add input { min-width: 160px; }
+.sec-add .sec-add-uni,
+.sec-add .sec-add-padre { cursor: pointer; }
+.sec-add input:focus,
+.sec-add .sec-add-uni:focus,
+.sec-add .sec-add-padre:focus { border-color: #9961FF; }
 .sec-add .sec-add-dur { min-width: 0; width: 72px; }
-.sec-add .sec-add-uni {
-  padding: 6px 8px; border: 1px solid #e3e1f3; border-radius: 8px;
-  font-size: 12px; color: #2b3556; background: #fff; cursor: pointer;
+
+/* ── C2-bis: grupos de servicio por padre + dropdown padre [v2026.06.20-3] ── */
+.sec-srv-grupo { margin-bottom: 8px; }
+.sec-srv-grupo-h {
+  font-size: 11px; font-weight: 700; color: #6b6f86;
+  display: flex; align-items: center; gap: 6px; margin: 4px 0 5px;
 }
-.sec-add .sec-add-uni:focus { border-color: #9961FF; outline: none; }
+.sec-add .sec-add-padre { max-width: 180px; }
+
+/* ── C2-ter: edición inline (lápiz) de especialidad/servicio [v2026.06.23-1] ── */
+.sec-chip-ed {
+  border: none; background: transparent; cursor: pointer; color: inherit;
+  opacity: .5; font-size: 11px; line-height: 1; padding: 0 1px; transition: opacity .12s;
+}
+.sec-chip-ed:hover { opacity: 1; }
+.sec-edit {
+  flex-basis: 100%;
+  background: #faf9ff; border: 1px solid #e3d9ff; border-radius: 10px;
+  padding: 8px 10px; margin: 2px 0;
+}

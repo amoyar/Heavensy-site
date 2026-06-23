@@ -3,6 +3,23 @@
 // Heavensy Admin
 // ============================================
 // ── BITÁCORA ──
+// [v2026.06.23-1] companies.js
+// 2026-06-23 | C2-ter: edición inline con lápiz en el acordeón. Cada chip de
+//              especialidad/servicio trae ✎ que abre una fila de edición (nombre,
+//              duración, unidad, y padre en servicios) y guarda vía PUT. Estado
+//              _secEdit; handlers secEspEdit/secSrvEdit/secEditCancel/secEspSave/
+//              secSrvSave; forms _secEspEditForm/_secSrvEditForm.
+// [v2026.06.20-4] companies.js
+// 2026-06-20 | El acordeón usa el dropdown estándar hvy-select: tras pintar
+//              secOpenSector convierte los <select> de unidad/padre con
+//              hvySelectifyAll (idempotente). La lectura por id/.value no cambia.
+// [v2026.06.20-3] companies.js
+// 2026-06-20 | C2-bis (modelo B): el form de especialidad gana duración+unidad
+//              (paraguas agendable); el de servicio gana dropdown de PADRE
+//              (especialidades de la categoría + "— Otros servicios —"). Los
+//              servicios se muestran AGRUPADOS por su especialidad padre, y los
+//              padre:null bajo "Otros servicios". _normalizeSectores conserva
+//              duracion/unidad en especialidad y padre en servicio.
 // [v2026.06.20-2] companies.js
 // 2026-06-20 | Servicios: campo `unidad` (minutos/horas/días/noches). El form de
 //              agregar trae un dropdown de unidad (default min) y el chip muestra
@@ -511,6 +528,12 @@ function secOpenSector(key) {
     <div style="margin-top:14px;padding-top:12px;border-top:1px solid #eef0f4;font-size:12px;color:#9096b0">
       <i class="fas fa-circle-info"></i> El texto del prompt (base del sector y de cada profesión) se edita en la pestaña <b>Prompts</b>.
     </div>`;
+
+  // Convierte los <select> del acordeón (unidad/padre) al dropdown Heavensy.
+  // Idempotente; en cada re-render se rehace el innerHTML y se re-aplica.
+  if (typeof hvySelectifyAll === 'function') {
+    hvySelectifyAll(Array.from(detail.querySelectorAll('select.sec-add-uni, select.sec-add-padre')));
+  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -522,6 +545,7 @@ function secOpenSector(key) {
 // ════════════════════════════════════════════════════════════
 let _secCurrentSector = null;          // sector_key abierto (para re-render)
 let _secAccOpen       = new Set();     // profession_key con acordeón abierto
+let _secEdit          = null;          // { tipo:'esp'|'srv', pk, key } en edición inline
 
 function secToggleAcc(profKey) {
   if (_secAccOpen.has(profKey)) _secAccOpen.delete(profKey);
@@ -561,51 +585,120 @@ function _secUniLabel(u) {
   return ({ minutos: 'min', horas: 'h', dias: 'días', noches: 'noches' })[u] || 'min';
 }
 
+// ¿Este chip está en modo edición?
+function _secEditing(tipo, pk, key) {
+  return !!_secEdit && _secEdit.tipo === tipo && _secEdit.pk === pk && _secEdit.key === key;
+}
+
+// <option> de unidad con la actual preseleccionada.
+function _secUniOpts(sel) {
+  const lbl = { minutos: 'min', horas: 'horas', dias: 'días', noches: 'noches' };
+  return ['minutos', 'horas', 'dias', 'noches'].map(u =>
+    `<option value="${u}"${u === sel ? ' selected' : ''}>${lbl[u]}</option>`).join('');
+}
+
+// Form de edición inline de una especialidad (nombre + duración + unidad).
+function _secEspEditForm(sectorKey, pk, e) {
+  return `
+    <div class="sec-add sec-edit">
+      <input type="text" id="esp-ed-nom-${pk}" value="${escapeHtml(e.nombre)}">
+      <input type="number" id="esp-ed-dur-${pk}" min="1" placeholder="cant." class="sec-add-dur" value="${e.duracion != null ? e.duracion : ''}">
+      <select id="esp-ed-uni-${pk}" class="sec-add-uni" title="Unidad">${_secUniOpts(e.unidad || 'minutos')}</select>
+      <button class="btn-primary btn-sm" onclick="secEspSave('${sectorKey}','${pk}','${e.key}')"><i class="fas fa-check"></i> Guardar</button>
+      <button class="btn-secondary btn-sm" onclick="secEditCancel()">Cancelar</button>
+    </div>`;
+}
+
+// Form de edición inline de un servicio (nombre + duración + unidad + padre).
+function _secSrvEditForm(sectorKey, pk, sv, esp) {
+  const padreOpts = '<option value="">— Otros servicios —</option>' +
+    esp.map(e => `<option value="${e.key}"${e.key === sv.padre ? ' selected' : ''}>${escapeHtml(e.nombre)}</option>`).join('');
+  return `
+    <div class="sec-add sec-edit">
+      <input type="text" id="srv-ed-nom-${pk}" value="${escapeHtml(sv.nombre)}">
+      <input type="number" id="srv-ed-dur-${pk}" min="1" placeholder="cant." class="sec-add-dur" value="${sv.duracion != null ? sv.duracion : ''}">
+      <select id="srv-ed-uni-${pk}" class="sec-add-uni" title="Unidad">${_secUniOpts(sv.unidad || 'minutos')}</select>
+      <select id="srv-ed-padre-${pk}" class="sec-add-padre" title="¿De qué especialidad cuelga?">${padreOpts}</select>
+      <button class="btn-primary btn-sm" onclick="secSrvSave('${sectorKey}','${pk}','${sv.key}')"><i class="fas fa-check"></i> Guardar</button>
+      <button class="btn-secondary btn-sm" onclick="secEditCancel()">Cancelar</button>
+    </div>`;
+}
+
 // Panel interno del acordeón: bloque Especialidades + bloque Servicios.
 function _secAccPanelHtml(sectorKey, p) {
   const pk  = p.profession_key;
   const esp = p.especialidades || [];
   const srv = p.servicios || [];
 
-  const espChips = esp.length ? esp.map(e => `
-    <span class="sec-chip">${escapeHtml(e.nombre)}
+  // ── Especialidades: el paraguas agendable (pueden llevar duración sugerida) ──
+  const espChips = esp.length ? esp.map(e =>
+    _secEditing('esp', pk, e.key) ? _secEspEditForm(sectorKey, pk, e) : `
+    <span class="sec-chip">${escapeHtml(e.nombre)}${e.duracion ? ` · ${e.duracion} ${_secUniLabel(e.unidad)}` : ''}
+      <button class="sec-chip-ed" title="Editar"
+        onclick="secEspEdit('${sectorKey}','${pk}','${e.key}')">✎</button>
       <button class="sec-chip-x" title="Quitar"
         onclick="secEspDelete('${sectorKey}','${pk}','${e.key}')">✕</button>
     </span>`).join('') : '<span class="sec-empty">Sin especialidades aún.</span>';
 
-  const srvChips = srv.length ? srv.map(sv => `
+  // ── Servicios: detalles agrupados por su especialidad padre (+ "Otros servicios") ──
+  const grupos = {};
+  srv.forEach(sv => { const g = sv.padre || '__otros__'; (grupos[g] = grupos[g] || []).push(sv); });
+  const orden = esp.map(e => e.key).filter(k => grupos[k]);
+  if (grupos['__otros__']) orden.push('__otros__');
+
+  const srvChip = sv =>
+    _secEditing('srv', pk, sv.key) ? _secSrvEditForm(sectorKey, pk, sv, esp) : `
     <span class="sec-chip sec-chip-srv">${escapeHtml(sv.nombre)}${sv.duracion ? ` · ${sv.duracion} ${_secUniLabel(sv.unidad)}` : ''}
+      <button class="sec-chip-ed" title="Editar"
+        onclick="secSrvEdit('${sectorKey}','${pk}','${sv.key}')">✎</button>
       <button class="sec-chip-x" title="Quitar"
         onclick="secSrvDelete('${sectorKey}','${pk}','${sv.key}')">✕</button>
-    </span>`).join('') : '<span class="sec-empty">Sin servicios aún.</span>';
+    </span>`;
+
+  const srvGrupos = orden.length ? orden.map(g => {
+    const titulo = g === '__otros__'
+      ? '<i class="fas fa-layer-group" style="color:#9096b0"></i> Otros servicios'
+      : `<i class="fas fa-star" style="color:#9961FF"></i> ${escapeHtml((esp.find(e => e.key === g) || {}).nombre || g)}`;
+    return `
+      <div class="sec-srv-grupo">
+        <div class="sec-srv-grupo-h">${titulo}</div>
+        <div class="sec-chips">${grupos[g].map(srvChip).join('')}</div>
+      </div>`;
+  }).join('') : '<span class="sec-empty">Sin servicios aún.</span>';
+
+  const padreOpts = '<option value="">— Otros servicios —</option>' +
+    esp.map(e => `<option value="${e.key}">${escapeHtml(e.nombre)}</option>`).join('');
+
+  const uniOpts = '<option value="minutos">min</option><option value="horas">horas</option>' +
+                  '<option value="dias">días</option><option value="noches">noches</option>';
 
   return `
     <div class="sec-acc-panel">
       <div class="sec-acc-sub">
-        <div class="sec-acc-h"><i class="fas fa-star" style="color:#9961FF"></i> Especialidades</div>
+        <div class="sec-acc-h"><i class="fas fa-star" style="color:#9961FF"></i> Especialidades
+          <span class="sec-hint">son lo agendable (el paraguas); la duración es sugerida</span>
+        </div>
         <div class="sec-chips">${espChips}</div>
         <div class="sec-add">
-          <input type="text" id="esp-add-${pk}" placeholder="Nueva especialidad"
+          <input type="text" id="esp-add-nom-${pk}" placeholder="Nueva especialidad">
+          <input type="number" id="esp-add-dur-${pk}" min="1" placeholder="cant." class="sec-add-dur"
             onkeydown="if(event.key==='Enter')secEspAdd('${sectorKey}','${pk}')">
+          <select id="esp-add-uni-${pk}" class="sec-add-uni" title="Unidad de la duración">${uniOpts}</select>
           <button class="btn-primary btn-sm" onclick="secEspAdd('${sectorKey}','${pk}')"><i class="fas fa-plus"></i> Agregar</button>
         </div>
       </div>
 
       <div class="sec-acc-sub">
         <div class="sec-acc-h"><i class="fas fa-briefcase" style="color:#9961FF"></i> Servicios
-          <span class="sec-hint">la duración es sugerida — cada empresa puede ajustarla</span>
+          <span class="sec-hint">cuelgan de una especialidad, o quedan en "Otros servicios"</span>
         </div>
-        <div class="sec-chips">${srvChips}</div>
+        ${srvGrupos}
         <div class="sec-add">
           <input type="text" id="srv-add-nom-${pk}" placeholder="Nuevo servicio">
           <input type="number" id="srv-add-dur-${pk}" min="1" placeholder="cant." class="sec-add-dur"
             onkeydown="if(event.key==='Enter')secSrvAdd('${sectorKey}','${pk}')">
-          <select id="srv-add-uni-${pk}" class="sec-add-uni" title="Unidad de la duración">
-            <option value="minutos">min</option>
-            <option value="horas">horas</option>
-            <option value="dias">días</option>
-            <option value="noches">noches</option>
-          </select>
+          <select id="srv-add-uni-${pk}" class="sec-add-uni" title="Unidad de la duración">${uniOpts}</select>
+          <select id="srv-add-padre-${pk}" class="sec-add-padre" title="¿De qué especialidad cuelga?">${padreOpts}</select>
           <button class="btn-primary btn-sm" onclick="secSrvAdd('${sectorKey}','${pk}')"><i class="fas fa-plus"></i> Agregar</button>
         </div>
       </div>
@@ -614,11 +707,17 @@ function _secAccPanelHtml(sectorKey, p) {
 
 // ── CRUD especialidades (catálogo de la categoría) ──
 async function secEspAdd(sectorKey, profKey) {
-  const inp = document.getElementById(`esp-add-${profKey}`);
-  const nombre = inp ? inp.value.trim() : '';
-  if (!nombre) { if (inp) inp.focus(); return; }
+  const inN = document.getElementById(`esp-add-nom-${profKey}`);
+  const inD = document.getElementById(`esp-add-dur-${profKey}`);
+  const inU = document.getElementById(`esp-add-uni-${profKey}`);
+  const nombre = inN ? inN.value.trim() : '';
+  const durRaw = inD ? inD.value.trim() : '';
+  const unidad = inU ? inU.value : 'minutos';
+  if (!nombre) { if (inN) inN.focus(); return; }
+  const body = { nombre };
+  if (durRaw !== '') { body.duracion = durRaw; body.unidad = unidad; }   // el backend valida
   const res = await apiCall(`/api/sectores/${sectorKey}/profesiones/${profKey}/especialidades`, {
-    method: 'POST', body: JSON.stringify({ nombre })
+    method: 'POST', body: JSON.stringify(body)
   });
   if (res.ok && res.data && res.data.ok) {
     await _secRefrescar(sectorKey, profKey);
@@ -644,11 +743,13 @@ async function secSrvAdd(sectorKey, profKey) {
   const inN = document.getElementById(`srv-add-nom-${profKey}`);
   const inD = document.getElementById(`srv-add-dur-${profKey}`);
   const inU = document.getElementById(`srv-add-uni-${profKey}`);
+  const inP = document.getElementById(`srv-add-padre-${profKey}`);
   const nombre  = inN ? inN.value.trim() : '';
   const durRaw  = inD ? inD.value.trim() : '';
   const unidad  = inU ? inU.value : 'minutos';
+  const padre   = inP ? inP.value : '';
   if (!nombre) { if (inN) inN.focus(); return; }
-  const body = { nombre };
+  const body = { nombre, padre: padre || null };   // '' (Otros servicios) → null
   if (durRaw !== '') { body.duracion = durRaw; body.unidad = unidad; }   // el backend valida
   const res = await apiCall(`/api/sectores/${sectorKey}/profesiones/${profKey}/servicios`, {
     method: 'POST', body: JSON.stringify(body)
@@ -670,6 +771,54 @@ async function secSrvDelete(sectorKey, profKey, srvKey) {
   } else {
     alert((res.data && res.data.error) || 'No se pudo eliminar el servicio');
   }
+}
+
+// ── Edición inline (lápiz) de especialidades y servicios ──
+function secEspEdit(sectorKey, profKey, espKey) {
+  _secEdit = { tipo: 'esp', pk: profKey, key: espKey };
+  if (_secCurrentSector) secOpenSector(_secCurrentSector);   // re-render desde memoria (sin recargar)
+}
+function secSrvEdit(sectorKey, profKey, srvKey) {
+  _secEdit = { tipo: 'srv', pk: profKey, key: srvKey };
+  if (_secCurrentSector) secOpenSector(_secCurrentSector);
+}
+function secEditCancel() {
+  _secEdit = null;
+  if (_secCurrentSector) secOpenSector(_secCurrentSector);
+}
+
+async function secEspSave(sectorKey, profKey, espKey) {
+  const elN = document.getElementById(`esp-ed-nom-${profKey}`);
+  const elD = document.getElementById(`esp-ed-dur-${profKey}`);
+  const elU = document.getElementById(`esp-ed-uni-${profKey}`);
+  const nombre = elN ? elN.value.trim() : '';
+  const durRaw = elD ? elD.value.trim() : '';
+  const unidad = elU ? elU.value : 'minutos';
+  if (!nombre) { if (elN) elN.focus(); return; }
+  const body = { nombre, duracion: durRaw === '' ? null : durRaw, unidad };
+  const res = await apiCall(`/api/sectores/${sectorKey}/profesiones/${profKey}/especialidades/${espKey}`, {
+    method: 'PUT', body: JSON.stringify(body)
+  });
+  if (res.ok && res.data && res.data.ok) { _secEdit = null; await _secRefrescar(sectorKey, profKey); }
+  else alert((res.data && res.data.error) || 'No se pudo guardar la especialidad');
+}
+
+async function secSrvSave(sectorKey, profKey, srvKey) {
+  const elN = document.getElementById(`srv-ed-nom-${profKey}`);
+  const elD = document.getElementById(`srv-ed-dur-${profKey}`);
+  const elU = document.getElementById(`srv-ed-uni-${profKey}`);
+  const elP = document.getElementById(`srv-ed-padre-${profKey}`);
+  const nombre = elN ? elN.value.trim() : '';
+  const durRaw = elD ? elD.value.trim() : '';
+  const unidad = elU ? elU.value : 'minutos';
+  const padre  = elP ? elP.value : '';
+  if (!nombre) { if (elN) elN.focus(); return; }
+  const body = { nombre, padre: padre || null, duracion: durRaw === '' ? null : durRaw, unidad };
+  const res = await apiCall(`/api/sectores/${sectorKey}/profesiones/${profKey}/servicios/${srvKey}`, {
+    method: 'PUT', body: JSON.stringify(body)
+  });
+  if (res.ok && res.data && res.data.ok) { _secEdit = null; await _secRefrescar(sectorKey, profKey); }
+  else alert((res.data && res.data.error) || 'No se pudo guardar el servicio');
 }
 
 // ── CRUD de profesiones (solo nombre) ──
@@ -809,6 +958,8 @@ function _normalizeSectores(arbol) {
       especialidades: (p.especialidades || []).map(e => ({
         key:    e.key,
         nombre: e.nombre || e.key,
+        duracion: (e.duracion === undefined ? null : e.duracion),
+        unidad:   e.unidad || 'minutos',
         active: e.active !== false,
       })),
       servicios: (p.servicios || []).map(sv => ({
@@ -816,6 +967,7 @@ function _normalizeSectores(arbol) {
         nombre:   sv.nombre || sv.key,
         duracion: (sv.duracion === undefined ? null : sv.duracion),
         unidad:   sv.unidad || 'minutos',
+        padre:    sv.padre || null,
         active:   sv.active !== false,
       })),
     })),

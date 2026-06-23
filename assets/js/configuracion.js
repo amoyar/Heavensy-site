@@ -3,6 +3,59 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.22-11] configuracion.js
+// 2026-06-22 | Borrar servicio: reemplazado el confirm() nativo del navegador por el
+//              modal Heavensy existente cfgConfirm().
+// [v2026.06.22-10] configuracion.js
+// 2026-06-22 | Tooltip del botón + del catálogo: title nativo 'Agregar' → data-tip
+//              'Agregar servicio' (tooltip Heavensy por CSS).
+// [v2026.06.22-9] configuracion.js
+// 2026-06-22 | cfgNuevoServicio(): 'Agregar servicio' abre el form en modo nuevo,
+//              resetea y hace scrollIntoView hasta él (estaba al final del panel y
+//              había que scrollear para encontrarlo) + foco en el nombre.
+// [v2026.06.22-8] configuracion.js
+// 2026-06-22 | Sync paso 1 → paso 4: el listener hvy:specialties-updated ahora
+//              también actualiza _cfgResourcesList[].specialties y re-pinta el
+//              catálogo del Paso 4, así una especialidad agregada en 'Mi empresa'
+//              aparece marcada/adoptable al toque, sin recargar.
+// [v2026.06.22-7] configuracion.js
+// 2026-06-22 | Retirado el cargador viejo de pp_servicios (tipo=empresa) que
+//              poblaba #svc-list: pisaba los agenda_services y hacía 'reaparecer'
+//              servicios borrados. El Paso 4 ahora se llena solo desde agenda.
+// [v2026.06.22-6] configuracion.js
+// 2026-06-22 | Paso 4: (1) filas de agendables con clase svc-row-ag (fondo blanco,
+//              punto de color) en vez de fondo entero. (2) Anti-duplicado: _svcAdoptedKeys
+//              marca en el catálogo lo ya adoptado como 'Agregado' (sin controles);
+//              se cargan agendables ANTES del catálogo y se refrescan ambos al adoptar.
+// [v2026.06.22-5] configuracion.js
+// 2026-06-22 | R2 (wizard): el form de servicio (#form-sesion) ahora CREA/EDITA en
+//              agenda_services (no en pp_servicios): guardarSesion POST/PATCH
+//              /api/agenda/services con name/duration/price/modality/cancellation_
+//              policy/description/color/padre/catalog_key; editarSesion prefija desde
+//              el dataset (incl. 'Cuelga de'); papelera cfgDeleteAgendaService (DELETE
+//              real); rótulo Esp./Serv.; _cfgPopulatePadreSelect llena 'Cuelga de'.
+// [v2026.06.22-4] configuracion.js
+// 2026-06-22 | Catálogo Paso 4: SOLO las especialidades que el profesional tiene
+//              (owned) se pueden adoptar/editar — incluidos sus servicios; las no
+//              asignadas quedan bloqueadas (candado 'Asígnala en Mi empresa', sin
+//              controles). 'Otros servicios' siguen adoptables. Evita inconsistencias.
+// [v2026.06.22-3] configuracion.js
+// 2026-06-22 | Catálogo Paso 4: las especialidades que el recurso YA tiene
+//              asignadas (specialties del paso 1) se marcan seleccionadas (chip
+//              .on, morado sólido); el resto en violeta suave. specKeys desde
+//              _cfgResourcesList[].specialties (fallback _espSpecsSel).
+// [v2026.06.22-2] configuracion.js
+// 2026-06-22 | Catálogo del Paso 4 ahora COLAPSABLE y compacto: cada especialidad
+//              es un bloque que despliega sus servicios (toggle CSS sin re-render,
+//              cfgSvcToggleGroup); rótulo Esp./Serv.; 'Otros servicios' colapsable.
+//              cfgAdoptCatalog lee los controles desde .svc-cat-ctrls.
+// [v2026.06.22-1] configuracion.js
+// 2026-06-22 | C3 rebanada 1 (adopción): Paso 4 (panel-3) gana chips de profesional
+//              (cfgRenderSvcRecursoChips/cfgSvcSelectRecurso) y un catálogo de la
+//              categoría del recurso (cfgRenderCatalogAdoption) para adoptar
+//              especialidades/servicios con precio → crea agenda_service vinculado
+//              (catalog_key/profession_key/padre) vía POST /api/agenda/services y
+//              recarga la lista. Reusa _jmCargarSector/_jmEspecialidadesDeCategoria.
 // [v2026.06.20-2] configuracion.js
 // 2026-06-20 | Tanda 1: el botón Guardar de la pestaña Especialidad del editor de
 //              especialista (jmGuardarEspecialidades) ahora SÍ persiste al backend
@@ -407,14 +460,9 @@ function ppLoadFromServer() {
     progs.forEach(p=>list.appendChild(_ppBuildProgRow(p,'profesional')));
     if(progs.length) jmSyncProgramas();
   }).catch(()=>{});
-  // Servicios empresa
-  apiCall('/api/perfil-profesional/servicios?tipo=empresa').then(r=>(r.data||{})).then(d=>{
-    const svcs = Array.isArray(d.servicios) ? d.servicios : [];
-    const list=document.getElementById('svc-list'); if(!list) return;
-    list.querySelectorAll('.svc-row').forEach(r=>r.remove());
-    svcs.forEach(s=>list.appendChild(_ppBuildSvcRow(s,'empresa')));
-    if(svcs.length) syncServicios();
-  }).catch(()=>{});
+  // Servicios empresa: el Paso 4 (#svc-list) ahora usa agenda_services
+  // (cfgPopulateServices), ya NO pp_servicios. Cargador viejo retirado para que los
+  // servicios antiguos no reaparezcan al recargar. [R2 2026-06-22]
   // Servicios profesional
   apiCall('/api/perfil-profesional/servicios?tipo=profesional').then(r=>(r.data||{})).then(d=>{
     const svcs = Array.isArray(d.servicios) ? d.servicios : [];
@@ -495,6 +543,17 @@ function goStep(n) {
   if(n > cfgCurrentStep) cfgDoneSteps.add(cfgCurrentStep);
   cfgCurrentStep = n;
   document.querySelectorAll('.step-line').forEach((l,i) => l.classList.toggle('done', cfgDoneSteps.has(i)));
+  // Paso 4 (Servicios, panel-3): pintar chips de profesional + catálogo para adoptar.
+  if (n === 3) {
+    _svcCurrentResourceId = _svcCurrentResourceId || _cfgFirstResourceId;
+    if (!_svcCurrentProfKey) _svcCurrentProfKey = _espProfKey || '';
+    if (typeof cfgRenderSvcRecursoChips === 'function') cfgRenderSvcRecursoChips();
+    (async () => {
+      if (typeof _jmCargarSector === 'function') await _jmCargarSector();
+      if (typeof _svcReloadAgendables === 'function' && _svcCurrentResourceId) await _svcReloadAgendables(_svcCurrentResourceId);
+      if (typeof cfgRenderCatalogAdoption === 'function') await cfgRenderCatalogAdoption();
+    })();
+  }
   window.scrollTo(0,0);
 }
 
@@ -1748,19 +1807,18 @@ function toggleForm(id) {
 
 function editarSesion(btn) {
   const row=btn.closest('.svc-row');
-  const nombre=row.querySelector('.svc-name').textContent.trim();
-  const meta=row.querySelector('.svc-meta').textContent.trim();
-  const precio=row.querySelector('.svc-price').textContent.trim();
-  const color=row.querySelector('.svc-dot').style.background;
-  const partes=meta.split('·').map(s=>s.trim());
-  document.getElementById('ses-nombre').value=nombre;
-  document.getElementById('ses-duracion').value=partes[0]?.replace('min','').trim()||'';
-  document.getElementById('ses-precio').value=precio;
-  document.getElementById('ses-mod').value=partes[1]||'';
-  document.getElementById('ses-color').value=rgbToHex(color);
-  document.querySelectorAll('#form-sesion .toggle-group .toggle-btn').forEach(b=>b.classList.toggle('on',(partes[1]||'').includes(b.textContent)));
+  document.getElementById('ses-nombre').value = row.dataset.nombre || (row.querySelector('.svc-name')?.textContent.trim() || '');
+  document.getElementById('ses-duracion').value = row.dataset.duration || '';
+  document.getElementById('ses-precio').value = row.dataset.price || '';
+  const mod = row.dataset.modality || '';
+  document.getElementById('ses-mod').value = mod;
+  const dEl = document.getElementById('ses-desc'); if(dEl) dEl.value = row.dataset.descripcion || '';
+  document.getElementById('ses-color').value = rgbToHex(row.querySelector('.svc-dot').style.background);
+  _cfgPopulatePadreSelect();
+  const selP = document.getElementById('ses-padre'); if(selP) selP.value = row.dataset.padre || '';
+  document.querySelectorAll('#form-sesion .toggle-group .toggle-btn').forEach(b=>b.classList.toggle('on', mod.includes(b.textContent)));
   loadCancelacion('ses', JSON.parse(row.dataset.cancelacion||'null'));
-  document.getElementById('form-sesion-title').innerHTML='<i class="fas fa-pen" style="margin-right:6px"></i>Editar sesión';
+  document.getElementById('form-sesion-title').innerHTML='<i class="fas fa-pen" style="margin-right:6px"></i>Editar servicio';
   document.getElementById('btn-guardar-sesion').innerHTML='<i class="fas fa-check" style="margin-right:5px"></i>Guardar';
   editingSesionRow=row;
   const panel=document.getElementById('form-sesion');
@@ -2432,22 +2490,46 @@ function guardarSesion() {
   const _sesCW=document.getElementById('ses-cancel-wrap');
   if(!cancelacion.total&&!cancelacion.parcial){hasError=true;if(_sesCW)_sesCW.style.outline='2px solid #ef4444';}else{if(_sesCW)_sesCW.style.outline='';}
   if(hasError) return;
+
+  const rid = _svcCurrentResourceId || _cfgFirstResourceId;
+  if(!rid){ alert('Primero elige un profesional.'); return; }
   const color=document.getElementById('ses-color').value;
-  const meta=`${duracion} min · ${mod}`;
-  const innerHTML=`<span class="svc-dot" style="background:${color}"></span><div style="flex:1"><div class="svc-name">${nombre}</div><div class="svc-meta">${meta}</div></div><span class="svc-price">${precio}</span><button class="btn-secondary btn-sm" style="margin-left:10px" onclick="editarSesion(this)"><i class="fas fa-pen"></i></button><button class="btn-icon" style="margin-left:2px;color:#ef4444" onclick="ppDeleteServicio(this)"><i class="fas fa-trash"></i></button>`;
-  const _ppSvcPayload={profile_type:'empresa',nombre,duracion,precio,mod,desc:document.getElementById('ses-desc')?.value.trim()||'',color,cancelacion,meta};
-  const _ppSvcEditId=editingSesionRow?.dataset?.ppId;
-  if(editingSesionRow){editingSesionRow.innerHTML=innerHTML;editingSesionRow.style.background=color;editingSesionRow.dataset.cancelacion=JSON.stringify(cancelacion);editingSesionRow=null;}
-  else{const row=document.createElement('div');row.className='svc-row';row.style.background=color;row.innerHTML=innerHTML;row.dataset.cancelacion=JSON.stringify(cancelacion);document.getElementById('svc-list').appendChild(row);if(typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/servicios',{method:'POST',body:JSON.stringify(_ppSvcPayload)}).then(r=>(r.data||{})).then(d=>{if(d.success&&d.servicio)row.dataset.ppId=d.servicio.id;}).catch(()=>{});}
-  if(_ppSvcEditId&&typeof apiCall!=='undefined')apiCall('/api/perfil-profesional/servicios/'+_ppSvcEditId,{method:'PUT',body:JSON.stringify(_ppSvcPayload)}).catch(()=>{});
-  ['ses-nombre','ses-duracion','ses-precio','ses-desc'].forEach(id=>document.getElementById(id).value='');
+  const padre=document.getElementById('ses-padre')?.value||'';
+  const desc=document.getElementById('ses-desc')?.value.trim()||'';
+  const priceNum=Number((precio||'').replace(/[^\d]/g,''))||0;
+
+  const body={
+    resource_id: rid,
+    name: nombre,
+    duration: parseInt(duracion,10),
+    price: priceNum,
+    currency: 'CLP',
+    modality: mod,
+    cancellation_policy: cancelacion,
+    description: desc,
+    color,
+    profession_key: (_svcCurrentProfKey||_espProfKey)
+  };
+  if(padre) body.padre=padre;
+  const editId = editingSesionRow && editingSesionRow.dataset ? editingSesionRow.dataset.serviceId : '';
+  const catKey = editingSesionRow && editingSesionRow.dataset ? editingSesionRow.dataset.catalogKey : '';
+  if(catKey) body.catalog_key=catKey;
+
+  const after=()=>{ editingSesionRow=null; _svcReloadAgendables(rid); };
+  if(editId){
+    apiCall('/api/agenda/services/'+editId,{method:'PATCH',body:JSON.stringify(body)}).then(after).catch(()=>alert('No se pudo guardar el servicio'));
+  } else {
+    apiCall('/api/agenda/services',{method:'POST',body:JSON.stringify(body)}).then(after).catch(()=>alert('No se pudo guardar el servicio'));
+  }
+
+  ['ses-nombre','ses-duracion','ses-precio','ses-desc'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
   document.getElementById('ses-mod').value='';
+  if(document.getElementById('ses-padre')) document.getElementById('ses-padre').value='';
   document.querySelectorAll('#form-sesion .toggle-btn').forEach(b=>b.classList.remove('on'));
   resetCancelacion('ses');
   document.getElementById('form-sesion-title').innerHTML='<i class="fas fa-clock" style="margin-right:6px"></i>Crea tu servicio';
   document.getElementById('btn-guardar-sesion').innerHTML='<i class="fas fa-check" style="margin-right:5px"></i>Guardar';
   toggleForm('form-sesion');
-  syncServicios();
 }
 
 function prevProgImg(input) {
@@ -3137,26 +3219,68 @@ async function cfgToggleEsRecurso(username, checkbox) {
 function cfgPopulateServices(services) {
   const list = document.getElementById('svc-list');
   if (!list) return;
+  _cfgPopulatePadreSelect();
+
+  const profKey = _svcCurrentProfKey || _espProfKey;
+  const espKeys = new Set((typeof _jmEspecialidadesDeCategoria === 'function' ? _jmEspecialidadesDeCategoria(profKey) : []).map(e => e.key));
 
   const colors = ['#9961FF','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
-  list.innerHTML = services.map((s, i) => {
+  _svcAdoptedKeys = new Set((services || []).map(s => s.catalog_key).filter(Boolean));
+  list.innerHTML = (services || []).map((s, i) => {
+    const id = s._id || s.id || '';
     const color = s.color || colors[i % colors.length];
-    const precio = s.price ? `$${Number(s.price).toLocaleString('es-CL')} CLP` : '';
+    const precio = s.price ? `$${Number(s.price).toLocaleString('es-CL')}` : '';
     const meta = `${s.duration || 0} min${s.modality ? ' · ' + s.modality : ''}`;
-    return `<div class="svc-row" style="background:${color}">
+    const esEsp = s.catalog_key && espKeys.has(s.catalog_key) && !s.padre;
+    const tipo = `<span class="svc-tipo">${esEsp ? 'Especialidad' : 'Servicio'}</span>`;
+    const cancelAttr = JSON.stringify(s.cancellation_policy || null).replace(/'/g, '&#39;');
+    return `<div class="svc-row svc-row-ag"
+      data-service-id="${id}"
+      data-nombre="${(s.name || '').replace(/"/g, '&quot;')}"
+      data-duration="${s.duration || ''}"
+      data-price="${s.price != null ? s.price : ''}"
+      data-modality="${(s.modality || '').replace(/"/g, '&quot;')}"
+      data-padre="${s.padre || ''}"
+      data-catalog-key="${s.catalog_key || ''}"
+      data-descripcion="${(s.description || '').replace(/"/g, '&quot;')}"
+      data-cancelacion='${cancelAttr}'>
       <span class="svc-dot" style="background:${color}"></span>
       <div style="flex:1">
-        <div class="svc-name">${s.name}</div>
+        <div class="svc-name">${tipo}${s.name || ''}</div>
         <div class="svc-meta">${meta}</div>
       </div>
       <span class="svc-price">${precio}</span>
       <button class="btn-secondary btn-sm" style="margin-left:10px" onclick="editarSesion(this)"><i class="fas fa-pen"></i></button>
-      <button class="btn-icon" style="margin-left:2px;color:#ef4444" onclick="this.closest('.svc-row').remove();syncServicios()"><i class="fas fa-trash"></i></button>
+      <button class="btn-icon" style="margin-left:2px;color:#ef4444" onclick="cfgDeleteAgendaService(this)"><i class="fas fa-trash"></i></button>
     </div>`;
   }).join('');
 
   syncServicios();
 }
+
+// Rellena el <select id="ses-padre"> (Cuelga de) con las especialidades de la categoría.
+function _cfgPopulatePadreSelect() {
+  const sel = document.getElementById('ses-padre');
+  if (!sel) return;
+  const profKey = _svcCurrentProfKey || _espProfKey;
+  const esps = (typeof _jmEspecialidadesDeCategoria === 'function') ? _jmEspecialidadesDeCategoria(profKey) : [];
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Otros servicios —</option>' +
+    esps.map(e => `<option value="${e.key}">${(e.nombre || '').replace(/</g, '&lt;')}</option>`).join('');
+  sel.value = cur;
+}
+
+// Elimina (desactiva) un agenda_service desde la papelera.
+window.cfgDeleteAgendaService = async function(btn) {
+  const row = btn.closest('.svc-row');
+  const id = row && row.dataset.serviceId;
+  if (!id) { if (row) row.remove(); syncServicios(); return; }
+  const ok = await cfgConfirm('¿Eliminar servicio?', 'Se quitará este servicio agendable. Esta acción no se puede deshacer.');
+  if (!ok) return;
+  const res = await apiCall('/api/agenda/services/' + id, { method: 'DELETE' }).catch(() => null);
+  if (res && res.ok) { row.remove(); syncServicios(); }
+  else alert((res && res.data && res.data.error) || 'No se pudo eliminar');
+};
 
 // ══════════════════════════════════════
 //  EDITOR DE RECURSO — usa overlay existente #user-edit-overlay
@@ -3287,6 +3411,184 @@ window.espToggleSpec = function(el){
   if (i >= 0) { _espSpecsSel.splice(i, 1); el.classList.remove('on'); }
   else { _espSpecsSel.push({ key, nombre, propia }); el.classList.add('on'); }
   if (typeof syncEspecialidades === 'function') syncEspecialidades();
+};
+
+// ── C3: adopción de servicios del catálogo (Paso 4 / panel-3) ──────────────
+// Reusa el catálogo ya cargado por _jmCargarSector(). El profesional se elige
+// con chips; al "Agregar" se crea un agenda_service vinculado al catálogo.
+let _svcCurrentResourceId = null;
+let _svcCurrentProfKey    = '';
+let _svcAdoptedKeys       = new Set();   // catalog_key ya adoptados por el recurso actual
+
+function _jmServiciosDeCategoria(profKey){
+  const profs = (_jmSectorCache && _jmSectorCache.profesiones) || [];
+  const p = profs.find(x => x.profession_key === profKey);
+  return ((p && p.servicios) || []).filter(s => s && s.active !== false);
+}
+
+function _svcUniLabel(u){ return ({minutos:'min',horas:'h',dias:'días',noches:'noches'})[u] || 'min'; }
+
+function _svcCatName(profKey){
+  try { if (typeof _catName === 'function') return _catName(profKey); } catch(_){}
+  return profKey || '';
+}
+
+// Chips de profesional del Paso 4 (reusa _cfgResourcesList).
+function cfgRenderSvcRecursoChips(){
+  const cont = document.getElementById('svc-recurso-chips');
+  if (!cont || !(_cfgResourcesList || []).length) return;
+  const sel = _svcCurrentResourceId || _cfgFirstResourceId;
+  cont.innerHTML = _cfgResourcesList.map(r => {
+    const id = r._id || r.id;
+    const nombre = (r.name || r.full_name || '—').replace(/"/g, '&quot;');
+    return `<span class="toggle-btn ${id === sel ? 'on' : ''}" onclick="cfgSvcSelectRecurso('${id}')">${nombre}</span>`;
+  }).join('');
+}
+
+// Pinta el catálogo de la categoría del recurso seleccionado, para adoptar.
+async function cfgRenderCatalogAdoption(){
+  const cont = document.getElementById('svc-catalog');
+  if (!cont) return;
+  await _jmCargarSector();
+  const profKey = _svcCurrentProfKey || _espProfKey;
+  if (!profKey){ cont.innerHTML = ''; return; }
+
+  const esps = _jmEspecialidadesDeCategoria(profKey);
+  const srvs = _jmServiciosDeCategoria(profKey);
+  if (!esps.length && !srvs.length){
+    cont.innerHTML = '<div class="svc-cat-empty">Esta categoría no tiene catálogo todavía.</div>';
+    return;
+  }
+
+  // Especialidades que el profesional YA tiene asignadas (paso 1 "Mi empresa"):
+  // se muestran marcadas (morado sólido); el resto, en violeta suave.
+  const _rSel = (_cfgResourcesList || []).find(x => (x._id || x.id) === (_svcCurrentResourceId || _cfgFirstResourceId));
+  const _specsArr = (_rSel && (_rSel.specialties || _rSel.especialidades)) || _espSpecsSel || [];
+  const specKeys = new Set((_specsArr || []).map(s => (typeof s === 'string' ? s : (s && s.key))).filter(Boolean));
+
+  // Controles de adopción (duración + precio + botón +), a la derecha.
+  const ctrls = (tipo, key, nombre, padre, dur, unidad) => {
+    const nmJs = (nombre || '').replace(/'/g, "\\'");
+    return `<span class="svc-cat-ctrls" onclick="event.stopPropagation()">
+      <input type="number" class="svc-cat-dur" value="${dur != null ? dur : ''}" min="1" aria-label="duración">
+      <span class="svc-cat-uni">${_svcUniLabel(unidad || 'minutos')}</span>
+      <input type="number" class="svc-cat-price" placeholder="$" min="0">
+      <button class="btn-primary btn-sm svc-cat-add" data-tip="Agregar servicio" onclick="cfgAdoptCatalog(this,'${tipo}','${key}','${nmJs}','${padre || ''}','${unidad || 'minutos'}')"><i class="fas fa-plus"></i></button>
+    </span>`;
+  };
+  const chip = (tipo, nombre, extra) => `<span class="svc-cat-chip ${tipo}${extra ? ' ' + extra : ''}">${(nombre || '').replace(/"/g, '&quot;')}</span>`;
+  const tag  = (txt) => `<span class="svc-cat-tipo">${txt}</span>`;
+  const addedTag = '<span class="svc-cat-added"><i class="fas fa-check" aria-hidden="true"></i> Agregado</span>';
+  const right = (tipo, key, nombre, padre, dur, unidad) => (_svcAdoptedKeys.has(key) ? addedTag : ctrls(tipo, key, nombre, padre, dur, unidad));
+  const srvRow = (s, owned) => `<div class="svc-cat-row is-srv">${tag('Serv.')}${chip('srv', s.nombre)}${owned ? right('srv', s.key, s.nombre, s.padre || '', s.duracion, s.unidad) : ''}</div>`;
+  const lockHint = '<span class="svc-cat-lock"><i class="fas fa-lock" aria-hidden="true"></i> Asígnala en Mi empresa</span>';
+
+  let html = `<div class="svc-cat-title">Del catálogo · ${_svcCatName(profKey)}</div>`;
+
+  // Cada especialidad es un bloque colapsable (parte cerrado) con sus servicios.
+  // Solo las que el profesional YA tiene asignadas se pueden adoptar/editar; el
+  // resto quedan bloqueadas (no se asignan) para no generar inconsistencias.
+  esps.forEach(e => {
+    const hijos = srvs.filter(s => s.padre === e.key);
+    const has = hijos.length > 0;
+    const owned = specKeys.has(e.key);
+    html += `<div class="svc-cat-esp ${has ? 'has-children' : ''} ${owned ? '' : 'locked'}">
+      <div class="svc-cat-head" onclick="cfgSvcToggleGroup(this)">
+        <i class="svc-cat-chev fas fa-chevron-right" aria-hidden="true"></i>
+        ${tag('Esp.')}${chip('esp', e.nombre, owned ? 'on' : '')}
+        <span class="svc-cat-count">${has ? hijos.length + (hijos.length === 1 ? ' servicio' : ' servicios') : 'sin detalle'}</span>
+        ${owned ? right('esp', e.key, e.nombre, '', e.duracion, e.unidad) : lockHint}
+      </div>
+      <div class="svc-cat-children">${hijos.map(s => srvRow(s, owned)).join('')}</div>
+    </div>`;
+  });
+
+  // Servicios sueltos (padre nulo) → grupo "Otros servicios", colapsable.
+  const otros = srvs.filter(s => !s.padre);
+  if (otros.length){
+    html += `<div class="svc-cat-esp svc-cat-otros has-children">
+      <div class="svc-cat-head" onclick="cfgSvcToggleGroup(this)">
+        <i class="svc-cat-chev fas fa-chevron-right" aria-hidden="true"></i>
+        <span class="svc-cat-otros-label"><i class="fas fa-ellipsis-h" style="margin-right:5px"></i>Otros servicios</span>
+        <span class="svc-cat-count">${otros.length}</span>
+      </div>
+      <div class="svc-cat-children">${otros.map(s => srvRow(s, true)).join('')}</div>
+    </div>`;
+  }
+
+  cont.innerHTML = html;
+}
+
+// Cambia el profesional del Paso 4: re-pinta catálogo y recarga sus agendables.
+window.cfgSvcSelectRecurso = async function(id){
+  _svcCurrentResourceId = id;
+  const r = (_cfgResourcesList || []).find(x => (x._id || x.id) === id);
+  _svcCurrentProfKey = (r && r.profession_key) || '';
+  cfgRenderSvcRecursoChips();
+  await _jmCargarSector();
+  await _svcReloadAgendables(id);
+  await cfgRenderCatalogAdoption();
+};
+
+async function _svcReloadAgendables(resourceId){
+  const res = await apiCall(`/api/agenda/resources/${resourceId}/services`).catch(() => null);
+  const services = (res && res.ok && res.data && Array.isArray(res.data.services)) ? res.data.services : [];
+  if (typeof cfgPopulateServices === 'function') cfgPopulateServices(services);
+  else { const l = document.getElementById('svc-list'); if (l) l.innerHTML = ''; }
+}
+
+// Colapsar/expandir una especialidad (o el grupo "Otros servicios").
+window.cfgSvcToggleGroup = function(headEl){
+  const block = headEl.closest('.svc-cat-esp');
+  if (block && block.classList.contains('has-children')) block.classList.toggle('open');
+};
+
+// Adopta un ítem del catálogo: crea el agenda_service vinculado.
+window.cfgAdoptCatalog = async function(btn, tipo, key, nombre, padre, unidad){
+  const rid = _svcCurrentResourceId || _cfgFirstResourceId;
+  if (!rid){ alert('Primero elige un profesional.'); return; }
+  const ctrls = btn.closest('.svc-cat-ctrls');
+  const dur = parseInt(ctrls.querySelector('.svc-cat-dur').value, 10);
+  if (!dur || dur <= 0){ alert('Indica la duración.'); ctrls.querySelector('.svc-cat-dur').focus(); return; }
+  const priceRaw = (ctrls.querySelector('.svc-cat-price').value || '').trim();
+
+  const body = {
+    resource_id:    rid,
+    name:           nombre,
+    duration:       dur,
+    catalog_key:    key,
+    profession_key: (_svcCurrentProfKey || _espProfKey)
+  };
+  if (tipo === 'srv' && padre) body.padre = padre;
+  if (priceRaw !== '') body.price = Number(priceRaw);
+
+  const res = await apiCall('/api/agenda/services', { method: 'POST', body: JSON.stringify(body) });
+  if (res && res.ok && res.data && res.data.success){
+    await _svcReloadAgendables(rid);
+    await cfgRenderCatalogAdoption();
+  } else {
+    alert((res && res.data && res.data.error) || 'No se pudo agregar el servicio');
+  }
+};
+
+// Abre el form de servicio en modo "nuevo": limpia, resetea y hace scroll hasta él
+// (el form vive al final del panel, así no hay que buscarlo scrolleando).
+window.cfgNuevoServicio = function(){
+  editingSesionRow = null;
+  ['ses-nombre','ses-duracion','ses-precio','ses-desc'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
+  const m=document.getElementById('ses-mod'); if(m) m.value='';
+  document.querySelectorAll('#form-sesion .toggle-btn').forEach(b=>b.classList.remove('on'));
+  if (typeof resetCancelacion === 'function') resetCancelacion('ses');
+  _cfgPopulatePadreSelect();
+  const sp=document.getElementById('ses-padre'); if(sp) sp.value='';
+  const t=document.getElementById('form-sesion-title'); if(t) t.innerHTML='<i class="fas fa-clock" style="margin-right:6px"></i>Crea tu servicio';
+  const g=document.getElementById('btn-guardar-sesion'); if(g) g.innerHTML='<i class="fas fa-check" style="margin-right:5px"></i>Guardar';
+  const panel=document.getElementById('form-sesion');
+  if (panel){
+    panel.classList.add('open');
+    panel.scrollIntoView({behavior:'smooth', block:'center'});
+    const nm=document.getElementById('ses-nombre'); if(nm) setTimeout(()=>nm.focus(), 300);
+  }
 };
 
 // Setea el nombre del recurso en los breadcrumbs (panel-1 y panel-2).
@@ -3576,6 +3878,18 @@ window.addEventListener('hvy:specialties-updated', function(ev){
   if (typeof _cfgFirstResourceId !== 'undefined' && _cfgFirstResourceId === resourceId) {
     _espSpecsSel = _jmNormSpecs(specialties);
     if (typeof _espRenderSpecs === 'function') _espRenderSpecs();
+  }
+  // Paso 4 (catálogo de servicios): mantener specialties del recurso al día y, si es
+  // el profesional abierto, re-pintar el catálogo (las nuevas especialidades del paso 1
+  // pasan a estar marcadas/adoptables sin recargar).
+  if (typeof _cfgResourcesList !== 'undefined' && Array.isArray(_cfgResourcesList)) {
+    const _r4 = _cfgResourcesList.find(x => (x._id || x.id) === resourceId);
+    if (_r4) _r4.specialties = specialties;
+  }
+  if (typeof _svcCurrentResourceId !== 'undefined' &&
+      (_svcCurrentResourceId || _cfgFirstResourceId) === resourceId &&
+      typeof cfgRenderCatalogAdoption === 'function') {
+    cfgRenderCatalogAdoption();
   }
 });
 

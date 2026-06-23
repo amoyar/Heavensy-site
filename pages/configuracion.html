@@ -1,4 +1,21 @@
 <!-- ── BITÁCORA ──
+[v2026.06.22-5] configuracion.html
+2026-06-22 | Paso 4: card 'Servicios' → 'Servicios agendables'; #svc-list envuelto
+             en .svc-list-section con cabecera 'Disponibles para agendar'.
+[v2026.06.22-4] configuracion.html
+2026-06-22 | Botón 'Agregar servicio' llama a cfgNuevoServicio() (abre + scroll
+             al form) en vez de toggleForm.
+[v2026.06.22-3] configuracion.html
+2026-06-22 | Paso 4: campo "Cuelga de" (#ses-padre) en el form de servicio
+             (#form-sesion), para indicar de qué especialidad cuelga.
+[v2026.06.22-2] configuracion.html
+2026-06-22 | Removido el <style> incrustado del Paso 4: no calzaba con el sistema
+             (se veía plano). Los estilos .svc-cat-*/.svc-recurso-chips pasan a
+             configuracion.css [v2026.06.22-1].
+[v2026.06.22-1] configuracion.html
+2026-06-22 | Paso 4 (panel-3): bloque de adopción del catálogo — chips de
+             profesional (#svc-recurso-chips) y lista del catálogo (#svc-catalog)
+             sobre #svc-list. Estilos svc-cat-* viven en configuracion.css.
 [v2026.06.16-9] configuracion.html
 2026-06-16 | Panel disponibilidad: nuevo campo "Descanso entre citas (min)"
              (#disp-buffer) para configurar buffer_after por recurso.
@@ -338,10 +355,15 @@
   <!-- SERVICIOS -->
   <div class="card" style="margin-bottom:10px">
     <div class="card-header">
-      <span class="card-title"><i class="fas fa-clock" style="color:#9961FF;margin-right:6px"></i>Servicios</span>
-      <button class="btn-primary btn-sm" onclick="toggleForm('form-sesion')"><i class="fas fa-plus" style="margin-right:5px"></i>Agregar servicio</button>
+      <span class="card-title"><i class="fas fa-clock" style="color:#9961FF;margin-right:6px"></i>Servicios agendables</span>
+      <button class="btn-primary btn-sm" onclick="cfgNuevoServicio()"><i class="fas fa-plus" style="margin-right:5px"></i>Agregar servicio</button>
     </div>
-    <div id="svc-list"></div>
+    <div id="svc-recurso-chips" class="svc-recurso-chips"></div>
+    <div id="svc-catalog" class="svc-catalog"></div>
+    <div class="svc-list-section">
+      <div class="svc-list-head"><i class="fas fa-calendar-check"></i> Disponibles para agendar</div>
+      <div id="svc-list"></div>
+    </div>
     <div class="edit-panel" id="form-sesion">
       <div class="edit-header">
         <span class="edit-header-title" id="form-sesion-title"><i class="fas fa-clock" style="margin-right:6px"></i>Crea tu servicio</span>
@@ -350,6 +372,7 @@
       <div class="edit-body">
         <div class="form-grid-2">
           <div class="form-group form-full"><label>Nombre del servicio</label><input type="text" id="ses-nombre" placeholder="Nombre del servicio"></div>
+          <div class="form-group"><label>Cuelga de</label><select id="ses-padre"><option value="">— Otros servicios —</option></select></div>
           <div class="form-group"><label>Duración (minutos)</label><input type="number" id="ses-duracion" placeholder="50" min="5" step="5"></div>
           <div class="form-group"><label>Precio</label><input type="text" id="ses-precio" placeholder="Precio"></div>
           <div class="form-group form-full"><label>Modalidad</label>
