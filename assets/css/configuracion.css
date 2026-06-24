@@ -1,42 +1,10 @@
 /* ══════════════════════════════════════
    CONFIGURACIÓN — HEAVENSY
-   ── BITÁCORA ──
-   [v2026.06.23-4] 2026-06-23 | Componente hvy-tp: timepicker Heavensy (panel
-   compartido, 2 columnas hora|min en pasos de 5) que reemplaza los input[type=time]
-   nativos. Calcado del de seguimiento (seg-tp). Para usar en todo el módulo config.
-   [v2026.06.23-3] 2026-06-23 | Chips de día (#disp-dias .toggle-btn) redondos
-   (34px, border-radius 50%) con iniciales de 2 letras. "Todos" sigue píldora.
-   [v2026.06.23-2] 2026-06-23 | .dias-row (fila para "Todos" + chips de día) y
-   .toggle-todos (botón "Todos" en lila, distinto de los chips de día).
-   [v2026.06.23-1] 2026-06-23 | .ses-row3 pasa de grid a flex-wrap para reflowear
-   con 3 o 4 campos (Especialidad/Duración/Unidad/Precio) y colapsar limpio cuando
-   se oculta una columna en sectores objeto. Bases flexibles; Especialidad más ancha.
-   [v2026.06.22-9] 2026-06-22 | .hvy-form-select.hvy-select-btn: el botón del
-   dropdown 'Especialidad' calza con los inputs del form (borde/radio/padding).
-   [v2026.06.22-8] 2026-06-22 | Lista de agendables en contenedor propio
-   (.svc-list-section + .svc-list-head 'Disponibles para agendar') para distinguirla
-   del catálogo; tooltip Heavensy [data-tip] (reemplaza el title nativo).
-   [v2026.06.22-7] 2026-06-22 | Filas de agendables limpias (.svc-row-ag): fondo
-   blanco + punto de color visible (antes el color iba a todo el fondo y el ✕ rojo
-   se perdía). .svc-cat-added: estado 'Agregado' en el catálogo.
-   [v2026.06.22-6] 2026-06-22 | .svc-tipo: rótulo Especialidad/Servicio en la lista
-   de agendables (svc-row).
-   [v2026.06.22-5] 2026-06-22 | Especialidad bloqueada (no asignada): .svc-cat-lock
-   (candado + hint) en vez de controles; .locked atenúa el contador.
-   [v2026.06.22-4] 2026-06-22 | Chip especialidad del catálogo: violeta SUAVE por
-   defecto (#9961FF14/#9961FF4D) y SÓLIDO con .on (la que el profesional ya tiene),
-   igual que .spec-tag del paso 1.
-   [v2026.06.22-3] 2026-06-22 | Catálogo Paso 4 rediseñado compacto/colapsable:
-   bloque .svc-cat-esp con cabecera + hijos ocultos (.svc-cat-children), chevron,
-   rótulo .svc-cat-tipo (Esp./Serv.), controles compactos a la derecha (.svc-cat-ctrls).
-   [v2026.06.22-2] 2026-06-22 | Chips del catálogo (.svc-cat-chip) ajustados al
-   tamaño de los chips del sistema (.spec-tag): 11px / padding 4px 11px / radius 20px.
-   [v2026.06.22-1] 2026-06-22 | C3 Paso 4: estilos .svc-cat-* y .svc-recurso-chips
-   para la adopción del catálogo (filas tarjeta, chip especialidad morado sólido /
-   servicio blanco con borde, precio + Agregar a la derecha). Calzan con .card/.btn-primary.
-   [v2026.06.16-1] 2026-06-16 | Estilo Heavensy para input time/date (borde violeta,
-   focus, ícono violeta). Bloque .alm-row (almuerzo en línea: toggle + campos).
-   Extraído de configuracion.html
+   ── BITÁCORA ── (solo cambios recientes; histórico podado)
+   [v2026.06.23-4] 2026-06-23 | hvy-tp (timepicker Heavensy que reemplaza input[type=time]);
+   .dias-row + "Todos" y chips de día redondos; .ses-row3 grid→flex-wrap; .hvy-form-select
+   (botón hvy-select). Se mantienen estilos del catálogo Paso 4 (.svc-cat-*, .svc-row-ag,
+   .svc-tipo) y del input time/date Heavensy.
 ══════════════════════════════════════ */
 
 /* BASE */

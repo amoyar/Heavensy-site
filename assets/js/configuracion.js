@@ -2,363 +2,15 @@
 //  CONFIGURACIÓN — HEAVENSY
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
-// ── BITÁCORA ──
-// [v2026.06.23-10] configuracion.js
-// 2026-06-23 | Form de servicio (editar): el campo Especialidad ahora se pre-selecciona
-//              con la especialidad REAL del servicio (padre, o catalog_key si es paraguas)
-//              ANTES de poblar/selectificar (antes quedaba en "Sin especialidad"). Si el
-//              servicio ya tiene especialidad en BD, el campo se BLOQUEA (_cfgLockEspecialidad)
-//              y guardarSesion conserva la especialidad original (no se cambia; paraguas
-//              mantiene padre:'' + catalog_key). cfgNuevoServicio desbloquea (propio editable).
-//              Talleres/propios siguen pudiendo ir sin especialidad.
-// [v2026.06.23-9] configuracion.js
-// 2026-06-23 | Tema 1: el editor del PROFESIONAL es config-rubro.js (paso 3 wizard
-//              deshabilitado para persona). Se expone _cfgChequearEspecialidadesQuitadasEx
-//              (recibe specialties originales explícitas) y _cfgDesactivarServicios en
-//              window para que config-rubro.js (crGuardar) los use. Callers internos
-//              intactos. Helper núcleo separado del wrapper que lee memoria.
-// [v2026.06.23-8] configuracion.js
-// 2026-06-23 | Tema 1 fix: el chequeo de huérfanos ahora corre en LAS DOS rutas que
-//              guardan especialidades — guardarEspecialidades (paso 3 "Especialidad",
-//              _cfgFirstResourceId) y _cfgPatchCurrentResource (editor jm-). Antes solo
-//              estaba en la segunda, por eso al quitar el chip en el paso 3 no avisaba.
-//              Lógica extraída a helpers compartidos _cfgChequearEspecialidadesQuitadas
-//              / _cfgDesactivarServicios. (Nota: si el chip se edita en config-rubro.js
-//              —ficha profesional, archivo aparte— habría que enganchar allá también.)
-// [v2026.06.23-7] configuracion.js
-// 2026-06-23 | Tema 1 (sync paso 1 ↔ paso 4): al guardar el recurso, si se QUITARON
-//              especialidades, _cfgPatchCurrentResource detecta los agenda_services que
-//              colgaban de ellas (padre===key, o catalog_key===key si era paraguas) y
-//              avisa con cfgConfirm listándolos. Confirmar → guarda + soft-delete (DELETE
-//              /services/<id>, las citas no se borran). Cancelar → no guarda nada (return
-//              null; jmGuardarEspecialidades muestra "Cambios no guardados"). Solo afecta
-//              los servicios de la especialidad quitada; los propios (padre null) quedan.
-// [v2026.06.23-6] configuracion.js
-// 2026-06-23 | Estilo Heavensy en config: componente genérico hvyTime (reemplaza la
-//              cara de los input[type=time] por un picker Heavensy de 2 columnas
-//              hora|min en pasos de 5, panel compartido; el input nativo queda oculto
-//              como fuente de verdad, así v()/set()/change siguen igual). Barrido
-//              _cfgHeavensifyControls (hvyTimeAll + hvySelectifyAll de los select
-//              .hvy-form-select) al iniciar la página; cfgPopulateSchedule refresca los
-//              relojes tras poblar. 7 alert() nativos → showToast. #disp-tz y la zona
-//              horaria jm- pasan a hvy-select.
-// [v2026.06.23-5] configuracion.js
-// 2026-06-23 | Paso 4 (persona): el catálogo muestra SOLO las especialidades que el
-//              recurso tiene asignadas en el paso 1. Las no asignadas dejan de salir
-//              con candado (eran ruido). Si el recurso no tiene ninguna asignada, se
-//              muestra una pista para ir a "Mi empresa". Objeto intacto (nunca tuvo
-//              candado). Integra con el sync hvy:specialties-updated: al asignar/quitar
-//              en paso 1, el catálogo aparece/desaparece en vivo.
-// [v2026.06.23-4] configuracion.js
-// 2026-06-23 | Disponibilidad: un recurso SIN reglas arranca con los días desmarcados
-//              (antes el fallback era L-V → parecía configurado sin estarlo, caso Juan
-//              Pérez). cfgPopulateSchedule: default activos = todos false; tras pintar
-//              días, sincroniza el toggle "Todos" (_cfgSyncTodosDias). Nuevas
-//              cfgToggleDia/cfgToggleTodosDias. guardarDisponibilidad bloquea si no hay
-//              ningún día marcado (no se guarda disponibilidad vacía). Recurso CON
-//              reglas sigue reflejando sus días reales (intacto).
-// [v2026.06.23-3] configuracion.js
-// 2026-06-23 | Horario canónico: el panel de disponibilidad arma scheduleRules con
-//              start/end (antes start_time/end_time, que el motor de slots no lee →
-//              KeyError 'start' y slots=0). schedule_config (blob de UI) se deja como
-//              está: no lo consume el motor para start/end. Backend (agenda_routes)
-//              igual normaliza por si acaso.
-// [v2026.06.23-2] configuracion.js
-// 2026-06-23 | Paso 4 objeto (pasada 2): el form de servicio soporta UNIDAD.
-//              Nuevo _cfgConfigurarFormServicioUnidad(): en objeto muestra
-//              #ses-unidad (hvy-select) y ajusta el label/min/step de Duración;
-//              oculta Especialidad solo en objeto-plano (categoría sin servicios
-//              con padre). _svcUnidadSugerida() propone la unidad más común del
-//              catálogo (cabañas→noches) al crear servicio propio. guardarSesion
-//              envía 'unit' en objeto; cfgPopulateServices muestra la unidad real
-//              en el meta (no "min" fijo) y guarda data-unit; editarSesion la
-//              reprefija. Persona intacta (unit minutos implícito, sin cambios).
-// [v2026.06.23-1] configuracion.js
-// 2026-06-23 | Paso 4 para sectores OBJETO. cfgRenderCatalogAdoption ramifica por
-//              naturaleza (nuevo _svcSectorNaturaleza, lee business.recursos.naturaleza
-//              del sector cacheado). En objeto: sin candado ni gating por specialties
-//              (los recursos objeto no tienen specialties); especialidades CON servicios
-//              = agrupadores colapsables (ej. automotriz/propiedades), especialidades
-//              SIN servicios = características → NO se muestran (siguen en config-rubro);
-//              servicios padre:null = filas planas adoptables (ej. cabañas: Noche/Finde/
-//              Semana). Reusa clases .svc-cat-* (sin tocar CSS). Persona queda intacta.
-//              Además cfgAdoptCatalog ahora envía 'unit' (la unidad del catálogo) al POST
-//              para que el backend la persista (services_service v2026.06.22-4).
-// [v2026.06.22-13] configuracion.js
-// 2026-06-22 | FIX fuga entre empresas en el Paso 4: _jmCargarSector ahora cachea
-//              por company_id (_jmSectorCacheCid) y recarga si cambió la empresa
-//              (antes devolvía el sector cacheado de la empresa anterior → catálogo
-//              de cabañas en dentista y viceversa). goStep(3) resetea el recurso
-//              seleccionado si ya no pertenece a la empresa cargada.
-// [v2026.06.22-12] configuracion.js
-// 2026-06-22 | Texto de la opción vacía de Especialidad alineado con el HTML
-//              ('— Sin especialidad (otros) —'). (El hvy-select de #ses-padre ya
-//              estaba: _cfgPopulatePadreSelect hace hvySelectify + change.)
-// [v2026.06.22-11] configuracion.js
-// 2026-06-22 | Borrar servicio: reemplazado el confirm() nativo del navegador por el
-//              modal Heavensy existente cfgConfirm().
-// [v2026.06.22-10] configuracion.js
-// 2026-06-22 | Tooltip del botón + del catálogo: title nativo 'Agregar' → data-tip
-//              'Agregar servicio' (tooltip Heavensy por CSS).
-// [v2026.06.22-9] configuracion.js
-// 2026-06-22 | cfgNuevoServicio(): 'Agregar servicio' abre el form en modo nuevo,
-//              resetea y hace scrollIntoView hasta él (estaba al final del panel y
-//              había que scrollear para encontrarlo) + foco en el nombre.
-// [v2026.06.22-8] configuracion.js
-// 2026-06-22 | Sync paso 1 → paso 4: el listener hvy:specialties-updated ahora
-//              también actualiza _cfgResourcesList[].specialties y re-pinta el
-//              catálogo del Paso 4, así una especialidad agregada en 'Mi empresa'
-//              aparece marcada/adoptable al toque, sin recargar.
-// [v2026.06.22-7] configuracion.js
-// 2026-06-22 | Retirado el cargador viejo de pp_servicios (tipo=empresa) que
-//              poblaba #svc-list: pisaba los agenda_services y hacía 'reaparecer'
-//              servicios borrados. El Paso 4 ahora se llena solo desde agenda.
-// [v2026.06.22-6] configuracion.js
-// 2026-06-22 | Paso 4: (1) filas de agendables con clase svc-row-ag (fondo blanco,
-//              punto de color) en vez de fondo entero. (2) Anti-duplicado: _svcAdoptedKeys
-//              marca en el catálogo lo ya adoptado como 'Agregado' (sin controles);
-//              se cargan agendables ANTES del catálogo y se refrescan ambos al adoptar.
-// [v2026.06.22-5] configuracion.js
-// 2026-06-22 | R2 (wizard): el form de servicio (#form-sesion) ahora CREA/EDITA en
-//              agenda_services (no en pp_servicios): guardarSesion POST/PATCH
-//              /api/agenda/services con name/duration/price/modality/cancellation_
-//              policy/description/color/padre/catalog_key; editarSesion prefija desde
-//              el dataset (incl. 'Cuelga de'); papelera cfgDeleteAgendaService (DELETE
-//              real); rótulo Esp./Serv.; _cfgPopulatePadreSelect llena 'Cuelga de'.
-// [v2026.06.22-4] configuracion.js
-// 2026-06-22 | Catálogo Paso 4: SOLO las especialidades que el profesional tiene
-//              (owned) se pueden adoptar/editar — incluidos sus servicios; las no
-//              asignadas quedan bloqueadas (candado 'Asígnala en Mi empresa', sin
-//              controles). 'Otros servicios' siguen adoptables. Evita inconsistencias.
-// [v2026.06.22-3] configuracion.js
-// 2026-06-22 | Catálogo Paso 4: las especialidades que el recurso YA tiene
-//              asignadas (specialties del paso 1) se marcan seleccionadas (chip
-//              .on, morado sólido); el resto en violeta suave. specKeys desde
-//              _cfgResourcesList[].specialties (fallback _espSpecsSel).
-// [v2026.06.22-2] configuracion.js
-// 2026-06-22 | Catálogo del Paso 4 ahora COLAPSABLE y compacto: cada especialidad
-//              es un bloque que despliega sus servicios (toggle CSS sin re-render,
-//              cfgSvcToggleGroup); rótulo Esp./Serv.; 'Otros servicios' colapsable.
-//              cfgAdoptCatalog lee los controles desde .svc-cat-ctrls.
-// [v2026.06.22-1] configuracion.js
-// 2026-06-22 | C3 rebanada 1 (adopción): Paso 4 (panel-3) gana chips de profesional
-//              (cfgRenderSvcRecursoChips/cfgSvcSelectRecurso) y un catálogo de la
-//              categoría del recurso (cfgRenderCatalogAdoption) para adoptar
-//              especialidades/servicios con precio → crea agenda_service vinculado
-//              (catalog_key/profession_key/padre) vía POST /api/agenda/services y
-//              recarga la lista. Reusa _jmCargarSector/_jmEspecialidadesDeCategoria.
-// [v2026.06.20-2] configuracion.js
-// 2026-06-20 | Tanda 1: el botón Guardar de la pestaña Especialidad del editor de
-//              especialista (jmGuardarEspecialidades) ahora SÍ persiste al backend
-//              (antes solo actualizaba el preview) y muestra mensaje real de éxito/error.
-//              _cfgPatchCurrentResource ahora retorna true/false. Nuevo helper jmAviso:
-//              usa showToast si funciona en la pantalla, si no cae a un aviso flotante
-//              propio (evita el bug conocido del toast con qrToastContainer). Los modos
-//              de trabajo y años de experiencia ya estaban en este editor (no se movió nada).
-// [v2026.06.20-1] configuracion.js  (19º cambio sobre base 16)
-// 2026-06-20 | Fase B sync en vivo: ambos editores (paso 1 jm- y paso 3 wizard) disparan
-//              el evento global 'hvy:specialties-updated' al guardar specialties, y un
-//              listener actualiza el editor que tenga abierto el mismo recurso sin recargar
-//              (resuelve el "hay que refrescar para ver el cambio en el otro paso").
-//              Helper _emitSpecsUpdated. Coordinado con config-rubro.js v16-8.
-// [v2026.06.19-1] configuracion.js  (continúa numeración 16-x; 18º cambio sobre base 16)
-// 2026-06-19 | Fase B Especialidades (coordina paso 1 + paso 3-wizard con config-rubro).
-//              Ambos editores de especialidades de este archivo dejan de usar texto libre
-//              y pasan a CHIPS del catálogo de la categoría + propias, guardando specialties
-//              como ARRAY DE OBJETOS {key,nombre,propia} — mismo formato que config-rubro
-//              (resuelve la descoordinación y el bug [object Object] que aparecía al pintar
-//              objetos como string). (1) Editor de especialista (jm-): _jmProfKey/_jmSpecsSel,
-//              jmAddSpec/jmRemoveSpec/jmToggleSpec, _jmRenderSpecs; lectura en jmEnviarProfCard
-//              y _jmCreador desde el estado; payload _cfgPatchCurrentResource manda objetos.
-//              (2) Editor paso 3 del wizard (spec-tags-container): _espProfKey/_espSpecsSel,
-//              addSpec/removeSpec/espToggleSpec, _espRenderSpecs; cfgPopulateSpecialties pinta
-//              chips; syncEspecialidades y guardarEspecialidades usan el estado.
-//              Catálogo cargado autónomo vía GET /api/companies/<cid> → sector_key →
-//              GET /api/sectores/<key> (_jmCargarSector, cacheado). Backend no se tocó.
-// [v2026.06.16-17] configuracion.js
-// 2026-06-16 | Nombre real de las fotos del perfil: al subir, se envía también
-//              portada_fname/foto_fname/fondo_fname al backend (antes solo a
-//              localStorage, que se pierde al cerrar sesión o cambiar de equipo).
-//              _epNombreFoto ahora prioriza el nombre que viene del backend sobre
-//              el de localStorage y sobre el nombre técnico de Cloudinary.
-// [v2026.06.16-16] configuracion.js
-// 2026-06-16 | Fix REAL del resumen que no se actualizaba al guardar: el repintado
-//              usaba _cfgResourceMap[id], pero ese map EXCLUYE los recursos de
-//              profesionales (los que tienen user_id), así que para Marcos/Juan/Josefa
-//              daba undefined → cfgPopulateSchedule no recibía datos. Ahora usa
-//              _cfgResourcesList (que sí los contiene, es la fuente del selector) e
-//              incluye schedule_rules para refrescar también los días.
-// [v2026.06.16-15] configuracion.js
-// 2026-06-16 | Fix (parcial): el RESUMEN de disponibilidad no se actualizaba tras guardar.
-//              guardarDisponibilidad llama a cfgPopulateSchedule tras guardar OK.
-// [v2026.06.16-14] configuracion.js
-// 2026-06-16 | showToast: posición a arriba-centro con z-index máximo (la esquina
-//              inferior derecha quedaba tapada por el panel de edición violeta).
-// [v2026.06.16-13] configuracion.js
-// 2026-06-16 | FEEDBACK DE GUARDADO: se define window.showToast (notificación
-//              lateral que se auto-oculta, color de marca). Antes se llamaba en
-//              ~13 puntos pero NUNCA estaba definida → ningún aviso aparecía, ni
-//              éxito ni error (de ahí que "no se supiera si guardó"). Se agregó
-//              toast de éxito en guardarDisponibilidad y guardarEspecialidades
-//              (antes solo cambiaban el botón) y se simplificaron los guards
-//              `if (typeof showToast === 'function')` que ya no hacen falta.
-// [v2026.06.16-12] configuracion.js
-// 2026-06-16 | Panel de disponibilidad: nuevo campo "Descanso entre citas" (buffer_after)
-//              editable. Se guarda en la raíz del recurso y cfgPopulateSchedule lo
-//              carga. El motor ya lo contempla (generate_base_slots: paso =
-//              slot_duration + buffer_after). Antes solo se preservaba, ahora se edita.
-// [v2026.06.16-11] configuracion.js
-// 2026-06-16 | guardarDisponibilidad ahora persiste también los campos CANÓNICOS
-//              que el motor de agenda (availability_service, usado por el calendario
-//              interno Y la IA del webhook) realmente lee: booking_rules
-//              {min_advance_hours, cancel_before_hours} y slot_duration/buffer_after
-//              en la raíz del recurso. Antes solo iban en schedule_config, donde el
-//              motor NO los lee → la anticipación/slot no se respetaban al agendar.
-//              schedule_config se mantiene para la UI y el almuerzo. buffer_after se
-//              preserva del recurso (no se expone en el panel).
-// [v2026.06.16-10] configuracion.js
-// 2026-06-16 | Fix raíz disponibilidad: el resumen y el form de días caían a un
-//              default (LMXJV) porque GET /resources no traía las schedule_rules
-//              (van en colección aparte; ahora el backend las adjunta).
-//              cfgPopulateSchedule ahora sincroniza también los toggles del form
-//              de días (#disp-dias) con las rules reales, no solo el resumen.
-// [v2026.06.16-9] configuracion.js
-// 2026-06-16 | #4 Dirección/oficina/zona horaria del panel-1 ahora persisten:
-//              dirección y oficina por recurso (location/office en el PATCH del
-//              recurso); zona horaria de la empresa (PUT /companies/<cid>/config,
-//              cacheada en _cfgCompanyTz, cargada al inicio). cfgPopulateSchedule
-//              los puebla al cargar el recurso.
-// [v2026.06.16-8] configuracion.js
-// 2026-06-16 | #6/#7 Datos demo eliminados: la tabla de usuarios se puebla siempre
-//              (con estado vacío si no hay datos, en vez de dejar la fila demo de
-//              Juana Machuca); las filas muestran la empresa REAL activa (no
-//              "Heavensy" fijo); fila de recurso con data-rol="recurso" (no
-//              "terapeuta"). Fallbacks "Juana Machuca" → vacío.
-// [v2026.06.16-7] configuracion.js
-// 2026-06-16 | #2 Filtros de rol ya no hardcodeados: nuevo cfgLoadRolesFiltro
-//              puebla #f-rol desde GET /api/system-roles (value=role_id), llamado
-//              al cargar la tabla. filterUsers compara el rol de forma tolerante
-//              (igualdad o contención, minúsculas) para calzar id o nombre.
-// [v2026.06.16-6] configuracion.js
-// 2026-06-16 | Fix "no guarda": guardarEspecialidades y guardarDisponibilidad
-//              fingían "Guardado" aunque _cfgFirstResourceId fuera null (fallo
-//              silencioso) y tenían catch vacío. Ahora avisan si no hay recurso o
-//              si el backend falla, y reflejan el cambio en _cfgResourceMap. Solo
-//              muestran "Guardado" si el PATCH fue ok.
-// [v2026.06.16-5] configuracion.js
-// 2026-06-16 | Modos de trabajo en panel-2 (Especialidades) ya no hardcodeados:
-//              cfgPopulateSpecialties sincroniza los toggles (#esp-modos) con los
-//              modalities reales y carga años de experiencia; syncEspecialidades
-//              lee #esp-modos (id robusto). guardarEspecialidades ahora persiste
-//              modalities y anios_experiencia, no solo specialties.
-// [v2026.06.16-4] configuracion.js
-// 2026-06-16 | Resumen de disponibilidad (panel-1) ya no hardcodeado:
-//              cfgPopulateSchedule puebla #sum-horario/almuerzo/intervalo/cancel/
-//              dias/tz con los datos reales del recurso (almuerzo se oculta si no
-//              tiene; días desde schedule_rules). rules ahora toma solo el objeto
-//              schedule_config (nunca el array), evitando leer mal los escalares.
-// [v2026.06.16-3] configuracion.js
-// 2026-06-16 | Modos de atención (panel-1) dejan de estar hardcodeados: el resumen
-//              (#sum-modos) y los toggles (#disp-modos) reflejan los modalities
-//              reales del recurso, y guardarDisponibilidad ahora los persiste
-//              (modalities en el PATCH). IDs #disp-dias/#disp-modos para selección
-//              robusta.
-// [v2026.06.16-2] configuracion.js
-// 2026-06-16 | Unificado el toggle de almuerzo también en la vista jm-disp
-//              (gestión de equipo): toggleAlmuerzoJm, init según recurso/sector, y
-//              _cfgPatchCurrentResource ahora guarda schedule_config con
-//              has_lunch_break respetando el toggle.
-// [v2026.06.16-1] configuracion.js
-// 2026-06-16 | Almuerzo opcional vía toggle: nuevo toggleAlmuerzo muestra/oculta
-//              los campos (en línea, label "Almuerzo"). cfgPopulateSchedule
-//              inicializa el toggle según lo guardado del recurso o el default del
-//              sector (window._cfgSectorLunchDefault, has_lunch_break).
-//              guardarDisponibilidad respeta el toggle (off → has_lunch_break:false
-//              y lunch vacío). Resuelve el hueco de rubros por_hora_sin_almuerzo.
-// [v2026.06.15-6] configuracion.js
-// 2026-06-15 | Fix: el breadcrumb mostraba "Disponibilidad de —" / "Especialidades
-//              de —" porque el nombre solo se seteaba al cambiar de recurso, no al
-//              cargar. Nuevo helper cfgSetRecursoNombre usado en la carga inicial y
-//              en cfgSelectRecurso (panel-1 y panel-2). (Aplica a rubros por_hora /
-//              profesionales; cabañas usa otro panel, pendiente.)
-// [v2026.06.15-5] configuracion.js
-// 2026-06-15 | Selector de recurso también en el panel-2 (Especialidades/
-//              Características): cfgRenderRecursoSelector pinta los chips en ambos
-//              paneles (disp + esp), que comparten el recurso activo. Al elegir,
-//              se re-pobla y guardarEspecialidades guarda contra ese recurso.
-//              detail-name-2 también se actualiza. Solo se agregaron chips; sin
-//              tocar layout ni etiquetas (el rubro ya las adapta).
-// [v2026.06.15-4] configuracion.js
-// 2026-06-15 | Disponibilidad/Características POR RECURSO: nuevo selector de
-//              recurso en el panel-1 (cfgRenderRecursoSelector + cfgSelectRecurso).
-//              Antes editaba siempre el primer recurso (_cfgFirstResourceId fijo);
-//              ahora se elige cuál y _cfgFirstResourceId apunta a ese, de modo que
-//              guardarDisponibilidad/guardarEspecialidades guardan al recurso
-//              correcto. Sirve para personas y objetos. cfgPopulateSpecialties
-//              ahora limpia el contenedor cuando el recurso no tiene (evita
-//              arrastrar las del recurso anterior).
-// [v2026.06.15-3] configuracion.js
-// 2026-06-15 | cfgToggleEsRecurso corregido a MULTI-TENANT: ahora llama a
-//              PUT /api/companies/<cid>/users/<username>/resource-flag (la bandera
-//              is_resource vive en companies[], por empresa) en vez del PUT a la
-//              raíz del usuario. Un profesional puede ser recurso en una empresa y
-//              no en otra.
-// [v2026.06.15-2] configuracion.js
-// 2026-06-15 | Columna "Recurso" de la tabla de usuarios: el badge Sí/No pasó a
-//              ser un toggle (cfgToggleEsRecurso) que marca la bandera is_resource
-//              del usuario vía PUT /api/users/<username>. NO crea el recurso de
-//              agenda (eso se hace al configurarlo en "Mi equipo"); solo marca la
-//              capacidad. Revierte y avisa si el backend falla; mantiene
-//              data-recurso sincronizado para filtros/stats.
-// [v2026.06.15-1] configuracion.js
-// 2026-06-15 | "Agregar miembro al equipo": eliminada la fabricación de role_id
-//              por concatenación (rol.toUpperCase()+'_ROL') y el fallback
-//              hardcodeado 'terapeuta', que generaban roles inexistentes
-//              (TERAPEUTA_ROL/SECRETARIA_ROL) sin permisos efectivos. El rol ahora
-//              sale de chips Heavensy poblados desde BD (GET /api/system-roles) vía
-//              cfgLoadRolesEquipo/cfgSelRolEquipo; el role_id real viaja en el
-//              hidden #add-rol y se manda tal cual al backend. Reemplazado el
-//              <select> nativo por chips toggle-btn (selección única). La columna
-//              de empresa de la fila ya no es "Heavensy" fija: usa la empresa activa.
-// [v2026.06.14-4] configuracion.js
-// 2026-06-14 | Botón Quitar alineado a la derecha del campo (margin-left:auto +
-//              contenedor flex) en vez de pegado al nombre, que se veía apretado.
-// [v2026.06.14-3] configuracion.js
-// 2026-06-14 | Quitar fotos: portada/perfil/fondo ahora tienen botón "✕ Quitar"
-//              (epQuitarFoto) que vacía la URL en localStorage y servidor, limpia
-//              preview y nombre. Antes no había forma de sacar una foto puesta.
-//              El botón se inyecta junto al nombre cuando hay foto.
-// [v2026.06.14-2] configuracion.js
-// 2026-06-14 | Galería (inf_oficio) ahora se publica: al subir cada imagen
-//              también va a Cloudinary (ppUploadImage) y su URL se guarda en
-//              ep_galeria_urls, que entra al payload (campo 'galeria'). Antes
-//              solo vivía en preview (base64). El preview base64 se mantiene.
-// [v2026.06.14-1] configuracion.js
-// 2026-06-14 | Nombres de foto del paso 5: al subir se guarda el nombre real
-//              (ep_*_fname); al cargar, _epNombreFoto muestra nombre guardado >
-//              derivado de la URL > 'Seleccionar imagen…' (antes mostraba un
-//              default hardcodeado aunque hubiera imagen). Cargas de servicios/
-//              programas hechas robustas (Array.isArray). Galería inf_oficio
-//              NO tocada (nice-to-have → motor B, ver A4).
-// [v2026.06.13-2] configuracion.js — fix 9x apiCall().then(r=>r.json()) → r.data
-// [v2026.06.13-1] configuracion.js — fix persistencia imágenes paso 5
-// [v2026.06.12-3] configuracion.js
-// 2026-06-12 | Loader: si config-rubro.js ya está cargado (navegación SPA),
-//              re-invoca crInit en vez de no hacer nada.
-// [v2026.06.12-2] configuracion.js
-// 2026-06-12 | El loader inyecta además config-rubro.css (estilos del módulo
-//              en archivo propio; configuracion.css vuelve a quedar intacto).
-// [v2026.06.12-1] configuracion.js
-// 2026-06-12 | Fase 3.2: loader del módulo config-rubro.js (paso Mi empresa
-//              adaptativo por rubro). Si el módulo o el catálogo no están,
-//              la página opera exactamente como antes.
-// [v2026.06.11-1] configuracion.js
-// 2026-06-11 | Fase 3.1 — perfil público real: ppSaveConfig escribe ADEMÁS el
-//              borrador en backend (PUT /api/perfil-publico/borrador; el
-//              localStorage ep_* queda como caché del preview).
-//              actualizarPublicacion ya NO descarga un HTML estático: llama a
-//              POST /api/perfil-publico/publicar y muestra la URL pública
-//              (/p/<slug>). El modal de primera publicación se conserva.
+// ── BITÁCORA ── (solo cambios recientes; histórico podado)
+// [v2026.06.23-14] configuracion.js
+// 2026-06-23 | Sesión: Paso 4 sectores OBJETO (catálogo por naturaleza); relojes
+//   Heavensy (hvyTime) + selects hvy-form-select + hvyToast (toast propio que no pisa
+//   quick-replies); panel disponibilidad (días/"Todos", horario canónico start/end);
+//   Tema 1 huérfanos (al quitar especialidad se desactivan sus agenda_services; jm-,
+//   paso 3 y config-rubro); form servicio: especialidad se pre-selecciona (padre||
+//   catalog_key), se BLOQUEA si ya tiene, y al ASIGNAR una nueva pide confirmación
+//   cancelable (cfgConfirm). guardarSesion async.
 
 // ── TOAST (notificación lateral que se auto-oculta) ──
 // Antes se llamaba showToast en varios puntos pero NUNCA estaba definido (las
@@ -385,7 +37,21 @@ if (typeof window.showToast !== 'function') {
   };
 }
 
-// ── HELPERS: construir filas de programas y servicios ──
+// ── hvyToast: toast propio con nombre ÚNICO (no lo pisa el showToast de quick-replies,
+// que depende de #qrToastContainer y hace return temprano fuera de esa pantalla). ──
+function hvyToast(msg, type = 'success') {
+  const color = type === 'success' ? '#9961FF' : type === 'error' ? '#ef4444' : '#f59e0b';
+  const icon  = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-times-circle' : 'fa-exclamation-circle';
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;top:20px;left:50%;transform:translate(-50%,-20px);z-index:2147483647;background:#fff;border-left:4px solid ' + color +
+    ';border-radius:10px;padding:11px 16px;box-shadow:0 4px 20px rgba(0,0,0,.14);font-size:12.5px;font-weight:600;color:#383838;' +
+    'display:flex;align-items:center;gap:8px;max-width:340px;opacity:0;transition:opacity .25s ease,transform .25s ease;';
+  el.innerHTML = '<i class="fas ' + icon + '" style="color:' + color + '"></i> ' + msg;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translate(-50%,0)'; });
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translate(-50%,-20px)'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+window.hvyToast = hvyToast;
 function _ppBuildProgRow(p, profileType) {
   const color = p.color || '#9497F4';
   const imgHTML = p.img && p.img.startsWith('http') ? `<img src="${p.img}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0;margin-right:2px">` : '';
@@ -2591,7 +2257,7 @@ function previewProgBgColor(val, formId) {
 function previewSesColor(val) { if(editingSesionRow) editingSesionRow.style.background=val; }
 function previewProgColor(val) { if(editingProgRow) editingProgRow.style.background=val; }
 
-function guardarSesion() {
+async function guardarSesion() {
   const nombre=document.getElementById('ses-nombre').value.trim();
   const duracion=document.getElementById('ses-duracion').value.trim();
   const precio=document.getElementById('ses-precio').value.trim();
@@ -2610,10 +2276,15 @@ function guardarSesion() {
   if(!rid){ showToast('Primero elige un profesional.','error'); return; }
   const color=document.getElementById('ses-color').value;
   let padre=document.getElementById('ses-padre')?.value||'';
-  // Lock: si el servicio editado YA tenía especialidad en BD, se conserva la original
-  // (no se cambia al editar). Para un paraguas, padre real es '' y se preserva catalog_key.
-  if (editingSesionRow && (editingSesionRow.dataset.padre || editingSesionRow.dataset.catalogKey)){
+  const _wasLocked = editingSesionRow && (editingSesionRow.dataset.padre || editingSesionRow.dataset.catalogKey);
+  if (_wasLocked){
+    // Ya tenía especialidad en BD: está bloqueada, se conserva la original (paraguas → padre '').
     padre = editingSesionRow.dataset.padre || '';
+  } else if (padre){
+    // Servicio sin especialidad al que se le asigna una real: confirmar (queda fija).
+    const _ok = await cfgConfirm('Asignar especialidad',
+      'Una vez asignada, la especialidad de este servicio no se podrá cambiar. ¿Continuar?');
+    if (!_ok) return;   // cancela → no guarda; el form queda abierto para ajustar
   }
   const desc=document.getElementById('ses-desc')?.value.trim()||'';
   const priceNum=Number((precio||'').replace(/[^\d]/g,''))||0;
