@@ -12,6 +12,12 @@ function _calLabel(key, fallback) {
  * Se carga cuando se abre la sección CALENDARIO del panel derecho.
  */
 
+// ── BITÁCORA ──
+// [v2026.06.24-2] conv-calendar.js | El calendario de empresa ya no exige recurso propio
+//   del usuario logueado (se quitó el gate 'Sin agenda configurada' que cortaba a admins
+//   sin recurso; _calResourceId no se usa en el render). [v2026.06.24-1] _calLoadMonth
+//   fija _calYear/_calMonth a hoy si vienen null (fix mes 'null-01' -> 400 al refrescar).
+
 console.log('📅 conv-calendar.js cargado');
 
 // ============================================
@@ -87,10 +93,9 @@ async function _calLoadAndRender(companyId) {
         }
     }
 
-    if (!_calResourceId) {
-        container.innerHTML = '<p class="cal-empty">Sin agenda configurada.</p>';
-        return;
-    }
+    // El calendario es de TODA la empresa (/api/calendar/company) y NO depende de que el
+    // usuario logueado tenga recurso propio. _calResourceId no se usa en el render; antes
+    // este gate cortaba con "Sin agenda configurada" para admins sin recurso. [24-06]
 
     const today  = new Date();
     if (!_calYear) {
@@ -123,6 +128,14 @@ async function _calRender() {
 // ============================================
 
 async function _calLoadMonth() {
+    // Fallback: si el calendario se refresca sin haberse inicializado (ej. tras
+    // reservar, _agendaRefreshCalendarIfOpen llama _calRender directo), _calYear
+    // sería null y el mes saldría 'null-01' (HTTP 400). Garantizar hoy. [24-06]
+    if (!_calYear) {
+        const _t = new Date();
+        _calYear  = _t.getFullYear();
+        _calMonth = (_calMonth == null) ? _t.getMonth() : _calMonth;
+    }
     const month = `${_calYear}-${String(_calMonth + 1).padStart(2,'0')}`;
 
     try {
