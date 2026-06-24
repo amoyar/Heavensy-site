@@ -3,14 +3,13 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ── (solo cambios recientes; histórico podado)
-// [v2026.06.23-14] configuracion.js
-// 2026-06-23 | Sesión: Paso 4 sectores OBJETO (catálogo por naturaleza); relojes
-//   Heavensy (hvyTime) + selects hvy-form-select + hvyToast (toast propio que no pisa
-//   quick-replies); panel disponibilidad (días/"Todos", horario canónico start/end);
-//   Tema 1 huérfanos (al quitar especialidad se desactivan sus agenda_services; jm-,
-//   paso 3 y config-rubro); form servicio: especialidad se pre-selecciona (padre||
-//   catalog_key), se BLOQUEA si ya tiene, y al ASIGNAR una nueva pide confirmación
-//   cancelable (cfgConfirm). guardarSesion async.
+// [v2026.06.24-1] configuracion.js
+// 2026-06-24 | Control de adopción del catálogo: campos con micro-etiqueta arriba
+//   ("Duración" + min, "Precio" con $ dentro del recuadro) para que se entiendan.
+//   | 06.23-16: borrar servicio recarga + re-pinta catálogo (Agregado/conteo al instante).
+//   06.23-15: tarjetas por ORIGEN (Catálogo/Creado/Propio) + sub-bloque "Propias" y propias
+//   en "Cuelga de". 06.23-14: Paso 4 OBJETO; hvyTime/hvyToast; disponibilidad; Tema 1
+//   huérfanos; form servicio especialidad pre-seleccionada/bloqueada + confirmación.
 
 // ── TOAST (notificación lateral que se auto-oculta) ──
 // Antes se llamaba showToast en varios puntos pero NUNCA estaba definido (las
@@ -3162,6 +3161,10 @@ function cfgPopulateServices(services) {
 
   const profKey = _svcCurrentProfKey || _espProfKey;
   const espKeys = new Set((typeof _jmEspecialidadesDeCategoria === 'function' ? _jmEspecialidadesDeCategoria(profKey) : []).map(e => e.key));
+  // Especialidades PROPIAS del recurso (key→nombre) para marcar el origen de cada servicio.
+  const _rSelP = (_cfgResourcesList || []).find(x => (x._id || x.id) === (_svcCurrentResourceId || _cfgFirstResourceId));
+  const _cfgPropiaMap = {};
+  (((_rSelP && (_rSelP.specialties || _rSelP.especialidades)) || [])).forEach(s => { if (s && s.propia && s.key) _cfgPropiaMap[s.key] = s.nombre || s.key; });
 
   const colors = ['#9961FF','#0ea5e9','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
   _svcAdoptedKeys = new Set((services || []).map(s => s.catalog_key).filter(Boolean));
@@ -3171,10 +3174,16 @@ function cfgPopulateServices(services) {
     const precio = s.price ? `$${Number(s.price).toLocaleString('es-CL')}` : '';
     const meta = `${s.duration || 0} ${_svcUniLabel(s.unit || 'minutos')}${s.modality ? ' · ' + s.modality : ''}`;
     const esEsp = s.catalog_key && espKeys.has(s.catalog_key) && !s.padre;
-    const tipo = `<span class="svc-tipo">${esEsp ? 'Especialidad' : 'Servicio'}</span>`;
+    // Origen del servicio para diferenciarlo visualmente (título chico + color suave).
+    const _spk = s.padre || s.catalog_key || '';
+    let _origenCls, _origenTxt;
+    if (_spk && _cfgPropiaMap[_spk]) { _origenCls = 'origin-propio';  _origenTxt = 'PROPIO · ' + _cfgPropiaMap[_spk]; }
+    else if (s.catalog_key)         { _origenCls = 'origin-catalog'; _origenTxt = 'CATÁLOGO · ' + (esEsp ? 'ESPECIALIDAD' : 'SERVICIO'); }
+    else                            { _origenCls = 'origin-creado';  _origenTxt = 'CREADO'; }
+    const tipo = `<span class="svc-tipo">${_origenTxt}</span>`;
     const cancelAttr = JSON.stringify(s.cancellation_policy || null).replace(/'/g, '&#39;');
     const espAttr = JSON.stringify(s.target_profiles || []).replace(/'/g, '&#39;');
-    return `<div class="svc-row svc-row-ag"
+    return `<div class="svc-row svc-row-ag ${_origenCls}"
       data-service-id="${id}"
       data-nombre="${(s.name || '').replace(/"/g, '&quot;')}"
       data-duration="${s.duration || ''}"
@@ -3206,9 +3215,15 @@ function _cfgPopulatePadreSelect() {
   if (!sel) return;
   const profKey = _svcCurrentProfKey || _espProfKey;
   const esps = (typeof _jmEspecialidadesDeCategoria === 'function') ? _jmEspecialidadesDeCategoria(profKey) : [];
+  // Especialidades propias del recurso (para poder colgar servicios de ellas).
+  const _rSelD = (_cfgResourcesList || []).find(x => (x._id || x.id) === (_svcCurrentResourceId || _cfgFirstResourceId));
+  const _catKeysD = new Set(esps.map(e => e.key));
+  const _propiasD = (((_rSelD && (_rSelD.specialties || _rSelD.especialidades)) || []))
+    .filter(s => s && s.propia && s.key && !_catKeysD.has(s.key));
   const cur = sel.value;
-  sel.innerHTML = '<option value="">— Sin especialidad (otros) —</option>' +
-    esps.map(e => `<option value="${e.key}">${(e.nombre || '').replace(/</g, '&lt;')}</option>`).join('');
+  const _optCat = esps.map(e => `<option value="${e.key}">${(e.nombre || '').replace(/</g, '&lt;')}</option>`).join('');
+  const _optPropias = _propiasD.map(p => `<option value="${p.key}">${(p.nombre || '').replace(/</g, '&lt;')} ★ (propia)</option>`).join('');
+  sel.innerHTML = '<option value="">— Sin especialidad (otros) —</option>' + _optCat + _optPropias;
   sel.value = cur;
   if (typeof hvySelectify === 'function') hvySelectify(sel);   // dropdown Heavensy
   sel.dispatchEvent(new Event('change'));                      // refresca el label del hvy-select
@@ -3271,7 +3286,12 @@ window.cfgDeleteAgendaService = async function(btn) {
   const ok = await cfgConfirm('¿Eliminar servicio?', 'Se quitará este servicio agendable. Esta acción no se puede deshacer.');
   if (!ok) return;
   const res = await apiCall('/api/agenda/services/' + id, { method: 'DELETE' }).catch(() => null);
-  if (res && res.ok) { row.remove(); syncServicios(); }
+  if (res && res.ok) {
+    const rid = _svcCurrentResourceId || _cfgFirstResourceId;
+    if (rid && typeof _svcReloadAgendables === 'function') await _svcReloadAgendables(rid);
+    else { row.remove(); syncServicios(); }
+    if (typeof cfgRenderCatalogAdoption === 'function') await cfgRenderCatalogAdoption();   // refresca "Agregado"/conteo arriba
+  }
   else showToast((res && res.data && res.data.error) || 'No se pudo eliminar','error');
 };
 
@@ -3472,9 +3492,14 @@ async function cfgRenderCatalogAdoption(){
   const ctrls = (tipo, key, nombre, padre, dur, unidad) => {
     const nmJs = (nombre || '').replace(/'/g, "\\'");
     return `<span class="svc-cat-ctrls" onclick="event.stopPropagation()">
-      <input type="number" class="svc-cat-dur" value="${dur != null ? dur : ''}" min="1" aria-label="duración">
-      <span class="svc-cat-uni">${_svcUniLabel(unidad || 'minutos')}</span>
-      <input type="number" class="svc-cat-price" placeholder="$" min="0">
+      <span class="svc-cat-field">
+        <span class="svc-cat-flabel">Duración</span>
+        <span class="svc-cat-finput"><input type="number" class="svc-cat-dur" value="${dur != null ? dur : ''}" min="1" aria-label="duración"><span class="svc-cat-uni">${_svcUniLabel(unidad || 'minutos')}</span></span>
+      </span>
+      <span class="svc-cat-field">
+        <span class="svc-cat-flabel">Precio</span>
+        <span class="svc-cat-finput svc-cat-price-wrap"><span class="svc-cat-money">$</span><input type="number" class="svc-cat-price" placeholder="0" min="0" aria-label="precio"></span>
+      </span>
       <button class="btn-primary btn-sm svc-cat-add" data-tip="Agregar servicio" onclick="cfgAdoptCatalog(this,'${tipo}','${key}','${nmJs}','${padre || ''}','${unidad || 'minutos'}')"><i class="fas fa-plus"></i></button>
     </span>`;
   };
@@ -3557,6 +3582,25 @@ async function cfgRenderCatalogAdoption(){
       </div>
       <div class="svc-cat-children">${otros.map(s => srvRow(s, true)).join('')}</div>
     </div>`;
+  }
+
+  // ── Especialidades PROPIAS del recurso (no están en el catálogo de la categoría) ──
+  // Se listan como filas Esp. en ámbar, bajo su propio título. El control + crea un
+  // servicio agendable de esa propia (cfgAdoptCatalog 'esp' → catalog_key = key propia);
+  // queda marcado como "Propio" en Disponibles para agendar.
+  const _catKeysP = new Set(esps.map(e => e.key));
+  const propias = (_specsArr || []).filter(s => s && s.propia && s.key && !_catKeysP.has(s.key));
+  if (propias.length){
+    html += `<div class="svc-cat-title svc-cat-title-propia">Propias · ${_svcCatName(profKey)}</div>`;
+    propias.forEach(p => {
+      html += `<div class="svc-cat-esp svc-cat-propia">
+        <div class="svc-cat-head">
+          ${tag('Esp.')}${chip('esp', p.nombre, 'propia')}
+          <i class="fas fa-star svc-cat-star" aria-hidden="true"></i>
+          ${right('esp', p.key, p.nombre, '', null, 'minutos')}
+        </div>
+      </div>`;
+    });
   }
 
   cont.innerHTML = html;

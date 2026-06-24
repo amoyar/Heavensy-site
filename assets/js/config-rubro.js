@@ -7,12 +7,14 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ── (solo cambios recientes; histórico podado)
-// [v2026.06.23-1] config-rubro.js
-// 2026-06-23 | Tema 1: al guardar el profesional (crGuardar), si se quitaron
+// [v2026.06.23-2] config-rubro.js
+// 2026-06-23 | Especialidades PROPIAS: cada chip propio con lápiz (renombrar inline,
+//   conserva la key → no recolga servicios) y ✕ (quitar; se persiste al Guardar y el
+//   Tema 1 desactiva sus agenda_services). Estado _crEditingPropiaKey.
+// [v2026.06.23-1] 2026-06-23 | Tema 1: al guardar el profesional (crGuardar), si se quitaron
 //   especialidades se detectan y desactivan sus agenda_services (cfgConfirm +
-//   _cfgDesactivarServicios de configuracion.js; originales en _crSpecsOrig).
-//   Solo persona + edición; cancelar = no guarda. Base: editor "Mi empresa"
-//   adaptativo por rubro; configuracion.js intacto si no hay catálogo de recursos.
+//   _cfgDesactivarServicios de configuracion.js; originales en _crSpecsOrig). Solo
+//   persona + edición; cancelar = no guarda. Base: editor "Mi empresa" adaptativo por rubro.
 
 (function(){
 'use strict';
@@ -31,6 +33,7 @@ let _crDispRecId = null; // recurso activo en el panel Disponibilidad (objetos)
 let _crDispCfgGlobal = {}; // config global de la empresa (fallback heredado por recurso)
 let _crSpecsSel = [];      // especialidades marcadas del recurso en edición (Fase B): [{key,nombre,propia}]
 let _crSpecsOrig = [];     // especialidades ORIGINALES al abrir el editor (Tema 1: detectar quitadas)
+let _crEditingPropiaKey = null;   // key de la propia que se está renombrando inline (o null)
 
 const $ = s => document.querySelector(s);
 
@@ -478,13 +481,27 @@ function _crRenderSpecs(){
       onclick="crToggleSpec(this)">${e.nombre}</span>`;
   }).join('');
 
-  // Chips de propias del recurso que NO están en el catálogo (se muestran aparte, marcadas)
+  // Chips de propias del recurso que NO están en el catálogo (se muestran aparte, marcadas).
+  // Cada una con lápiz (renombrar inline, conserva la key) y ✕ (quitar). [v..]
   const keysCat = new Set(catalogo.map(e => e.key));
   const propias = _crSpecsSel.filter(s => s.propia && !keysCat.has(s.key));
-  const chipsPropias = propias.map(s =>
-    `<span class="cr-fchip on" data-key="${s.key}" data-nombre="${(s.nombre||'').replace(/"/g,'&quot;')}" data-propia="1"
-      onclick="crToggleSpec(this)">${s.nombre} <i class="fas fa-star" style="font-size:9px;color:#d97706"></i></span>`
-  ).join('');
+  const _esc = t => (t || '').replace(/"/g, '&quot;');
+  const chipsPropias = propias.map(s => {
+    if (s.key === _crEditingPropiaKey){
+      return `<span class="cr-fchip on" style="display:inline-flex;align-items:center;gap:4px">`
+        + `<input class="cr-propia-input" value="${_esc(s.nombre)}" `
+        + `style="border:none;background:transparent;font:inherit;color:inherit;width:120px;outline:none" `
+        + `onkeydown="if(event.key==='Enter'){crCommitPropia(event,'${s.key}')}else if(event.key==='Escape'){crCancelPropia(event)}">`
+        + `<i class="fas fa-check" title="Guardar" style="font-size:11px;color:#16a34a;cursor:pointer" onclick="crCommitPropia(event,'${s.key}')"></i>`
+        + `</span>`;
+    }
+    return `<span class="cr-fchip on" data-key="${s.key}" data-nombre="${_esc(s.nombre)}" data-propia="1" style="display:inline-flex;align-items:center;gap:6px">`
+      + `<span>${s.nombre}</span>`
+      + `<i class="fas fa-star" style="font-size:9px;color:#d97706"></i>`
+      + `<i class="fas fa-pen" title="Renombrar" style="font-size:10px;color:#fff;opacity:.9;cursor:pointer" onclick="crEditarPropia(event,'${s.key}')"></i>`
+      + `<i class="fas fa-times" title="Quitar" style="font-size:13px;color:#ffd2dc;cursor:pointer" onclick="crEliminarPropia(event,'${s.key}')"></i>`
+      + `</span>`;
+  }).join('');
 
   cont.innerHTML = chipsCat + (chipsPropias ? `<div style="width:100%;font-size:10px;color:#a8aed1;margin:6px 0 2px">Propias:</div>` + chipsPropias : '')
     || '<div style="font-size:10.5px;color:#a8aed1">Esta categoría no tiene especialidades en el catálogo aún.</div>';
@@ -498,6 +515,38 @@ window.crToggleSpec = function(el){
   const i = _crSpecsSel.findIndex(s => s.key === key);
   if (i >= 0) { _crSpecsSel.splice(i, 1); el.classList.remove('on'); }
   else { _crSpecsSel.push({ key, nombre, propia }); el.classList.add('on'); }
+};
+
+// ── Gestión de especialidades PROPIAS (lápiz = renombrar inline / ✕ = quitar) ──
+// Renombrar cambia solo el NOMBRE; la key se conserva, así los agenda_services que
+// cuelgan de esa propia (padre = key) siguen enlazados sin recolgar nada.
+window.crEditarPropia = function(ev, key){
+  if (ev) ev.stopPropagation();
+  _crEditingPropiaKey = key;
+  _crRenderSpecs();
+  const inp = document.querySelector('.cr-propia-input');
+  if (inp){ inp.focus(); inp.select(); }
+};
+window.crCommitPropia = function(ev, key){
+  if (ev) ev.stopPropagation();
+  const inp = document.querySelector('.cr-propia-input');
+  const nombre = (inp?.value || '').trim();
+  const it = _crSpecsSel.find(s => s.key === key);
+  if (it && nombre) it.nombre = nombre;   // key intacta
+  _crEditingPropiaKey = null;
+  _crRenderSpecs();
+};
+window.crCancelPropia = function(ev){
+  if (ev) ev.stopPropagation();
+  _crEditingPropiaKey = null;
+  _crRenderSpecs();
+};
+window.crEliminarPropia = function(ev, key){
+  if (ev) ev.stopPropagation();
+  const i = _crSpecsSel.findIndex(s => s.key === key);
+  if (i >= 0) _crSpecsSel.splice(i, 1);   // se persiste al Guardar; Tema 1 desactiva sus servicios
+  if (_crEditingPropiaKey === key) _crEditingPropiaKey = null;
+  _crRenderSpecs();
 };
 
 // Agregar una especialidad PROPIA (no está en el catálogo): se guarda solo en

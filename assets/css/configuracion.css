@@ -1,10 +1,10 @@
 /* ══════════════════════════════════════
    CONFIGURACIÓN — HEAVENSY
    ── BITÁCORA ── (solo cambios recientes; histórico podado)
-   [v2026.06.23-4] 2026-06-23 | hvy-tp (timepicker Heavensy que reemplaza input[type=time]);
-   .dias-row + "Todos" y chips de día redondos; .ses-row3 grid→flex-wrap; .hvy-form-select
-   (botón hvy-select). Se mantienen estilos del catálogo Paso 4 (.svc-cat-*, .svc-row-ag,
-   .svc-tipo) y del input time/date Heavensy.
+   [v2026.06.24-1] 2026-06-24 | Control de adopción: campos etiquetados (.svc-cat-field/-flabel/
+   -finput/-price-wrap) "Duración"/"Precio". | 06.23-5: color por origen en tarjetas
+   (.svc-row-ag.origin-*) y sub-bloque propias ámbar (.svc-cat-*propia). 06.23-4: hvy-tp;
+   días/"Todos"; .hvy-form-select. Se mantienen .svc-cat-* y el input time/date Heavensy.
 ══════════════════════════════════════ */
 
 /* BASE */
@@ -412,18 +412,28 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .svc-cat-chip.esp{background:#9961FF14;border:1px solid #9961FF4D;color:#9961FF}
 .svc-cat-chip.esp.on{background:linear-gradient(135deg,#9961FF,#7d5bff);border-color:transparent;color:#fff}
 .svc-cat-chip.srv{background:#fff;border:1px solid #e3d9ff;color:#6b3fc4}
+.svc-cat-title-propia{color:#c08a2e}
+.svc-cat-chip.esp.propia{background:#e9962a1f;border:1px solid #e9962a66;color:#b9791c}
+.svc-cat-star{color:#d97706;font-size:11px}
+.svc-cat-esp.svc-cat-propia{border-color:#f0e0c2;background:#fdfaf3}
 .svc-cat-count{font-size:10px;color:#b9c0da;white-space:nowrap}
 .svc-cat-otros-label{font-size:12px;font-weight:600;color:#7D84C1}
 .svc-cat-children{display:none;border-top:0.5px solid #eef2ff}
 .svc-cat-esp.open .svc-cat-children{display:block}
 .svc-cat-row.is-srv{display:flex;align-items:center;gap:8px;padding:5px 10px 5px 28px;border-top:0.5px solid #f3f5ff}
 .svc-cat-row.is-srv:first-child{border-top:none}
-.svc-cat-ctrls{margin-left:auto;display:flex;align-items:center;gap:5px;flex-shrink:0}
-.svc-cat-dur{width:42px;border:1px solid #e5e7eb;border-radius:6px;padding:3px 6px;font-size:12px;color:#374151;outline:none}
-.svc-cat-price{width:64px;border:1px solid #e5e7eb;border-radius:6px;padding:3px 6px;font-size:12px;color:#374151;outline:none}
-.svc-cat-dur:focus,.svc-cat-price:focus{border-color:#9961FF}
+.svc-cat-ctrls{margin-left:auto;display:flex;align-items:flex-end;gap:8px;flex-shrink:0}
+.svc-cat-field{display:flex;flex-direction:column;gap:2px}
+.svc-cat-flabel{font-size:9px;font-weight:600;color:#a8a4c4;text-transform:uppercase;letter-spacing:.03em;padding-left:1px}
+.svc-cat-finput{display:flex;align-items:center;gap:4px}
+.svc-cat-dur{width:46px;border:1px solid #e5e7eb;border-radius:6px;padding:4px 6px;font-size:12px;color:#374151;outline:none;text-align:center}
+.svc-cat-price-wrap{border:1px solid #e5e7eb;border-radius:6px;padding:0 8px;gap:3px}
+.svc-cat-price{width:58px;border:none;padding:4px 0;font-size:12px;color:#374151;outline:none}
+.svc-cat-money{font-size:11px;color:#9096b0}
+.svc-cat-dur:focus,.svc-cat-price-wrap:focus-within{border-color:#9961FF}
 .svc-cat-uni{font-size:11px;color:#9096b0}
-.svc-cat-add{padding:4px 9px;font-size:12px}
+.svc-cat-add{padding:4px 9px;font-size:12px;align-self:flex-end}
+.svc-cat-propia .svc-cat-flabel{color:#c4a96a}
 .svc-cat-lock{margin-left:auto;font-size:10px;color:#b9c0da;white-space:nowrap}
 .svc-cat-lock i{margin-right:3px;opacity:.8}
 .svc-cat-esp.locked .svc-cat-count{color:#c4cbe0}
@@ -443,6 +453,20 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
 .svc-list-head i{color:#9961FF}
 .svc-list-section .svc-row-ag{border:0.5px solid #ece5ff;border-radius:9px;margin-bottom:5px}
 .svc-list-section .svc-row-ag:last-child{margin-bottom:0}
+
+/* Origen del servicio en "Disponibles para agendar": título chico + color suave */
+.svc-row-ag.origin-catalog{background:#f4f6fb}
+.svc-row-ag.origin-catalog:hover{background:#eef1f9}
+.svc-row-ag.origin-creado{background:#f6f2ff}
+.svc-row-ag.origin-creado:hover{background:#f0eaff}
+.svc-row-ag.origin-propio{background:#fdf7ec}
+.svc-row-ag.origin-propio:hover{background:#fbf1de}
+.svc-row-ag.origin-catalog .svc-tipo{color:#5f6b85;opacity:1}
+.svc-row-ag.origin-creado .svc-tipo{color:#7a5fd0;opacity:1}
+.svc-row-ag.origin-propio .svc-tipo{color:#b07d1e;opacity:1}
+.svc-list-section .svc-row-ag.origin-catalog{border-color:#e0e6f2}
+.svc-list-section .svc-row-ag.origin-creado{border-color:#e4dcf7}
+.svc-list-section .svc-row-ag.origin-propio{border-color:#f0e4cf}
 .svc-list-section #svc-list:empty::after{content:'Aún no hay servicios. Adóptalos del catálogo o usa “Agregar servicio”.';display:block;font-size:11px;color:#a8aed1;padding:4px 2px}
 [data-tip]{position:relative}
 [data-tip]:hover::after{content:attr(data-tip);position:absolute;right:calc(100% + 9px);top:50%;transform:translateY(-50%);background:#2b3556;color:#fff;font-size:11px;font-weight:500;white-space:nowrap;padding:5px 9px;border-radius:7px;box-shadow:0 4px 14px rgba(43,53,86,.25);z-index:60;pointer-events:none}
