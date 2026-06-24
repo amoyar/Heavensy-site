@@ -1,4 +1,13 @@
 <!-- ── BITÁCORA ──
+[v2026.06.23-4] configuracion.html
+2026-06-23 | Chips de día con iniciales de 2 letras (Lu/Ma/Mi/Ju/Vi/Sá/Do) y redondos
+             (CSS). El guardado lee por posición, no por texto: cambiar la etiqueta no
+             afecta. "Todos" se mantiene como píldora lila.
+[v2026.06.23-3] configuracion.html
+2026-06-23 | "Todos" movido a la misma fila que los chips de día, al inicio (antes de
+             Lun), con look lila propio (.toggle-todos) para no confundirse con un día.
+             Va en .dias-row, FUERA de #disp-dias, para no descuadrar el .slice(0,7)
+             del guardado. JS sin cambios.
 [v2026.06.23-2] configuracion.html
 2026-06-23 | Disponibilidad: días #disp-dias SIN marcar por defecto (antes L-V con
              'on' → un recurso sin configurar parecía abierto toda la semana). Días
@@ -245,18 +254,18 @@
         <div class="form-group"><label>Cancelación sin costo (hrs antes)</label><input id="disp-cancel-hrs" type="number" value="48" min="0"/></div>
         <div class="form-group"><label>Cobro cancelación tardía (%)</label><input id="disp-cancel-pct" type="number" value="40" min="0" max="100"/></div>
         <div class="form-group form-full">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-            <label style="margin:0">Días disponibles</label>
-            <span class="toggle-btn" id="disp-dias-todos" onclick="cfgToggleTodosDias()">Todos</span>
-          </div>
-          <div class="toggle-group" id="disp-dias">
-            <span class="toggle-btn" onclick="cfgToggleDia(this)">Lun</span>
-            <span class="toggle-btn" onclick="cfgToggleDia(this)">Mar</span>
-            <span class="toggle-btn" onclick="cfgToggleDia(this)">Mié</span>
-            <span class="toggle-btn" onclick="cfgToggleDia(this)">Jue</span>
-            <span class="toggle-btn" onclick="cfgToggleDia(this)">Vie</span>
-            <span class="toggle-btn" onclick="cfgToggleDia(this)">Sáb</span>
-            <span class="toggle-btn" onclick="cfgToggleDia(this)">Dom</span>
+          <label>Días disponibles</label>
+          <div class="dias-row">
+            <span class="toggle-btn toggle-todos" id="disp-dias-todos" onclick="cfgToggleTodosDias()">Todos</span>
+            <div class="toggle-group" id="disp-dias">
+              <span class="toggle-btn" onclick="cfgToggleDia(this)">Lu</span>
+              <span class="toggle-btn" onclick="cfgToggleDia(this)">Ma</span>
+              <span class="toggle-btn" onclick="cfgToggleDia(this)">Mi</span>
+              <span class="toggle-btn" onclick="cfgToggleDia(this)">Ju</span>
+              <span class="toggle-btn" onclick="cfgToggleDia(this)">Vi</span>
+              <span class="toggle-btn" onclick="cfgToggleDia(this)">Sá</span>
+              <span class="toggle-btn" onclick="cfgToggleDia(this)">Do</span>
+            </div>
           </div>
         </div>
         <div class="form-group form-full"><label>Pausa de colación</label>
@@ -279,7 +288,7 @@
         <div class="form-group"><label>Dirección</label><input id="disp-direccion" placeholder="Av. Providencia 1234"/></div>
         <div class="form-group"><label>Oficina / Piso</label><input id="disp-oficina" placeholder="Oficina 3, piso 2"/></div>
         <div class="form-group form-full"><label>Zona horaria</label>
-          <select id="disp-tz">
+          <select id="disp-tz" class="hvy-form-select">
             <option value="America/Santiago">America/Santiago – GMT-3</option>
             <option value="America/New_York">America/New_York – GMT-5</option>
           </select>
@@ -943,7 +952,7 @@
           <div class="form-group"><label>Dirección</label><input id="jm-direccion" value="Av. Providencia 1234"/></div>
           <div class="form-group"><label>Oficina / Piso</label><input value="Oficina 3, piso 2"/></div>
           <div class="form-group form-full"><label>Zona horaria</label>
-            <select><option>America/Santiago – GMT-3</option><option>America/New_York – GMT-5</option></select>
+            <select class="hvy-form-select"><option>America/Santiago – GMT-3</option><option>America/New_York – GMT-5</option></select>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:16px">

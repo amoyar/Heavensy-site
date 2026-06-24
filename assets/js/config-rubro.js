@@ -7,6 +7,14 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.23-1] config-rubro.js
+// 2026-06-23 | Tema 1 (sync paso 1 ↔ paso 4): al guardar el profesional (crGuardar),
+//              si se quitaron especialidades, se detectan los agenda_services que
+//              colgaban de ellas y se avisa (cfgConfirm); al confirmar se desactivan
+//              (soft-delete). Reutiliza los helpers globales de configuracion.js
+//              (_cfgChequearEspecialidadesQuitadasEx / _cfgDesactivarServicios) con las
+//              especialidades ORIGINALES capturadas en _crForm (_crSpecsOrig). Cancelar
+//              = no guarda nada. Solo persona + edición.
 // [v2026.06.22-1] config-rubro.js
 // 2026-06-22 | El motor declarativo (_crModularFormularios) y _crEstadia DEJAN de
 //              tocar el form de servicio (ses-): ese form ahora es hecho a mano
@@ -303,6 +311,7 @@ let _crBusy    = false;  // anti-concurrencia: crInit en vuelo (evita doble mont
 let _crDispRecId = null; // recurso activo en el panel Disponibilidad (objetos)
 let _crDispCfgGlobal = {}; // config global de la empresa (fallback heredado por recurso)
 let _crSpecsSel = [];      // especialidades marcadas del recurso en edición (Fase B): [{key,nombre,propia}]
+let _crSpecsOrig = [];     // especialidades ORIGINALES al abrir el editor (Tema 1: detectar quitadas)
 
 const $ = s => document.querySelector(s);
 
@@ -586,6 +595,7 @@ function _crForm(r){
   // _crSpecsSel = las que el recurso tiene marcadas; sobrevive a repintados al
   // cambiar de categoría, para no perder las propias ya agregadas.
   _crSpecsSel = _crNormSpecs(r.specialties);
+  _crSpecsOrig = _crNormSpecs(r.specialties);   // Tema 1: copia separada para detectar quitadas
   // Modos de trabajo del recurso (para el molde persona). [20-06]
   const _crMods = (r.modalities || r.modalidades || []).map(m => String(m).toLowerCase());
   $('#cr-form-wrap').innerHTML = `
@@ -884,6 +894,13 @@ window.crGuardar = async function(){
     body.features = _crRecogerFeats();      // objeto: características
     const photo = $('#cr-f-photo')?.value; if (photo) body.photo_url = photo;  // [14-06]
   }
+  // Tema 1: si se quitaron especialidades, avisar y (tras guardar) desactivar sus
+  // servicios agendables. Solo persona + edición. Cancelar = no guardar nada.
+  let _crAfect = [];
+  if (_esPersona() && _crEditId && typeof window._cfgChequearEspecialidadesQuitadasEx === 'function'){
+    _crAfect = await window._cfgChequearEspecialidadesQuitadasEx(_crEditId, _crSpecsOrig, body.specialties || []);
+    if (_crAfect === null) return;   // canceló → no se guarda nada
+  }
   let res;
   if (_crEditId){
     res = await apiCall('/api/agenda/resources/' + _crEditId, { method:'PATCH', body: JSON.stringify(body) }).catch(() => null);
@@ -903,6 +920,10 @@ window.crGuardar = async function(){
       }
     }
     $('#cr-form-wrap').innerHTML = '';
+    // Tema 1: soft-delete de los servicios de las especialidades quitadas.
+    if (_crAfect && _crAfect.length && typeof window._cfgDesactivarServicios === 'function'){
+      await window._cfgDesactivarServicios(_crEditId, _crAfect);
+    }
     _crLoadRecursos();
   } else {
     const msg = res?.data?.error || 'No se pudo guardar';

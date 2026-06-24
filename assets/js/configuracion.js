@@ -3,6 +3,52 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.23-10] configuracion.js
+// 2026-06-23 | Form de servicio (editar): el campo Especialidad ahora se pre-selecciona
+//              con la especialidad REAL del servicio (padre, o catalog_key si es paraguas)
+//              ANTES de poblar/selectificar (antes quedaba en "Sin especialidad"). Si el
+//              servicio ya tiene especialidad en BD, el campo se BLOQUEA (_cfgLockEspecialidad)
+//              y guardarSesion conserva la especialidad original (no se cambia; paraguas
+//              mantiene padre:'' + catalog_key). cfgNuevoServicio desbloquea (propio editable).
+//              Talleres/propios siguen pudiendo ir sin especialidad.
+// [v2026.06.23-9] configuracion.js
+// 2026-06-23 | Tema 1: el editor del PROFESIONAL es config-rubro.js (paso 3 wizard
+//              deshabilitado para persona). Se expone _cfgChequearEspecialidadesQuitadasEx
+//              (recibe specialties originales explícitas) y _cfgDesactivarServicios en
+//              window para que config-rubro.js (crGuardar) los use. Callers internos
+//              intactos. Helper núcleo separado del wrapper que lee memoria.
+// [v2026.06.23-8] configuracion.js
+// 2026-06-23 | Tema 1 fix: el chequeo de huérfanos ahora corre en LAS DOS rutas que
+//              guardan especialidades — guardarEspecialidades (paso 3 "Especialidad",
+//              _cfgFirstResourceId) y _cfgPatchCurrentResource (editor jm-). Antes solo
+//              estaba en la segunda, por eso al quitar el chip en el paso 3 no avisaba.
+//              Lógica extraída a helpers compartidos _cfgChequearEspecialidadesQuitadas
+//              / _cfgDesactivarServicios. (Nota: si el chip se edita en config-rubro.js
+//              —ficha profesional, archivo aparte— habría que enganchar allá también.)
+// [v2026.06.23-7] configuracion.js
+// 2026-06-23 | Tema 1 (sync paso 1 ↔ paso 4): al guardar el recurso, si se QUITARON
+//              especialidades, _cfgPatchCurrentResource detecta los agenda_services que
+//              colgaban de ellas (padre===key, o catalog_key===key si era paraguas) y
+//              avisa con cfgConfirm listándolos. Confirmar → guarda + soft-delete (DELETE
+//              /services/<id>, las citas no se borran). Cancelar → no guarda nada (return
+//              null; jmGuardarEspecialidades muestra "Cambios no guardados"). Solo afecta
+//              los servicios de la especialidad quitada; los propios (padre null) quedan.
+// [v2026.06.23-6] configuracion.js
+// 2026-06-23 | Estilo Heavensy en config: componente genérico hvyTime (reemplaza la
+//              cara de los input[type=time] por un picker Heavensy de 2 columnas
+//              hora|min en pasos de 5, panel compartido; el input nativo queda oculto
+//              como fuente de verdad, así v()/set()/change siguen igual). Barrido
+//              _cfgHeavensifyControls (hvyTimeAll + hvySelectifyAll de los select
+//              .hvy-form-select) al iniciar la página; cfgPopulateSchedule refresca los
+//              relojes tras poblar. 7 alert() nativos → showToast. #disp-tz y la zona
+//              horaria jm- pasan a hvy-select.
+// [v2026.06.23-5] configuracion.js
+// 2026-06-23 | Paso 4 (persona): el catálogo muestra SOLO las especialidades que el
+//              recurso tiene asignadas en el paso 1. Las no asignadas dejan de salir
+//              con candado (eran ruido). Si el recurso no tiene ninguna asignada, se
+//              muestra una pista para ir a "Mi empresa". Objeto intacto (nunca tuvo
+//              candado). Integra con el sync hvy:specialties-updated: al asignar/quitar
+//              en paso 1, el catálogo aparece/desaparece en vivo.
 // [v2026.06.23-4] configuracion.js
 // 2026-06-23 | Disponibilidad: un recurso SIN reglas arranca con los días desmarcados
 //              (antes el fallback era L-V → parecía configurado sin estarlo, caso Juan
@@ -958,6 +1004,10 @@ async function guardarEspecialidades(btn) {
   const exp = document.getElementById('esp-exp')?.value;
   if (exp !== undefined && exp !== '') payload.anios_experiencia = parseInt(exp, 10);
 
+  // Tema 1: especialidades quitadas → aviso + (tras guardar) desactivar sus servicios.
+  const _afect = await _cfgChequearEspecialidadesQuitadas(_cfgFirstResourceId, specs);
+  if (_afect === null){ showToast('Cambios no guardados', 'info'); return; }
+
   const res = await apiCall(`/api/agenda/resources/${_cfgFirstResourceId}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
@@ -969,6 +1019,7 @@ async function guardarEspecialidades(btn) {
       Object.assign(_cfgResourceMap[_cfgFirstResourceId], payload);
     }
     _emitSpecsUpdated(_cfgFirstResourceId, specs);   // [Fase B] avisar a otros editores
+    await _cfgDesactivarServicios(_cfgFirstResourceId, _afect);   // Tema 1: soft-delete huérfanos
     const orig = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-check" style="margin-right:6px"></i>Guardado';
     btn.disabled = true;
@@ -1331,6 +1382,7 @@ async function jmGuardarEspecialidades(btn) {
   btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:5px"></i>Guardando…';
   const ok = await _cfgPatchCurrentResource();
   btn.innerHTML = orig; btn.disabled = false;
+  if (ok === null){ showToast('Cambios no guardados', 'info'); return; }   // canceló el aviso de huérfanos
   jmAviso(ok, 'Especialidades guardadas ✅', 'No se pudieron guardar. Intenta de nuevo.');
 }
 
@@ -1867,8 +1919,13 @@ function editarSesion(btn) {
   document.getElementById('ses-mod').value = mod;
   const dEl = document.getElementById('ses-desc'); if(dEl) dEl.value = row.dataset.descripcion || '';
   document.getElementById('ses-color').value = rgbToHex(row.querySelector('.svc-dot').style.background);
+  // Especialidad real del servicio: padre directo, o catalog_key si es una especialidad
+  // adoptada como paraguas. Se setea ANTES de poblar/selectificar (si se hace después,
+  // el hvy-select queda en "Sin especialidad" aunque el <select> tenga el valor).
+  const _espActual = row.dataset.padre || row.dataset.catalogKey || '';
+  const selP = document.getElementById('ses-padre'); if(selP) selP.value = _espActual;
   _cfgPopulatePadreSelect();
-  const selP = document.getElementById('ses-padre'); if(selP) selP.value = row.dataset.padre || '';
+  _cfgLockEspecialidad(!!_espActual);   // si ya tiene especialidad en BD, no se cambia
   const selU = document.getElementById('ses-unidad'); if(selU) selU.value = row.dataset.unit || 'minutos';
   if (typeof _cfgConfigurarFormServicioUnidad === 'function') _cfgConfigurarFormServicioUnidad();
   document.querySelectorAll('#form-sesion .toggle-group .toggle-btn').forEach(b=>b.classList.toggle('on', mod.includes(b.textContent)));
@@ -2550,9 +2607,14 @@ function guardarSesion() {
   if(hasError) return;
 
   const rid = _svcCurrentResourceId || _cfgFirstResourceId;
-  if(!rid){ alert('Primero elige un profesional.'); return; }
+  if(!rid){ showToast('Primero elige un profesional.','error'); return; }
   const color=document.getElementById('ses-color').value;
-  const padre=document.getElementById('ses-padre')?.value||'';
+  let padre=document.getElementById('ses-padre')?.value||'';
+  // Lock: si el servicio editado YA tenía especialidad en BD, se conserva la original
+  // (no se cambia al editar). Para un paraguas, padre real es '' y se preserva catalog_key.
+  if (editingSesionRow && (editingSesionRow.dataset.padre || editingSesionRow.dataset.catalogKey)){
+    padre = editingSesionRow.dataset.padre || '';
+  }
   const desc=document.getElementById('ses-desc')?.value.trim()||'';
   const priceNum=Number((precio||'').replace(/[^\d]/g,''))||0;
 
@@ -2578,9 +2640,9 @@ function guardarSesion() {
 
   const after=()=>{ editingSesionRow=null; _svcReloadAgendables(rid); };
   if(editId){
-    apiCall('/api/agenda/services/'+editId,{method:'PATCH',body:JSON.stringify(body)}).then(after).catch(()=>alert('No se pudo guardar el servicio'));
+    apiCall('/api/agenda/services/'+editId,{method:'PATCH',body:JSON.stringify(body)}).then(after).catch(()=>showToast('No se pudo guardar el servicio','error'));
   } else {
-    apiCall('/api/agenda/services',{method:'POST',body:JSON.stringify(body)}).then(after).catch(()=>alert('No se pudo guardar el servicio'));
+    apiCall('/api/agenda/services',{method:'POST',body:JSON.stringify(body)}).then(after).catch(()=>showToast('No se pudo guardar el servicio','error'));
   }
 
   ['ses-nombre','ses-duracion','ses-precio','ses-desc'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
@@ -2873,6 +2935,123 @@ document.addEventListener('click', function(e) {
 });
 
 // ── INIT PAGE (llamado por el router del SPA) ──
+// ════════════════════════════════════════════════════════════════════════
+// hvyTime — timepicker Heavensy genérico. Reemplaza la CARA de cualquier
+// input[type=time] por un control Heavensy (panel compartido, 2 columnas
+// hora|min en pasos de 5). El input nativo queda OCULTO como fuente de verdad:
+// v('id'), set('id',val) y los listeners change/input siguen funcionando igual.
+// Calcado del timepicker del módulo seguimiento. Idempotente.
+// ════════════════════════════════════════════════════════════════════════
+let _hvyTpInput = null;
+
+function _hvyTpPanel(){
+  let p = document.getElementById('hvy-tp-panel');
+  if (p) return p;
+  p = document.createElement('div');
+  p.id = 'hvy-tp-panel';
+  p.className = 'hvy-tp-panel hvy-tp-hidden';
+  p.innerHTML = '<div class="hvy-tp-title">HH : MM</div>'
+    + '<div class="hvy-tp-cols"><div class="hvy-tp-col" id="hvy-tp-h"></div>'
+    + '<div class="hvy-tp-col" id="hvy-tp-m"></div></div>';
+  document.body.appendChild(p);
+  return p;
+}
+
+function _hvyTpRefresh(input){
+  const f = input.nextElementSibling;
+  if (f && f.classList && f.classList.contains('hvy-tp-field')){
+    f.querySelector('.hvy-tp-val').textContent = input.value || '--:--';
+  }
+}
+
+function _hvyTpSet(h, m){
+  if (!_hvyTpInput) return;
+  const cur = (_hvyTpInput.value || '00:00').split(':');
+  let H = cur.length === 2 ? parseInt(cur[0],10) : 0;
+  let M = cur.length === 2 ? parseInt(cur[1],10) : 0;
+  if (h !== null) H = h;
+  if (m !== null) M = m;
+  _hvyTpInput.value = String(H).padStart(2,'0') + ':' + String(M).padStart(2,'0');
+  _hvyTpInput.dispatchEvent(new Event('change', { bubbles: true }));
+  _hvyTpInput.dispatchEvent(new Event('input',  { bubbles: true }));
+  _hvyTpRefresh(_hvyTpInput);
+}
+
+function _hvyTpClose(){
+  const p = document.getElementById('hvy-tp-panel');
+  if (p) p.classList.add('hvy-tp-hidden');
+}
+
+function _hvyTpOpen(field, input){
+  const p = _hvyTpPanel();
+  _hvyTpInput = input;
+  const val = (input.value || '').split(':');
+  let curH = val.length === 2 ? parseInt(val[0],10) : new Date().getHours();
+  let curM = val.length === 2 ? parseInt(val[1],10) : 0;
+  curM = Math.round(curM/5)*5; if (curM >= 60) curM = 55;
+  const hEl = p.querySelector('#hvy-tp-h'), mEl = p.querySelector('#hvy-tp-m');
+  let hh = ''; for (let h=0; h<=23; h++) hh += '<div class="hvy-tp-item'+(h===curH?' active':'')+'" data-h="'+h+'">'+String(h).padStart(2,'0')+'</div>';
+  let mm = ''; for (let m=0; m<60; m+=5) mm += '<div class="hvy-tp-item'+(m===curM?' active':'')+'" data-m="'+m+'">'+String(m).padStart(2,'0')+'</div>';
+  hEl.innerHTML = hh; mEl.innerHTML = mm;
+  hEl.querySelectorAll('.hvy-tp-item').forEach(el => el.addEventListener('click', function(ev){
+    ev.stopPropagation(); _hvyTpSet(parseInt(this.dataset.h,10), null);
+    hEl.querySelectorAll('.hvy-tp-item').forEach(x => x.classList.remove('active')); this.classList.add('active');
+  }));
+  mEl.querySelectorAll('.hvy-tp-item').forEach(el => el.addEventListener('click', function(ev){
+    ev.stopPropagation(); _hvyTpSet(null, parseInt(this.dataset.m,10));
+    mEl.querySelectorAll('.hvy-tp-item').forEach(x => x.classList.remove('active')); this.classList.add('active');
+    setTimeout(_hvyTpClose, 150);
+  }));
+  const r = field.getBoundingClientRect();
+  p.style.top  = (window.scrollY + r.bottom + 4) + 'px';
+  p.style.left = (window.scrollX + r.left) + 'px';
+  p.classList.remove('hvy-tp-hidden');
+  setTimeout(function(){
+    const a = hEl.querySelector('.active'), b = mEl.querySelector('.active');
+    if (a) a.scrollIntoView({ block:'nearest' });
+    if (b) b.scrollIntoView({ block:'nearest' });
+  }, 20);
+}
+
+function hvyTimeify(input){
+  if (!input || input.type !== 'time') return;
+  if (input.dataset.hvyTp){ _hvyTpRefresh(input); return; }   // idempotente: solo refresca
+  input.dataset.hvyTp = '1';
+  input.style.display = 'none';
+  const field = document.createElement('button');
+  field.type = 'button';
+  field.className = 'hvy-tp-field';
+  field.innerHTML = '<span class="hvy-tp-val"></span><i class="far fa-clock" aria-hidden="true"></i>';
+  input.insertAdjacentElement('afterend', field);
+  field.addEventListener('click', function(e){ e.stopPropagation(); _hvyTpOpen(field, input); });
+  input.addEventListener('change', function(){ _hvyTpRefresh(input); });
+  _hvyTpRefresh(input);
+}
+
+function hvyTimeAll(root){
+  (root || document).querySelectorAll('input[type=time]').forEach(hvyTimeify);
+}
+
+document.addEventListener('click', function(e){
+  const p = document.getElementById('hvy-tp-panel');
+  if (p && !p.classList.contains('hvy-tp-hidden') &&
+      !p.contains(e.target) && !(e.target.closest && e.target.closest('.hvy-tp-field'))){
+    _hvyTpClose();
+  }
+});
+window.hvyTimeify = hvyTimeify;
+window.hvyTimeAll = hvyTimeAll;
+
+// Convierte a Heavensy todos los relojes y selects nativos del módulo config.
+function _cfgHeavensifyControls(){
+  hvyTimeAll(document);
+  if (typeof hvySelectifyAll === 'function'){
+    const sels = [...document.querySelectorAll('select.hvy-form-select')];
+    try { hvySelectifyAll(sels); } catch(_){}
+  }
+}
+window._cfgHeavensifyControls = _cfgHeavensifyControls;
+
 function initConfiguracionPage() {
   cfgCurrentStep = 0;
   cfgDoneSteps.clear();
@@ -2881,6 +3060,7 @@ function initConfiguracionPage() {
   document.querySelectorAll('.step-panel').forEach((p,i) => p.classList.toggle('active', i===0));
   document.querySelectorAll('.step').forEach((s,i) => s.className='step'+(i===0?' active':''));
   document.querySelectorAll('.step-line').forEach(l => l.classList.remove('done'));
+  setTimeout(_cfgHeavensifyControls, 0);   // relojes + selects → Heavensy
 
   // Limpiar caché de datos dinámicos para que no persistan de sesiones anteriores
   ['ep_programas','ep_servicios','ep_horario','ep_modos','ep_especialidades','ep_equipo_prof','ep_inf_oficio'].forEach(k => localStorage.removeItem(k));
@@ -3190,6 +3370,8 @@ function cfgPopulateSchedule(resource) {
 
   // Sincronizar al perfil
   syncHorario();
+  // Refrescar la cara de los relojes Heavensy (set() no dispara change). [v2026.06.23-6]
+  if (typeof hvyTimeAll === 'function') hvyTimeAll(document);
 }
 
 function cfgPopulateSpecialties(resource) {
@@ -3361,6 +3543,19 @@ function _cfgPopulatePadreSelect() {
   sel.dispatchEvent(new Event('change'));                      // refresca el label del hvy-select
 }
 
+// Bloquea/desbloquea el campo Especialidad (#ses-padre). Al editar un servicio que YA
+// tiene especialidad en BD, no se puede cambiar (decisión del usuario).
+function _cfgLockEspecialidad(locked){
+  const sel = document.getElementById('ses-padre');
+  if (sel) sel.disabled = !!locked;
+  const btn = document.querySelector('#ses-col-esp .hvy-select-btn');
+  if (btn){
+    btn.style.pointerEvents = locked ? 'none' : '';
+    btn.style.opacity       = locked ? '0.55' : '';
+    btn.title               = locked ? 'La especialidad no se puede cambiar al editar' : '';
+  }
+}
+
 // Unidad más frecuente del catálogo de la categoría (sugerencia al crear propio).
 function _svcUnidadSugerida(profKey){
   const srvs = (typeof _jmServiciosDeCategoria === 'function') ? _jmServiciosDeCategoria(profKey) : [];
@@ -3406,7 +3601,7 @@ window.cfgDeleteAgendaService = async function(btn) {
   if (!ok) return;
   const res = await apiCall('/api/agenda/services/' + id, { method: 'DELETE' }).catch(() => null);
   if (res && res.ok) { row.remove(); syncServicios(); }
-  else alert((res && res.data && res.data.error) || 'No se pudo eliminar');
+  else showToast((res && res.data && res.data.error) || 'No se pudo eliminar','error');
 };
 
 // ══════════════════════════════════════
@@ -3662,6 +3857,7 @@ async function cfgRenderCatalogAdoption(){
     const hijos = srvs.filter(s => s.padre === e.key);
     const has = hijos.length > 0;
     const owned = specKeys.has(e.key);
+    if (!owned) return;   // [v2026.06.23-5] mostrar solo las asignadas (ocultar las no asignadas)
     html += `<div class="svc-cat-esp ${has ? 'has-children' : ''} ${owned ? '' : 'locked'}">
       <div class="svc-cat-head" onclick="cfgSvcToggleGroup(this)">
         <i class="svc-cat-chev fas fa-chevron-right" aria-hidden="true"></i>
@@ -3672,6 +3868,12 @@ async function cfgRenderCatalogAdoption(){
       <div class="svc-cat-children">${hijos.map(s => srvRow(s, owned)).join('')}</div>
     </div>`;
   });
+
+  // Si el recurso no tiene ninguna especialidad asignada, guiar al paso 1 en lugar
+  // de mostrar un catálogo vacío sin explicación. [v2026.06.23-5]
+  if (esps.length && !esps.some(e => specKeys.has(e.key))){
+    html += '<div class="svc-cat-empty">Asigna especialidades en "Mi empresa" para adoptarlas aquí.</div>';
+  }
 
   // Servicios sueltos (padre nulo) → grupo "Otros servicios", colapsable.
   const otros = srvs.filter(s => !s.padre);
@@ -3716,10 +3918,10 @@ window.cfgSvcToggleGroup = function(headEl){
 // Adopta un ítem del catálogo: crea el agenda_service vinculado.
 window.cfgAdoptCatalog = async function(btn, tipo, key, nombre, padre, unidad){
   const rid = _svcCurrentResourceId || _cfgFirstResourceId;
-  if (!rid){ alert('Primero elige un profesional.'); return; }
+  if (!rid){ showToast('Primero elige un profesional.','error'); return; }
   const ctrls = btn.closest('.svc-cat-ctrls');
   const dur = parseInt(ctrls.querySelector('.svc-cat-dur').value, 10);
-  if (!dur || dur <= 0){ alert('Indica la duración.'); ctrls.querySelector('.svc-cat-dur').focus(); return; }
+  if (!dur || dur <= 0){ showToast('Indica la duración.','error'); ctrls.querySelector('.svc-cat-dur').focus(); return; }
   const priceRaw = (ctrls.querySelector('.svc-cat-price').value || '').trim();
 
   const body = {
@@ -3738,7 +3940,7 @@ window.cfgAdoptCatalog = async function(btn, tipo, key, nombre, padre, unidad){
     await _svcReloadAgendables(rid);
     await cfgRenderCatalogAdoption();
   } else {
-    alert((res && res.data && res.data.error) || 'No se pudo agregar el servicio');
+    showToast((res && res.data && res.data.error) || 'No se pudo agregar el servicio','error');
   }
 };
 
@@ -3827,6 +4029,7 @@ window.cfgNuevoServicio = function(){
   if (typeof resetCancelacion === 'function') resetCancelacion('ses');
   const sp=document.getElementById('ses-padre'); if(sp) sp.value='';
   _cfgPopulatePadreSelect();
+  _cfgLockEspecialidad(false);   // servicio propio nuevo → especialidad editable
   const _profKey = _svcCurrentProfKey || _espProfKey;
   const su=document.getElementById('ses-unidad');
   if(su) su.value = (_svcSectorNaturaleza()==='objeto') ? _svcUnidadSugerida(_profKey) : 'minutos';
@@ -3966,6 +4169,48 @@ function cfgOpenResourceEdit(resourceId) {
 }
 
 // Guarda el recurso en el backend — se llama desde jmGuardarProfesional
+function _cfgKeysDe(specs){
+  return new Set((specs || []).map(s => (typeof s === 'string' ? s : (s && s.key))).filter(Boolean));
+}
+// Servicios agendables del recurso que cuelgan de alguna de las especialidades dadas
+// (padre === key, o catalog_key === key cuando se adoptó la especialidad como paraguas).
+async function _cfgServiciosBajoEspecialidades(id, keysSet){
+  const res = await apiCall(`/api/agenda/resources/${id}/services`).catch(() => null);
+  const svcs = (res && res.ok && res.data && res.data.services) || [];
+  return svcs.filter(s => keysSet.has(s.padre) || (!s.padre && keysSet.has(s.catalog_key)));
+}
+// Tema 1 (núcleo): recibe las especialidades ORIGINALES explícitas (robusto entre
+// editores). Devuelve null = canceló (no guardar); array = servicios a desactivar.
+async function _cfgChequearEspecialidadesQuitadasEx(resourceId, origSpecs, newSpecs){
+  const newKeys = _cfgKeysDe(newSpecs);
+  const removed = new Set([..._cfgKeysDe(origSpecs)].filter(k => !newKeys.has(k)));
+  if (!removed.size) return [];
+  const afectados = await _cfgServiciosBajoEspecialidades(resourceId, removed);
+  if (!afectados.length) return [];
+  const nombres = afectados.map(s => s.name).filter(Boolean).join(', ');
+  const ok = await cfgConfirm('Quitaste especialidades',
+    `Se desactivarán ${afectados.length} servicio(s) agendable(s) de esa(s) especialidad(es): ${nombres}. Las citas ya agendadas no se borran. ¿Continuar?`);
+  return ok ? afectados : null;
+}
+// Wrapper para los editores de configuracion.js: toma las originales de memoria.
+async function _cfgChequearEspecialidadesQuitadas(resourceId, newSpecs){
+  const orig = ((_cfgResourceMap[resourceId] || (_cfgResourcesList || []).find(r => (r._id||r.id)===resourceId) || {}).specialties) || [];
+  return _cfgChequearEspecialidadesQuitadasEx(resourceId, orig, newSpecs);
+}
+// Expuestos para config-rubro.js (editor de la ficha profesional).
+window._cfgChequearEspecialidadesQuitadasEx = _cfgChequearEspecialidadesQuitadasEx;
+window._cfgDesactivarServicios = _cfgDesactivarServicios;
+// Soft-delete de los servicios afectados (tras guardar) + refresco del Paso 4 si aplica.
+async function _cfgDesactivarServicios(resourceId, lista){
+  for (const s of (lista || [])){
+    await apiCall(`/api/agenda/services/${s._id}`, { method: 'DELETE' }).catch(()=>{});
+  }
+  if ((lista || []).length && typeof _svcReloadAgendables === 'function' &&
+      typeof _svcCurrentResourceId !== 'undefined' && _svcCurrentResourceId === resourceId){
+    _svcReloadAgendables(resourceId);
+  }
+}
+
 async function _cfgPatchCurrentResource() {
   const id = _cfgCurrentResourceId;
   if (!id) return;
@@ -4010,11 +4255,16 @@ async function _cfgPatchCurrentResource() {
     ...(jmData.foto ? { photo_url: jmData.foto } : {}),
   };
 
+  // Tema 1: especialidades quitadas → aviso + (tras guardar) desactivar sus servicios.
+  const _afect = await _cfgChequearEspecialidadesQuitadas(id, specs);
+  if (_afect === null) return null;   // canceló → no se guarda nada
+
   try {
     const res = await apiCall(`/api/agenda/resources/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
     if (res.ok) {
       Object.assign(_cfgResourceMap[id], payload);
       _emitSpecsUpdated(id, specs);   // [Fase B] avisar a otros editores
+      await _cfgDesactivarServicios(id, _afect);   // Tema 1: soft-delete huérfanos
       return true;
     }
     return false;
