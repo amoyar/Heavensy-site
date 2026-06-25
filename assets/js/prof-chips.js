@@ -2,6 +2,10 @@
 // Archivo separado para no modificar calendario.js
 //
 // ── BITÁCORA ──
+// [v2026.06.24-1] prof-chips.js
+// 2026-06-24 | Profesional (dueño del único recurso visible, vía _calIsOwnResourceView):
+//              se oculta la barra de filtros del calendario (cal-prof-bar). El backend
+//              ya filtra por rol; el filtro de profesional sobra cuando solo está él.
 // [v2026.06.16-1] prof-chips.js
 // 2026-06-16 | Fix: la barra de filtros (cal-prof-bar) solo se mostraba con MÁS de
 //              1 profesional (calResources.length <= 1 la ocultaba), así que una
@@ -18,6 +22,13 @@ function _calRenderProfChips() {
   const bar    = document.getElementById('cal-prof-bar');
   const wrap   = document.getElementById('cal-prof-chips');
   if (!bar || !wrap) return;
+
+  // Profesional (ve solo su propio recurso): ocultar la barra de filtros — no tiene
+  // sentido filtrar por profesional (solo él). El backend ya filtró por rol. [24-06]
+  if (typeof _calIsOwnResourceView === 'function' && _calIsOwnResourceView()) {
+    bar.style.display = 'none';
+    return;
+  }
 
   // Mostrar si hay al menos 1 profesional (antes pedía más de 1, lo que ocultaba
   // la barra cuando la empresa tenía un único recurso). [16-06]

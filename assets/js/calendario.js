@@ -2,13 +2,14 @@
 //  CALENDARIO — HEAVENSY (conectado al backend)
 // ═══════════════════════════════════════════
 // ── BITÁCORA ──
-// [v2026.06.16-2] calendario.js
-// 2026-06-16 | calLoadResources: si el usuario actual ES un recurso (su user_id
-//              coincide con un recurso de la lista), el calendario muestra SOLO su
-//              agenda (calResources = [su recurso]) → solo su chip, no el de los
-//              colegas. Admin/gestor sin recurso propio ve todos. Decisión por dato
-//              (¿tiene recurso?), no por rol. Filtro de visualización (no seguridad).
-// [v2026.06.16-1] calendario.js — sin cambios funcionales (aclaración prof-chips)
+// [v2026.06.24-1] calendario.js
+// 2026-06-24 | + _calIsOwnResourceView (usuario dueño del único recurso visible);
+//              _calRenderSvcFilterChips oculta la barra de filtros (cal-prof-bar)
+//              en esa vista. Coordina con prof-chips.js (que hace lo mismo en
+//              _calRenderProfChips) para que ninguna reaparezca la barra.
+// [v2026.06.16-2] calLoadResources: si el usuario ES un recurso, el calendario
+//              muestra SOLO su agenda (calResources=[su recurso]); admin sin
+//              recurso ve todos. Filtro de visualización (no seguridad).
 
 // ── CONFIG ──
 const CAL_HOUR_START = 8;
@@ -630,10 +631,31 @@ function calSetProfFilter(resourceId) {
   if (document.getElementById('exc-panel')?.classList.contains('open')) calRenderExcList();
 }
 
+// ── ¿Vista de profesional (solo su propio recurso)? ──
+// El backend ya filtra por rol: un PROFESIONAL_ROL recibe solo su recurso. Señal
+// para el frontend: el usuario logueado es dueño del único recurso visible. En ese
+// caso ocultamos la barra de filtros (no hay a quién/qué filtrar). [24-06]
+function _calIsOwnResourceView() {
+  try {
+    const _u   = (typeof getUserFromToken === 'function') ? getUserFromToken() : null;
+    const _uid = _u && (_u.user_id || _u.sub);
+    if (!_uid || !Array.isArray(calResources)) return false;
+    return calResources.length === 1 &&
+           calResources[0] && calResources[0].user_id &&
+           String(calResources[0].user_id) === String(_uid);
+  } catch (e) { return false; }
+}
+
 // ── SVC CHIPS ──
 function _calRenderSvcFilterChips() {
   const container = document.getElementById('cal-svc-chips');
   if (!container) return;
+  // Profesional: ocultar la barra de filtros (ve solo su recurso). [24-06]
+  if (_calIsOwnResourceView()) {
+    const _b = document.getElementById('cal-prof-bar');
+    if (_b) _b.style.display = 'none';
+    return;
+  }
   const bar = document.getElementById('cal-prof-bar');
   // Filtrar servicios por profesional activo
   // Si el profesional no tiene servicios, mostrar todos

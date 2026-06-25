@@ -7,6 +7,10 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ── (solo cambios recientes; histórico podado)
+// [v2026.06.24-1] config-rubro.js
+// 2026-06-24 | _crRender: un PROFESIONAL_ROL ve en "Mi equipo" SOLO su propio recurso
+//   (vinculado a su user_id del JWT); admin/secretaria ven todos. Stats y lista usan
+//   _baseRec; _crRecursos global intacto. Medida momentánea (opción 2).
 // [v2026.06.23-2] config-rubro.js
 // 2026-06-23 | Especialidades PROPIAS: cada chip propio con lápiz (renombrar inline,
 //   conserva la key → no recolga servicios) y ✕ (quitar; se persiste al Guardar y el
@@ -233,8 +237,21 @@ async function _crLoadRecursos(){
 function _crRender(){
   const cont = $('#cr-tab-recursos'); if (!cont) return;
   const esP = _esPersona();
-  const filas = _crRecursos.filter(r => !_crCatFiltro || r.profession_key === _crCatFiltro);
-  const vinculados = _crRecursos.filter(r => r.user_id).length;
+  // Filtro por ROL (medida momentánea — opción 2): un PROFESIONAL_ROL ve en "Mi equipo"
+  // SOLO su propio recurso (el vinculado a su user_id); admin/supervisor/operador/
+  // asistente ven todos. Rol e identidad salen del JWT. Token ilegible -> no filtra. [24-06]
+  let _baseRec = _crRecursos;
+  try {
+    const _tok    = JSON.parse(atob((localStorage.getItem('token') || '').split('.')[1]));
+    const _roles  = _tok.roles || [];
+    const _seeAll = ['ADMIN_ROL', 'SUPERVISOR_ROL', 'OPERADOR_ROL', 'ASISTENTE_ROL'];
+    if (_roles.includes('PROFESIONAL_ROL') && !_roles.some(r => _seeAll.includes(r))) {
+      const _myId = String(_tok.user_id || _tok.sub || '');
+      _baseRec = (_crRecursos || []).filter(r => String(r.user_id || '') === _myId);
+    }
+  } catch (e) { /* token ilegible -> no filtra (comportamiento actual) */ }
+  const filas = _baseRec.filter(r => !_crCatFiltro || r.profession_key === _crCatFiltro);
+  const vinculados = _baseRec.filter(r => r.user_id).length;
   const cols = _crRec.columnas || ['Nombre','Categoría','Activo','Acciones'];
 
   cont.innerHTML = `
@@ -244,8 +261,8 @@ function _crRender(){
       <button class="btn-primary" onclick="crNuevo()"><i class="fas fa-plus" style="margin-right:6px"></i>${_lbl('btn_nuevo','Nuevo')}</button>
     </div>
     <div class="cr-stats">
-      <div class="cr-stat"><div class="n">${_crRecursos.length}</div><div class="l">Total ${(_lbl('plural','recursos')).toLowerCase()}</div></div>
-      <div class="cr-stat"><div class="n" style="color:#10b981">${_crRecursos.length}</div><div class="l">Activos</div></div>
+      <div class="cr-stat"><div class="n">${_baseRec.length}</div><div class="l">Total ${(_lbl('plural','recursos')).toLowerCase()}</div></div>
+      <div class="cr-stat"><div class="n" style="color:#10b981">${_baseRec.length}</div><div class="l">Activos</div></div>
       <div class="cr-stat"><div class="n" style="color:#9961FF">${esP ? vinculados : filas.length}</div><div class="l">${esP ? 'Con acceso al sistema' : _lbl('stat_extra','—')}</div></div>
     </div>
     <div id="cr-form-wrap"></div>

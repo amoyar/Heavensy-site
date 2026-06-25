@@ -3,8 +3,13 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ── (solo cambios recientes; histórico podado)
-// [v2026.06.24-1] configuracion.js
-// 2026-06-24 | Control de adopción del catálogo: campos con micro-etiqueta arriba
+// [v2026.06.24-3] configuracion.js
+// 2026-06-24 | cfgPopulateUsersTable: un PROFESIONAL_ROL ve en "Mi equipo" solo su fila
+//   (rol+identidad desde el JWT); admin/secretaria ven todo. Medida momentánea (opción 2).
+// [v2026.06.24-2] cfgLoadFromBackend usa GET /api/agenda/my-resources (filtrado por rol)
+//   para el selector "¿De qué recurso?" y pasos 1/2/4 (_cfgResourcesList); la tabla de
+//   usuarios sigue con /resources (completo). Profesional ve solo su recurso.
+// [v2026.06.24-1] Control de adopción del catálogo: campos con micro-etiqueta arriba
 //   ("Duración" + min, "Precio" con $ dentro del recuadro) para que se entiendan.
 //   | 06.23-16: borrar servicio recarga + re-pinta catálogo (Agregado/conteo al instante).
 //   06.23-15: tarjetas por ORIGEN (Catálogo/Creado/Propio) + sub-bloque "Propias" y propias
@@ -2824,21 +2829,26 @@ async function cfgLoadFromBackend() {
 
     // 2. Usuarios del sistema + recursos de agenda → tabla de equipo
     const companyId = localStorage.getItem('company_id');
-    const [usersRes, resourcesRes] = await Promise.all([
+    const [usersRes, resourcesRes, myResRes] = await Promise.all([
       companyId ? apiCall(`/api/companies/${companyId}/users`) : Promise.resolve({ ok: false }),
-      apiCall('/api/agenda/resources')
+      apiCall('/api/agenda/resources'),
+      apiCall('/api/agenda/my-resources')
     ]);
 
     const systemUsers  = (usersRes.ok && usersRes.data?.users)     ? usersRes.data.users         : [];
     const resources    = (resourcesRes.ok && resourcesRes.data?.resources) ? resourcesRes.data.resources : [];
+    // Recursos VISIBLES según el ROL (profesional → solo el suyo; admin/secretaria →
+    // todos). El selector "¿De qué recurso?" y los pasos 1/2/4 usan ESTA lista. La
+    // tabla de usuarios sigue usando la lista completa (cruza todos los recursos). [24-06]
+    const visibleResources = (myResRes.ok && myResRes.data?.resources) ? myResRes.data.resources : resources;
 
     cfgPopulateUsersTable(systemUsers, resources);
     cfgLoadRolesFiltro();   // poblar #f-rol desde system-roles (no hardcodeado)
 
     // 3. Recursos → horario + especialidades + servicios (recurso seleccionable)
-    if (resources.length) {
-      _cfgResourcesList = resources;
-      const resource = resources[0];
+    if (visibleResources.length) {
+      _cfgResourcesList = visibleResources;
+      const resource = visibleResources[0];
       _cfgFirstResourceId = resource._id || resource.id || null;
       cfgRenderRecursoSelector();
       cfgSetRecursoNombre(resource);
@@ -2859,6 +2869,21 @@ function cfgPopulateUsersTable(systemUsers = [], resources = []) {
   const tbody = document.getElementById('users-tbody');
   const countEl = document.getElementById('user-count');
   if (!tbody) return;
+
+  // Filtro por ROL (medida momentánea — opción 2): un PROFESIONAL_ROL ve en "Mi equipo"
+  // SOLO su propia fila; admin/supervisor/operador/asistente ven a todo el equipo. El rol
+  // y la identidad salen del JWT (no del cliente). Si el token es ilegible, no filtra. [24-06]
+  try {
+    const _tok   = JSON.parse(atob((localStorage.getItem('token') || '').split('.')[1]));
+    const _roles = _tok.roles || [];
+    const _seeAll = ['ADMIN_ROL', 'SUPERVISOR_ROL', 'OPERADOR_ROL', 'ASISTENTE_ROL'];
+    const _restringido = _roles.includes('PROFESIONAL_ROL') && !_roles.some(r => _seeAll.includes(r));
+    if (_restringido) {
+      const _myId = String(_tok.user_id || _tok.sub || '');
+      systemUsers = (systemUsers || []).filter(u => String(u.user_id || u._id || '') === _myId);
+      resources   = [];  // sin recursos-sin-cuenta: el profesional solo se ve a sí mismo
+    }
+  } catch (e) { /* token ilegible -> no filtra (comportamiento actual) */ }
 
   // Nombre real de la empresa activa (no hardcodear "Heavensy"). [16-06]
   const empresaActiva = (window._cpOverrideCompanyName)
