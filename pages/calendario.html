@@ -1,3 +1,4 @@
+<!-- ── BITÁCORA ── [v2026.06.26-1] calendario.html | 2026-06-26: +picker "Fecha fin (opcional)" (exc-dp2-*) para bloqueos por RANGO de fechas (vacaciones/feriados largos). -->
 <div class="cal-page">
 
   <!-- TOOLBAR -->
@@ -236,6 +237,31 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Fecha fin (opcional) — custom datepicker (para rango: vacaciones, feriados largos) -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha fin (opcional)</label>
+          <input type="hidden" id="exc-date-to">
+          <div class="exc-dp-wrap" id="exc-dp2-wrap">
+            <div class="exc-dp-trigger" id="exc-dp2-trigger" onclick="_excToggleDp('dateto')">
+              <i class="fas fa-calendar-alt exc-dp-trigger-ico"></i>
+              <span class="exc-dp-label" id="exc-dp2-label" style="color:#9BA3C0">Mismo día</span>
+              <i class="fas fa-chevron-down exc-dp-chevron"></i>
+            </div>
+            <div class="exc-dp-dropdown" id="exc-dp2-dropdown">
+              <div class="exc-dp-header">
+                <button class="exc-dp-nav" onclick="_excDpNav(-1,'dateto')">&#8249;</button>
+                <span class="exc-dp-month-label" id="exc-dp2-month"></span>
+                <button class="exc-dp-nav" onclick="_excDpNav(1,'dateto')">&#8250;</button>
+              </div>
+              <div class="exc-dp-weekdays"><span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sa</span><span>Do</span></div>
+              <div class="exc-dp-grid" id="exc-dp2-grid"></div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group"></div>
       </div>
 
       <div class="form-row">

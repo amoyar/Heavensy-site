@@ -2,6 +2,11 @@
 //  CALENDARIO — HEAVENSY (conectado al backend)
 // ═══════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.06.26-1] calendario.js
+// 2026-06-26 | Bloqueos por RANGO de fechas (vacaciones, feriados largos): calBlockSchedule
+//   envía date_to; carga/creación expanden el rango en una entrada por día (_calPushBlockDays)
+//   para pintarlo en toda la grilla. addException lee exc-date-to (fecha fin). Compatible con
+//   día único si no hay fecha fin.
 // [v2026.06.25-1] calendario.js
 // 2026-06-25 | Chips de Servicio agrupados por ESPECIALIDAD (catalog_key), no por servicio
 //   suelto. Nombre desde specialties (prefiere catálogo). Al elegir profesional, solo sus
@@ -520,20 +525,35 @@ async function calDeleteAppointment(a) {
 }
 
 // ── BLOQUEAR HORARIO ──
-async function calBlockSchedule(resourceId, date, start, end, blockType, reason) {
+// Siguiente día (YYYY-MM-DD) sin desfase de zona horaria.
+function _calNextDay(ymd) {
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().split('T')[0];
+}
+// Expande un bloqueo [df..dt] en una entrada local por día (para pintarlo en toda la grilla).
+function _calPushBlockDays(base, df, dt) {
+  let cur = df, guard = 0;
+  while (cur <= dt && guard < 400) {
+    CAL_LOCAL_BLOCKS.push(Object.assign({}, base, { date: cur }));
+    cur = _calNextDay(cur); guard++;
+  }
+}
+
+async function calBlockSchedule(resourceId, date, start, end, blockType, reason, dateTo) {
+  const df = date, dt = dateTo || date;   // rango de fechas (dt = df si es un solo día)
   const res = await apiCall(`/api/agenda/schedule/${resourceId}/block`, {
     method: 'POST',
-    body: JSON.stringify({ date, start, end, block_type: blockType || 'Sin motivo', reason: reason || '' })
+    body: JSON.stringify({ date: df, date_to: dt, start, end, block_type: blockType || 'Sin motivo', reason: reason || '' })
   });
   if (res.ok) {
-    // Guardar localmente para visualizar (el backend no tiene GET de excepciones en el calendario)
-    CAL_LOCAL_BLOCKS.push({
+    // Guardar localmente para visualizar (se expande el rango en una entrada por día)
+    _calPushBlockDays({
       id: res.data?.exception_id || Date.now().toString(),
       resource_id: resourceId,
       block_type: blockType || 'Sin motivo',
       resource_name: calResources.find(r => r._id === resourceId)?.name || 'Recurso',
-      date, start, end, reason
-    });
+      start, end, reason
+    }, df, dt);
     calShowToast('Bloqueo creado');
     return res.data?.exception_id;
   }
@@ -567,18 +587,18 @@ async function calLoadBlocksForResource(resourceId) {
     if (res.ok && res.data?.exceptions?.length) {
       const ids = new Set(CAL_LOCAL_BLOCKS.map(b => b.id));
       res.data.exceptions.forEach(e => {
-        if (!ids.has(e._id)) {
-          CAL_LOCAL_BLOCKS.push({
-            id: e._id,
-            resource_id:   e.resource_id,
-            resource_name: calResources.find(r => r._id === e.resource_id)?.name || '',
-            date:          e.date,
-            start:         e.start  || '00:00',
-            end:           e.end    || '23:59',
-            block_type:    e.block_type || 'Sin motivo',
-            reason:        e.reason || '',
-          });
-        }
+        if (ids.has(e._id)) return;
+        const df = e.date_from || e.date;
+        const dt = e.date_to   || e.date_from || e.date;
+        _calPushBlockDays({
+          id: e._id,
+          resource_id:   e.resource_id,
+          resource_name: calResources.find(r => r._id === e.resource_id)?.name || '',
+          start:         e.start  || '00:00',
+          end:           e.end    || '23:59',
+          block_type:    e.block_type || 'Sin motivo',
+          reason:        e.reason || '',
+        }, df, dt);
       });
     }
   } catch(e) {}
@@ -1822,13 +1842,14 @@ async function addException() {
   const end    = document.getElementById('exc-end')?.value   || '18:00';
   const blockType = document.getElementById('exc-reason')?.value || 'Sin motivo';
   const reason    = document.getElementById('exc-motivo')?.value?.trim() || '';
+  const dateTo = document.getElementById('exc-date-to')?.value || date;   // fecha fin (rango)
   if (!date) { calShowToast('Selecciona una fecha', 'warning'); return; }
   if (!resourceId && calResources.length) { calShowToast('Selecciona un recurso', 'warning'); return; }
 
   if (resourceId === 'todos') {
     let ok = 0;
     for (const r of calResources) {
-      const id = await calBlockSchedule(r._id, date, start, end, blockType, reason);
+      const id = await calBlockSchedule(r._id, date, start, end, blockType, reason, dateTo);
       if (id) ok++;
     }
     if (ok > 0) {
@@ -1842,7 +1863,7 @@ async function addException() {
       calRender();
     }
   } else {
-    const id = await calBlockSchedule(resourceId, date, start, end, blockType, reason);
+    const id = await calBlockSchedule(resourceId, date, start, end, blockType, reason, dateTo);
     if (id) {
       document.getElementById('exc-reason').value = 'Sin motivo';
       const excReasonLbl = document.getElementById('exc-reason-label');
@@ -2347,19 +2368,27 @@ window._excSelectOption = _excSelectOption;
 //  EXC PANEL — DATEPICKER ESTILO SEGUIMIENTO
 // ═══════════════════════════════════════════
 
-const _calExcDp = { year: null, month: null, sel: null };
+const _calExcDp  = { year: null, month: null, sel: null };   // picker fecha inicio
+const _calExcDp2 = { year: null, month: null, sel: null };   // picker fecha fin
+const _CAL_DP_CFG = {
+  date:   { st:_calExcDp,  dd:'exc-dp-dropdown',  tr:'exc-dp-trigger',  mo:'exc-dp-month',  gr:'exc-dp-grid',  lb:'exc-dp-label',  inp:'exc-date' },
+  dateto: { st:_calExcDp2, dd:'exc-dp2-dropdown', tr:'exc-dp2-trigger', mo:'exc-dp2-month', gr:'exc-dp2-grid', lb:'exc-dp2-label', inp:'exc-date-to' }
+};
 const _CAL_MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-function _excToggleDp() {
-  const drop    = document.getElementById('exc-dp-dropdown');
-  const trigger = document.getElementById('exc-dp-trigger');
+function _excToggleDp(which) {
+  which = which || 'date';
+  const cfg = _CAL_DP_CFG[which];
+  const drop    = document.getElementById(cfg.dd);
+  const trigger = document.getElementById(cfg.tr);
   if (!drop) return;
   const isOpen = drop.classList.contains('open');
   _excCloseAll();
   if (!isOpen) {
+    const st = cfg.st;
     const now = new Date();
-    if (!_calExcDp.year) { _calExcDp.year = now.getFullYear(); _calExcDp.month = now.getMonth(); }
-    _calExcDpRender();
+    if (st.year == null) { st.year = now.getFullYear(); st.month = now.getMonth(); }
+    _calExcDpRender(which);
     if (trigger) {
       const rect = trigger.getBoundingClientRect();
       drop.style.left = rect.left + 'px';
@@ -2367,7 +2396,6 @@ function _excToggleDp() {
     }
     drop.classList.add('open');
     if (trigger) trigger.classList.add('open');
-    // Reposicionar en scroll
     const reposition = () => {
       if (!drop.classList.contains('open')) { window.removeEventListener('scroll', reposition, true); return; }
       if (trigger) { const r = trigger.getBoundingClientRect(); drop.style.left = r.left + 'px'; drop.style.top = (r.bottom + 4) + 'px'; }
@@ -2377,47 +2405,56 @@ function _excToggleDp() {
 }
 window._excToggleDp = _excToggleDp;
 
-function _excDpNav(dir) {
-  _calExcDp.month += dir;
-  if (_calExcDp.month > 11) { _calExcDp.month = 0; _calExcDp.year++; }
-  if (_calExcDp.month < 0)  { _calExcDp.month = 11; _calExcDp.year--; }
-  _calExcDpRender();
+function _excDpNav(dir, which) {
+  which = which || 'date';
+  const st = _CAL_DP_CFG[which].st;
+  st.month += dir;
+  if (st.month > 11) { st.month = 0; st.year++; }
+  if (st.month < 0)  { st.month = 11; st.year--; }
+  _calExcDpRender(which);
 }
 window._excDpNav = _excDpNav;
 
-function _calExcDpRender() {
-  const lbl  = document.getElementById('exc-dp-month');
-  const grid = document.getElementById('exc-dp-grid');
+function _calExcDpRender(which) {
+  which = which || 'date';
+  const cfg = _CAL_DP_CFG[which];
+  const st  = cfg.st;
+  const lbl  = document.getElementById(cfg.mo);
+  const grid = document.getElementById(cfg.gr);
   if (!lbl || !grid) return;
-  lbl.textContent = _CAL_MESES[_calExcDp.month] + ' ' + _calExcDp.year;
+  lbl.textContent = _CAL_MESES[st.month] + ' ' + st.year;
 
-  const first  = new Date(_calExcDp.year, _calExcDp.month, 1);
-  const last   = new Date(_calExcDp.year, _calExcDp.month + 1, 0);
+  const first  = new Date(st.year, st.month, 1);
+  const last   = new Date(st.year, st.month + 1, 0);
   const offset = first.getDay() === 0 ? 6 : first.getDay() - 1;
   const todayStr = calFmtDate(new Date());
   let html = '';
   for (let i = 0; i < offset; i++) html += '<div class="exc-dp-day exc-dp-empty"></div>';
   for (let d = 1; d <= last.getDate(); d++) {
-    const ds = _calExcDp.year + '-' + String(_calExcDp.month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const ds = st.year + '-' + String(st.month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
     let cls = 'exc-dp-day';
-    if (ds === todayStr)       cls += ' exc-dp-today';
-    if (ds === _calExcDp.sel) cls += ' exc-dp-selected';
-    html += `<div class="${cls}" onclick="_excDpSelect('${ds}')">${d}</div>`;
+    if (ds === todayStr) cls += ' exc-dp-today';
+    if (ds === st.sel)   cls += ' exc-dp-selected';
+    html += `<div class="${cls}" onclick="_excDpSelect('${ds}','${which}')">${d}</div>`;
   }
   grid.innerHTML = html;
 }
 
-function _excDpSelect(ds) {
-  _calExcDp.sel = ds;
-  document.getElementById('exc-date').value = ds;
+function _excDpSelect(ds, which) {
+  which = which || 'date';
+  const cfg = _CAL_DP_CFG[which];
+  const st  = cfg.st;
+  st.sel = ds;
+  const inp = document.getElementById(cfg.inp);
+  if (inp) inp.value = ds;
   const d = new Date(ds + 'T12:00:00');
   const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const lbl = document.getElementById('exc-dp-label');
+  const lbl = document.getElementById(cfg.lb);
   if (lbl) { lbl.textContent = d.getDate() + ' ' + meses[d.getMonth()] + ' ' + d.getFullYear(); lbl.style.color = ''; }
-  _calExcDpRender();
-  const drop = document.getElementById('exc-dp-dropdown');
+  _calExcDpRender(which);
+  const drop = document.getElementById(cfg.dd);
   if (drop) drop.classList.remove('open');
-  const trigger = document.getElementById('exc-dp-trigger');
+  const trigger = document.getElementById(cfg.tr);
   if (trigger) trigger.classList.remove('open');
 }
 window._excDpSelect = _excDpSelect;
@@ -2522,10 +2559,8 @@ function _excCloseAll() {
   document.querySelectorAll('.exc-custom-dropdown.open').forEach(d => d.classList.remove('open'));
   document.querySelectorAll('.exc-custom-select-trigger.open').forEach(t => t.classList.remove('open'));
   // Datepicker
-  const dp = document.getElementById('exc-dp-dropdown');
-  if (dp) dp.classList.remove('open');
-  const dpt = document.getElementById('exc-dp-trigger');
-  if (dpt) dpt.classList.remove('open');
+  ['exc-dp-dropdown','exc-dp2-dropdown'].forEach(id => { const d=document.getElementById(id); if(d) d.classList.remove('open'); });
+  ['exc-dp-trigger','exc-dp2-trigger'].forEach(id => { const t=document.getElementById(id); if(t) t.classList.remove('open'); });
   // Timepickers
   ['start','end'].forEach(w => {
     const d = document.getElementById('exc-tp-' + w + '-drop');
