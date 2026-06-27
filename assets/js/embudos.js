@@ -1,9 +1,34 @@
 // ── EMBUDOS KANBAN — HEAVENSY ──
+// ── BITÁCORA ──
+// [v2026.06.26-2] embudos.js
+// 2026-06-26 | Filtro de EMBUDO ahora oculta COLUMNAS completas (se ve solo el embudo
+//   seleccionado), no solo las tarjetas. Etapa/texto/vip siguen ocultando tarjetas dentro
+//   de las columnas visibles. "Sin resultados" solo en columnas visibles.
+// [v2026.06.26-1] embudos.js
+// 2026-06-26 | FIX icono de canal: las tarjetas usaban canal hardcodeado a "whatsapp".
+//   Ahora se lee c.canal (que el backend ya resuelve desde messages[0].source), así
+//   Instagram/Messenger muestran su icono correcto.
+// [v2026.06.25-4] embudos.js
+// 2026-06-25 | FIX mover (drag): _embMoverContacto asignaba al destino pero no quitaba
+//   del origen en la API -> al refrescar el contacto reaparecía en ambos embudos. Ahora
+//   tras /assign hace DELETE del embudo origen. Respeta multi-embudo (solo quita el de origen).
+// [v2026.06.25-3] embudos.js
+// 2026-06-25 | Rótulo del selector neutro ("Filtrar:") para servir a persona (profesional)
+//   y objeto (cabaña/unidad); los chips se llenan de /api/agenda/resources en ambos.
+// [v2026.06.25-2] embudos.js
+// 2026-06-25 | Lista de embudos con scroll horizontal (overflow-x board + flex-shrink:0 col).
+// [v2026.06.25-1] embudos.js
+// 2026-06-25 | Filtro por rol: barra "Profesional" (Todos + chip por profesional) solo
+//   para roles ver-todo; al elegir, re-fetch /api/funnels/<co>?resource_id=. El
+//   PROFESIONAL_ROL no ve barra (el backend ya le devuelve solo sus embudos). Roles del JWT.
 
 var _embAPI     = 'https://heavensy-api-backend-v2.onrender.com';
 var _embCompany = '';
 var _embFunnels = [];
 var _embContacts= [];
+var _embViewerRoles    = [];   // roles del usuario (del JWT)
+var _embResourceFilter = '';   // resource_id seleccionado (admin filtra por profesional)
+var _embResources      = [];   // profesionales (recursos) para el selector
 var _embDragging   = null; // { contactId, fromFunnelId }
 var _embDraggingCol = null; // funnelId al reordenar columnas
 var _embMoveCtx = null; // contacto para modal mover
@@ -92,6 +117,7 @@ function initEmbudosPage() {
     if (token) {
       var payload = JSON.parse(atob(token.split('.')[1]));
       _embCompany = payload.company_id || '';
+      _embViewerRoles = payload.roles || [];
     }
     // Fallback a valores anteriores si no hay token
     if (!_embCompany) {
@@ -109,7 +135,7 @@ function _embLoad() {
   if (!_embCompany) { _embLoadDemo(); return; }
 
   Promise.all([
-    _embFetch('/api/funnels/' + _embCompany),
+    _embFetch('/api/funnels/' + _embCompany + (_embResourceFilter ? '?resource_id=' + encodeURIComponent(_embResourceFilter) : '')),
     _embFetch('/api/funnels/' + _embCompany + '/contacts').catch(function(){ return null; })
   ])
   .then(function(results) {
@@ -166,7 +192,7 @@ function _embLoad() {
         id:         c.user_id,
         nombre:     c.profile_name || c.user_id || '—',
         telefono:   c.user_id || '',
-        canal:      'whatsapp',
+        canal:      c.canal || 'whatsapp',   // canal real del contacto (whatsapp/instagram/messenger)
         is_vip:     c.status === 'vip',
         foto_url:   isRealAvatar ? (av.secure_url || av.url || null) : null,
         unread:     c.unread_count || 0,
@@ -179,6 +205,7 @@ function _embLoad() {
 
     _embRenderBoard();
     _embPopulateEmbudoSelect();
+    _embEnsureProfBar();
   })
   .catch(function() { _embLoadDemo(); });
 }
@@ -189,6 +216,55 @@ function _embLoadDemo() {
   _embContacts = [];
   _embRenderBoard();
   _embPopulateEmbudoSelect();
+}
+
+// ── SELECTOR DE PROFESIONAL (solo roles ver-todo) ──
+// Un PROFESIONAL_ROL no ve barra: el backend ya le devuelve solo sus embudos.
+// Admin/secretaria ven 'Todos' + un chip por profesional; al elegir, re-fetch con ?resource_id.
+var _EMB_SEE_ALL = ['ADMIN_ROL','SUPERVISOR_ROL','OPERADOR_ROL','ASISTENTE_ROL'];
+
+function _embPuedeVerTodos() {
+  return (_embViewerRoles || []).some(function(r){ return _EMB_SEE_ALL.indexOf(r) !== -1; });
+}
+
+function _embEnsureProfBar() {
+  if (!_embPuedeVerTodos()) return;            // profesional: sin selector
+  var board = document.getElementById('emb-board');
+  if (!board || !board.parentNode) return;
+  var bar = document.getElementById('emb-prof-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'emb-prof-bar';
+    bar.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px 12px;border-bottom:.5px solid #f0f3fa';
+    board.parentNode.insertBefore(bar, board);
+  }
+  if (_embResources.length) { _embRenderProfBar(); return; }
+  _embFetch('/api/agenda/resources')
+    .then(function(d){
+      var list = (d && (d.resources || d.data)) || [];
+      _embResources = list.map(function(r){ return { id: r._id || r.id, nombre: r.name || r.nombre || '\u2014' }; });
+      _embRenderProfBar();
+    })
+    .catch(function(){ /* si falla, no bloquea el tablero */ });
+}
+
+function _embRenderProfBar() {
+  var bar = document.getElementById('emb-prof-bar');
+  if (!bar) return;
+  function chip(id, label){
+    var on = (_embResourceFilter === id);
+    return '<span style="cursor:pointer;padding:4px 10px;border-radius:14px;font-size:12px;border:1px solid ' + (on?'#9961ff':'#d8def0') + ';background:' + (on?'#efeaff':'#fff') + ';color:' + (on?'#5a37c4':'#5b6478') + '" onclick="embFiltrarProfesional(\'' + id + '\')">' + label + '</span>';
+  }
+  var html = '<span style="font-size:9.5px;font-weight:700;color:#7D84C1;text-transform:uppercase">Filtrar:</span>';
+  html += chip('', 'Todos');
+  _embResources.forEach(function(r){ html += chip(r.id, r.nombre); });
+  bar.innerHTML = html;
+}
+
+function embFiltrarProfesional(resourceId) {
+  _embResourceFilter = resourceId || '';
+  _embRenderProfBar();   // refleja el chip activo de inmediato
+  _embLoad();            // re-fetch con ?resource_id
 }
 
 // Actualizar unread en tiempo real si hay evento de nueva conversación
@@ -414,7 +490,14 @@ function embFiltrar() {
   var dot = document.getElementById('emb-filter-dot');
   if (dot) dot.style.display = (fId || etapa) ? '' : 'none';
 
-  // Filtrar cards visibles
+  // Filtro de EMBUDO: oculta columnas completas (se ve SOLO la seleccionada).
+  document.querySelectorAll('.emb-col').forEach(function(col) {
+    var colFid = col.dataset.funnelId || col.getAttribute('data-funnel-id') || '';
+    col.style.display = (!fId || colFid === fId) ? '' : 'none';
+  });
+
+  // Filtrar cards por ETAPA / TEXTO / VIP dentro de las columnas visibles.
+  // (el embudo ya se filtra ocultando columnas, no por tarjeta)
   document.querySelectorAll('.emb-card').forEach(function(card) {
     var cId    = card.dataset.contactId;
     var cFId   = card.dataset.funnelId;
@@ -422,20 +505,22 @@ function embFiltrar() {
     if (!c) { card.style.display = 'none'; return; }
 
     var matchQ   = !q || (c.nombre||'').toLowerCase().includes(q) || (c.telefono||'').toLowerCase().includes(q);
-    var matchF   = !fId || cFId === fId;
     var matchE   = !etapa || ((c.etapas && c.etapas[cFId]) === etapa);
     var matchVip = !_embFilterVip || !!c.is_vip;
 
-    card.style.display = (matchQ && matchF && matchE && matchVip) ? '' : 'none';
+    card.style.display = (matchQ && matchE && matchVip) ? '' : 'none';
   });
 
-  // Mostrar vacío por columna si no hay cards visibles
+  // Mostrar "Sin resultados" solo en columnas VISIBLES (las ocultas por embudo no cuentan).
   document.querySelectorAll('.emb-col').forEach(function(col) {
+    if (col.style.display === 'none') return;
     var list   = col.querySelector('.emb-col-list');
     if (!list) return;
     var visible = Array.from(list.querySelectorAll('.emb-card')).filter(function(c){ return c.style.display !== 'none'; });
     var empty  = list.querySelector('.emb-empty-filter');
-    if (visible.length === 0 && active) {
+    // "active" para etapa/texto/vip (no para el filtro de embudo, que oculta columnas)
+    var activeCards = q || etapa || _embFilterVip;
+    if (visible.length === 0 && activeCards) {
       if (!empty) {
         var div = document.createElement('div');
         div.className = 'emb-empty emb-empty-filter';
@@ -475,6 +560,7 @@ function _embFetch(path, opts) {
 function _embRenderBoard() {
   var board = document.getElementById('emb-board');
   if (!board) return;
+  board.style.overflowX = 'auto';   // lista de embudos scrolleable horizontalmente
   board.innerHTML = '';
   _embFunnels.forEach(function(f) {
     board.appendChild(_embMakeCol(f));
@@ -490,6 +576,7 @@ function _embMakeCol(funnel) {
 
   var col = document.createElement('div');
   col.className = 'emb-col';
+  col.style.flexShrink = '0';   // mantiene ancho -> habilita scroll horizontal
   col.dataset.funnelId  = funnel.id;
   col.setAttribute('data-funnel-id', funnel.id);
 
@@ -744,10 +831,18 @@ function _embMoverContacto(contactId, toFunnelId) {
   if (!c.etapas[toFunnelId]) c.etapas[toFunnelId] = 'Interesado';
   _embRenderBoard();
 
-  // API
+  // API: mover = asignar al destino Y quitar del origen del drag (si existe y es distinto),
+  // para que al refrescar NO reaparezca el embudo anterior. Respeta multi-embudo: solo
+  // se quita el embudo desde el que se arrastró, no los demás. [25-06]
   if (_embCompany) {
     _embFetch('/api/funnels/' + _embCompany + '/contact/' + contactId + '/assign', {
       method: 'POST', body: JSON.stringify({ funnel_id: toFunnelId })
+    }).then(function() {
+      if (fromFunnelId && fromFunnelId !== 'f1' && fromFunnelId !== toFunnelId) {
+        return _embFetch('/api/funnels/' + _embCompany + '/contact/' + contactId + '/' + fromFunnelId, {
+          method: 'DELETE'
+        });
+      }
     }).catch(function(){});
   }
 }

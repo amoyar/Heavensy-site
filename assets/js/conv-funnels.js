@@ -7,6 +7,12 @@
 //   - Renderizar botones de etapas en el panel derecho
 //   - Manejar click → cambio de etapa → auto-save
 //   - Limpiar panel al cambiar de conversación
+//
+// ── BITÁCORA ──
+// [v2026.06.25-1] conv-funnels.js
+// 2026-06-25 | Estado "Sin embudos asignados" ahora también muestra el botón "Agregar
+//   embudo" (antes solo aparecía cuando ya había asignados, dejando al contacto sin
+//   forma de catalogarse). Permite asignar un embudo desde cero.
 // ============================================
 
 console.log('✅ conv-funnels.js cargado');
@@ -76,7 +82,11 @@ async function loadFunnels(companyId, userId) {
         }
 
         if (_funnelData.length === 0) {
+            // Sin asignaciones: igual mostrar el botón "Agregar embudo" para poder
+            // catalogar al contacto (antes quedaba solo el mensaje, sin forma de asignar). [25-06]
             renderFunnelEmpty('Sin embudos asignados');
+            const _panel = document.getElementById('contactFunnelsContainer');
+            if (_panel) _renderAddFunnelButton(_panel);
         } else {
             renderFunnels(_funnelData);
         }

@@ -2,10 +2,10 @@
 // Archivo separado para no modificar calendario.js
 //
 // ── BITÁCORA ──
-// [v2026.06.24-1] prof-chips.js
-// 2026-06-24 | Profesional (dueño del único recurso visible, vía _calIsOwnResourceView):
-//              se oculta la barra de filtros del calendario (cal-prof-bar). El backend
-//              ya filtra por rol; el filtro de profesional sobra cuando solo está él.
+// [v2026.06.25-1] prof-chips.js
+// 2026-06-25 | _calSelProfChip ahora resetea calSvcFilter y re-renderiza los chips de
+//   servicio al cambiar de profesional (antes solo re-renderizaba la grilla, dejando los
+//   chips de especialidad sin filtrar). Cross-filter usa _calSvcGroupKey (por especialidad).
 // [v2026.06.16-1] prof-chips.js
 // 2026-06-16 | Fix: la barra de filtros (cal-prof-bar) solo se mostraba con MÁS de
 //              1 profesional (calResources.length <= 1 la ocultaba), así que una
@@ -23,13 +23,6 @@ function _calRenderProfChips() {
   const wrap   = document.getElementById('cal-prof-chips');
   if (!bar || !wrap) return;
 
-  // Profesional (ve solo su propio recurso): ocultar la barra de filtros — no tiene
-  // sentido filtrar por profesional (solo él). El backend ya filtró por rol. [24-06]
-  if (typeof _calIsOwnResourceView === 'function' && _calIsOwnResourceView()) {
-    bar.style.display = 'none';
-    return;
-  }
-
   // Mostrar si hay al menos 1 profesional (antes pedía más de 1, lo que ocultaba
   // la barra cuando la empresa tenía un único recurso). [16-06]
   if (!calResources || calResources.length < 1) {
@@ -45,11 +38,10 @@ function _calRenderProfChips() {
     <span class="prof-chip-name">Todos</span>
   </div>`;
 
-  // Filtrar profesionales por servicio activo
-  const _visibleProfIds = calSvcFilter
+  // Filtrar profesionales por la ESPECIALIDAD activa (misma key que calendario.js).
+  const _visibleProfIds = (calSvcFilter && typeof _calSvcGroupKey === 'function')
     ? new Set(Object.values(calServiceMap)
-        .filter(s => s._id === calSvcFilter ||
-          Object.entries(calServiceMap).some(([id,sv]) => id === calSvcFilter && sv.name === s.name))
+        .filter(s => _calSvcGroupKey(s) === calSvcFilter)
         .map(s => s.resource_id))
     : null;
 
@@ -95,6 +87,11 @@ function _calSelProfChip(el) {
   document.querySelectorAll('#cal-prof-chips .prof-chip').forEach(c => c.classList.remove('prof-chip-sel'));
   el.classList.add('prof-chip-sel');
   calProfFilter = el.dataset.id || null;
+  // Al cambiar de profesional: resetear el filtro de especialidad y re-renderizar los
+  // chips de servicio para que muestren SOLO las especialidades de ese profesional. [25-06]
+  calSvcFilter = null;
+  if (typeof _calRenderSvcFilterChips === 'function') _calRenderSvcFilterChips();
+  _calRenderProfChips();
   _calUpdateCrearHoraBtn();
   calRender();
   if (document.getElementById('exc-panel')?.classList.contains('open')) calRenderExcList();
