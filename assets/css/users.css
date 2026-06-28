@@ -4,6 +4,14 @@
    Heavensy Admin
 ============================================ */
 
+/* ── BITÁCORA ──
+   [v2026.06.28-2] users.css
+   2026-06-28 | Paso Recurso rediseñado: .u-resource-card + switch .u-res-switch (ON/OFF por
+                .selected), .u-resource-intro. Más claro qué es y dónde marcar.
+   [v2026.06.28-1] users.css
+   2026-06-28 | Estados de la barra de pasos: .u-step.locked (bloqueado), .u-step.available
+                (anillo morado) y ✓ en .u-step.done. + .u-input-error (campo inválido en rojo). */
+
 /* ── Root ── */
 .users-root {
   height: 100%;
@@ -184,6 +192,16 @@
 }
 .u-step.active .u-step-num { background: #9961FF; color: #fff; }
 .u-step.done   .u-step-num { background: #10b981; color: #fff; }
+/* Estados de pasos (wizard usuario) [v2026.06.28-1] */
+.u-step.locked    { opacity: .4; cursor: not-allowed; }
+.u-step.available { opacity: 1; }
+.u-step.available .u-step-num {
+  background: #f1ecfb; color: #9961FF;
+  box-shadow: inset 0 0 0 2px #9961FF;   /* anillo morado: "ya puedes entrar" */
+}
+.u-step.available .u-step-label { color: #9961FF; }
+.u-step.done .u-step-num { font-size: 0; }
+.u-step.done .u-step-num::after { content: '\2713'; font-size: 13px; }
 .u-step-label  { font-size: 11px; font-weight: 600; color: #374151; white-space: nowrap; }
 .u-step-line   { flex: 1; height: 1px; background: #e5e7eb; min-width: 20px; max-width: 60px; }
 
@@ -213,6 +231,14 @@
 .u-form-group input:focus,
 .u-form-group select:focus { border-color: #9961FF; }
 .u-form-group input:disabled { background: #f9fafb; color: #9ca3af; }
+/* Validación: campo inválido (marcado en rojo) [v2026.06.28-1] */
+.u-input-error,
+.u-form-group input.u-input-error,
+.u-form-group select.u-input-error {
+  border-color: #dc2626 !important;
+  background-color: #fef2f2 !important;
+  box-shadow: 0 0 0 2px rgba(220,38,38,0.12) !important;
+}
 .u-form-hint     { font-size: 10px; color: #9ca3af; }
 .u-form-hint-box {
   background: #EFF6FF; border: 0.5px solid #C9D9FF;
@@ -312,6 +338,44 @@
 .u-no-resource-opt.selected .u-resource-check {
   background: #9961FF; border-color: #9961FF; color: #fff;
 }
+
+/* ── Paso Recurso — rediseño (tarjeta clara + switch ON/OFF) [v2026.06.28-2] ── */
+.u-resource-intro { font-size: 13px; line-height: 1.55; color: #4b5563; margin-bottom: 16px; }
+.u-resource-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px; border: 2px solid #e5e7eb; border-radius: 12px;
+  background: #fff; cursor: pointer; transition: all .15s; margin-top: 4px;
+}
+.u-resource-card:hover { border-color: #c4b5fd; background: #faf9ff; }
+.u-resource-card.selected {
+  border-color: #9961FF; background: #f5f0ff;
+  box-shadow: 0 0 0 3px rgba(153,97,255,.12);
+}
+.u-resource-card-ico {
+  width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #f3f4f6; color: #9ca3af; font-size: 20px; transition: all .15s;
+}
+.u-resource-card.selected .u-resource-card-ico { background: #9961FF; color: #fff; }
+.u-resource-card-main  { flex: 1; }
+.u-resource-card-title { font-size: 14px; font-weight: 700; color: #3b4a6b; }
+.u-resource-card-meta  { font-size: 12px; color: #6b7280; margin-top: 3px; }
+.u-resource-card-toggle { display: flex; flex-direction: column; align-items: center; gap: 5px; flex-shrink: 0; }
+.u-resource-card-onoff  { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .03em; }
+.u-resource-card-onoff::after { content: "No"; }
+.u-resource-card.selected .u-resource-card-onoff { color: #9961FF; }
+.u-resource-card.selected .u-resource-card-onoff::after { content: "Sí"; }
+.u-res-switch {
+  width: 46px; height: 26px; border-radius: 26px; background: #d1d5db;
+  position: relative; transition: background .2s; flex-shrink: 0;
+}
+.u-res-switch::after {
+  content: ""; position: absolute; width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; top: 3px; left: 3px; transition: transform .2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+.u-resource-card.selected .u-res-switch { background: #9961FF; }
+.u-resource-card.selected .u-res-switch::after { transform: translateX(20px); }
 
 /* ── Revisión ── */
 .u-review-section {

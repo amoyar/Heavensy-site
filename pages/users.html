@@ -1,5 +1,9 @@
 <!-- USERS PAGE — Heavensy -->
 <!-- ── BITÁCORA ──
+     [v2026.06.28-1] users.html
+     2026-06-28 | RUT y Teléfono marcados como obligatorios (asterisco). #u-wizard-error
+                  movido FUERA del panel Revisión a posición global (tras la barra de pasos),
+                  para que el mensaje de validación se vea en cualquier paso.
      [v2026.06.16-1] users.html
      2026-06-16 | Paso 3 "Recurso": reemplazado el bloque "Vincular a Recurso"
                   (opción sin-recurso + buscador + lista) por un check único
@@ -122,6 +126,9 @@
       </div>
     </div>
 
+    <!-- Error de validación: GLOBAL, visible en todos los pasos [v2026.06.28-1] -->
+    <div id="u-wizard-error" class="u-wizard-error" style="display:none; margin:12px 24px 0"></div>
+
     <!-- ── PANEL 1: Datos personales ── -->
     <div class="u-wizard-panel active" id="u-panel-0">
       <div class="u-panel-content">
@@ -145,11 +152,11 @@
             <input id="u-email" type="email" placeholder="juan@empresa.com"/>
           </div>
           <div class="u-form-group">
-            <label>Teléfono</label>
+            <label>Teléfono *</label>
             <input id="u-phone" type="tel" placeholder="+56912345678"/>
           </div>
           <div class="u-form-group">
-            <label>RUT</label>
+            <label>RUT *</label>
             <input id="u-rut" placeholder="12.345.678-9"/>
           </div>
         </div>
@@ -240,10 +247,6 @@
       <div class="u-panel-content">
         <div class="u-form-section-title"><i class="fas fa-check-circle"></i> Revisión final</div>
         <div id="u-review-content"></div>
-        <div id="u-wizard-error" class="u-wizard-error" style="display:none">
-          <i class="fas fa-exclamation-circle"></i>
-          <span id="u-wizard-error-msg"></span>
-        </div>
       </div>
       <div class="u-nav-footer">
         <button class="u-btn-secondary" onclick="uGoStep(2)"><i class="fas fa-arrow-left"></i> Volver</button>

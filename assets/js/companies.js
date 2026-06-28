@@ -3,6 +3,46 @@
 // Heavensy Admin
 // ============================================
 // ── BITÁCORA ──
+// [v2026.06.28-9] companies.js
+// 2026-06-28 | Teléfono: _formatTel formatea en vivo (+56 9 1234 5678, oninput) y
+//   _normalizeTel guarda sin formato (+56912345678). populateForm formatea al cargar.
+// [v2026.06.28-8] companies.js
+// 2026-06-28 | RUT: _formatRut formatea en vivo (6.677.889-9, oninput) y _normalizeRut
+//   guarda sin puntos con guion (6677889-9). populateForm formatea al cargar en edición.
+// [v2026.06.28-7] companies.js
+// 2026-06-28 | _validPhone reescrito: ahora exige MÓVIL chileno (+56 9 + 8 dígitos, regex
+//   ^9\\d{8}$ tras quitar el código país). Antes solo contaba 9 dígitos y aceptaba números
+//   que no parten con 9. Mensaje y placeholder actualizados.
+// [v2026.06.28-6] companies.js
+// 2026-06-28 | Razón social, RUT y teléfono ahora OBLIGATORIOS (y válidos). validateStep(0)
+//   ACUMULA todos los errores y showWizardError los muestra como lista ("Corrige N campos");
+//   con un solo error lo muestra inline. Marca en rojo todos los campos con problema.
+// [v2026.06.28-5] companies.js
+// 2026-06-28 | Barra de pasos con 4 estados (active/done/available/locked) y desbloqueo
+//   PROGRESIVO en creación: _maxStepReached marca hasta dónde avanzaste; el siguiente paso
+//   se "enciende" (available, anillo morado) al completar el actual; los no alcanzados van
+//   locked (gris, no clickeable). Edición: todos disponibles.
+// [v2026.06.28-4] companies.js
+// 2026-06-28 | wGoStep: en CREACIÓN bloquea el salto hacia adelante por la barra de pasos
+//   si un paso previo es inválido (antes se podía evitar la validación que solo hacía wNext).
+//   En EDICIÓN sigue libre. El guard de saveCompany se mantiene como red final.
+// [v2026.06.28-3] companies.js
+// 2026-06-28 | showWizardError hace scrollIntoView para que el mensaje de validación se
+//   vea aunque el form sea largo (el #wizard-error ahora es global, ver companies.html).
+// [v2026.06.28-2] companies.js
+// 2026-06-28 | Rubro OBLIGATORIO sin default: _selectedRubro arranca en null (antes "salud").
+//   Crear ya no precarga el template de salud ni preselecciona tarjeta; validateStep(1) y el
+//   guard de guardado bloquean si no se eligió rubro. Evita company_id inconsistentes.
+// [v2026.06.28-1] companies.js
+// 2026-06-28 | (b) ID empresa AUTOMÁTICO: campo read-only, se genera en el backend como
+//   RUBRO_NNNN; selectRubro muestra preview RUBRO_XXXX al crear; ya no se envía company_id.
+//   (c) Validación por paso: obligatorios nombre/email/plan (campos con *); opcionales
+//   RUT (mod 11)/teléfono CL/sitio web válidos si se llenan; _markField marca en rojo
+//   (.input-error) y bloquea avanzar/guardar; saveCompany revalida pasos 0 y 1.
+// 2026-06-28 | Paso 3 ahora es "Canales": populateForm lee y el payload guarda los 3
+//   canales (whatsapp_config, messenger_config, instagram_config). Messenger/Instagram
+//   se incluyen solo si tienen su id principal; el token se envía solo si se reescribe
+//   (el back conserva el guardado). clearWizardForm y review cubren los 6 campos nuevos.
 // [v2026.06.23-1] companies.js
 // 2026-06-23 | C2-ter: edición inline con lápiz en el acordeón. Cada chip de
 //              especialidad/servicio trae ✎ que abre una fila de edición (nombre,
@@ -116,7 +156,8 @@ let _companies       = [];      // lista completa desde API
 let _companiesFiltered = [];    // lista filtrada
 let _editingCompanyId  = null;  // null = nueva empresa
 let _currentStep       = 0;
-let _selectedRubro     = 'salud';
+let _maxStepReached    = 0;   // paso máximo desbloqueado en CREACIÓN (progresivo)
+let _selectedRubro     = null;   // sin default: el rubro es OBLIGATORIO (de él depende el company_id)
 let _selectedCats      = [];     // profession_key[] seleccionadas para la empresa (paso 2)
 let _catsPorRubro      = {};     // memoria de selección por rubro durante la sesión del wizard
 let _rubroConfig       = null;  // config del template seleccionado
@@ -1669,6 +1710,8 @@ function cpPlanSetValue(planId) {
   const plan   = PLANES_LISTA.find(p => p.id === planId);
 
   if (hidden) hidden.value = plan ? plan.id : '';
+  // Al elegir un plan, limpiar la marca de error del selector (no dispara 'input')
+  if (plan) document.getElementById('w-plan-trigger')?.classList.remove('input-error');
   if (label) {
     if (plan) {
       label.textContent = plan.label;
@@ -1832,7 +1875,8 @@ async function openWizard(companyId = null) {
 
   _editingCompanyId = companyId;
   _currentStep      = 0;
-  _selectedRubro    = 'salud';
+  _maxStepReached   = companyId ? 4 : 0;   // edición: todos desbloqueados; creación: solo el primero
+  _selectedRubro    = null;
   _selectedCats     = [];
   _catsPorRubro     = {};
   _rubroConfig      = null;
@@ -1851,9 +1895,9 @@ async function openWizard(companyId = null) {
   if (companyId) {
     await loadCompanyIntoWizard(companyId);
   } else {
-    // Nueva empresa: pintar sectores reales y cargar el template de salud por defecto
+    // Nueva empresa: pintar sectores SIN preselección. El rubro es obligatorio y el
+    // usuario debe elegirlo (de él depende el company_id RUBRO_NNNN). [v2026.06.28-2]
     await wRenderRubros();
-    await loadRubroTemplate('salud');
   }
 
   // Mostrar vista wizard
@@ -1896,9 +1940,11 @@ async function loadCompanyIntoWizard(companyId) {
   set('w-name',             company.name);
   set('w-legal_name',       company.legal_name);
   set('w-rut',              company.rut);
+  { const _r = document.getElementById('w-rut'); if (_r) _formatRut(_r); }  // mostrar formateado
   set('w-description',      company.description);
   set('w-contact_email',    company.contact_email);
   set('w-contact_phone',    company.contact_phone);
+  { const _t = document.getElementById('w-contact_phone'); if (_t) _formatTel(_t); }
   set('w-address',          company.address);
   set('w-website',          company.website);
   cpPlanSetValue(company.plan_id);
@@ -1911,12 +1957,20 @@ async function loadCompanyIntoWizard(companyId) {
   await wRenderRubros();   // pinta las tarjetas y marca activa _selectedRubro
   await loadRubroTemplate(_selectedRubro);  // renderTemplatePreview pinta las categorías (marca _selectedCats)
 
-  // Paso 3: WhatsApp
+  // Paso 3: Canales de mensajería (WhatsApp · Messenger · Instagram)
   const wa = company.whatsapp_config || {};
   set('w-phone_number_id',  company.phone_number_id || wa.phone_number_id);
   set('w-wa_webhook_url',   wa.webhook_url);
   set('w-wa_access_token',  ''); // no mostrar token por seguridad
   set('w-wa_verify_token',  '');
+  const mn = company.messenger_config || {};
+  set('w-mn_page_id',       mn.page_id);
+  set('w-mn_access_token',  ''); // token no se muestra
+  set('w-mn_verify_token',  '');
+  const ig = company.instagram_config || {};
+  set('w-ig_account_id',    ig.account_id);
+  set('w-ig_access_token',  ''); // token no se muestra
+  set('w-ig_verify_token',  '');
 
   // Paso 4: Bot
   const bot = company.bot_config || {};
@@ -1960,6 +2014,8 @@ function clearWizardForm() {
   const fields = ['w-company_id','w-name','w-legal_name','w-rut','w-description',
     'w-contact_email','w-contact_phone','w-address','w-website',
     'w-phone_number_id','w-wa_webhook_url','w-wa_access_token','w-wa_verify_token',
+    'w-mn_page_id','w-mn_access_token','w-mn_verify_token',
+    'w-ig_account_id','w-ig_access_token','w-ig_verify_token',
     'w-bot_name','w-max_messages','w-greeting_message',
     'w-bot_company_prompt','w-bot_instrucciones_llegar','w-bot_conocimiento'];
 
@@ -1994,11 +2050,9 @@ function clearWizardForm() {
   _botActive = false;
   _botRenderActivateBtn();
 
-  // Reset rubro
-  document.querySelectorAll('.rubro-card').forEach(card => {
-    card.classList.toggle('active', card.dataset.key === 'salud');
-  });
-  _selectedRubro = 'salud';
+  // Reset rubro: ninguna tarjeta preseleccionada (rubro obligatorio).
+  document.querySelectorAll('.rubro-card').forEach(card => card.classList.remove('active'));
+  _selectedRubro = null;
   _selectedCats  = [];
   _catsPorRubro  = {};
 
@@ -2010,13 +2064,27 @@ function clearWizardForm() {
 // ── Navegación de pasos ───────────────────────
 
 function wGoStep(step) {
+  // En CREACIÓN no se puede saltar hacia adelante sin completar los pasos previos
+  // (al hacer clic en los números de arriba). Si un paso intermedio es inválido, nos
+  // detenemos en él y mostramos su error. En EDICIÓN la empresa ya existe → navegación
+  // libre. [v2026.06.28-4]
+  if (!_editingCompanyId && step > _currentStep) {
+    for (let s = _currentStep; s < step; s++) {
+      if (!validateStep(s)) { step = s; break; }
+    }
+  }
   _currentStep = step;
+  if (!_editingCompanyId) _maxStepReached = Math.max(_maxStepReached, step);
 
-  // Actualizar step indicators
+  // Actualizar step indicators con 4 estados:
+  //  active (actual) · done (completado) · available (desbloqueado, clickeable) · locked (bloqueado)
+  const maxReach = _editingCompanyId ? 4 : _maxStepReached;
   document.querySelectorAll('.step').forEach((el, i) => {
-    el.classList.remove('active', 'done');
-    if (i < step)  el.classList.add('done');
-    if (i === step) el.classList.add('active');
+    el.classList.remove('active', 'done', 'available', 'locked');
+    if (i === step)            el.classList.add('active');
+    else if (i < step)         el.classList.add('done');
+    else if (i <= maxReach)    el.classList.add('available');
+    else                       el.classList.add('locked');
   });
 
   // Mostrar panel correcto
@@ -2036,27 +2104,120 @@ function wNext(currentStep) {
   wGoStep(currentStep + 1);
 }
 
+// ── Validaciones (RUT chileno, email, teléfono) ───────────────
+function _validEmail(e) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((e || '').trim());
+}
+function _validRut(rut) {
+  const clean = (rut || '').replace(/[.\-\s]/g, '').toUpperCase();
+  if (!clean) return true; // opcional
+  if (!/^\d{7,8}[0-9K]$/.test(clean)) return false;
+  const body = clean.slice(0, -1), dv = clean.slice(-1);
+  let sum = 0, mul = 2;
+  for (let i = body.length - 1; i >= 0; i--) {
+    sum += parseInt(body[i], 10) * mul;
+    mul = mul === 7 ? 2 : mul + 1;
+  }
+  const r = 11 - (sum % 11);
+  const dvCalc = r === 11 ? '0' : r === 10 ? 'K' : String(r);
+  return dv === dvCalc;
+}
+function _validPhone(p) {
+  const d = (p || '').replace(/\D/g, '');
+  if (!d) return true; // vacío lo maneja el chequeo de obligatorio
+  const n = d.startsWith('56') ? d.slice(2) : d;   // quita código país si viene
+  return /^9\d{8}$/.test(n); // móvil chileno: +56 9 + 8 dígitos
+}
+function _validUrl(u) {
+  const v = (u || '').trim();
+  if (!v) return true; // opcional
+  return /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}([\/?#].*)?$/i.test(v);
+}
+// Formatea el RUT en vivo para mostrarlo con puntos y guion: 6.677.889-9
+function _formatRut(el) {
+  let c = (el.value || '').replace(/[^0-9kK]/g, '').toUpperCase();
+  if (!c) { el.value = ''; return; }
+  let body = c.slice(0, -1), dv = c.slice(-1);
+  body = body.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  el.value = body ? `${body}-${dv}` : dv;
+}
+// Normaliza el RUT para GUARDAR: sin puntos, con guion, K mayúscula -> 6677889-9
+function _normalizeRut(value) {
+  const c = (value || '').replace(/[^0-9kK]/g, '').toUpperCase();
+  if (!c) return null;
+  return c.slice(0, -1) + '-' + c.slice(-1);
+}
+// Formatea el teléfono en vivo: +56 9 1234 5678
+function _formatTel(el) {
+  let d = (el.value || '').replace(/\D/g, '');
+  if (d.startsWith('56')) d = d.slice(2);
+  d = d.slice(0, 9);
+  if (!d) { el.value = ''; return; }
+  let out = '+56 ' + d.slice(0, 1);
+  if (d.length > 1) out += ' ' + d.slice(1, 5);
+  if (d.length > 5) out += ' ' + d.slice(5, 9);
+  el.value = out;
+}
+// Normaliza el teléfono para GUARDAR: +56912345678
+function _normalizeTel(value) {
+  let d = (value || '').replace(/\D/g, '');
+  if (d.startsWith('56')) d = d.slice(2);
+  d = d.slice(0, 9);
+  return d ? '+56' + d : null;
+}
+function _markField(id, ok) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('input-error', !ok);
+}
+// Limpia el rojo apenas el usuario corrige el campo
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if (t && t.classList && t.classList.contains('input-error')) t.classList.remove('input-error');
+});
+
 function validateStep(step) {
   const errEl = document.getElementById('wizard-error');
   if (errEl) errEl.style.display = 'none';
 
   if (step === 0) {
-    const cid   = document.getElementById('w-company_id')?.value?.trim();
-    const name  = document.getElementById('w-name')?.value?.trim();
-    const email = document.getElementById('w-contact_email')?.value?.trim();
+    const name  = (document.getElementById('w-name')?.value || '').trim();
+    const legal = (document.getElementById('w-legal_name')?.value || '').trim();
+    const email = (document.getElementById('w-contact_email')?.value || '').trim();
+    const plan  = (document.getElementById('w-plan_id')?.value || '').trim();
+    const rut   = (document.getElementById('w-rut')?.value || '').trim();
+    const phone = (document.getElementById('w-contact_phone')?.value || '').trim();
+    const web   = (document.getElementById('w-website')?.value || '').trim();
 
-    if (!_editingCompanyId && !cid) {
-      showWizardError('El ID de empresa es requerido');
-      return false;
-    }
-    if (!name) {
-      showWizardError('El nombre comercial es requerido');
-      return false;
-    }
-    if (!email || !email.includes('@')) {
-      showWizardError('El email de contacto es requerido y debe ser válido');
-      return false;
-    }
+    // Obligatorios (campos con * ): nombre, razón social, email, plan, RUT, teléfono.
+    // Opcional pero válido si se llena: sitio web.
+    const errores = [];
+    const okName  = !!name;                       if (!okName)  errores.push('El nombre comercial es requerido');
+    const okLegal = !!legal;                      if (!okLegal) errores.push('La razón social es requerida');
+    const okEmail = !!email && _validEmail(email);
+    if (!email)            errores.push('El email de contacto es requerido');
+    else if (!okEmail)     errores.push('El email no tiene un formato válido (ej: contacto@empresa.cl)');
+    const okPlan  = !!plan;                        if (!okPlan)  errores.push('Debes seleccionar un plan de suscripción');
+    const okRut   = !!rut && _validRut(rut);
+    if (!rut)              errores.push('El RUT es requerido');
+    else if (!okRut)       errores.push('El RUT no es válido (ej: 76.123.456-7)');
+    const okPhone = !!phone && _validPhone(phone);
+    if (!phone)            errores.push('El teléfono es requerido');
+    else if (!okPhone)     errores.push('El teléfono debe ser un móvil chileno: +56 9 y 8 dígitos. Ej: +56 9 1234 5678');
+    const okWeb   = _validUrl(web);                if (!okWeb)   errores.push('El sitio web no es válido (ej: https://empresa.cl)');
+
+    _markField('w-name', okName);
+    _markField('w-legal_name', okLegal);
+    _markField('w-contact_email', okEmail);
+    _markField('w-plan-trigger', okPlan);
+    _markField('w-rut', okRut);
+    _markField('w-contact_phone', okPhone);
+    _markField('w-website', okWeb);
+
+    if (errores.length) { showWizardError(errores); return false; }
+  }
+
+  if (step === 1) {
+    if (!_selectedRubro) { showWizardError('Debes seleccionar un rubro'); return false; }
   }
   return true;
 }
@@ -2064,8 +2225,22 @@ function validateStep(step) {
 function showWizardError(msg) {
   const errEl = document.getElementById('wizard-error');
   if (!errEl) return;
-  errEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${escapeHtml(msg)}`;
+  if (Array.isArray(msg)) {
+    // Resumen dinámico: lista TODOS los campos faltantes/inválidos de una vez
+    if (msg.length === 1) {
+      errEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${escapeHtml(msg[0])}`;
+    } else {
+      const items = msg.map(m => `<li>${escapeHtml(m)}</li>`).join('');
+      errEl.innerHTML = `<div style="width:100%"><div style="display:flex;gap:6px;align-items:center">`
+        + `<i class="fas fa-exclamation-circle"></i> <strong>Corrige ${msg.length} campos antes de continuar:</strong></div>`
+        + `<ul style="margin:6px 0 0 22px;padding:0">${items}</ul></div>`;
+    }
+  } else {
+    errEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${escapeHtml(msg)}`;
+  }
   errEl.style.display = 'flex';
+  // Llevar el mensaje a la vista (el form puede ser largo y quedar fuera de pantalla)
+  try { errEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
 }
 
 // ── Rubro ─────────────────────────────────────
@@ -2077,6 +2252,11 @@ async function selectRubro(key, card) {
     _selectedCats = (_catsPorRubro[key] || []).slice();
   }
   _selectedRubro = key;
+  // Preview del ID automático según el rubro (solo al CREAR; el número real lo asigna el backend)
+  if (!_editingCompanyId) {
+    const cidEl = document.getElementById('w-company_id');
+    if (cidEl) cidEl.value = (key || '').toUpperCase().replace(/[^A-Z0-9]/g, '') + '_XXXX';
+  }
   document.querySelectorAll('.rubro-card').forEach(c => c.classList.remove('active'));
   card.classList.add('active');
   await loadRubroTemplate(key);
@@ -2217,7 +2397,27 @@ function buildReview() {
         </div>
         <div class="review-row">
           <span class="review-label">Access Token</span>
-          <span class="review-val ${!get('w-wa_access_token') ? 'empty' : ''}">${get('w-wa_access_token') ? '••••••••' : 'Sin configurar'}</span>
+          <span class="review-val ${!get('w-wa_access_token') ? 'empty' : ''}">${get('w-wa_access_token') ? '••••••••' : '(se conserva el guardado)'}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="review-section">
+      <div class="review-section-title"><i class="fab fa-facebook-messenger"></i> Messenger</div>
+      <div class="review-grid">
+        <div class="review-row">
+          <span class="review-label">Page ID</span>
+          <span class="review-val ${!get('w-mn_page_id') ? 'empty' : ''}">${escapeHtml(get('w-mn_page_id')) || 'Sin configurar'}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="review-section">
+      <div class="review-section-title"><i class="fab fa-instagram"></i> Instagram</div>
+      <div class="review-grid">
+        <div class="review-row">
+          <span class="review-label">Account ID</span>
+          <span class="review-val ${!get('w-ig_account_id') ? 'empty' : ''}">${escapeHtml(get('w-ig_account_id')) || 'Sin configurar'}</span>
         </div>
       </div>
     </div>
@@ -2248,6 +2448,9 @@ async function saveCompany() {
   if (errEl) errEl.style.display = 'none';
 
   try {
+    // Validación final por si se saltó pasos con los indicadores
+    if (!validateStep(0)) { if (saveBtn) saveBtn.disabled = false; wGoStep(0); return; }
+    if (!validateStep(1)) { if (saveBtn) saveBtn.disabled = false; wGoStep(1); return; }
     const get    = id => document.getElementById(id)?.value?.trim() || null;
     const getChk = id => document.getElementById(id)?.checked ?? true;
 
@@ -2275,10 +2478,10 @@ async function saveCompany() {
     const companyData = {
       name:          get('w-name'),
       legal_name:    get('w-legal_name'),
-      rut:           get('w-rut'),
+      rut:           _normalizeRut(get('w-rut')),
       description:   get('w-description'),
       contact_email: get('w-contact_email'),
-      contact_phone: get('w-contact_phone'),
+      contact_phone: _normalizeTel(get('w-contact_phone')),
       address:       get('w-address'),
       website:       get('w-website'),
       plan_id:       get('w-plan_id'),
@@ -2294,6 +2497,18 @@ async function saveCompany() {
         ...(get('w-wa_access_token') ? { access_token: get('w-wa_access_token') } : {}),
         ...(get('w-wa_verify_token') ? { verify_token: get('w-wa_verify_token') } : {}),
       },
+      // Messenger / Instagram: se incluye el canal solo si tiene su id principal.
+      // El token va solo si se (re)escribe; si no, el back conserva el guardado.
+      ...(get('w-mn_page_id') ? { messenger_config: {
+        page_id: get('w-mn_page_id'),
+        ...(get('w-mn_access_token') ? { access_token: get('w-mn_access_token') } : {}),
+        ...(get('w-mn_verify_token') ? { verify_token: get('w-mn_verify_token') } : {}),
+      } } : {}),
+      ...(get('w-ig_account_id') ? { instagram_config: {
+        account_id: get('w-ig_account_id'),
+        ...(get('w-ig_access_token') ? { access_token: get('w-ig_access_token') } : {}),
+        ...(get('w-ig_verify_token') ? { verify_token: get('w-ig_verify_token') } : {}),
+      } } : {}),
       bot_config: {
         name:             get('w-bot_name'),
         max_messages:     parseInt(get('w-max_messages')) || 150,
@@ -2320,8 +2535,7 @@ async function saveCompany() {
         return;
       }
     } else {
-      // ── CREAR ──
-      companyData.company_id = get('w-company_id');
+      // ── CREAR ── (company_id se genera automáticamente en el backend según el rubro)
       const res = await apiCall('/api/companies', {
         method: 'POST',
         body:   JSON.stringify(companyData),

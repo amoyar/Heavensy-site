@@ -3,6 +3,21 @@
 // Heavensy Admin
 // ============================================
 // ── BITÁCORA ──
+// [v2026.06.28-4] users.js
+// 2026-06-28 | Teléfono: _uFormatTel (en vivo +56 9 1234 5678) y _uNormalizeTel (guarda
+//   +56912345678). populateForm formatea al cargar.
+// [v2026.06.28-3] users.js
+// 2026-06-28 | RUT: _uFormatRut (formateo en vivo 6.677.889-9) y _uNormalizeRut (guarda
+//   6677889-9, sin puntos). populateForm formatea al cargar.
+// [v2026.06.28-2] users.js
+// 2026-06-28 | _uValidPhone reescrito: exige MÓVIL chileno (+56 9 + 8 dígitos, ^9\\d{8}$).
+//   Antes solo contaba 9 dígitos y dejaba pasar números que no parten con 9.
+// [v2026.06.28-1] users.js
+// 2026-06-28 | Validación del wizard alineada con empresas: (a) RUT y teléfono ahora
+//   OBLIGATORIOS (y válidos, RUT mod 11 / teléfono CL); (b) uValidateStep(0) ACUMULA todos
+//   los errores y uShowError los muestra como lista ("Corrige N campos") + scrollIntoView;
+//   _uMarkField marca en rojo (.u-input-error); (c) uGoStep con 4 estados y desbloqueo
+//   PROGRESIVO en creación + guard que impide saltar pasos sin completar; saveUser revalida.
 // [v2026.06.16-3] users.js
 // 2026-06-16 | Columna "Recurso" de la tabla y filtro "Es recurso": leían
 //              user.company_resource_id (campo inexistente) → siempre mostraban "—".
@@ -57,6 +72,8 @@ let _userCompanyId   = null;  // empresa del usuario logueado
 let _availableCompanies = []; // empresas disponibles para asignar
 let _availableResources = []; // recursos de la empresa
 let _editingUsername = null;
+let _uCurrentStep    = 0;
+let _uMaxStepReached = 0;   // paso máximo desbloqueado en CREACIÓN (progresivo)
 
 // Estado del wizard
 let _wCompanies      = [];    // [{ company_id, company_name, roles[], is_primary }]
@@ -343,6 +360,8 @@ async function deactivateUser(username) {
 
 async function openUserWizard(username = null) {
   _editingUsername    = username;
+  _uCurrentStep       = 0;
+  _uMaxStepReached    = username ? 3 : 0;   // edición: todos desbloqueados; creación: solo el primero
   _wCompanies         = [];
   _wSelectedResource  = null;
   _wIsResource        = false;
@@ -416,7 +435,9 @@ async function loadUserIntoWizard(username) {
   set('u-username',   user.username);
   set('u-email',      user.email);
   set('u-phone',      user.phone);
+  { const _t=document.getElementById('u-phone'); if(_t) _uFormatTel(_t); }
   set('u-rut',        user.rut);
+  { const _r=document.getElementById('u-rut'); if(_r) _uFormatRut(_r); }  // mostrar formateado
   setChk('u-active',  user.status === 'A');
 
   // Deshabilitar username en edición
@@ -490,11 +511,74 @@ function clearUserWizardForm() {
 
 // ── Navegación ────────────────────────────────
 
+// ── Validaciones (RUT chileno, email, teléfono) ──
+function _uValidEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((e||'').trim()); }
+function _uValidRut(rut){
+  const c=(rut||'').replace(/[.\-\s]/g,'').toUpperCase();
+  if(!c) return false;
+  if(!/^\d{7,8}[0-9K]$/.test(c)) return false;
+  const b=c.slice(0,-1), dv=c.slice(-1);
+  let sum=0,m=2;
+  for(let i=b.length-1;i>=0;i--){ sum+=parseInt(b[i],10)*m; m=m===7?2:m+1; }
+  const r=11-(sum%11); const dc=r===11?'0':r===10?'K':String(r);
+  return dv===dc;
+}
+function _uValidPhone(p){ const d=(p||'').replace(/\D/g,''); const n=d.startsWith('56')?d.slice(2):d; return /^9\d{8}$/.test(n); }  // móvil chileno: +56 9 + 8 dígitos
+function _uMarkField(id,ok){ const el=document.getElementById(id); if(el) el.classList.toggle('u-input-error',!ok); }
+// Formatea el RUT en vivo: 6.677.889-9
+function _uFormatRut(el){
+  let c=(el.value||'').replace(/[^0-9kK]/g,'').toUpperCase();
+  if(!c){ el.value=''; return; }
+  let body=c.slice(0,-1), dv=c.slice(-1);
+  body=body.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  el.value = body ? `${body}-${dv}` : dv;
+}
+// Normaliza el RUT para GUARDAR: sin puntos, con guion -> 6677889-9
+function _uNormalizeRut(value){
+  const c=(value||'').replace(/[^0-9kK]/g,'').toUpperCase();
+  if(!c) return null;
+  return c.slice(0,-1)+'-'+c.slice(-1);
+}
+// Formatea el teléfono en vivo: +56 9 1234 5678
+function _uFormatTel(el){
+  let d=(el.value||'').replace(/\D/g,'');
+  if(d.startsWith('56')) d=d.slice(2);
+  d=d.slice(0,9);
+  if(!d){ el.value=''; return; }
+  let out='+56 '+d.slice(0,1);
+  if(d.length>1) out+=' '+d.slice(1,5);
+  if(d.length>5) out+=' '+d.slice(5,9);
+  el.value=out;
+}
+// Normaliza el teléfono para GUARDAR: +56912345678
+function _uNormalizeTel(value){
+  let d=(value||'').replace(/\D/g,'');
+  if(d.startsWith('56')) d=d.slice(2);
+  d=d.slice(0,9);
+  return d ? '+56'+d : null;
+}
+// Limpia el rojo apenas el usuario corrige el campo
+document.addEventListener('input',(e)=>{ const t=e.target; if(t&&t.classList&&t.classList.contains('u-input-error')) t.classList.remove('u-input-error'); });
+
 function uGoStep(step) {
+  // En CREACIÓN no permitir saltar hacia adelante sin completar los pasos previos.
+  // En EDICIÓN el usuario ya existe y es válido → navegación libre.
+  if (!_editingUsername && step > _uCurrentStep) {
+    for (let sN = _uCurrentStep; sN < step; sN++) {
+      if (!uValidateStep(sN)) { step = sN; break; }
+    }
+  }
+  _uCurrentStep = step;
+  if (!_editingUsername) _uMaxStepReached = Math.max(_uMaxStepReached, step);
+
+  // 4 estados: active (actual) · done (completado) · available (desbloqueado) · locked (bloqueado)
+  const maxReach = _editingUsername ? 3 : _uMaxStepReached;
   document.querySelectorAll('.u-step').forEach((el, i) => {
-    el.classList.remove('active', 'done');
-    if (i < step)   el.classList.add('done');
-    if (i === step) el.classList.add('active');
+    el.classList.remove('active', 'done', 'available', 'locked');
+    if (i === step)            el.classList.add('active');
+    else if (i < step)         el.classList.add('done');
+    else if (i <= maxReach)    el.classList.add('available');
+    else                       el.classList.add('locked');
   });
   document.querySelectorAll('.u-wizard-panel').forEach((el, i) => {
     el.classList.toggle('active', i === step);
@@ -513,21 +597,47 @@ function uValidateStep(step) {
   if (errEl) errEl.style.display = 'none';
 
   if (step === 0) {
-    const first  = document.getElementById('u-first_name')?.value?.trim();
-    const last   = document.getElementById('u-last_name')?.value?.trim();
-    const user   = document.getElementById('u-username')?.value?.trim();
-    const email  = document.getElementById('u-email')?.value?.trim();
-    const pwd    = document.getElementById('u-password')?.value;
-    const pwd2   = document.getElementById('u-password2')?.value;
+    const first = (document.getElementById('u-first_name')?.value || '').trim();
+    const last  = (document.getElementById('u-last_name')?.value || '').trim();
+    const user  = (document.getElementById('u-username')?.value || '').trim();
+    const email = (document.getElementById('u-email')?.value || '').trim();
+    const rut   = (document.getElementById('u-rut')?.value || '').trim();
+    const phone = (document.getElementById('u-phone')?.value || '').trim();
+    const pwd   = document.getElementById('u-password')?.value || '';
+    const pwd2  = document.getElementById('u-password2')?.value || '';
 
-    if (!first)               return uShowError('El nombre es requerido');
-    if (!last)                return uShowError('El apellido es requerido');
-    if (!_editingUsername && !user)  return uShowError('El username es requerido');
-    if (!email || !email.includes('@')) return uShowError('El email es requerido y debe ser válido');
+    // Obligatorios: nombre, apellido, username, email, RUT, teléfono (+ contraseña al crear).
+    const errores = [];
+    const okFirst = !!first;                       if (!okFirst) errores.push('El nombre es requerido');
+    const okLast  = !!last;                        if (!okLast)  errores.push('El apellido es requerido');
+    const okUser  = !!_editingUsername || !!user;  if (!okUser)  errores.push('El username es requerido');
+    const okEmail = !!email && _uValidEmail(email);
+    if (!email)            errores.push('El email es requerido');
+    else if (!okEmail)     errores.push('El email no tiene un formato válido (ej: juan@empresa.com)');
+    const okRut   = !!rut && _uValidRut(rut);
+    if (!rut)              errores.push('El RUT es requerido');
+    else if (!okRut)       errores.push('El RUT no es válido (ej: 12.345.678-9)');
+    const okPhone = !!phone && _uValidPhone(phone);
+    if (!phone)            errores.push('El teléfono es requerido');
+    else if (!okPhone)     errores.push('El teléfono debe ser un móvil chileno: +56 9 y 8 dígitos. Ej: +56 9 1234 5678');
+    let okPwd = true, okPwd2 = true;
     if (!_editingUsername) {
-      if (!pwd || pwd.length < 8)   return uShowError('La contraseña debe tener al menos 8 caracteres');
-      if (pwd !== pwd2)              return uShowError('Las contraseñas no coinciden');
+      okPwd = !!pwd && pwd.length >= 8;   if (!okPwd) errores.push('La contraseña debe tener al menos 8 caracteres');
+      okPwd2 = (pwd === pwd2);            if (okPwd && !okPwd2) errores.push('Las contraseñas no coinciden');
     }
+
+    _uMarkField('u-first_name', okFirst);
+    _uMarkField('u-last_name', okLast);
+    _uMarkField('u-username', okUser);
+    _uMarkField('u-email', okEmail);
+    _uMarkField('u-rut', okRut);
+    _uMarkField('u-phone', okPhone);
+    if (!_editingUsername) {
+      _uMarkField('u-password', okPwd);
+      _uMarkField('u-password2', okPwd && okPwd2);
+    }
+
+    if (errores.length) return uShowError(errores);
   }
   if (step === 1) {
     if (_wCompanies.length === 0) return uShowError('Debes asignar al menos una empresa');
@@ -538,10 +648,20 @@ function uValidateStep(step) {
 }
 
 function uShowError(msg) {
-  const errEl  = document.getElementById('u-wizard-error');
-  const msgEl  = document.getElementById('u-wizard-error-msg');
-  if (errEl)  errEl.style.display  = 'flex';
-  if (msgEl)  msgEl.textContent    = msg;
+  const errEl = document.getElementById('u-wizard-error');
+  if (!errEl) return false;
+  const list = Array.isArray(msg) ? msg : [msg];
+  if (list.length === 1) {
+    errEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${escapeHtml(list[0])}`;
+  } else {
+    // Resumen dinámico: lista TODOS los campos faltantes/inválidos de una vez
+    const items = list.map(m => `<li>${escapeHtml(m)}</li>`).join('');
+    errEl.innerHTML = `<div style="width:100%"><div style="display:flex;gap:6px;align-items:center">`
+      + `<i class="fas fa-exclamation-circle"></i> <strong>Corrige ${list.length} campos antes de continuar:</strong></div>`
+      + `<ul style="margin:6px 0 0 22px;padding:0">${items}</ul></div>`;
+  }
+  errEl.style.display = 'flex';
+  try { errEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
   return false;
 }
 
@@ -760,6 +880,9 @@ async function saveUser() {
   if (errEl) errEl.style.display = 'none';
 
   try {
+    // Validación final por si se saltó pasos con los indicadores
+    if (!uValidateStep(0)) { if (saveBtn) saveBtn.disabled = false; uGoStep(0); return; }
+    if (!uValidateStep(1)) { if (saveBtn) saveBtn.disabled = false; uGoStep(1); return; }
     const get    = id => document.getElementById(id)?.value?.trim() || null;
     const getChk = id => document.getElementById(id)?.checked ?? true;
 
@@ -767,8 +890,8 @@ async function saveUser() {
       first_name: get('u-first_name'),
       last_name:  get('u-last_name'),
       email:      get('u-email'),
-      phone:      get('u-phone'),
-      rut:        get('u-rut'),
+      phone:      _uNormalizeTel(get('u-phone')),
+      rut:        _uNormalizeRut(get('u-rut')),
       status:     getChk('u-active') ? 'A' : 'I',
     };
 

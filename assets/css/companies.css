@@ -3,6 +3,10 @@
    Estilos del módulo de Empresas
    Heavensy Admin
    ── BITÁCORA ──
+   [v2026.06.28-3] companies.css
+   2026-06-28 | Estados de la barra de pasos del wizard: .step.locked (bloqueado, gris, no
+                clickeable), .step.available (desbloqueado, anillo morado) y ✓ en .step.done.
+   2026-06-28 | .input-error: marca en rojo (borde + fondo) los campos inválidos en la validación.
    [v2026.06.23-1] companies.css
    2026-06-23 | C2-ter: edición inline en el acordeón — botón lápiz (.sec-chip-ed) en
                 cada chip y fila de edición (.sec-edit, reusa .sec-add) para
@@ -333,6 +337,16 @@
 }
 .step.active .step-num { background: #9961FF; color: #fff; }
 .step.done   .step-num { background: #10b981; color: #fff; }
+/* Estados de pasos (wizard crear empresa) [v2026.06.28-3] */
+.step.locked    { opacity: .4; cursor: not-allowed; }
+.step.available { opacity: 1; }
+.step.available .step-num {
+  background: #f1ecfb; color: #9961FF;
+  box-shadow: inset 0 0 0 2px #9961FF;   /* anillo morado: "ya puedes entrar" */
+}
+.step.available .step-label { color: #9961FF; }
+.step.done .step-num { font-size: 0; }            /* oculta el número */
+.step.done .step-num::after { content: '\2713'; font-size: 13px; }  /* muestra ✓ */
 .step-label {
   font-size: 11px;
   font-weight: 600;
@@ -752,4 +766,12 @@
   flex-basis: 100%;
   background: #faf9ff; border: 1px solid #e3d9ff; border-radius: 10px;
   padding: 8px 10px; margin: 2px 0;
+}
+/* Validación: campo inválido (marcado en rojo) [v2026.06.28-1] */
+.input-error,
+input.input-error,
+select.input-error {
+  border-color: #dc2626 !important;
+  background-color: #fef2f2 !important;
+  box-shadow: 0 0 0 2px rgba(220,38,38,0.12) !important;
 }
