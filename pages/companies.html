@@ -1,5 +1,8 @@
 <!--
   ── BITÁCORA ──
+  [v2026.06.28-11] companies.html
+  2026-06-28 | Paso Recurso (usuario): id al título (u-resource-toggle-title) para que el JS
+    cambie el texto según estado; default en apagado ("NO es un recurso reservable").
   [v2026.06.28-10] companies.html
   2026-06-28 | Inputs de teléfono (w-contact_phone y u-phone) con oninput de formateo en vivo.
   [v2026.06.28-9] companies.html
@@ -1075,8 +1078,8 @@
             <label class="u-resource-card" id="u-resource-toggle" onclick="uToggleEsRecurso(event)">
               <div class="u-resource-card-ico"><i class="fas fa-user-clock"></i></div>
               <div class="u-resource-card-main">
-                <div class="u-resource-card-title">Este usuario es un recurso reservable</div>
-                <div class="u-resource-card-meta" id="u-resource-toggle-meta">Podrá recibir reservas en la agenda</div>
+                <div class="u-resource-card-title" id="u-resource-toggle-title">Este usuario NO es un recurso reservable</div>
+                <div class="u-resource-card-meta" id="u-resource-toggle-meta">No podrá recibir reservas en la agenda</div>
               </div>
               <div class="u-resource-card-toggle">
                 <span class="u-resource-card-onoff"></span>

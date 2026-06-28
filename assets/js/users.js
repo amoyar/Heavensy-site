@@ -3,6 +3,9 @@
 // Heavensy Admin
 // ============================================
 // ── BITÁCORA ──
+// [v2026.06.28-5] users.js
+// 2026-06-28 | Paso Recurso: el TÍTULO también cambia según estado (antes solo el meta).
+//   Apagado: 'Este usuario NO es un recurso reservable' / 'No podrá recibir reservas'.
 // [v2026.06.28-4] users.js
 // 2026-06-28 | Teléfono: _uFormatTel (en vivo +56 9 1234 5678) y _uNormalizeTel (guarda
 //   +56912345678). populateForm formatea al cargar.
@@ -770,6 +773,7 @@ async function renderWizardResources() {
   const toggle = document.getElementById('u-resource-toggle');
   const check  = document.getElementById('u-check-resource');
   const meta   = document.getElementById('u-resource-toggle-meta');
+  const title  = document.getElementById('u-resource-toggle-title');
   const note   = document.getElementById('u-resource-objeto-note');
   if (!toggle) return;
 
@@ -790,9 +794,12 @@ async function renderWizardResources() {
 
   toggle.classList.toggle('selected', _wIsResource);
   if (check) check.style.color = _wIsResource ? '#fff' : 'transparent';
+  if (title) title.textContent = _wIsResource
+    ? 'Este usuario es un recurso reservable'
+    : 'Este usuario NO es un recurso reservable';
   if (meta) meta.textContent = _wIsResource
-    ? 'Se creará / mantendrá su ficha en la agenda'
-    : 'Podrá recibir reservas en la agenda';
+    ? 'Podrá recibir reservas en la agenda'
+    : 'No podrá recibir reservas en la agenda';
 }
 
 // Click en el check. Si está en edición y ya era recurso, desmarcar pide confirmación.
