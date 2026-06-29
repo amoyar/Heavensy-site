@@ -3,6 +3,16 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ── (solo cambios recientes; histórico podado)
+// [v2026.06.29-2] configuracion.js
+// 2026-06-29 | Fix nombre de servicio en preview/página pública: el .svc-name de los
+//   agendables incluía la etiqueta de origen (.svc-tipo "PROPIO · X" / "CATÁLOGO · ...")
+//   pegada, y syncServicios la enviaba en el nombre → salía "PROPIO · XX" duplicado.
+//   Ahora el nombre va en su propio <span class="svc-name"> y el badge queda inline FUERA;
+//   .svc-name.textContent = solo el nombre limpio. La tarjeta del Paso 4 se ve igual.
+// [v2026.06.29-1] configuracion.js
+// 2026-06-29 | Stepper: _cfgPaintSteps centraliza el pintado y agrega estados
+//   "available" (acento morado en pasos habilitados no completados) y "disabled"
+//   (atenuado, lee data-crDisabled que marca config-rubro). goStep e init lo usan.
 // [v2026.06.24-3] configuracion.js
 // 2026-06-24 | cfgPopulateUsersTable: un PROFESIONAL_ROL ve en "Mi equipo" solo su fila
 //   (rol+identidad desde el JWT); admin/secretaria ven todo. Medida momentánea (opción 2).
@@ -293,14 +303,28 @@ let progImgData   = '';
 const jmData = {};
 
 // ── STEPS ──
+// Pinta los estados de la barra de pasos: active · done · disabled · available.
+// - disabled: el paso tiene data-crDisabled="1" (lo marca config-rubro para persona).
+// - available: habilitado pero aún no completado (acento morado que invita a click).
+// Fuente única de verdad para no descoordinar configuracion.js y config-rubro.js.
+function _cfgPaintSteps(n) {
+  document.querySelectorAll('.step').forEach((s, i) => {
+    let cls = 'step';
+    if (i === n)                          cls += ' active';
+    else if (cfgDoneSteps.has(i))         cls += ' done';
+    else if (s.dataset.crDisabled === '1') cls += ' disabled';
+    else                                  cls += ' available';
+    s.className = cls;
+  });
+}
+window._cfgPaintSteps = _cfgPaintSteps;
+
 function goStep(n) {
   document.querySelectorAll('.step-panel').forEach((p,i) => p.classList.toggle('active', i===n));
   const nm4 = document.getElementById('detail-name-4');
   const nm1 = document.getElementById('detail-name-1');
   if(nm4 && nm1) nm4.textContent = nm1.textContent;
-  document.querySelectorAll('.step').forEach((s,i) => {
-    s.className = 'step' + (i===n?' active':cfgDoneSteps.has(i)?' done':'');
-  });
+  _cfgPaintSteps(n);
   if(n > cfgCurrentStep) cfgDoneSteps.add(cfgCurrentStep);
   cfgCurrentStep = n;
   document.querySelectorAll('.step-line').forEach((l,i) => l.classList.toggle('done', cfgDoneSteps.has(i)));
@@ -2733,7 +2757,7 @@ function initConfiguracionPage() {
 
   // Asegurar paso 0 activo
   document.querySelectorAll('.step-panel').forEach((p,i) => p.classList.toggle('active', i===0));
-  document.querySelectorAll('.step').forEach((s,i) => s.className='step'+(i===0?' active':''));
+  _cfgPaintSteps(0);
   document.querySelectorAll('.step-line').forEach(l => l.classList.remove('done'));
   setTimeout(_cfgHeavensifyControls, 0);   // relojes + selects → Heavensy
 
@@ -3222,7 +3246,7 @@ function cfgPopulateServices(services) {
       data-espectro='${espAttr}'>
       <span class="svc-dot" style="background:${color}"></span>
       <div style="flex:1">
-        <div class="svc-name">${tipo}${s.name || ''}</div>
+        <div class="svc-name-wrap">${tipo}<span class="svc-name">${s.name || ''}</span></div>
         <div class="svc-meta">${meta}</div>
       </div>
       <span class="svc-price">${precio}</span>

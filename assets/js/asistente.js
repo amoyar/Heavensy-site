@@ -1,9 +1,18 @@
 // ── ASISTENTE VIRTUAL INTERNO — HEAVENSY ──
 // Secretaria asistente para usuarios con empresa activa en el SPA
+//
+// ── BITÁCORA ──
+// [v2026.06.29-1] asistente.js
+// 2026-06-29 | La burbuja ahora se puede ARRASTRAR (recuerda posición en localStorage),
+//   OCULTAR (botón × al pasar el mouse) y REABRIR (pestaña en el borde derecho). El panel
+//   de chat se reposiciona pegado a la burbuja donde quede. Todo inyectado desde el JS,
+//   sin tocar index.html. Click vs arrastre se distingue por umbral de 5px.
 
 (function() {
   var STORAGE_KEY = 'hva_msgs';
   var QR_KEY      = 'hva_qr_hidden';
+  var POS_KEY     = 'hva_pos';            // posición de la burbuja (arrastre)
+  var HIDDEN_KEY  = 'hva_bubble_hidden';  // burbuja oculta por el usuario
 
   var _msgs    = [];
   var _isOpen  = false;
@@ -53,17 +62,150 @@
 
     if (!bubble || !panel) return;
 
+    // ── Posicionar el panel pegado a la burbuja (siga donde siga) ──
+    function positionPanel() {
+      var b = bubble.getBoundingClientRect();
+      var pw = panel.offsetWidth || 340;
+      var ph = panel.offsetHeight || 480;
+      var gap = 12;
+      var left = b.right - pw;            // alinear a la derecha de la burbuja
+      var top  = b.top - ph - gap;        // preferir arriba de la burbuja
+      if (top < 8) top = b.bottom + gap;  // si no cabe arriba, ponerlo abajo
+      if (left < 8) left = 8;
+      if (left + pw > window.innerWidth  - 8) left = window.innerWidth  - pw - 8;
+      if (top  + ph > window.innerHeight - 8) top  = window.innerHeight - ph - 8;
+      if (top < 8) top = 8;
+      panel.style.left = left + 'px';
+      panel.style.top = top + 'px';
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+    }
+
     // Toggle
     function toggleChat() {
       _isOpen = !_isOpen;
       bubble.classList.toggle('open', _isOpen);
       panel.classList.toggle('open', _isOpen);
+      if (_isOpen) positionPanel();
       if (_isOpen && input) setTimeout(function(){ input.focus(); }, 280);
       if (_isOpen) scrollToBottom();
     }
 
-    bubble.addEventListener('click', toggleChat);
+    // ── Envolver la burbuja para arrastrarla y ocultarla (sin tocar el HTML) ──
+    var wrap = document.createElement('div');
+    wrap.className = 'hva-wrap';
+    bubble.parentNode.insertBefore(wrap, bubble);
+    wrap.appendChild(bubble);
+
+    // Botón ocultar (×) — aparece al pasar el mouse por la burbuja
+    var hideBtn = document.createElement('button');
+    hideBtn.type = 'button';
+    hideBtn.className = 'hva-hide-btn';
+    hideBtn.title = 'Ocultar asistente';
+    hideBtn.setAttribute('aria-label', 'Ocultar asistente');
+    hideBtn.innerHTML = '&times;';
+    wrap.appendChild(hideBtn);
+
+    // Pestaña para volver a mostrar la burbuja
+    var reopen = document.createElement('button');
+    reopen.type = 'button';
+    reopen.className = 'hva-reopen';
+    reopen.title = 'Mostrar secretaria virtual';
+    reopen.setAttribute('aria-label', 'Mostrar secretaria virtual');
+    reopen.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+    document.body.appendChild(reopen);
+
+    // ── Posición guardada ──
+    function applyPos(left, top) {
+      wrap.style.left = left + 'px';
+      wrap.style.top = top + 'px';
+      wrap.style.right = 'auto';
+      wrap.style.bottom = 'auto';
+    }
+    try {
+      var savedPos = JSON.parse(localStorage.getItem(POS_KEY) || 'null');
+      if (savedPos && typeof savedPos.left === 'number') applyPos(savedPos.left, savedPos.top);
+    } catch (e) {}
+
+    // ── Arrastre ──
+    var dragging = false, moved = false, sx = 0, sy = 0, ox = 0, oy = 0;
+    function dragDown(e) {
+      if (e.button != null && e.button !== 0) return;
+      var pt = e.touches ? e.touches[0] : e;
+      var r = wrap.getBoundingClientRect();
+      sx = pt.clientX; sy = pt.clientY; ox = r.left; oy = r.top;
+      dragging = true; moved = false;
+      document.addEventListener('mousemove', dragMove);
+      document.addEventListener('mouseup', dragUp);
+      document.addEventListener('touchmove', dragMove, { passive: false });
+      document.addEventListener('touchend', dragUp);
+    }
+    function dragMove(e) {
+      if (!dragging) return;
+      var pt = e.touches ? e.touches[0] : e;
+      var dx = pt.clientX - sx, dy = pt.clientY - sy;
+      if (!moved && (Math.abs(dx) + Math.abs(dy)) > 5) moved = true;
+      if (!moved) return;
+      if (e.cancelable) e.preventDefault();
+      var sz = wrap.offsetWidth || 52;
+      var nl = Math.max(4, Math.min(window.innerWidth  - sz - 4, ox + dx));
+      var nt = Math.max(4, Math.min(window.innerHeight - sz - 4, oy + dy));
+      applyPos(nl, nt);
+      if (_isOpen) positionPanel();
+    }
+    function dragUp() {
+      document.removeEventListener('mousemove', dragMove);
+      document.removeEventListener('mouseup', dragUp);
+      document.removeEventListener('touchmove', dragMove);
+      document.removeEventListener('touchend', dragUp);
+      dragging = false;
+      if (moved) {
+        var r = wrap.getBoundingClientRect();
+        localStorage.setItem(POS_KEY, JSON.stringify({ left: r.left, top: r.top }));
+      }
+    }
+    wrap.addEventListener('mousedown', dragDown);
+    wrap.addEventListener('touchstart', dragDown, { passive: true });
+
+    // Click en la burbuja: abre el chat SOLO si no hubo arrastre
+    bubble.addEventListener('click', function (e) {
+      if (moved) { e.preventDefault(); e.stopPropagation(); return; }
+      toggleChat();
+    });
     if (closeBtn) closeBtn.addEventListener('click', toggleChat);
+
+    // ── Ocultar / mostrar ──
+    function hideBubble() {
+      if (_isOpen) toggleChat();
+      wrap.classList.add('hva-hidden');
+      reopen.classList.add('show');
+      localStorage.setItem(HIDDEN_KEY, '1');
+    }
+    function showBubble() {
+      wrap.classList.remove('hva-hidden');
+      reopen.classList.remove('show');
+      localStorage.removeItem(HIDDEN_KEY);
+    }
+    hideBtn.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+    hideBtn.addEventListener('click', function (e) { e.stopPropagation(); hideBubble(); });
+    reopen.addEventListener('click', showBubble);
+    if (localStorage.getItem(HIDDEN_KEY) === '1') {
+      wrap.classList.add('hva-hidden');
+      reopen.classList.add('show');
+    }
+
+    // Al redimensionar: mantener la burbuja dentro de la pantalla y reubicar el panel
+    window.addEventListener('resize', function () {
+      var r = wrap.getBoundingClientRect();
+      var sz = wrap.offsetWidth || 52;
+      if (wrap.style.left) {
+        applyPos(
+          Math.max(4, Math.min(window.innerWidth  - sz - 4, r.left)),
+          Math.max(4, Math.min(window.innerHeight - sz - 4, r.top))
+        );
+      }
+      if (_isOpen) positionPanel();
+    });
 
     // Cargar historial
     var msgsEl = document.getElementById('hva-messages');

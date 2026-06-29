@@ -7,6 +7,11 @@
 //  de recursos, esta capa no se activa y la página opera como antes.
 // ══════════════════════════════════════════════════════════════
 // ── BITÁCORA ── (solo cambios recientes; histórico podado)
+// [v2026.06.29-1] config-rubro.js
+// 2026-06-29 | _crTogglePaso3: el deshabilitado del paso Especialidad delega el estilo a la
+//   clase .step.disabled (vía _cfgPaintSteps) y usa el title nativo. Se quitó pointer-events:
+//   none para que el tooltip/cursor se vean al hover; el bloqueo real lo dan removeAttribute
+//   (onclick) + el guard de goStep.
 // [v2026.06.24-1] config-rubro.js
 // 2026-06-24 | _crRender: un PROFESIONAL_ROL ve en "Mi equipo" SOLO su propio recurso
 //   (vinculado a su user_id del JWT); admin/secretaria ven todos. Stats y lista usan
@@ -138,19 +143,20 @@ function _crTogglePaso3(){
     if (step.dataset.crDisabled === '1'){
       step.dataset.crDisabled = '';
       if (step.dataset.crOnclick){ step.setAttribute('onclick', step.dataset.crOnclick); }
-      step.style.opacity = ''; step.style.pointerEvents = ''; step.style.cursor = '';
       step.title = '';
+      if (typeof _cfgPaintSteps === 'function') _cfgPaintSteps(typeof cfgCurrentStep !== 'undefined' ? cfgCurrentStep : 0);
     }
   } else {
-    // Persona: deshabilitar acceso
+    // Persona: deshabilitar acceso. El estilo (atenuado + cursor not-allowed) lo aplica la
+    // clase .step.disabled vía _cfgPaintSteps; aquí solo marcamos el flag, quitamos el onclick
+    // (bloqueo real) y ponemos el texto del tooltip (title nativo). Ya NO usamos
+    // pointer-events:none, para que el tooltip y el cursor se vean al hover.
     if (step.dataset.crDisabled !== '1'){
       step.dataset.crDisabled = '1';
       if (step.getAttribute('onclick')) step.dataset.crOnclick = step.getAttribute('onclick');
       step.removeAttribute('onclick');
-      step.style.opacity = '0.45';
-      step.style.pointerEvents = 'none';
-      step.style.cursor = 'not-allowed';
-      step.title = 'Las especialidades se configuran en el paso 1, dentro de cada profesional.';
+      step.title = 'Se configura en el paso 1, por profesional.';
+      if (typeof _cfgPaintSteps === 'function') _cfgPaintSteps(typeof cfgCurrentStep !== 'undefined' ? cfgCurrentStep : 0);
     }
   }
   _crInstalarGoStepGuard();

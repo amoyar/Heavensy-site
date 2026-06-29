@@ -1,4 +1,8 @@
 /* ── ASISTENTE VIRTUAL INTERNO — HEAVENSY ── */
+/* ── BITÁCORA ──
+   [v2026.06.29-1] asistente.css
+   2026-06-29 | Estilos para arrastrar/ocultar la burbuja: .hva-wrap (contenedor móvil),
+                .hva-hide-btn (× al hover), .hva-reopen (pestaña para reabrir). */
 
 .hva-bubble {
   position: fixed; bottom: 24px; right: 24px; z-index: 9990;
@@ -140,7 +144,45 @@
 .hva-send:disabled { opacity: .38; cursor: default; transform: none; box-shadow: none; }
 .hva-send svg { width: 15px; height: 15px; fill: #fff; }
 
+/* ── Arrastre + ocultar/reabrir (burbuja) [v2026.06.29-1] ── */
+.hva-wrap {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9990;
+  width: 52px; height: 52px;
+  user-select: none; touch-action: none;
+}
+.hva-wrap .hva-bubble {
+  position: relative; bottom: auto; right: auto;
+  width: 100%; height: 100%; cursor: grab;
+}
+.hva-wrap .hva-bubble:active { cursor: grabbing; }
+.hva-wrap.hva-hidden { display: none; }
+
+.hva-hide-btn {
+  position: absolute; top: -7px; left: -7px; z-index: 2;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; color: #6b7280; border: 1px solid #e5e7eb;
+  font-size: 14px; line-height: 1; cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  opacity: 0; transform: scale(.8); pointer-events: none;
+  transition: opacity .15s, transform .15s, background .15s, color .15s;
+}
+.hva-wrap:hover .hva-hide-btn { opacity: 1; transform: scale(1); pointer-events: all; }
+.hva-hide-btn:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+
+.hva-reopen {
+  position: fixed; right: 0; bottom: 24px; z-index: 9990;
+  width: 30px; height: 46px; border: none; cursor: pointer; padding: 0;
+  border-radius: 23px 0 0 23px;
+  background: linear-gradient(135deg,#9961FF,#5b8dee);
+  box-shadow: -2px 2px 10px rgba(153,97,255,0.4);
+  display: none; align-items: center; justify-content: center;
+  transform: translateX(9px); transition: transform .15s, width .15s;
+}
+.hva-reopen.show { display: flex; }
+.hva-reopen:hover { transform: translateX(0); width: 38px; }
+
 @media (max-width: 480px) {
   .hva-panel  { width: calc(100vw - 32px); right: 16px; bottom: 82px; }
-  .hva-bubble { right: 16px; bottom: 16px; }
+  .hva-wrap   { right: 16px; bottom: 16px; }
 }

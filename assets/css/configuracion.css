@@ -1,6 +1,8 @@
 /* ══════════════════════════════════════
    CONFIGURACIÓN — HEAVENSY
    ── BITÁCORA ── (solo cambios recientes; histórico podado)
+   [v2026.06.29-1] 2026-06-29 | Stepper: estados .step.available (acento morado, invita a
+   click) y .step.disabled (atenuado + cursor not-allowed; tooltip por title nativo).
    [v2026.06.24-1] 2026-06-24 | Control de adopción: campos etiquetados (.svc-cat-field/-flabel/
    -finput/-price-wrap) "Duración"/"Precio". | 06.23-5: color por origen en tarjetas
    (.svc-row-ag.origin-*) y sub-bloque propias ámbar (.svc-cat-*propia). 06.23-4: hvy-tp;
@@ -37,6 +39,14 @@
 .step.done .step-label{color:#10b981;font-weight:600}
 .step-line{flex:1;height:2px;background:#e5e7eb;margin:0 8px;min-width:24px;transition:background .3s}
 .step-line.done{background:#10b981}
+/* ── Estados nuevos del stepper [v2026.06.29-1] ── */
+/* Habilitado pero no completado: acento morado que invita a click */
+.step.available .step-circle{border-color:#9961FF;color:#9961FF;box-shadow:0 0 0 3px #9961FF18}
+.step.available .step-label{color:#9961FF;font-weight:600}
+/* Deshabilitado: atenuado (gris) + cursor not-allowed. El tooltip usa el title nativo. */
+.step.disabled{cursor:not-allowed;position:relative}
+.step.disabled .step-circle{background:#f3f4f6;border-color:#e5e7eb;color:#cbd5e1}
+.step.disabled .step-label{color:#cbd5e1}
 
 /* PANELS */
 .step-panel{display:none;animation:cfgFadeIn .2s ease}

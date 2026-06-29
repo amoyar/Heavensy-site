@@ -1,4 +1,9 @@
 // ── BITÁCORA ──
+// [v2026.06.29-1] layout.js
+// 2026-06-29 | Fix sidebar móvil (hamburguesa): applyMobileLayout ponía el sidebar en
+//              top:0 / height:100vh, así el navbar (z-index 1000) tapaba sus primeros
+//              54px y se perdía el nombre/selector de empresa. Ahora arranca en top:54px
+//              con height:calc(100dvh - 54px), bajo el navbar.
 // [v2026.06.16-2] layout.js
 // 2026-06-16 | showToast: posición movida a arriba-centro (top:20px, centrado) con
 //              z-index máximo. Antes en esquina inferior derecha, donde el panel de
@@ -165,9 +170,9 @@ function initSidebarToggle() {
 
   function applyMobileLayout() {
     sidebar.style.position   = 'fixed';
-    sidebar.style.top        = '0';
+    sidebar.style.top        = '54px';                  // bajo el navbar (no lo tapa)
     sidebar.style.left       = '0';
-    sidebar.style.height     = '100vh';
+    sidebar.style.height     = 'calc(100dvh - 54px)';   // resto de la pantalla
     sidebar.style.zIndex     = '40';
     sidebar.style.width      = '200px';
     sidebar.style.boxShadow  = '4px 0 20px rgba(0,0,0,.18)';
