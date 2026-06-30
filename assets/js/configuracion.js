@@ -3,6 +3,31 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ── (solo cambios recientes; histórico podado)
+// [v2026.06.30-4] configuracion.js
+// 2026-06-30 | cfgIrAlPerfil: la ruta bonita /p/<slug> no está enrutada en el Flask local
+//   (sí en prod por rewrite). Como perfil_profesional.html lee ?empresa=<slug> con prioridad,
+//   en LOCAL se abre pages/perfil_profesional.html?empresa=<slug> (relativo a la ubicación,
+//   igual que el iframe de preview) y en PROD se mantiene /p/<slug>.
+// [v2026.06.30-3] configuracion.js
+// 2026-06-30 | cfgFinalizarConfiguracion ("Finalizar configuración") ahora GUARDA + PUBLICA
+//   (flush borrador + POST /publicar) y recién abre la página pública (modal 1ª vez o /p/<slug>).
+//   Antes solo navegaba/mostraba modal sin publicar → abría página vieja o el panel interno.
+// [v2026.06.30-2] configuracion.js
+// 2026-06-30 | cfgIrAlPerfil (botón "Ver mi perfil público" del modal): ahora abre la
+//   PÁGINA PÚBLICA real /p/<slug> en pestaña nueva (slug pedido a /api/perfil-publico/estado),
+//   en vez de loadPage('mipagina') que cargaba el panel interno y no reflejaba el perfil.
+// [v2026.06.30-1] configuracion.js
+// 2026-06-30 | Paso 4: las tarjetas de "Disponibles para agendar" ahora son arrastrables
+//   (drag & drop nativo, asa svc-grip). Al soltar: syncServicios() refresca la preview con el
+//   nuevo orden del DOM y se persiste vía POST /api/agenda/services/reorder, para que la
+//   página pública respete el mismo orden. _cfgEnableSvcDragDrop se llama al final de
+//   cfgPopulateServices; el dragover se enlaza una sola vez en #svc-list.
+// [v2026.06.29-4] configuracion.js
+// 2026-06-29 | "Actualizar publicación": un solo clic ahora GUARDA + PUBLICA. Se quitó el
+//   primer-clic que mostraba el modal sin publicar. Flujo: ppFlushConfig() fuerza el guardado
+//   del borrador (flush del debounce) → POST /publicar → recién ahí botón "¡Publicado!"/toast.
+//   El modal de bienvenida sale DESPUÉS de publicar y solo la 1ª vez de CADA empresa
+//   (clave empresa_publicada_<company_id>, antes era global). ppSaveConfig sin cambios.
 // [v2026.06.29-3] configuracion.js
 // 2026-06-29 | Fix imágenes perfil (NO borrar URLs + no contaminar entre empresas):
 //   (1) ppSaveConfig OMITE portada_url/foto_url/fondo_url cuando están vacías en localStorage
@@ -273,36 +298,52 @@ function ppDeleteServicio(btn) {
 
 // ── GUARDAR CONFIG DEL PERFIL (debounced) ──
 var _ppConfigTimer = null;
+
+// [v2026.06.29-4] Construye el payload y guarda config + borrador. Devuelve una Promise
+// que resuelve cuando AMBOS guardados terminan, para poder "flushear" antes de publicar.
+function _ppDoSaveConfig() {
+  if(typeof apiCall==='undefined') return Promise.resolve();
+  const colores={};
+  ['--text-titulo','--titulo-bg','--text-lt','--text-franja','--navy'].forEach(v=>{
+    const val=localStorage.getItem('ep_color_'+v); if(val) colores[v]=val;
+  });
+  const payload = {
+    colores,
+    opacidad:    parseFloat(localStorage.getItem('ep_opacidad')||'55'),
+    slogan:      localStorage.getItem('ep_texto_slogan')||'',
+    frase:       localStorage.getItem('ep_texto_frase')||'',
+    direccion:   localStorage.getItem('ep_texto_direccion')||'',
+    nombre_empresa: localStorage.getItem('ep_nombre_empresa')||'',
+    fondo_color: localStorage.getItem('ep_fondo_color')||'',
+    portada_position: JSON.parse(localStorage.getItem('ep_portada_position')||'{"x":50,"y":50}'),
+    galeria:     JSON.parse(localStorage.getItem('ep_galeria_urls')||'[]'),  // [14-06] galería con URLs de Cloudinary
+  };
+  // [v2026.06.29-3] Las URLs de imagen SOLO se incluyen si NO están vacías. Antes se
+  // mandaba '' cuando localStorage no tenía la URL (otra empresa, otra sesión, cache
+  // limpiado) y el $set del backend BORRABA la URL de Cloudinary guardada. Omitirlas
+  // cuando están vacías evita pisar la imagen ya guardada en la DB.
+  const _pu = localStorage.getItem('ep_portada_url'); if(_pu) payload.portada_url = _pu;
+  const _fu = localStorage.getItem('ep_foto_url');    if(_fu) payload.foto_url    = _fu;
+  const _bu = localStorage.getItem('ep_fondo_url');   if(_bu) payload.fondo_url   = _bu;
+  const body = JSON.stringify(payload);
+  return Promise.all([
+    apiCall('/api/perfil-profesional/config',{ method:'PATCH', body }).catch(()=>{}),
+    // Fase 3.1: el mismo payload alimenta el BORRADOR de la página pública
+    apiCall('/api/perfil-publico/borrador',{ method:'PUT', body }).catch(()=>{}),
+  ]);
+}
+
 function ppSaveConfig() {
   if(typeof apiCall==='undefined') return;
   if(_ppConfigTimer) clearTimeout(_ppConfigTimer);
-  _ppConfigTimer = setTimeout(function() {
-    const colores={};
-    ['--text-titulo','--titulo-bg','--text-lt','--text-franja','--navy'].forEach(v=>{
-      const val=localStorage.getItem('ep_color_'+v); if(val) colores[v]=val;
-    });
-    const payload = {
-      colores,
-      opacidad:    parseFloat(localStorage.getItem('ep_opacidad')||'55'),
-      slogan:      localStorage.getItem('ep_texto_slogan')||'',
-      frase:       localStorage.getItem('ep_texto_frase')||'',
-      direccion:   localStorage.getItem('ep_texto_direccion')||'',
-      nombre_empresa: localStorage.getItem('ep_nombre_empresa')||'',
-      fondo_color: localStorage.getItem('ep_fondo_color')||'',
-      portada_position: JSON.parse(localStorage.getItem('ep_portada_position')||'{"x":50,"y":50}'),
-      galeria:     JSON.parse(localStorage.getItem('ep_galeria_urls')||'[]'),  // [14-06] galería con URLs de Cloudinary
-    };
-    // [v2026.06.29-3] Las URLs de imagen SOLO se incluyen si NO están vacías. Antes se
-    // mandaba '' cuando localStorage no tenía la URL (otra empresa, otra sesión, cache
-    // limpiado) y el $set del backend BORRABA la URL de Cloudinary guardada. Omitirlas
-    // cuando están vacías evita pisar la imagen ya guardada en la DB.
-    const _pu = localStorage.getItem('ep_portada_url'); if(_pu) payload.portada_url = _pu;
-    const _fu = localStorage.getItem('ep_foto_url');    if(_fu) payload.foto_url    = _fu;
-    const _bu = localStorage.getItem('ep_fondo_url');   if(_bu) payload.fondo_url   = _bu;
-    apiCall('/api/perfil-profesional/config',{ method:'PATCH', body:JSON.stringify(payload) }).catch(()=>{});
-    // Fase 3.1: el mismo payload alimenta el BORRADOR de la página pública
-    apiCall('/api/perfil-publico/borrador',{ method:'PUT', body:JSON.stringify(payload) }).catch(()=>{});
-  }, 800);
+  _ppConfigTimer = setTimeout(_ppDoSaveConfig, 800);
+}
+
+// [v2026.06.29-4] Fuerza AHORA el guardado pendiente (cancela el debounce) y espera a que
+// termine. Lo usa "Actualizar publicación" para guardar antes de publicar. Devuelve Promise.
+function ppFlushConfig() {
+  if(_ppConfigTimer) { clearTimeout(_ppConfigTimer); _ppConfigTimer = null; }
+  return _ppDoSaveConfig();
 }
 
 // ── STATE ──
@@ -929,44 +970,93 @@ function updateCardCount() {
 }
 
 // ── ACTUALIZAR PUBLICACIÓN ──
+// [v2026.06.29-4] Clave del modal de bienvenida POR EMPRESA (antes era global del
+// navegador, así que el modal salía una sola vez para todas). Ahora cada empresa nueva
+// recibe su bienvenida una vez.
+function _empresaPubKey() {
+  return 'empresa_publicada_' + (localStorage.getItem('company_id') || '');
+}
+
 function cfgFinalizarConfiguracion() {
-  var esNueva = !localStorage.getItem('empresa_publicada');
-  localStorage.setItem('empresa_publicada', '1');
-  if (esNueva) {
-    var modal = document.getElementById('cfg-empresa-modal');
-    if (modal) modal.style.display = 'flex';
-  } else {
-    cfgIrAlPerfil();
-  }
+  // [v2026.06.30-3] "Finalizar configuración" = GUARDAR + PUBLICAR + mostrar la página
+  // pública. Antes solo mostraba el modal o navegaba al panel interno, dejando la página
+  // sin publicar o desactualizada. Ahora flushea el borrador, publica, y recién ahí abre
+  // el perfil público (modal la 1ª vez de cada empresa; abre /p/<slug> las siguientes).
+  const k = _empresaPubKey();
+  const esNueva = !localStorage.getItem(k);
+  Promise.resolve(typeof ppFlushConfig === 'function' ? ppFlushConfig() : null)
+    .then(() => (typeof apiCall !== 'undefined' ? apiCall('/api/perfil-publico/publicar', { method: 'POST' }) : null))
+    .then(res => {
+      const ok = res && res.ok && res.data && res.data.slug;
+      if (!ok) {
+        const msg = (res && res.data && res.data.error) || 'No se pudo publicar';
+        if (typeof showToast === 'function') showToast(msg, 'error');
+        return;
+      }
+      localStorage.setItem(k, '1');
+      if (typeof showToast === 'function') showToast('Página publicada: /p/' + res.data.slug + ' ✅', 'success');
+      if (esNueva) {
+        const modal = document.getElementById('cfg-empresa-modal');
+        if (modal) modal.style.display = 'flex';   // su botón "Ver mi perfil público" abre /p/<slug>
+      } else {
+        cfgIrAlPerfil();
+      }
+    })
+    .catch(() => { if (typeof showToast === 'function') showToast('No se pudo publicar', 'error'); });
 }
 
 function cfgIrAlPerfil() {
-  loadPage('mipagina');
+  // [v2026.06.30-4] Abre la PÁGINA PÚBLICA en pestaña nueva. La ruta bonita /p/<slug>
+  // existe en PRODUCCIÓN (rewrite del proxy), pero NO en el Flask local (localhost:8000).
+  // perfil_profesional.html lee el slug de ?empresa=<slug> con PRIORIDAD sobre /p/<slug>,
+  // así que en local abrimos pages/perfil_profesional.html?empresa=<slug> (relativo a la
+  // ubicación actual, igual que el iframe de preview) y en prod la URL bonita /p/<slug>.
+  if (typeof apiCall === 'undefined') return;
+  apiCall('/api/perfil-publico/estado').then(res => {
+    const est  = (res && res.data && res.data.estado) || {};
+    const slug = est.slug || '';
+    if (!slug) {
+      if (typeof showToast === 'function') showToast('Aún no tienes una página publicada. Publica primero.', 'error');
+      return;
+    }
+    const host = window.location.hostname;
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host.endsWith('.local');
+    const dest = isLocal
+      ? new URL('pages/perfil_profesional.html?empresa=' + encodeURIComponent(slug), window.location.href).href
+      : (est.url || ('/p/' + slug));
+    window.open(dest, '_blank');
+  }).catch(() => {
+    if (typeof showToast === 'function') showToast('No se pudo abrir la página pública', 'error');
+  });
 }
 
 function actualizarPublicacion(btn) {
-  // Primera vez → modal de empresa creada (se conserva)
-  if (!localStorage.getItem('empresa_publicada')) {
-    localStorage.setItem('empresa_publicada', '1');
-    var modal = document.getElementById('cfg-empresa-modal');
-    if (modal) modal.style.display = 'flex';
-    return;
-  }
   const orig = btn.innerHTML;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px"></i>Publicando…';
   btn.disabled = true;
-  // Fase 3.1: publicar = copiar el borrador al snapshot público (backend)
-  apiCall('/api/perfil-publico/publicar', { method: 'POST' })
+  // [v2026.06.29-4] Un solo clic = GUARDAR + PUBLICAR. Primero forzamos el guardado del
+  // borrador (flush del debounce) para que el backend tenga lo último; recién después
+  // publicamos. El mensaje (éxito/error) y el modal de bienvenida aparecen DESPUÉS de la
+  // confirmación del backend — antes el primer clic mostraba el modal sin publicar.
+  Promise.resolve(typeof ppFlushConfig === 'function' ? ppFlushConfig() : null)
+    .then(() => apiCall('/api/perfil-publico/publicar', { method: 'POST' }))
     .then(res => {
       if (res && res.ok && res.data && res.data.slug) {
         btn.innerHTML = '<i class="fas fa-check" style="margin-right:6px"></i>¡Publicado!';
         btn.style.background = '#10b981';
         if (typeof showToast === 'function')
           showToast('Página publicada: /p/' + res.data.slug + ' ✅', 'success');
+        // Bienvenida: solo la PRIMERA vez que se publica ESTA empresa, y ya publicada.
+        const k = _empresaPubKey();
+        if (!localStorage.getItem(k)) {
+          localStorage.setItem(k, '1');
+          const modal = document.getElementById('cfg-empresa-modal');
+          if (modal) modal.style.display = 'flex';
+        }
       } else {
         const msg = (res && res.data && res.data.error) || 'No se pudo publicar';
         btn.innerHTML = '<i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>Error';
-        showToast(msg, 'error');
+        if (typeof showToast === 'function') showToast(msg, 'error');
       }
     })
     .catch(() => {
@@ -3247,7 +3337,7 @@ function cfgPopulateServices(services) {
     const tipo = `<span class="svc-tipo">${_origenTxt}</span>`;
     const cancelAttr = JSON.stringify(s.cancellation_policy || null).replace(/'/g, '&#39;');
     const espAttr = JSON.stringify(s.target_profiles || []).replace(/'/g, '&#39;');
-    return `<div class="svc-row svc-row-ag ${_origenCls}"
+    return `<div class="svc-row svc-row-ag ${_origenCls}" draggable="true"
       data-service-id="${id}"
       data-nombre="${(s.name || '').replace(/"/g, '&quot;')}"
       data-duration="${s.duration || ''}"
@@ -3259,6 +3349,7 @@ function cfgPopulateServices(services) {
       data-descripcion="${(s.description || '').replace(/"/g, '&quot;')}"
       data-cancelacion='${cancelAttr}'
       data-espectro='${espAttr}'>
+      <i class="fas fa-grip-vertical svc-grip" title="Arrastra para ordenar" style="cursor:grab;color:#c4c4d4;font-size:12px;margin-right:4px;flex-shrink:0"></i>
       <span class="svc-dot" style="background:${color}"></span>
       <div style="flex:1">
         <div class="svc-name-wrap">${tipo}<span class="svc-name">${s.name || ''}</span></div>
@@ -3271,6 +3362,68 @@ function cfgPopulateServices(services) {
   }).join('');
 
   syncServicios();
+  _cfgEnableSvcDragDrop();
+}
+
+// ── Drag & drop para ordenar las tarjetas de "Disponibles para agendar" [v2026.06.30-1]
+// El orden del DOM lo toma syncServicios() para la PREVIEW, y se persiste en el backend
+// (POST /api/agenda/services/reorder) para que la PÁGINA PÚBLICA respete ese orden y
+// sobreviva al recargar. Drag-drop nativo, sin librerías.
+function _cfgEnableSvcDragDrop() {
+  const list = document.getElementById('svc-list');
+  if (!list) return;
+
+  // Listeners por tarjeta (se re-renderizan en cada cfgPopulateServices).
+  list.querySelectorAll('.svc-row-ag').forEach(row => {
+    row.addEventListener('dragstart', e => {
+      list._cfgDragEl = row;
+      row.classList.add('cfg-dragging');
+      row.style.opacity = '0.45';
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('cfg-dragging');
+      row.style.opacity = '';
+      list._cfgDragEl = null;
+      _cfgPersistSvcOrden();
+    });
+  });
+
+  // El dragover vive en el contenedor (#svc-list persiste entre renders; las tarjetas no),
+  // así que se enlaza UNA sola vez para no acumular listeners.
+  if (!list._cfgDragBound) {
+    list.addEventListener('dragover', e => {
+      e.preventDefault();
+      const dragEl = list._cfgDragEl;
+      if (!dragEl) return;
+      const after = _cfgDragAfterElement(list, e.clientY);
+      if (after == null) list.appendChild(dragEl);
+      else if (after !== dragEl) list.insertBefore(dragEl, after);
+    });
+    list._cfgDragBound = true;
+  }
+}
+
+function _cfgDragAfterElement(container, y) {
+  const els = [...container.querySelectorAll('.svc-row-ag:not(.cfg-dragging)')];
+  let closest = { offset: -Infinity, element: null };
+  for (const child of els) {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;   // mitad de la tarjeta
+    if (offset < 0 && offset > closest.offset) closest = { offset, element: child };
+  }
+  return closest.element;
+}
+
+function _cfgPersistSvcOrden() {
+  // 1) Preview: el iframe toma el orden del DOM vía syncServicios.
+  if (typeof syncServicios === 'function') syncServicios();
+  // 2) Backend: persistir para la página pública y para que sobreviva al recargar.
+  const ids = [...document.querySelectorAll('#svc-list .svc-row-ag')]
+    .map(r => r.dataset.serviceId).filter(Boolean);
+  if (ids.length && typeof apiCall !== 'undefined') {
+    apiCall('/api/agenda/services/reorder', { method: 'POST', body: JSON.stringify({ ids }) }).catch(() => {});
+  }
 }
 
 // Rellena el <select id="ses-padre"> (Cuelga de) con las especialidades de la categoría.
