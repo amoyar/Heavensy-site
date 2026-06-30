@@ -3,16 +3,20 @@
 //  Extraído de configuracion.html
 // ══════════════════════════════════════
 // ── BITÁCORA ── (solo cambios recientes; histórico podado)
+// [v2026.06.29-3] configuracion.js
+// 2026-06-29 | Fix imágenes perfil (NO borrar URLs + no contaminar entre empresas):
+//   (1) ppSaveConfig OMITE portada_url/foto_url/fondo_url cuando están vacías en localStorage
+//       (antes mandaba "" y el $set del backend BORRABA la URL de Cloudinary guardada).
+//   (2) ppLoadFromServer sincroniza ep_*_url con las de la empresa cargada (vacío si no tiene)
+//       y la foto se sobrescribe siempre (su foto o el default, nunca la de otra empresa).
+//   No se limpian claves a ciegas en init (eso causó pérdida en el intento anterior).
 // [v2026.06.29-2] configuracion.js
-// 2026-06-29 | Fix nombre de servicio en preview/página pública: el .svc-name de los
-//   agendables incluía la etiqueta de origen (.svc-tipo "PROPIO · X" / "CATÁLOGO · ...")
-//   pegada, y syncServicios la enviaba en el nombre → salía "PROPIO · XX" duplicado.
-//   Ahora el nombre va en su propio <span class="svc-name"> y el badge queda inline FUERA;
+// 2026-06-29 | Fix nombre de servicio en preview/página pública: el nombre va en su propio
+//   <span class="svc-name"> y el badge de origen (.svc-tipo) queda inline fuera; así
 //   .svc-name.textContent = solo el nombre limpio. La tarjeta del Paso 4 se ve igual.
 // [v2026.06.29-1] configuracion.js
-// 2026-06-29 | Stepper: _cfgPaintSteps centraliza el pintado y agrega estados
-//   "available" (acento morado en pasos habilitados no completados) y "disabled"
-//   (atenuado, lee data-crDisabled que marca config-rubro). goStep e init lo usan.
+// 2026-06-29 | Stepper: _cfgPaintSteps centraliza el pintado y agrega estados "available"
+//   (acento morado en pasos habilitados no completados) y "disabled" (atenuado). goStep e init lo usan.
 // [v2026.06.24-3] configuracion.js
 // 2026-06-24 | cfgPopulateUsersTable: un PROFESIONAL_ROL ve en "Mi equipo" solo su fila
 //   (rol+identidad desde el JWT); admin/secretaria ven todo. Medida momentánea (opción 2).
@@ -197,16 +201,25 @@ function ppLoadFromServer() {
     const PORTADA_DEFAULT = '../assets/img/dise%C3%B1o%20final%20portada%20para%20todos.png';
     const FONDO_DEFAULT   = '../assets/img/fondoperfilprofesional.jpg.jpeg';
 
+    const FOTO_DEFAULT    = '../assets/img/foto%20perfil%20por%20defecto%20empresa.jpeg';
     const portadaUrl = c.portada_url || PORTADA_DEFAULT;
     const fondoUrl   = c.fondo_url   || FONDO_DEFAULT;
+    const fotoUrl    = c.foto_url    || FOTO_DEFAULT;
 
     // Si hay URLs guardadas en el backend, marcarlas para que no se sobreescriban con el default
     if(c.portada_url) localStorage.setItem('ep_portada_saved', '1');
     if(c.fondo_url)   localStorage.setItem('ep_fondo_saved',   '1');
     if(c.foto_url)    localStorage.setItem('ep_foto_saved',    '1');
 
+    // [v2026.06.29-3] Sincronizar las URLs de imagen de localStorage con las de ESTA empresa
+    // (vacío si la empresa no tiene). Así no se arrastra la URL de otra empresa al cambiar, y
+    // como ppSaveConfig ahora OMITE las URLs vacías, esto no borra nada en la DB.
+    localStorage.setItem('ep_portada_url', c.portada_url || '');
+    localStorage.setItem('ep_foto_url',    c.foto_url    || '');
+    localStorage.setItem('ep_fondo_url',   c.fondo_url   || '');
+
     pmSend({type:'portada', value: portadaUrl});
-    if(c.foto_url) pmSend({type:'foto', value:c.foto_url});
+    pmSend({type:'foto',    value: fotoUrl});   // siempre: su foto o el default (nunca la de otra empresa)
     pmSend({type:'fondo',   value: fondoUrl});
 
     // Mostrar nombre en los labels del input file (nombre guardado > derivado
@@ -277,13 +290,15 @@ function ppSaveConfig() {
       nombre_empresa: localStorage.getItem('ep_nombre_empresa')||'',
       fondo_color: localStorage.getItem('ep_fondo_color')||'',
       portada_position: JSON.parse(localStorage.getItem('ep_portada_position')||'{"x":50,"y":50}'),
-      // [v2026.06.13] Imágenes: incluir las URLs subidas para que persistan en el
-      // borrador/publicación (antes solo iban al PATCH de perfil-profesional).
-      portada_url: localStorage.getItem('ep_portada_url')||'',
-      foto_url:    localStorage.getItem('ep_foto_url')||'',
-      fondo_url:   localStorage.getItem('ep_fondo_url')||'',
       galeria:     JSON.parse(localStorage.getItem('ep_galeria_urls')||'[]'),  // [14-06] galería con URLs de Cloudinary
     };
+    // [v2026.06.29-3] Las URLs de imagen SOLO se incluyen si NO están vacías. Antes se
+    // mandaba '' cuando localStorage no tenía la URL (otra empresa, otra sesión, cache
+    // limpiado) y el $set del backend BORRABA la URL de Cloudinary guardada. Omitirlas
+    // cuando están vacías evita pisar la imagen ya guardada en la DB.
+    const _pu = localStorage.getItem('ep_portada_url'); if(_pu) payload.portada_url = _pu;
+    const _fu = localStorage.getItem('ep_foto_url');    if(_fu) payload.foto_url    = _fu;
+    const _bu = localStorage.getItem('ep_fondo_url');   if(_bu) payload.fondo_url   = _bu;
     apiCall('/api/perfil-profesional/config',{ method:'PATCH', body:JSON.stringify(payload) }).catch(()=>{});
     // Fase 3.1: el mismo payload alimenta el BORRADOR de la página pública
     apiCall('/api/perfil-publico/borrador',{ method:'PUT', body:JSON.stringify(payload) }).catch(()=>{});
