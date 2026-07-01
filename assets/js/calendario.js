@@ -2,6 +2,11 @@
 //  CALENDARIO — HEAVENSY (conectado al backend)
 // ═══════════════════════════════════════════
 // ── BITÁCORA ──
+// [v2026.07.01-1] calendario.js
+// 2026-07-01 | Rubro OBJETO: calLoadResources usa GET /my-resources (filtrado por rol en
+//   backend) en vez de /resources + pin por user_id (ocultaba recursos al admin de objetos).
+//   Lee naturaleza; _calApplyFilterLabels() cambia label PROFESIONAL->RECURSO y placeholder
+//   segun persona/objeto. + estado calNaturaleza.
 // [v2026.06.26-1] calendario.js
 // 2026-06-26 | Bloqueos por RANGO de fechas (vacaciones, feriados largos): calBlockSchedule
 //   envía date_to; carga/creación expanden el rango en una entrada por día (_calPushBlockDays)
@@ -66,6 +71,7 @@ let calCurrentView = 'week';
 let calCurrentDate = new Date();
 let calProfFilter  = null;   // null = Todos, string = resource_id activo
 let calSvcFilter   = null;   // null = Todos, string = service_id activo
+let calNaturaleza  = 'persona'; // 'persona' | 'objeto' (del backend) — etiqueta el filtro [01-07]
 
 // ── API STATE ──
 let calApiAppointments = [];    // citas cargadas desde el backend
@@ -288,19 +294,15 @@ function calShowToast(msg, type = 'success') {
 
 async function calLoadResources() {
   try {
-    const res = await apiCall('/api/agenda/resources');
+    const res = await apiCall('/api/agenda/my-resources');
     if (res.ok && res.data?.resources) {
       calResources = res.data.resources;
+      // Naturaleza del rubro (persona/objeto) — etiqueta el filtro (Profesional/Recurso). [01-07]
+      calNaturaleza = res.data.naturaleza || 'persona';
 
-      // Si el usuario actual ES un recurso (tiene su propio recurso en la lista),
-      // el calendario muestra SOLO su agenda — no la de sus colegas. Un admin/gestor
-      // que no es recurso ve todos. Se decide por el dato (¿tiene recurso?), no por rol. [16-06]
-      const _u   = (typeof getUserFromToken === 'function') ? getUserFromToken() : null;
-      const _uid = _u && (_u.user_id || _u.sub);
-      if (_uid) {
-        const propio = calResources.find(r => r.user_id && String(r.user_id) === String(_uid));
-        if (propio) calResources = [propio];
-      }
+      // El backend (/my-resources) ya filtra los recursos visibles segun el ROL del usuario:
+      // PROFESIONAL_ROL ve solo el suyo; admin/gestor/superadmin ven todos. Filtrado
+      // autoritativo en el servidor — sin pin por user_id en el frontend (rompia el caso objeto). [01-07]
 
       await Promise.all([
         ...calResources.map(r => calLoadServicesForResource(r._id)),
@@ -309,8 +311,18 @@ async function calLoadResources() {
       calPopulateResourceSelects();
       _calRenderProfChips();
       _calRenderSvcFilterChips();
+      _calApplyFilterLabels();
     }
   } catch (e) { console.warn('[Calendario] No se pudieron cargar recursos', e); }
+}
+
+// ── ETIQUETAS DE FILTRO SEGUN NATURALEZA (persona/objeto) [01-07] ──
+function _calApplyFilterLabels() {
+  const esObjeto = calNaturaleza === 'objeto';
+  const lbl = document.getElementById('cal-prof-row-label');
+  if (lbl) lbl.textContent = esObjeto ? 'RECURSO' : 'PROFESIONAL';
+  const search = document.getElementById('cal-prof-search');
+  if (search) search.placeholder = esObjeto ? 'Buscar recurso…' : 'Buscar profesional…';
 }
 
 async function calLoadServicesForResource(resourceId) {
@@ -2595,6 +2607,7 @@ async function initCalendarioPage() {
   calShowSubLabels = false;
   calProfFilter   = null;
   calSvcFilter    = null;
+  calNaturaleza   = 'persona';
   calVipMap       = {};
   calApiAppointments = [];
   calResources       = [];

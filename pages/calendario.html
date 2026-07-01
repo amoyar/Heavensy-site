@@ -1,4 +1,4 @@
-<!-- ── BITÁCORA ── [v2026.06.26-1] calendario.html | 2026-06-26: +picker "Fecha fin (opcional)" (exc-dp2-*) para bloqueos por RANGO de fechas (vacaciones/feriados largos). -->
+<!-- ── BITÁCORA ── [v2026.07.01-1] calendario.html | 2026-07-01: +id="cal-prof-row-label" al label del filtro PROFESIONAL, para que el JS lo etiquete "RECURSO" en rubros objeto. | [v2026.06.26-1] 2026-06-26: +picker "Fecha fin (opcional)" (exc-dp2-*) para bloqueos por RANGO de fechas (vacaciones/feriados largos). --><!-- ── BITÁCORA ── [v2026.07.01-1] calendario.html | 2026-07-01: +id="cal-prof-row-label" al label del filtro PROFESIONAL, para que el JS lo etiquete "RECURSO" en rubros objeto. | [v2026.06.26-1] 2026-06-26: +picker "Fecha fin (opcional)" (exc-dp2-*) para bloqueos por RANGO de fechas (vacaciones/feriados largos). -->
 <div class="cal-page">
 
   <!-- TOOLBAR -->
@@ -32,7 +32,7 @@
     </div>
     <!-- Fila 2: Profesional -->
     <div class="cal-filter-row">
-      <span class="cal-filter-row-label">PROFESIONAL</span>
+      <span class="cal-filter-row-label" id="cal-prof-row-label">PROFESIONAL</span>
       <div class="cal-filter-search-wrap">
         <i class="fas fa-search cal-filter-search-icon"></i>
         <input id="cal-prof-search" class="cal-filter-search-input" type="text"
