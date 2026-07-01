@@ -1,5 +1,11 @@
 // ── EMBUDOS KANBAN — HEAVENSY ──
 // ── BITÁCORA ──
+// [v2026.07.01-1] embudos.js
+// 2026-07-01 | La barra de filtro por recurso usa /api/agenda/my-resources (filtrado por
+//   ROL en backend) en vez de /api/agenda/resources (sin filtrar). Consistente con el
+//   calendario: los datos de embudos ya se filtraban por rol server-side; ahora tambien
+//   la lista de chips. Sin cambios de UI (rotulo ya neutro; barra ya oculta a
+//   PROFESIONAL_ROL via _embPuedeVerTodos).
 // [v2026.06.26-2] embudos.js
 // 2026-06-26 | Filtro de EMBUDO ahora oculta COLUMNAS completas (se ve solo el embudo
 //   seleccionado), no solo las tarjetas. Etapa/texto/vip siguen ocultando tarjetas dentro
@@ -239,7 +245,7 @@ function _embEnsureProfBar() {
     board.parentNode.insertBefore(bar, board);
   }
   if (_embResources.length) { _embRenderProfBar(); return; }
-  _embFetch('/api/agenda/resources')
+  _embFetch('/api/agenda/my-resources')
     .then(function(d){
       var list = (d && (d.resources || d.data)) || [];
       _embResources = list.map(function(r){ return { id: r._id || r.id, nombre: r.name || r.nombre || '\u2014' }; });
