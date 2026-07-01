@@ -1,4 +1,18 @@
 <!-- ── BITÁCORA ──
+[v2026.06.30-2] configuracion.html
+2026-06-30 | Reorganización de botones de publicación: se QUITÓ "Actualizar publicación"
+             de la barra superior (steps-bar) — ya no visible en todos los pasos. En el
+             Paso 5 (Media), "Finalizar configuración" se reemplazó por dos botones con
+             texto aclaratorio + tooltips: "Ver publicación" (secundario → cfgIrAlPerfil,
+             solo abre) y "Publicar" (primario → actualizarPublicacion, guarda+publica).
+             Sin cambios en configuracion.js: se reutilizan las funciones existentes
+             (actualizarPublicacion, cfgIrAlPerfil); cfgFinalizarConfiguracion queda sin uso.
+[v2026.06.30-1] configuracion.html
+2026-06-30 | Paso Fotos (Media): bajo cada label (portada/foto/fondo) se agregó un hint
+             con el tamaño recomendado en px. Portada 1920×500 y foto 420×420 se adaptan
+             sin recortarse (CSS deform en perfil_profesional.css v2026.06.30-1: hero
+             background-size 100% 100%, profile-photo object-fit:fill); fondo 1920×1080
+             cubre la página (cover).
 [v2026.06.23-4] configuracion.html
 2026-06-23 | Chips de día con iniciales de 2 letras (Lu/Ma/Mi/Ju/Vi/Sá/Do) y redondos
              (CSS). El guardado lee por posición, no por texto: cambiar la etiqueta no
@@ -99,9 +113,6 @@
 
 <!-- STEPS BAR -->
 <div class="steps-bar">
-  <div style="display:flex;justify-content:flex-end;padding:12px 16px 22px;border-bottom:none">
-    <button class="btn-primary btn-sm" onclick="actualizarPublicacion(this)" style="background:linear-gradient(90deg,#9961FF,#5b8dee);font-size:12px"><i class="fas fa-cloud-upload-alt" style="margin-right:6px"></i>Actualizar publicación</button>
-  </div>
   <div class="steps">
     <div class="step active" id="step-0" onclick="goStep(0)"><div class="step-circle" id="sc-0">1</div><span class="step-label">Mi empresa</span></div>
     <div class="step-line" id="sl-0"></div>
@@ -288,7 +299,7 @@
         <div class="form-group"><label>Dirección</label><input id="disp-direccion" placeholder="Av. Providencia 1234"/></div>
         <div class="form-group"><label>Oficina / Piso</label><input id="disp-oficina" placeholder="Oficina 3, piso 2"/></div>
         <div class="form-group form-full"><label>Zona horaria</label>
-          <select id="disp-tz" class="hvy-form-select">
+          <select id="disp-tz">
             <option value="America/Santiago">America/Santiago – GMT-3</option>
             <option value="America/New_York">America/New_York – GMT-5</option>
           </select>
@@ -749,16 +760,19 @@
       <div class="edit-section-title"><i class="fas fa-images"></i> Fotos</div>
       <div class="edit-row">
         <label>Foto portada (hero)</label>
+        <small style="display:block;font-size:.68rem;color:#9aa0c0;margin:-2px 0 4px;line-height:1.3">Recomendado: <b>1920 × 500 px</b> (horizontal). Se adapta al recuadro sin recortarse.</small>
         <label class="edit-file-label" for="ep-portada"><i class="fas fa-mountain"></i><span id="ep-portada-name">Seleccionar imagen…</span></label>
         <input type="file" id="ep-portada" accept="image/*" style="display:none" onchange="epPortada(this)">
       </div>
       <div class="edit-row">
         <label>Foto de perfil</label>
+        <small style="display:block;font-size:.68rem;color:#9aa0c0;margin:-2px 0 4px;line-height:1.3">Recomendado: <b>420 × 420 px</b> (cuadrada). Se adapta al círculo sin recortarse.</small>
         <label class="edit-file-label" for="ep-foto"><i class="fas fa-user-circle"></i><span id="ep-foto-name">Seleccionar imagen…</span></label>
         <input type="file" id="ep-foto" accept="image/*" style="display:none" onchange="epFotoPerfil(this)">
       </div>
       <div class="edit-row">
         <label>Foto fondo de página</label>
+        <small style="display:block;font-size:.68rem;color:#9aa0c0;margin:-2px 0 4px;line-height:1.3">Recomendado: <b>1920 × 1080 px</b> (horizontal). Cubre la página (se recorta lo que sobra).</small>
         <label class="edit-file-label" for="ep-fondo"><i class="fas fa-image"></i><span id="ep-fondo-name">Seleccionar imagen…</span></label>
         <input type="file" id="ep-fondo" accept="image/*" style="display:none" onchange="epFondo(this)">
         <div style="display:flex;align-items:center;gap:.5rem;margin-top:.4rem">
@@ -832,8 +846,15 @@
       <div class="media-grid" id="card-grid" style="margin-top:10px"></div>
     </div>
   </div>
-  <div style="display:flex;justify-content:flex-end;margin-top:6px">
-    <button class="btn-primary" onclick="cfgFinalizarConfiguracion()"><i class="fas fa-check" style="margin-right:6px"></i>Finalizar configuración</button>
+  <div style="margin-top:14px;padding-top:14px;border-top:1px solid #eef0f7">
+    <div style="display:flex;align-items:flex-start;gap:8px;background:#eef2ff;border-radius:10px;padding:10px 12px;margin-bottom:12px">
+      <i class="fas fa-info-circle" style="color:#5b8dee;font-size:13px;margin-top:2px;flex-shrink:0"></i>
+      <div style="font-size:12px;color:#4b5bb0;line-height:1.5">Tus cambios se guardan solos mientras editas. <b>Publicar</b> es lo que los deja visibles en tu página pública (la que ven tus clientes).</div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px">
+      <button class="btn-secondary" onclick="cfgIrAlPerfil()" title="Abre tu página pública en una pestaña nueva. No modifica nada."><i class="fas fa-external-link-alt" style="margin-right:6px"></i>Ver publicación</button>
+      <button class="btn-primary" onclick="actualizarPublicacion(this)" title="Guarda y publica tus cambios: pasan a la página pública que ven tus clientes." style="background:linear-gradient(90deg,#9961FF,#5b8dee)"><i class="fas fa-cloud-upload-alt" style="margin-right:6px"></i>Publicar</button>
+    </div>
   </div>
 </div>
 </div>
@@ -952,7 +973,7 @@
           <div class="form-group"><label>Dirección</label><input id="jm-direccion" value="Av. Providencia 1234"/></div>
           <div class="form-group"><label>Oficina / Piso</label><input value="Oficina 3, piso 2"/></div>
           <div class="form-group form-full"><label>Zona horaria</label>
-            <select class="hvy-form-select"><option>America/Santiago – GMT-3</option><option>America/New_York – GMT-5</option></select>
+            <select><option>America/Santiago – GMT-3</option><option>America/New_York – GMT-5</option></select>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:16px">
