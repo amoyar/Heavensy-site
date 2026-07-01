@@ -1,4 +1,11 @@
 // ── BITÁCORA ──
+// [v2026.06.30-1] perfil_profesional.js
+// 2026-06-30 | Fix "[object Object] · [object Object]" en las specs (Mi equipo y
+//              perfil principal): las especialidades ahora son objetos
+//              {key, nombre, propia} (mini-proyecto Especialidades) y el .join(' · ')
+//              las volvía "[object Object]". Nuevo helper _ppSpecNames() saca el
+//              nombre de cada una (tolera strings viejos); aplicado en los 3 puntos
+//              (tarjeta de equipo, specs por resource_id y c.especialidades de config).
 // [v2026.06.14-10] perfil_profesional.js
 // 2026-06-14 | Estadía: check-in y check-out en líneas separadas (cada uno con
 //              nowrap) para que no se corten a media palabra en la columna
@@ -200,6 +207,16 @@ function _ppRenderCalendar(year, month){
 // (snapshot publicado): mismos nombres de campo en ambas fuentes.
 // Adapta los títulos de sección ("Servicios"/"Equipo") según el rubro.
 // Los <span> de .section-title no tienen id; se ubican por su texto actual.
+// [v2026.06.30-1] Normaliza especialidades a array de NOMBRES (strings). Desde el
+// mini-proyecto de Especialidades, r.specialties/c.especialidades pueden venir como
+// objetos {key, nombre, propia}; hacer .join(' · ') sobre objetos daba
+// "[object Object] · [object Object]". Este helper saca el nombre de cada una y
+// tolera datos viejos (strings). Úsalo antes de cualquier .join(' · ') de specs.
+function _ppSpecNames(arr){
+  if(!Array.isArray(arr)) return arr ? [String(arr)] : [];
+  return arr.map(x => (x && typeof x === 'object') ? (x.nombre || x.name || x.key || '') : x).filter(Boolean);
+}
+
 function _ppAplicarLabels(labels){
   if(!labels) return;
   document.querySelectorAll('.section-title span').forEach(sp=>{
@@ -230,7 +247,7 @@ function _ppAplicarPerfil(c){
   if(c.frase){ const el=document.querySelector('.profile-desc'); if(el) el.textContent=c.frase; }
   if(c.direccion){ const el=document.querySelector('.profile-addr'); if(el){ const svg=el.querySelector('svg'); el.textContent=c.direccion; if(svg)el.prepend(svg); el.style.display=''; } }
   if(c.nombre_empresa){ const el=document.getElementById('profile-name'); if(el) el.textContent=c.nombre_empresa; }
-  if(c.especialidades){ const el=document.querySelector('.profile-specs'); if(el) el.textContent=Array.isArray(c.especialidades)?c.especialidades.join(' · '):c.especialidades; }
+  if(c.especialidades){ const el=document.querySelector('.profile-specs'); if(el) el.textContent=_ppSpecNames(c.especialidades).join(' · '); }
   if(c.modos) renderModos(c.modos);
   if(c.horario) renderHorario(c.horario);
   if(c.opacidad!==undefined){ const v=(c.opacidad/100).toFixed(2); document.querySelectorAll('.profile-top-glass,.service-card,.comment-card,.agenda-card,.sidebar-hablemos,.prof-card').forEach(el=>{ el.style.cssText+=`;background:rgba(255,255,255,${v}) !important`; }); }
@@ -299,7 +316,7 @@ async function initPerfilEmpresa(){
       renderProfCard({
         nombre: r.name||'',
         foto:   r.photo_url||'',
-        specs:  Array.isArray(r.specialties)?r.specialties.join(' · '):(r.specialties||''),
+        specs:  _ppSpecNames(r.specialties).join(' · '),
         desc:   r.slogan||r.description||'',
         modos:  Array.isArray(r.modalities)?r.modalities:[]
       }, true);
@@ -328,7 +345,7 @@ async function initPerfilPublico(){
   const r = resData?.resource || resData || {};
   if(r.name||r.full_name){ const el=document.getElementById('profile-name'); if(el) el.textContent=r.name||r.full_name; }
   if(r.photo_url||r.avatar_url){ const p=document.querySelector('.profile-photo'); if(p) p.src=r.photo_url||r.avatar_url; }
-  if((r.specialties||r.especialidades)?.length){ const el=document.querySelector('.profile-specs'); if(el) el.textContent=(r.specialties||r.especialidades).join(' · '); }
+  if((r.specialties||r.especialidades)?.length){ const el=document.querySelector('.profile-specs'); if(el) el.textContent=_ppSpecNames(r.specialties||r.especialidades).join(' · '); }
   if(r.description||r.slogan){ const el=document.querySelector('.profile-desc'); if(el) el.textContent=r.description||r.slogan; }
   if(r.modalities||r.modalidades) renderModos(r.modalities||r.modalidades);
   if(r.location||r.address){ const el=document.querySelector('.profile-addr'); if(el){ const svg=el.querySelector('svg'); el.textContent=r.location||r.address; if(svg)el.prepend(svg); el.style.display=''; } }
