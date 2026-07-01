@@ -1,4 +1,10 @@
 <!-- ── BITÁCORA ──
+[v2026.06.30-3] configuracion.html
+2026-06-30 | Se quitó "Ver publicación" del Paso 5 (Media): era redundante con el botón
+             "Ver mi página" del bloque cr-p5 "Contacto y publicación" (config-rubro.js),
+             que abre la página pública real (heavensy.cl/p/<slug>). El Paso 5 queda solo
+             con la franja aclaratoria + "Publicar". cfgIrAlPerfil sigue en uso solo por el
+             botón "Ver mi perfil público" del modal de bienvenida.
 [v2026.06.30-2] configuracion.html
 2026-06-30 | Reorganización de botones de publicación: se QUITÓ "Actualizar publicación"
              de la barra superior (steps-bar) — ya no visible en todos los pasos. En el
@@ -852,7 +858,6 @@
       <div style="font-size:12px;color:#4b5bb0;line-height:1.5">Tus cambios se guardan solos mientras editas. <b>Publicar</b> es lo que los deja visibles en tu página pública (la que ven tus clientes).</div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:10px">
-      <button class="btn-secondary" onclick="cfgIrAlPerfil()" title="Abre tu página pública en una pestaña nueva. No modifica nada."><i class="fas fa-external-link-alt" style="margin-right:6px"></i>Ver publicación</button>
       <button class="btn-primary" onclick="actualizarPublicacion(this)" title="Guarda y publica tus cambios: pasan a la página pública que ven tus clientes." style="background:linear-gradient(90deg,#9961FF,#5b8dee)"><i class="fas fa-cloud-upload-alt" style="margin-right:6px"></i>Publicar</button>
     </div>
   </div>
